@@ -43,8 +43,18 @@ contract ConfigureWindow is Script {
             sender: ACCOUNT,
             nonce: IEntryPoint(ENTRYPOINT).getNonce(ACCOUNT, 0),
             initCode: "",
+            // MUST be wrapped in execute(). setWindow is `onlySelf`, so it
+            // requires msg.sender == the account. Calling it directly from a
+            // UserOp makes msg.sender the ENTRYPOINT, which reverts NotSelf()
+            // -- validation passes, both signatures are accepted, and then the
+            // inner call fails with UserOperationEvent.success = false while
+            // the account still pays gas. Routing through execute() makes the
+            // account call itself.
             callData: abi.encodeCall(
-                PasskeyAccount.setWindow, (address(0), 0.05 ether, 1 days)
+                PasskeyAccount.execute,
+                (ACCOUNT, 0, abi.encodeCall(
+                    PasskeyAccount.setWindow, (address(0), 0.05 ether, 1 days)
+                ))
             ),
             accountGasLimits: bytes32(
                 (uint256(VERIFICATION_GAS) << 128) | uint256(CALL_GAS)

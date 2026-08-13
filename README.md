@@ -12,7 +12,9 @@ Built as a learning exercise. **Not audited. Do not put real money in it.**
 | Account | [`0x34Aeb3A39fd1838D1C897F879EAB0a258507802c`](https://sepolia.basescan.org/address/0x34Aeb3A39fd1838D1C897F879EAB0a258507802c) |
 | EntryPoint | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` (v0.7) |
 | Signers | 2 passkeys, both Touch ID / Secure Enclave |
-| First UserOp | [`0x3c40196f…acc9b1`](https://sepolia.basescan.org/tx/0x3c40196f878b9c9a1630bc8e6181ab10f8a29197ce3561431ef4b7d5a6acc9b1) |
+| First UserOp | [`0x3c40196f…acc9b1`](https://sepolia.basescan.org/tx/0x3c40196f878b9c9a1630bc8e6181ab10f8a29197ce3561431ef4b7d5a6acc9b1) — 1 passkey, ETH transfer |
+| Window config | [`0x8fb6cb54…f05e4`](https://sepolia.basescan.org/tx/0x8fb6cb5460ebf6a203a450c70094da68bc3738be03f4405d55eb90ede99f05e4) — 2 passkeys, `setWindow` |
+| Live policy | 0.01 ETH per-op threshold · 0.05 ETH per 24h rolling cap |
 
 That transaction is a real UserOp: a Touch ID passkey authorized an ETH transfer
 through the EntryPoint, with `validateUserOp` verifying the P-256 signature
@@ -291,24 +293,37 @@ ACCOUNT=0x... forge script script/Verify.s.sol:Verify --rpc-url https://sepolia.
 Read-only. Confirms signer 0 matches the real Touch ID passkey and replays a
 genuine hardware signature through the on-chain precompile.
 
-### Configuration is deliberately not scripted
+### Configuring an `onlySelf` function
 
-The constructor sets only signer 0 and the per-op ETH threshold. Everything else
-— `setWindow`, `setTokenThreshold`, `addSigner` — is `onlySelf`, reachable only
-through a UserOp. That is the design working as intended: config changes are
-subject to the same policy as spending, and since they are not `execute` calls
-they take the **2-signature** default.
+`setWindow`, `setTokenThreshold`, and `addSigner` are all `onlySelf`. Reaching
+them takes two things that are easy to get wrong:
 
-The consequence is worth stating plainly: **with one passkey enrolled, the
-account cannot be configured at all.** Enrolling a second signer itself requires
-two signatures. A production deployment would take both public keys in the
+**1. The call must be wrapped in `execute`.** `onlySelf` requires
+`msg.sender == address(this)`. A UserOp whose `callData` is `setWindow(...)`
+directly arrives with `msg.sender == EntryPoint` and reverts `NotSelf()`. The
+correct form makes the account call itself:
+
+```solidity
+execute(address(account), 0, abi.encodeCall(setWindow, (...)))
+```
+
+This failure mode is expensive to learn: validation *passes*, both signatures
+are accepted, and the revert happens during execution — so the account pays gas
+for a UserOp that changed nothing. `UserOperationEvent.success` is `false` while
+the transaction itself reports success. **Check the event, not the tx status.**
+
+**2. It takes the full 2-signature quorum,** because the wrapped call is not a
+recognised spending selector and the policy fails safe. The rule that guards
+spending also guards the limits themselves — one stolen passkey cannot raise its
+own cap.
+
+The consequence at deploy time: **an account with one enrolled passkey can never
+be configured**, since enrolling the second signer would itself need two
+signatures. `script/Deploy.s.sol` therefore takes both public keys in the
 constructor.
 
-`script/Deploy.s.sol:ConfigureCalldata` prints the calldata for those calls:
-
-```bash
-forge script script/Deploy.s.sol:ConfigureCalldata
-```
+Working end-to-end example: [`script/SendConfigureWindow.s.sol`](script/SendConfigureWindow.s.sol),
+landed on-chain in [`0x8fb6cb54…f05e4`](https://sepolia.basescan.org/tx/0x8fb6cb5460ebf6a203a450c70094da68bc3738be03f4405d55eb90ede99f05e4).
 
 ---
 
