@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Passkey Account — signer harness</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font: 14px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+    max-width: 820px; margin: 40px auto; padding: 0 20px;
+  }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .sub { opacity: .65; font-size: 13px; margin-bottom: 28px; }
+  button {
+    font: inherit; padding: 9px 16px; margin: 4px 6px 4px 0;
+    border: 1px solid currentColor; border-radius: 6px;
+    background: transparent; color: inherit; cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: color-mix(in srgb, currentColor 10%, transparent); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  pre {
+    background: color-mix(in srgb, currentColor 7%, transparent);
+    padding: 14px; border-radius: 6px; overflow-x: auto;
+    white-space: pre-wrap; word-break: break-all; font-size: 12.5px;
+  }
+  input { font: inherit; padding: 8px; width: 100%; box-sizing: border-box;
+          border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+          border-radius: 6px; background: transparent; color: inherit; }
+  label { display: block; margin: 16px 0 6px; opacity: .75; font-size: 13px; }
+  .step { border-left: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+          padding-left: 16px; margin: 24px 0; }
+</style>
+</head>
+<body>
+
+<h1>Passkey Account — signer harness</h1>
+<div class="sub">
+  Creates a real passkey and signs UserOp hashes with it. Output pastes straight
+  into the Foundry tests or a deploy script.
+</div>
+
+<div class="step">
+  <strong>1. Create a passkey</strong>
+  <div class="sub">Touch ID / Windows Hello. The private key is generated inside
+  secure hardware and cannot be exported — that is the property TOTP lacks.</div>
+  <label for="label">Signer label (use a different one for each signer)</label>
+  <input id="label" value="signer-1">
+  <button id="create">Create passkey</button>
+  <pre id="pubkey">no passkey yet</pre>
+</div>
+
+<div class="step">
+  <strong>2. Sign a UserOp hash</strong>
+  <label for="challenge">UserOp hash (32 bytes, hex)</label>
+  <input id="challenge" value="0x1111111111111111111111111111111111111111111111111111111111111111">
+  <div class="sub" style="margin-top:10px">
+    If several passkeys exist for this site, the OS picker may default to the
+    wrong one. <strong>Identify</strong> tags each key by signing with it once;
+    afterwards you can pin the signer here.
+  </div>
+  <label for="signerPick">Sign as</label>
+  <select id="signerPick" style="font:inherit;padding:8px;width:100%;
+    background:transparent;color:inherit;border-radius:6px;
+    border:1px solid color-mix(in srgb, currentColor 30%, transparent)">
+    <option value="">any passkey (show picker)</option>
+  </select>
+  <button id="sign">Sign with passkey</button>
+  <button id="identify">Identify keys</button>
+  <pre id="sig">no signature yet</pre>
+</div>
+
+<script type="module">
+const $ = id => document.getElementById(id);
+const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join('');
+const b64uToBytes = s => {
+  s = s.replace(/-/g,'+').replace(/_/g,'/');
+  const bin = atob(s + '='.repeat((4 - s.length % 4) % 4));
+  return Uint8Array.from(bin, c => c.charCodeAt(0));
+};
+const P256_N = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
+
+/// Signers enrolled on the CURRENT deployed account. Update these after each
+/// deploy -- the harness uses them to name which key actually signed.
+///
+/// Empty until the new account is deployed, so every signature reports
+/// UNKNOWN rather than falsely matching a stale key.
+const ENROLLED = {
+  'alpha (id 0)': {
+    x: '0xa3b99c51ae83035154e9aaf7b23b4bb2dcd37721dfb8a1dc10ab204d4b3a6801',
+    y: '0x9afd5a1669db77182bb11bf8f08456643914de2451a3bf79de98fcafb0cabc3d'
+  },
+  'beta (id 1)': {
+    x: '0xe674161f196651a12baec4a98706b5ea424f21104b5bf793f75cbdfee531828b',
+    y: '0xd19ebbc657185048e777880b61a909ad683c1ee61df458fd707a802de8a9557e'
+  }
+};
+
+// --- minimal P-256 math, only for public-key recovery ---------------------
+const P  = 0xffffffff00000001000000000000000000000000ffffffffffffffffffffffffn;
+const A  = P - 3n;
+const B  = 0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604bn;
+const Gx = 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296n;
+const Gy = 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5n;
+
+const mod = (x, m) => ((x % m) + m) % m;
+const inv = (x, m) => { // Fermat
+  let r = 1n, b = mod(x, m), e = m - 2n;
+  while (e) { if (e & 1n) r = r * b % m; b = b * b % m; e >>= 1n; }
+  return r;
+};
+function ptAdd(p1, p2) {
+  if (!p1) return p2;
+  if (!p2) return p1;
+  if (p1.x === p2.x && mod(p1.y + p2.y, P) === 0n) return null;
+  const l = p1.x === p2.x && p1.y === p2.y
+    ? mod((3n * p1.x * p1.x + A) * inv(2n * p1.y, P), P)
+    : mod((p2.y - p1.y) * inv(p2.x - p1.x, P), P);
+  const x = mod(l * l - p1.x - p2.x, P);
+  return { x, y: mod(l * (p1.x - x) - p1.y, P) };
+}
+function ptMul(k, p) {
+  let r = null, b = p;
+  while (k) { if (k & 1n) r = ptAdd(r, b); b = ptAdd(b, b); k >>= 1n; }
+  return r;
+}
+/// Recover the two candidate public keys for an ECDSA signature.
+function recoverP256(msgBytes, r, s) {
+  const z = BigInt('0x' + [...msgBytes].map(b => b.toString(16).padStart(2,'0')).join(''));
+  const out = [];
+  for (const parity of [0n, 1n]) {
+    const y2 = mod(r * r * r + A * r + B, P);
+    let y = modPow(y2, (P + 1n) / 4n, P);
+    if (mod(y, 2n) !== parity) y = P - y;
+    if (mod(y * y - y2, P) !== 0n) continue;
+    const R = { x: r, y };
+    const rInv = inv(r, P256_N);
+    out.push(ptMul(mod(rInv, P256_N),
+      ptAdd(ptMul(mod(s, P256_N), R), ptMul(mod(-z, P256_N), { x: Gx, y: Gy }))));
+  }
+  return out;
+}
+function modPow(b, e, m) {
+  let r = 1n; b = mod(b, m);
+  while (e) { if (e & 1n) r = r * b % m; b = b * b % m; e >>= 1n; }
+  return r;
+}
+
+let credentialId = null;
+
+// --- 1. Create ------------------------------------------------------------
+$('create').onclick = async () => {
+  // Creating a passkey is destructive in a subtle way: it mints a NEW key and
+  // replaces what is shown below, so a stray click here silently swaps which
+  // key you are about to sign with. That produces a valid signature from a key
+  // the contract has never heard of, and the only symptom is an opaque
+  // "AA24 signature error" on-chain. Confirm before creating.
+  if (!confirm(
+    'Create a NEW passkey?\n\n' +
+    'This mints a new key. If you only meant to SIGN with an existing ' +
+    'passkey, cancel and use "Sign with passkey" instead.'
+  )) return;
+
+  try {
+    const cred = await navigator.credentials.create({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        // rp.id must match the serving origin's domain. Omitting it lets the
+        // browser default to the current origin, which is what we want on
+        // localhost. WebAuthn requires a secure context: http://localhost
+        // counts, but file:// and data: do NOT -- serve this page, don't open it.
+        rp: { name: 'Passkey Account' },
+        // A distinct user id + name per signer. Reusing them makes the
+        // platform authenticator offer to REPLACE the existing passkey
+        // rather than create a second one -- which would silently leave you
+        // with one key again, and not the one the account expects.
+        user: {
+          id: crypto.getRandomValues(new Uint8Array(16)),
+          name: $('label').value.trim() || 'signer',
+          displayName: $('label').value.trim() || 'signer'
+        },
+        // -7 = ES256 (P-256). This is the ONLY algorithm our contract verifies.
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        authenticatorSelection: {
+          userVerification: 'required',   // force biometric, matching requireUV
+          residentKey: 'preferred'
+        },
+        timeout: 60000
+      }
+    });
+
+    credentialId = cred.rawId;
+
+    // Extract x, y from the COSE-encoded public key.
+    const pk = cred.response.getPublicKey();          // SPKI DER
+    const raw = new Uint8Array(pk);
+    // Uncompressed EC point is the last 65 bytes: 0x04 || x(32) || y(32)
+    const point = raw.slice(-65);
+    if (point[0] !== 0x04) throw new Error('unexpected public key encoding');
+    const x = hex(point.slice(1, 33));
+    const y = hex(point.slice(33, 65));
+
+    // Remember credentialId -> label so signing can name the key it used.
+    const known = JSON.parse(localStorage.getItem('passkeys') || '{}');
+    known[hex(cred.rawId)] = $('label').value.trim() || 'unlabelled';
+    localStorage.setItem('passkeys', JSON.stringify(known));
+
+    $('pubkey').textContent =
+      `label: ${known[hex(cred.rawId)]}\n` +
+      `uint256 constant X = 0x${x};\nuint256 constant Y = 0x${y};`;
+    $('sign').disabled = false;
+  } catch (e) {
+    $('pubkey').textContent = 'error: ' + e.message;
+  }
+};
+
+// --- 2. Sign --------------------------------------------------------------
+$('sign').onclick = async () => {
+  try {
+    const chHex = $('challenge').value.trim().replace(/^0x/, '');
+    if (chHex.length !== 64) throw new Error('challenge must be 32 bytes');
+    const challenge = Uint8Array.from(chHex.match(/../g).map(b => parseInt(b,16)));
+
+    // If a specific signer is pinned, scope allowCredentials to exactly that
+    // credential id. The platform then CANNOT substitute another key: either
+    // it signs with the one we asked for, or it fails. Relying on the picker
+    // instead means relying on its ordering, which silently produced
+    // signatures from the wrong passkey three times in a row.
+    const pinned = $('signerPick').value;
+    const allow = pinned
+      ? [{ type: 'public-key', id: Uint8Array.from(pinned.match(/../g).map(b=>parseInt(b,16))) }]
+      : [];
+
+    // Empty allowCredentials lets the platform show a PICKER, so you can sign
+    // with any enrolled passkey. Scoping to the last-created credential would
+    // silently sign with only that one -- wrong when the account has several
+    // signers and you need a specific one.
+    const assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge,
+        allowCredentials: allow,
+        userVerification: 'required',
+        timeout: 60000
+      }
+    });
+
+    const r_ = assertion.response;
+    const authData = new Uint8Array(r_.authenticatorData);
+    const clientDataJSON = new TextDecoder().decode(r_.clientDataJSON);
+
+    // WebAuthn returns the signature as ASN.1 DER: 30 L 02 Lr R 02 Ls S
+    const der = new Uint8Array(r_.signature);
+    let i = 2;                              // skip SEQUENCE header
+    if (der[i] !== 0x02) throw new Error('bad DER');
+    const rLen = der[i+1]; let r = der.slice(i+2, i+2+rLen);
+    i = i + 2 + rLen;
+    if (der[i] !== 0x02) throw new Error('bad DER');
+    const sLen = der[i+1]; let s = der.slice(i+2, i+2+sLen);
+
+    const trim = a => { while (a.length > 32 && a[0] === 0) a = a.slice(1); return a; };
+    const pad  = a => { const o = new Uint8Array(32); o.set(a, 32 - a.length); return o; };
+    r = pad(trim(r)); s = pad(trim(s));
+
+    // Low-s normalization — the contract rejects high-s to block malleability.
+    let sBig = BigInt('0x' + hex(s));
+    if (sBig > P256_N / 2n) {
+      sBig = P256_N - sBig;
+      s = Uint8Array.from(sBig.toString(16).padStart(64,'0').match(/../g)
+            .map(b => parseInt(b,16)));
+    }
+
+    const flags = authData[32];
+
+    // Which key signed? Recover the public key from (r, s) and match it against
+    // the signers actually enrolled on-chain. This works for ANY passkey,
+    // including ones created before this harness tracked credential ids.
+    //
+    // Without this check, a signature from the wrong passkey is
+    // indistinguishable from a correct one until the chain rejects it with
+    // "AA24 signature error" -- which says nothing about the cause.
+    const cdHashBytes = new Uint8Array(await crypto.subtle.digest(
+      'SHA-256', new TextEncoder().encode(clientDataJSON)));
+    const preimage = new Uint8Array(authData.length + 32);
+    preimage.set(authData, 0);
+    preimage.set(cdHashBytes, authData.length);
+    const msg = new Uint8Array(await crypto.subtle.digest('SHA-256', preimage));
+    const recovered = recoverP256(msg, BigInt('0x'+hex(r)), BigInt('0x'+hex(s)));
+
+    let usedLabel = 'UNKNOWN — not an enrolled signer';
+    let matched = false;
+    for (const [label, k] of Object.entries(ENROLLED)) {
+      if (recovered.some(q => q && q.x === BigInt(k.x) && q.y === BigInt(k.y))) {
+        usedLabel = label; matched = true;
+      }
+    }
+
+    // Remember credentialId -> recovered pubkey, so the NEXT signing attempt
+    // can scope allowCredentials to exactly the key we want instead of
+    // relying on the platform picker's ordering.
+    const seen = JSON.parse(localStorage.getItem('seenCreds') || '{}');
+    seen[hex(assertion.rawId)] = {
+      label: usedLabel,
+      x: '0x' + (recovered.find(q => q) ? recovered[1].x.toString(16).padStart(64,'0') : '')
+    };
+    localStorage.setItem('seenCreds', JSON.stringify(seen));
+
+    $('sig').textContent =
+`SIGNED BY: ${usedLabel}${matched ? '' : '   <-- WRONG KEY, do not submit'}
+credentialId: ${hex(assertion.rawId)}
+
+authenticatorData: hex"${hex(authData)}"
+clientDataJSON:    '${clientDataJSON}'
+challengeIndex:    ${clientDataJSON.indexOf('"challenge":"')}
+typeIndex:         ${clientDataJSON.indexOf('"type":"')}
+r: 0x${hex(r)}
+s: 0x${hex(s)}
+
+flags: 0x${flags.toString(16).padStart(2,'0')}  UP=${!!(flags&1)}  UV=${!!(flags&4)}`;
+  } catch (e) {
+    $('sig').textContent = 'error: ' + e.message;
+  }
+  refreshPicker();
+};
+
+// --- signer pinning -------------------------------------------------------
+function refreshPicker() {
+  const seen = JSON.parse(localStorage.getItem('seenCreds') || '{}');
+  const sel = $('signerPick');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">any passkey (show picker)</option>';
+  for (const [id, info] of Object.entries(seen)) {
+    const o = document.createElement('option');
+    o.value = id;
+    o.textContent = `${info.label}  (${id.slice(0,12)}...)`;
+    sel.appendChild(o);
+  }
+  sel.value = cur;
+}
+
+/// Sign a throwaway challenge with each available passkey in turn, recording
+/// which credential id maps to which enrolled signer. One Touch ID prompt per
+/// key; pick a DIFFERENT passkey each time when the OS asks.
+$('identify').onclick = async () => {
+  try {
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const a = await navigator.credentials.get({
+      publicKey: { challenge, allowCredentials: [], userVerification: 'required', timeout: 60000 }
+    });
+
+    const authData = new Uint8Array(a.response.authenticatorData);
+    const cd = new TextDecoder().decode(a.response.clientDataJSON);
+    const der = new Uint8Array(a.response.signature);
+    let i = 2;
+    const rLen = der[i+1]; let r = der.slice(i+2, i+2+rLen);
+    i = i + 2 + rLen;
+    const sLen = der[i+1]; let s = der.slice(i+2, i+2+sLen);
+    const trim = x => { while (x.length > 32 && x[0] === 0) x = x.slice(1); return x; };
+    const pad  = x => { const o = new Uint8Array(32); o.set(x, 32 - x.length); return o; };
+    r = pad(trim(r)); s = pad(trim(s));
+
+    const cdHash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(cd)));
+    const pre = new Uint8Array(authData.length + 32);
+    pre.set(authData, 0); pre.set(cdHash, authData.length);
+    const msg = new Uint8Array(await crypto.subtle.digest('SHA-256', pre));
+    const rec = recoverP256(msg, BigInt('0x'+hex(r)), BigInt('0x'+hex(s)));
+
+    let label = 'UNKNOWN — not enrolled on-chain';
+    for (const [name, k] of Object.entries(ENROLLED)) {
+      if (rec.some(q => q && q.x === BigInt(k.x) && q.y === BigInt(k.y))) label = name;
+    }
+
+    const seen = JSON.parse(localStorage.getItem('seenCreds') || '{}');
+    seen[hex(a.rawId)] = { label };
+    localStorage.setItem('seenCreds', JSON.stringify(seen));
+    refreshPicker();
+
+    const n = Object.keys(seen).length;
+    $('sig').textContent =
+      `identified: ${label}\ncredentialId: ${hex(a.rawId)}\n\n` +
+      `${n} key(s) known. Click Identify again and choose a DIFFERENT passkey ` +
+      `until both signer-1 and signer-2 appear in the dropdown.`;
+  } catch (e) {
+    $('sig').textContent = 'identify failed: ' + e.message;
+  }
+};
+
+refreshPicker();
+</script>
+</body>
+</html>
