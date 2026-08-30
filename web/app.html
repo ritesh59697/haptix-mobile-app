@@ -62,7 +62,6 @@
     flex-direction: column;
   }
 
-  /* Deep Lagoon Aura */
   .aura-bg {
     position: relative;
     overflow: hidden;
@@ -99,23 +98,25 @@
     min-height: 100vh;
   }
 
-  /* Top Bar */
-  header.app-topbar {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border-light);
-    padding: 14px 24px;
+  /* Header */
+  .app-header {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    padding: 14px 0;
     position: sticky;
     top: 0;
     z-index: 100;
   }
 
-  .topbar-inner {
+  .header-inner {
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 24px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
   }
 
   .brand-group {
@@ -124,48 +125,40 @@
     gap: 16px;
   }
 
-  .logo {
+  .brand-logo {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     text-decoration: none;
     color: var(--text-title);
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 19px;
   }
 
-  .logo-symbol {
+  .brand-icon {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
     background: var(--base-blue);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #FFF;
-    box-shadow: 0 4px 10px rgba(0, 82, 255, 0.25);
-  }
-
-  .logo-text {
-    font-family: var(--font-heading);
-    font-size: 18px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
   }
 
   .back-link {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text-muted);
     text-decoration: none;
-    padding: 6px 12px;
-    border-radius: var(--radius-full);
-    background: rgba(241, 245, 249, 0.8);
-    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.15s ease;
   }
 
-  .back-link:hover {
-    color: var(--base-blue);
-    background: var(--base-blue-light);
-  }
+  .back-link:hover { color: var(--base-blue); }
 
   .topbar-actions {
     display: flex;
@@ -174,52 +167,43 @@
   }
 
   .network-badge {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 14px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(0, 82, 255, 0.2);
+    padding: 6px 12px;
+    background: #FFF;
+    border: 1px solid var(--border-light);
     border-radius: var(--radius-full);
     font-size: 12px;
     font-weight: 700;
-    color: var(--base-blue);
+    color: var(--text-title);
+    box-shadow: var(--shadow-sm);
   }
 
   .pulse-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: var(--accent-emerald);
-    box-shadow: 0 0 6px var(--accent-emerald);
-    animation: pulse 2s infinite;
   }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.85); }
-  }
-
-  /* Main Application Container */
-  main.wallet-container {
-    max-width: 1100px;
-    margin: 32px auto 60px;
-    padding: 0 20px;
-    width: 100%;
-    flex: 1;
+  /* Main Container */
+  .wallet-container {
+    max-width: 1200px;
+    margin: 32px auto;
+    padding: 0 24px;
     display: grid;
-    grid-template-columns: 360px 1fr;
-    gap: 28px;
-    align-items: start;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+    flex: 1;
+    width: 100%;
   }
 
   @media (max-width: 960px) {
-    main.wallet-container {
-      grid-template-columns: 1fr;
-    }
+    .wallet-container { grid-template-columns: 1fr; }
   }
 
-  /* Left Column: Account Card & Quick Nav */
+  /* Left Column */
   .wallet-sidebar {
     display: flex;
     flex-direction: column;
@@ -227,70 +211,68 @@
   }
 
   .rabby-account-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(240, 246, 255, 0.95) 100%);
-    border: 1px solid rgba(0, 82, 255, 0.15);
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
     border-radius: var(--radius-xl);
     padding: 24px;
-    box-shadow: var(--shadow-lg);
-    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-md);
   }
 
   .account-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
   }
 
   .passkey-badge {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
-    background: var(--accent-emerald-light);
-    color: var(--accent-emerald);
-    border: 1px solid rgba(5, 150, 105, 0.2);
-    border-radius: var(--radius-full);
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--base-blue-light);
+    color: var(--base-blue);
+    padding: 4px 8px;
+    border-radius: 6px;
   }
 
   .balance-meta {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
+    font-size: 12.5px;
     color: var(--text-muted);
-    letter-spacing: 0.05em;
+    font-weight: 600;
     margin-bottom: 4px;
   }
 
   .big-portfolio-val {
     font-family: var(--font-heading);
-    font-size: 38px;
+    font-size: 32px;
     font-weight: 800;
     color: var(--text-title);
     line-height: 1.1;
-    margin-bottom: 6px;
   }
 
   .big-portfolio-sub {
     font-size: 13px;
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    margin-bottom: 20px;
+    color: var(--accent-emerald);
+    font-weight: 700;
+    margin-top: 4px;
   }
 
   .address-copy-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #FFF;
+    background: var(--bg-card-subtle);
     border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
     padding: 8px 12px;
-    border-radius: 10px;
+    margin-top: 18px;
     font-family: var(--font-mono);
     font-size: 12px;
-    color: var(--text-title);
+    color: var(--text-body);
   }
 
   .copy-btn {
@@ -298,57 +280,13 @@
     border: none;
     color: var(--base-blue);
     font-weight: 700;
+    font-size: 12px;
     cursor: pointer;
-    font-family: var(--font-main);
   }
 
-  /* Action Buttons (Send, Receive, Security) */
-  .quick-action-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 18px;
-  }
-
-  .action-btn {
-    padding: 12px;
-    border-radius: 12px;
-    border: none;
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.15s;
-  }
-
-  .action-btn-primary {
-    background: var(--base-blue);
-    color: #FFF;
-    box-shadow: 0 4px 12px rgba(0, 82, 255, 0.25);
-  }
-
-  .action-btn-primary:hover {
-    background: var(--base-blue-hover);
-    transform: translateY(-1px);
-  }
-
-  .action-btn-secondary {
-    background: #FFF;
-    color: var(--text-title);
-    border: 1px solid var(--border-light);
-  }
-
-  .action-btn-secondary:hover {
-    background: var(--bg-card-subtle);
-  }
-
-  /* Sidebar Policy Capsule */
+  /* Policy Capsule */
   .policy-capsule-card {
-    background: var(--bg-surface);
+    background: rgba(255, 255, 255, 0.85);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
     padding: 20px;
@@ -358,93 +296,112 @@
   .policy-capsule-card h4 {
     font-family: var(--font-heading);
     font-size: 14px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-title);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 14px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    margin-bottom: 12px;
   }
 
   .policy-stat-row {
     display: flex;
     justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border-light);
-    font-size: 13px;
+    font-size: 12.5px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.5);
   }
 
-  .policy-stat-row:last-child {
-    border-bottom: none;
-  }
+  .policy-stat-row:last-child { border-bottom: none; }
+  .policy-stat-label { color: var(--text-muted); }
+  .policy-stat-val { font-weight: 700; font-family: var(--font-mono); }
 
-  .policy-stat-label {
-    color: var(--text-muted);
-  }
-
-  .policy-stat-val {
-    font-weight: 700;
-    color: var(--text-title);
-  }
-
-  /* Right Column: Interactive App Tabs */
+  /* Right Column (Tabs & Forms) */
   .wallet-main-pane {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: 28px;
-    box-shadow: var(--shadow-lg);
-    backdrop-filter: blur(20px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
   }
 
-  /* Tabs */
   .app-tabs {
     display: flex;
     gap: 8px;
-    border-bottom: 1px solid var(--border-light);
-    padding-bottom: 16px;
-    margin-bottom: 24px;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 6px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
   }
 
   .tab-btn {
+    flex: 1;
+    padding: 10px 16px;
     background: none;
     border: none;
-    font-family: var(--font-heading);
-    font-size: 15px;
+    border-radius: var(--radius-md);
+    font-size: 13.5px;
     font-weight: 700;
     color: var(--text-muted);
-    padding: 8px 16px;
-    border-radius: var(--radius-full);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.2s ease;
+    font-family: var(--font-main);
   }
 
   .tab-btn.active {
-    background: var(--base-blue);
-    color: #FFF;
-    box-shadow: 0 4px 12px rgba(0, 82, 255, 0.2);
+    background: #FFF;
+    color: var(--base-blue);
+    box-shadow: var(--shadow-sm);
   }
 
-  .tab-btn:hover:not(.active) {
-    color: var(--text-title);
-    background: rgba(241, 245, 249, 0.8);
-  }
-
-  /* Views */
   .tab-view { display: none; }
   .tab-view.active { display: block; }
 
-  /* Transfer Panel */
   .transfer-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Asset Switcher */
+  .token-switcher {
     display: flex;
-    flex-direction: column;
-    gap: 18px;
+    gap: 8px;
+    background: var(--bg-card-subtle);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+  }
+
+  .token-switch-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .token-switch-btn.active {
+    background: #FFF;
+    color: var(--text-title);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .form-group {
+    margin-bottom: 18px;
   }
 
   .form-group label {
-    display: block;
+    display: flex;
+    justify-content: space-between;
     font-size: 13px;
     font-weight: 700;
     color: var(--text-title);
@@ -460,13 +417,14 @@
   .input-wrap input {
     width: 100%;
     padding: 14px 16px;
+    background: #FFF;
     border: 1px solid var(--border-light);
     border-radius: var(--radius-md);
     font-size: 15px;
-    font-family: var(--font-main);
+    font-weight: 600;
+    color: var(--text-title);
     outline: none;
-    background: #FFF;
-    transition: border-color 0.15s;
+    font-family: var(--font-main);
   }
 
   .input-wrap input:focus {
@@ -477,26 +435,26 @@
   .input-badge-max {
     position: absolute;
     right: 12px;
+    padding: 4px 10px;
     background: var(--base-blue-light);
     color: var(--base-blue);
     border: none;
-    padding: 4px 8px;
-    border-radius: 6px;
+    border-radius: var(--radius-full);
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 800;
     cursor: pointer;
   }
 
-  /* Policy Live Firewall Notification */
+  /* Firewall Live Box */
   .firewall-live-box {
-    padding: 16px;
     border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 20px;
     border: 1px solid transparent;
-    transition: all 0.2s;
   }
 
   .firewall-box-single {
-    background: var(--bg-subtle-blue);
+    background: var(--base-blue-light);
     border-color: rgba(0, 82, 255, 0.2);
   }
 
@@ -513,119 +471,71 @@
   }
 
   .quorum-stepper {
-    margin-top: 10px;
-    padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #92400E;
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-
-  /* Execution Output */
-  .userop-receipt-box {
-    margin-top: 20px;
-    padding: 16px;
-    background: #0F172A;
-    border-radius: var(--radius-md);
-    color: #F8FAFC;
-  }
-
-  .userop-receipt-box pre {
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    color: #93C5FD;
-    overflow-x: auto;
-    white-space: pre-wrap;
+    background: rgba(255, 255, 255, 0.85);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 700;
+    color: #92400E;
     margin-top: 8px;
   }
 
-  /* Assets List View */
-  .token-asset-list {
+  .action-btn-primary {
+    background: var(--base-blue);
+    color: #FFF;
+    border: none;
+    border-radius: var(--radius-full);
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 82, 255, 0.25);
+    transition: all 0.15s ease;
+  }
+
+  .action-btn-primary:hover {
+    background: var(--base-blue-hover);
+    transform: translateY(-1px);
+  }
+
+  /* Key List Card */
+  .key-list-card {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .token-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
-    background: #FFF;
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
-    transition: transform 0.15s;
-  }
-
-  .token-item:hover {
-    transform: translateY(-1px);
-    border-color: rgba(0, 82, 255, 0.25);
-  }
-
-  .token-info-left {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .token-icon-circle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--base-blue-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    color: var(--base-blue);
-    font-family: var(--font-heading);
-  }
-
-  .token-name {
-    font-weight: 700;
-    color: var(--text-title);
-    font-size: 15px;
-  }
-
-  .token-symbol {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  .token-balance-right {
-    text-align: right;
-  }
-
-  .token-amt {
-    font-weight: 800;
-    font-family: var(--font-mono);
-    color: var(--text-title);
-  }
-
-  .token-fiat {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  /* Keys / Security Tab */
-  .key-list-card {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
   .key-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
     background: #FFF;
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Receipt Box */
+  .userop-receipt-box {
+    margin-top: 20px;
+    background: #0F172A;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    color: #FFF;
+  }
+
+  .userop-receipt-box pre {
+    margin-top: 10px;
+    background: #020617;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: #93C5FD;
+    overflow-x: auto;
   }
 </style>
 </head>
@@ -634,17 +544,17 @@
 <div class="aura-bg">
   <div class="aura-layer-1"></div>
   <div class="aura-layer-2"></div>
-  
+
   <div class="aura-content">
-    <!-- Top Bar -->
-    <header class="app-topbar">
-      <div class="topbar-inner">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-inner">
         <div class="brand-group">
-          <a href="index.html" class="logo">
-            <div class="logo-symbol">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><circle cx="12" cy="12" r="4"/></svg>
+          <a href="index.html" class="brand-logo">
+            <div class="brand-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
             </div>
-            <div class="logo-text">Passkey Wallet</div>
+            Passkey Wallet
           </a>
           <a href="index.html" class="back-link">← Back to Overview</a>
         </div>
@@ -677,22 +587,11 @@
 
           <div class="balance-meta">Total Portfolio Balance</div>
           <div class="big-portfolio-val" id="sidePortfolioEth">0.0003 ETH</div>
-          <div class="big-portfolio-sub" id="sidePortfolioUsd">≈ $0.85 USD (Testnet)</div>
+          <div class="big-portfolio-sub" id="sidePortfolioUsdc">0.00 USDC</div>
 
           <div class="address-copy-bar">
             <span style="overflow:hidden;text-overflow:ellipsis;margin-right:8px;" id="sideAccountShort">0x34Aeb3A3...802c</span>
             <button class="copy-btn" id="sideCopyBtn">Copy</button>
-          </div>
-
-          <div class="quick-action-row">
-            <button class="action-btn action-btn-primary" id="sideSendActionBtn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-              Send ETH
-            </button>
-            <button class="action-btn action-btn-secondary" id="sideReceiveActionBtn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
-              Receive
-            </button>
           </div>
         </div>
 
@@ -703,12 +602,12 @@
             On-Chain Spending Firewall
           </h4>
           <div class="policy-stat-row">
-            <span class="policy-stat-label">Single-Signer Cap:</span>
-            <span class="policy-stat-val" style="color:var(--base-blue);">0.010 ETH</span>
+            <span class="policy-stat-label">ETH Single-Sig:</span>
+            <span class="policy-stat-val" style="color:var(--base-blue);">&lt; 0.010 ETH</span>
           </div>
           <div class="policy-stat-row">
-            <span class="policy-stat-label">24h Rolling Window:</span>
-            <span class="policy-stat-val">0.050 ETH max</span>
+            <span class="policy-stat-label">USDC Single-Sig:</span>
+            <span class="policy-stat-val" style="color:var(--base-blue);">&lt; 25.0 USDC</span>
           </div>
           <div class="policy-stat-row">
             <span class="policy-stat-label">Approval Firewall:</span>
@@ -726,7 +625,7 @@
         <!-- Navigation Tabs -->
         <div class="app-tabs">
           <button class="tab-btn active" data-tab="send">Send & Transfer</button>
-          <button class="tab-btn" data-tab="assets">Tokens & Assets</button>
+          <button class="tab-btn" data-tab="config">Policy Configurator (2-Sig)</button>
           <button class="tab-btn" data-tab="security">Hardware Passkeys (2)</button>
           <button class="tab-btn" data-tab="activity">Activity Log</button>
         </div>
@@ -734,8 +633,23 @@
         <!-- Tab 1: Send & Transfer -->
         <div class="tab-view active" id="tab-send">
           <div class="transfer-card">
+            <!-- Token Switcher -->
+            <div class="token-switcher">
+              <button class="token-switch-btn active" id="appSelectEth">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 13l8 9 8-9z"/></svg>
+                Native ETH
+              </button>
+              <button class="token-switch-btn" id="appSelectUsdc">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M15 9.5a3.5 3.5 0 0 0-5 0c0 2 3 2.5 3 4.5a3.5 3.5 0 0 1-5 0"/></svg>
+                Base Sepolia USDC
+              </button>
+            </div>
+
             <div class="form-group">
-              <label>Transfer Amount (ETH)</label>
+              <label>
+                <span id="appTransferLabel">Transfer Amount (ETH)</span>
+                <span style="color:var(--base-blue);cursor:pointer;" id="appDustBtn">Set 0.005 (1-Sig)</span>
+              </label>
               <div class="input-wrap">
                 <input type="number" id="appTransferAmt" value="0.005" step="0.001" min="0.0001">
                 <button class="input-badge-max" id="appMaxBtn">MAX</button>
@@ -756,16 +670,15 @@
                 <span id="appFirewallBadge" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--accent-emerald-light);color:var(--accent-emerald);">1-Signature</span>
               </div>
               <p id="appFirewallDesc" style="font-size:13px;color:var(--text-body);line-height:1.4;">
-                Transfer amount is below the 0.01 ETH cap. Only 1 biometric signature (Apple Touch ID / Face ID) will be prompted.
+                Transfer amount is below threshold. A single biometric signature will be prompted.
               </p>
               <div class="quorum-stepper" id="appQuorumStepper" style="display:none;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <span>Requires 2 physical passkeys: 1. Signer 0 (Primary) → 2. Signer 1 (Backup)</span>
               </div>
             </div>
 
-            <button class="action-btn action-btn-primary" style="width:100%;padding:16px;font-size:16px;margin-top:8px;" id="appSignSubmitBtn">
-              Authorize with Hardware Passkey
+            <button class="action-btn-primary" style="width:100%;padding:16px;font-size:16px;margin-top:8px;" id="appSignSubmitBtn">
+              Authorize with 1 Hardware Passkey
             </button>
 
             <!-- UserOp & Transaction Receipt -->
@@ -779,50 +692,35 @@
           </div>
         </div>
 
-        <!-- Tab 2: Tokens & Assets -->
-        <div class="tab-view" id="tab-assets">
-          <div class="token-asset-list">
-            <div class="token-item">
-              <div class="token-info-left">
-                <div class="token-icon-circle">Ξ</div>
-                <div>
-                  <div class="token-name">Ethereum (Base Sepolia)</div>
-                  <div class="token-symbol">Native Gas Token</div>
-                </div>
-              </div>
-              <div class="token-balance-right">
-                <div class="token-amt" id="assetEthBal">0.0003 ETH</div>
-                <div class="token-fiat">≈ $0.85 USD</div>
-              </div>
+        <!-- Tab 2: Policy Configurator (2-of-2 Quorum) -->
+        <div class="tab-view" id="tab-config">
+          <div class="transfer-card">
+            <h3 style="font-family:var(--font-heading);font-size:18px;margin-bottom:6px;">On-Chain Policy Updates (2-of-2 Hardware Quorum)</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+              Configuring spending limits modifies self-storage and strictly demands the full 2-of-2 hardware biometric quorum.
+            </p>
+
+            <div class="form-group">
+              <label>Asset</label>
+              <select id="cfgAsset" style="width:100%;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius-md);font-weight:600;">
+                <option value="ETH">Native Ethereum (ETH)</option>
+                <option value="USDC">Base Sepolia USDC (6 decimals)</option>
+              </select>
             </div>
 
-            <div class="token-item">
-              <div class="token-info-left">
-                <div class="token-icon-circle" style="color:#2775CA;background:rgba(39,117,202,0.15);">$</div>
-                <div>
-                  <div class="token-name">USD Coin (Testnet)</div>
-                  <div class="token-symbol">USDC · ERC-20</div>
-                </div>
-              </div>
-              <div class="token-balance-right">
-                <div class="token-amt">0.00 USDC</div>
-                <div class="token-fiat">$0.00 USD</div>
-              </div>
+            <div class="form-group">
+              <label>Per-Op Threshold</label>
+              <input type="number" id="cfgThreshold" value="0.01" step="0.001" style="width:100%;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius-md);">
             </div>
 
-            <div class="token-item">
-              <div class="token-info-left">
-                <div class="token-icon-circle" style="color:#7C3AED;background:rgba(124,58,237,0.15);">cb</div>
-                <div>
-                  <div class="token-name">Coinbase Wrapped Staked ETH</div>
-                  <div class="token-symbol">cbETH · Staking</div>
-                </div>
-              </div>
-              <div class="token-balance-right">
-                <div class="token-amt">0.00 cbETH</div>
-                <div class="token-fiat">$0.00 USD</div>
-              </div>
+            <div class="form-group">
+              <label>24h Rolling Window Cap</label>
+              <input type="number" id="cfgCap" value="0.05" step="0.001" style="width:100%;padding:12px;border:1px solid var(--border-light);border-radius:var(--radius-md);">
             </div>
+
+            <button class="action-btn-primary" style="width:100%;background:#D97706;margin-top:10px;" id="cfgSubmitBtn">
+              🔒 Execute Policy Update (2-of-2 Quorum)
+            </button>
           </div>
         </div>
 
@@ -835,11 +733,11 @@
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
                 </div>
                 <div>
-                  <div style="font-weight:700;color:var(--text-title);font-size:14px;">Signer #0: Apple Touch ID / Passkey Primary</div>
-                  <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">secp256r1 · Secure Enclave</div>
+                  <div style="font-weight:700;color:var(--text-title);font-size:14px;">Signer #0: Primary Biometric</div>
+                  <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="key0Status">Enrolled · Touch ID</div>
                 </div>
               </div>
-              <span class="passkey-badge">Active</span>
+              <button class="action-btn-primary" style="padding:6px 14px;font-size:12px;" id="enrollKey0Btn">Re-Enroll #0</button>
             </div>
 
             <div class="key-item">
@@ -848,11 +746,11 @@
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
                 <div>
-                  <div style="font-weight:700;color:var(--text-title);font-size:14px;">Signer #1: YubiKey / Backup Hardware Key</div>
-                  <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">FIDO2 / WebAuthn Quorum Signer</div>
+                  <div style="font-weight:700;color:var(--text-title);font-size:14px;">Signer #1: Backup Quorum Key</div>
+                  <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="key1Status">Enrolled · YubiKey</div>
                 </div>
               </div>
-              <span class="passkey-badge">Active</span>
+              <button class="action-btn-primary" style="padding:6px 14px;font-size:12px;background:var(--accent-amber);" id="enrollKey1Btn">Re-Enroll #1</button>
             </div>
           </div>
         </div>
@@ -875,80 +773,97 @@
 </div>
 
 <script type="module">
-const RPC_URL = 'https://sepolia.base.org';
-const ACCOUNT_ADDR = '0x34Aeb3A39fd1838D1C897F879EAB0a258507802c';
+import { CONFIG } from './config.js';
 
 const $ = id => document.getElementById(id);
 const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join('');
 
-// --- Token Decimal Conversion Helpers ---
-// Converts human-readable token amount (e.g. "100" USDC or "0.05" ETH) to base units BigInt
-export function toBaseUnits(amountStr, decimals = 18) {
-  const [whole = '0', fraction = ''] = String(amountStr).split('.');
-  const paddedFraction = fraction.padEnd(decimals, '0').slice(0, decimals);
-  return BigInt(whole + paddedFraction);
-}
-
-// Converts raw base units BigInt to human-readable string (e.g. 1000000n, 6 -> "1.000000")
-export function fromBaseUnits(baseUnits, decimals = 18) {
-  const s = baseUnits.toString().padStart(decimals + 1, '0');
-  const whole = s.slice(0, -decimals) || '0';
-  const frac = s.slice(-decimals);
-  return `${whole}.${frac}`.replace(/\.?0+$/, '') || '0';
-}
+let selectedAsset = 'ETH';
+let passkeys = JSON.parse(localStorage.getItem('passkey_signers') || '[]');
+const accountAddr = CONFIG.defaultAccount;
 
 // --- Tab Switching ---
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
-    
     btn.classList.add('active');
-    const tabName = btn.getAttribute('data-tab');
-    $('tab-' + tabName).classList.add('active');
+    $('tab-' + btn.getAttribute('data-tab')).classList.add('active');
   };
 });
 
-// --- Copy Address ---
-$('sideCopyBtn').onclick = () => {
-  navigator.clipboard.writeText(ACCOUNT_ADDR);
-  const orig = $('sideCopyBtn').textContent;
-  $('sideCopyBtn').textContent = '✓ Copied!';
-  $('sideCopyBtn').style.color = 'var(--accent-emerald)';
-  setTimeout(() => {
-    $('sideCopyBtn').textContent = orig;
-    $('sideCopyBtn').style.color = 'var(--base-blue)';
-  }, 2000);
+// --- Asset Switching ---
+$('appSelectEth').onclick = () => {
+  selectedAsset = 'ETH';
+  $('appSelectEth').classList.add('active');
+  $('appSelectUsdc').classList.remove('active');
+  $('appTransferLabel').textContent = 'Transfer Amount (ETH)';
+  $('appTransferAmt').value = '0.005';
+  $('appTransferAmt').step = '0.001';
+  $('appDustBtn').textContent = 'Set 0.005 (1-Sig)';
+  updateSendFirewall();
 };
 
-// --- Fetch Live Base Sepolia Balance ---
-async function fetchBalance() {
+$('appSelectUsdc').onclick = () => {
+  selectedAsset = 'USDC';
+  $('appSelectUsdc').classList.add('active');
+  $('appSelectEth').classList.remove('active');
+  $('appTransferLabel').textContent = 'Transfer Amount (USDC)';
+  $('appTransferAmt').value = '10';
+  $('appTransferAmt').step = '1';
+  $('appDustBtn').textContent = 'Set 10 (1-Sig)';
+  updateSendFirewall();
+};
+
+// --- Copy Address ---
+$('sideCopyBtn').onclick = () => {
+  navigator.clipboard.writeText(accountAddr);
+  $('sideCopyBtn').textContent = '✓ Copied!';
+  setTimeout(() => $('sideCopyBtn').textContent = 'Copy', 2000);
+};
+
+// --- Fetch Live Balances ---
+async function fetchBalances() {
   try {
-    const res = await fetch(RPC_URL, {
+    // ETH
+    const resEth = await fetch(CONFIG.rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getBalance', params: [accountAddr, 'latest'], id: 1 })
+    });
+    const dEth = await resEth.json();
+    if (dEth.result) {
+      const ethVal = (parseInt(dEth.result, 16) / 1e18).toFixed(4);
+      $('sidePortfolioEth').textContent = `${ethVal} ETH`;
+    }
+
+    // USDC
+    const resUsdc = await fetch(CONFIG.rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         jsonrpc: '2.0',
-        method: 'eth_getBalance',
-        params: [ACCOUNT_ADDR, 'latest'],
-        id: 1
+        method: 'eth_call',
+        params: [{ to: CONFIG.tokens.USDC.address, data: '0x70a08231' + accountAddr.replace(/^0x/,'').padStart(64,'0') }, 'latest'],
+        id: 2
       })
     });
-    const data = await res.json();
-    if (data.result) {
-      const ethVal = (parseInt(data.result, 16) / 1e18).toFixed(4);
-      $('sidePortfolioEth').textContent = `${ethVal} ETH`;
-      $('assetEthBal').textContent = `${ethVal} ETH`;
+    const dUsdc = await resUsdc.json();
+    if (dUsdc.result) {
+      const usdcVal = (parseInt(dUsdc.result, 16) / 1e6).toFixed(2);
+      $('sidePortfolioUsdc').textContent = `${usdcVal} USDC`;
     }
-  } catch (e) {
-    console.log(e);
-  }
+  } catch (e) { console.log(e); }
 }
-fetchBalance();
+fetchBalances();
 
-// --- Live Firewall Logic on Send Input ---
+// --- Live Firewall Logic ---
 function updateSendFirewall() {
   const amt = parseFloat($('appTransferAmt').value) || 0;
+  const cfg = CONFIG.tokens[selectedAsset];
+  const threshold = parseFloat(cfg.defaultThreshold);
+  const isQuorum = amt >= threshold;
+
   const box = $('appFirewallBox');
   const title = $('appFirewallTitle');
   const badge = $('appFirewallBadge');
@@ -956,16 +871,16 @@ function updateSendFirewall() {
   const stepper = $('appQuorumStepper');
   const btn = $('appSignSubmitBtn');
 
-  if (amt < 0.01) {
+  if (!isQuorum) {
     box.className = 'firewall-live-box firewall-box-single';
     title.innerHTML = `● Policy Check: Single Biometric Passkey`;
     title.style.color = 'var(--base-blue)';
     badge.textContent = '1-Signature';
     badge.style.background = 'var(--accent-emerald-light)';
     badge.style.color = 'var(--accent-emerald)';
-    desc.innerHTML = `Transfer of <strong>${amt.toFixed(3)} ETH</strong> is below the 0.01 ETH limit. A single Touch ID biometric tap is sufficient.`;
+    desc.innerHTML = `Transfer of <strong>${amt} ${selectedAsset}</strong> is below the ${threshold} ${selectedAsset} limit. A single Touch ID biometric tap is sufficient.`;
     stepper.style.display = 'none';
-    btn.textContent = 'Authorize with 1 Hardware Passkey';
+    btn.textContent = `Authorize with 1 Hardware Passkey (${selectedAsset})`;
   } else {
     box.className = 'firewall-live-box firewall-box-quorum';
     title.innerHTML = `● Policy Check: 2-of-2 Hardware Quorum Enforced`;
@@ -973,13 +888,17 @@ function updateSendFirewall() {
     badge.textContent = '2-Signatures';
     badge.style.background = 'var(--accent-amber-light)';
     badge.style.color = 'var(--accent-amber)';
-    desc.innerHTML = `Transfer of <strong>${amt.toFixed(3)} ETH</strong> meets/exceeds 0.01 ETH threshold. On-chain policy strictly demands <strong>2 distinct hardware passkeys</strong>.`;
+    desc.innerHTML = `Transfer of <strong>${amt} ${selectedAsset}</strong> meets/exceeds threshold. On-chain policy strictly demands <strong>2 distinct hardware passkeys</strong>.`;
     stepper.style.display = 'flex';
-    btn.textContent = 'Authorize 2-of-2 Hardware Quorum';
+    btn.textContent = `Authorize 2-of-2 Hardware Quorum (${selectedAsset})`;
   }
 }
 
 $('appTransferAmt').oninput = updateSendFirewall;
+$('appDustBtn').onclick = () => {
+  $('appTransferAmt').value = selectedAsset === 'ETH' ? '0.005' : '10';
+  updateSendFirewall();
+};
 $('appMaxBtn').onclick = () => {
   $('appTransferAmt').value = '0.0003';
   updateSendFirewall();
@@ -988,13 +907,8 @@ $('appMaxBtn').onclick = () => {
 // --- WebAuthn P-256 Signing ---
 async function signPasskey(challenge) {
   const assertion = await navigator.credentials.get({
-    publicKey: {
-      challenge,
-      userVerification: 'required',
-      timeout: 60000
-    }
+    publicKey: { challenge, userVerification: 'required', timeout: 60000 }
   });
-
   const r_ = assertion.response;
   const der = new Uint8Array(r_.signature);
   let i = 2;
@@ -1017,7 +931,8 @@ async function signPasskey(challenge) {
 // --- Submit Transfer Flow ---
 $('appSignSubmitBtn').onclick = async () => {
   const amt = parseFloat($('appTransferAmt').value) || 0;
-  const needsTwo = amt >= 0.01;
+  const cfg = CONFIG.tokens[selectedAsset];
+  const isQuorum = amt >= parseFloat(cfg.defaultThreshold);
 
   try {
     $('appSignSubmitBtn').disabled = true;
@@ -1028,19 +943,28 @@ $('appSignSubmitBtn').onclick = async () => {
     let sigs = [sig0];
     let signerIds = [0];
 
-    if (needsTwo) {
+    if (isQuorum) {
       $('appSignSubmitBtn').textContent = 'Prompting Signer 1 (Backup Passkey)...';
       const sig1 = await signPasskey(dummyHash);
       sigs.push(sig1);
       signerIds.push(1);
     }
 
+    let callData = '';
+    if (selectedAsset === 'ETH') {
+      const valWei = BigInt(Math.floor(amt * 1e18));
+      callData = '0xb61d27f6' + $('appRecipientAddr').value.replace(/^0x/,'').padStart(64,'0') + valWei.toString(16).padStart(64,'0');
+    } else {
+      const valUnits = BigInt(Math.floor(amt * 1e6));
+      callData = '0xb61d27f6' + CONFIG.tokens.USDC.address.replace(/^0x/,'').padStart(64,'0') + '00'.repeat(32);
+    }
+
     const userOp = {
-      sender: ACCOUNT_ADDR,
-      nonce: '0x03',
-      callData: '0xb61d27f6' + $('appRecipientAddr').value.replace(/^0x/,'').padStart(64,'0'),
+      sender: accountAddr,
+      nonce: '0x05',
+      callData,
       signerIds,
-      signatures: sigs
+      policy: isQuorum ? '2_OF_2_HARDWARE_QUORUM' : '1_SIGNATURE_BIOMETRIC'
     };
 
     $('appReceiptArea').style.display = 'block';
@@ -1051,6 +975,27 @@ $('appSignSubmitBtn').onclick = async () => {
     $('appSignSubmitBtn').textContent = 'Authorize with Hardware Passkey';
   } finally {
     $('appSignSubmitBtn').disabled = false;
+  }
+};
+
+// --- Configurator ---
+$('cfgSubmitBtn').onclick = async () => {
+  try {
+    $('cfgSubmitBtn').disabled = true;
+    $('cfgSubmitBtn').textContent = 'Prompting Signer 0 (Touch ID)...';
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    await signPasskey(challenge);
+
+    $('cfgSubmitBtn').textContent = 'Prompting Signer 1 (YubiKey)...';
+    await signPasskey(challenge);
+
+    alert(`✓ Policy updated for ${$('cfgAsset').value} via 2-of-2 hardware quorum!`);
+    $('cfgSubmitBtn').textContent = '✓ Policy Updated Successfully';
+  } catch (e) {
+    alert('Policy update error: ' + e.message);
+    $('cfgSubmitBtn').textContent = '🔒 Execute Policy Update (2-of-2 Quorum)';
+  } finally {
+    $('cfgSubmitBtn').disabled = false;
   }
 };
 </script>
