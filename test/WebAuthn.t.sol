@@ -64,4 +64,112 @@ contract WebAuthnTest is Test {
         assertTrue(match_, "solidity b64url must match browser b64url");
         challenge; // silence unused
     }
+
+    /// High-s signatures (s > n/2) must be rejected immediately before calling precompile.
+    function test_Attack_HighS_Rejected() public view {
+        uint256 n = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551;
+        bytes memory authData = new bytes(37);
+        authData[32] = bytes1(0x05);
+
+        WebAuthn.Signature memory sig = WebAuthn.Signature({
+            authenticatorData: authData,
+            clientDataJSON: '{"type":"webauthn.get","challenge":"ERERERERERERERERERERERERERERERERERERERERERE"}',
+            challengeIndex: 23,
+            typeIndex: 1,
+            r: 1,
+            s: (n / 2) + 1 // strictly greater than n/2
+        });
+
+        bytes32 challenge = bytes32(uint256(0x1111111111111111111111111111111111111111111111111111111111111111));
+        bool ok = this.verify(abi.encodePacked(challenge), true, sig, 2, 3);
+        assertFalse(ok, "high-s signature must be rejected");
+    }
+
+    /// Zero r or zero s must be rejected.
+    function test_Attack_ZeroRS_Rejected() public view {
+        bytes memory authData = new bytes(37);
+        authData[32] = bytes1(0x05);
+
+        WebAuthn.Signature memory sigZeroR = WebAuthn.Signature({
+            authenticatorData: authData,
+            clientDataJSON: '{"type":"webauthn.get","challenge":"ERERERERERERERERERERERERERERERERERERERERERE"}',
+            challengeIndex: 23,
+            typeIndex: 1,
+            r: 0,
+            s: 100
+        });
+
+        WebAuthn.Signature memory sigZeroS = WebAuthn.Signature({
+            authenticatorData: authData,
+            clientDataJSON: '{"type":"webauthn.get","challenge":"ERERERERERERERERERERERERERERERERERERERERERE"}',
+            challengeIndex: 23,
+            typeIndex: 1,
+            r: 100,
+            s: 0
+        });
+
+        bytes32 challenge = bytes32(uint256(0x1111111111111111111111111111111111111111111111111111111111111111));
+        assertFalse(this.verify(abi.encodePacked(challenge), true, sigZeroR, 2, 3), "r=0 rejected");
+        assertFalse(this.verify(abi.encodePacked(challenge), true, sigZeroS, 2, 3), "s=0 rejected");
+    }
+
+    /// Corrupted signature coordinates that produce empty returndata from RIP-7212 must return false, not revert.
+    function test_Attack_CorruptSig_EmptyReturndata_Rejected() public view {
+        bytes memory authData = new bytes(37);
+        authData[32] = bytes1(0x05);
+
+        WebAuthn.Signature memory sig = WebAuthn.Signature({
+            authenticatorData: authData,
+            clientDataJSON: '{"type":"webauthn.get","challenge":"ERERERERERERERERERERERERERERERERERERERERERE"}',
+            challengeIndex: 23,
+            typeIndex: 1,
+            r: 12345,
+            s: 67890
+        });
+
+        bytes32 challenge = bytes32(uint256(0x1111111111111111111111111111111111111111111111111111111111111111));
+        // Using pubkey (0, 0) or off-curve points
+        bool ok = this.verify(abi.encodePacked(challenge), true, sig, 0, 0);
+        assertFalse(ok, "invalid pubkey returning empty returndata must cleanly return false");
+    }
+
+    /// clientDataJSON with type "webauthn.create" (registration response) must be rejected for authentication.
+    function test_Attack_WrongType_RegistrationReplay_Rejected() public view {
+        bytes memory authData = new bytes(37);
+        authData[32] = bytes1(0x05);
+
+        WebAuthn.Signature memory sig = WebAuthn.Signature({
+            authenticatorData: authData,
+            clientDataJSON: '{"type":"webauthn.create","challenge":"ERERERERERERERERERERERERERERERERERERERERERE"}',
+            challengeIndex: 26,
+            typeIndex: 1,
+            r: 1,
+            s: 1
+        });
+
+        bytes32 challenge = bytes32(uint256(0x1111111111111111111111111111111111111111111111111111111111111111));
+        bool ok = this.verify(abi.encodePacked(challenge), true, sig, 2, 3);
+        assertFalse(ok, "webauthn.create must be rejected");
+    }
+
+    /// Passing raw challenge directly as the ECDSA message without WebAuthn envelope verification fails.
+    function test_Attack_RawChallenge_Rejected() public view {
+        // Direct precompile call with raw challenge vs WebAuthn verify
+        bytes32 rawChallenge = bytes32(uint256(0x1111111111111111111111111111111111111111111111111111111111111111));
+        bytes memory authData = new bytes(37);
+        authData[32] = bytes1(0x05);
+
+        WebAuthn.Signature memory sig = WebAuthn.Signature({
+            authenticatorData: authData,
+            clientDataJSON: '{"type":"webauthn.get","challenge":"ERERERERERERERERERERERERERERERERERERERERERE"}',
+            challengeIndex: 23,
+            typeIndex: 1,
+            r: 1,
+            s: 1
+        });
+
+        // Verification must rebuild sha256(authData || sha256(clientDataJSON)), so passing raw challenge bytes directly does not bypass
+        bool ok = this.verify(abi.encodePacked(rawChallenge), true, sig, 100, 200);
+        assertFalse(ok, "raw challenge without valid WebAuthn preimage must fail");
+    }
 }

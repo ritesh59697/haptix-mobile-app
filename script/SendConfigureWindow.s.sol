@@ -88,7 +88,7 @@ contract SendConfigureWindow is Script {
         bytes memory callData = abi.encodeCall(
             PasskeyAccount.execute,
             (ACCOUNT, 0, abi.encodeCall(
-                PasskeyAccount.setWindow, (address(0), 0.05 ether, 1 days)
+                PasskeyAccount.setWindow, (address(0), 0.05 ether, 1 days, 18)
             ))
         );
         uint256 nonce = IEntryPoint(ENTRYPOINT).getNonce(ACCOUNT, 0);
@@ -117,11 +117,49 @@ contract SendConfigureWindow is Script {
             signature: abi.encode(ids, sigs)
         });
 
-        console.log("submitting setWindow with 2 passkey signatures");
-        console.logBytes32(h);
-
         vm.startBroadcast();
         IEntryPoint(ENTRYPOINT).handleOps(ops, payable(BENEFICIARY));
         vm.stopBroadcast();
+    }
+}
+
+/// @notice Helper library / contract for calculating token base units from human-readable amounts.
+library TokenUnitConverter {
+    /// @notice Converts human-readable token amount to base units according to its decimal count.
+    /// @param amount Human-readable token amount (e.g. 100 for 100 USDC).
+    /// @param decimals Number of decimals (e.g. 6 for USDC, 18 for ETH / DAI).
+    function toBaseUnits(uint256 amount, uint8 decimals) internal pure returns (uint256) {
+        return amount * (10 ** decimals);
+    }
+}
+
+/// @notice Example script: Configures 6-decimal Base Sepolia USDC (0x036CbD53842c5426634e7929541eC2318f3dCF7e).
+///         Sets per-op threshold to 100 USDC (100 * 10^6 = 100_000_000) and 24h rolling window to 500 USDC (500 * 10^6 = 500_000_000).
+contract ConfigureBaseSepoliaUsdcWindow is Script {
+    address constant BASE_SEPOLIA_USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
+    uint8 constant USDC_DECIMALS = 6;
+
+    function buildCalldata(address account) external pure returns (bytes memory) {
+        uint256 usdcThreshold = TokenUnitConverter.toBaseUnits(100, USDC_DECIMALS); // 100_000_000 (100 USDC)
+        uint256 usdcCap = TokenUnitConverter.toBaseUnits(500, USDC_DECIMALS);       // 500_000_000 (500 USDC)
+
+        bytes memory configThreshold = abi.encodeCall(
+            PasskeyAccount.setTokenThreshold, (BASE_SEPOLIA_USDC, usdcThreshold, USDC_DECIMALS)
+        );
+        bytes memory configWindow = abi.encodeCall(
+            PasskeyAccount.setWindow, (BASE_SEPOLIA_USDC, usdcCap, 1 days, USDC_DECIMALS)
+        );
+
+        address[] memory targets = new address[](2);
+        targets[0] = account;
+        targets[1] = account;
+
+        uint256[] memory values = new uint256[](2);
+
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = configThreshold;
+        calls[1] = configWindow;
+
+        return abi.encodeCall(PasskeyAccount.executeBatch, (targets, values, calls));
     }
 }

@@ -16,19 +16,25 @@ pragma solidity ^0.8.23;
 ///      A blocklist here would be unfixable -- there are unbounded ways to move
 ///      value, and you cannot enumerate them.
 library SpendPolicy {
-    // --- ERC-20 / ERC-721 selectors that move value -----------------------
-    bytes4 constant TRANSFER = 0xa9059cbb;      // transfer(address,uint256)
-    bytes4 constant TRANSFER_FROM = 0x23b872dd; // transferFrom(address,address,uint256)
-    bytes4 constant APPROVE = 0x095ea7b3;       // approve(address,uint256)
-    bytes4 constant INCREASE_ALLOWANCE = 0x39509351;
-    bytes4 constant SET_APPROVAL_ALL = 0xa22cb465; // setApprovalForAll(address,bool)
+    // --- ERC-20 / ERC-721 / Permit selectors -----------------------------
+    bytes4 constant TRANSFER = 0xa9059cbb;           // transfer(address,uint256)
+    bytes4 constant TRANSFER_FROM = 0x23b872dd;      // transferFrom(address,address,uint256)
+    bytes4 constant APPROVE = 0x095ea7b3;            // approve(address,uint256)
+    bytes4 constant INCREASE_ALLOWANCE = 0x39509351; // increaseAllowance(address,uint256)
+    bytes4 constant DECREASE_ALLOWANCE = 0xa457c2d7; // decreaseAllowance(address,uint256)
+    bytes4 constant SET_APPROVAL_ALL = 0xa22cb465;   // setApprovalForAll(address,bool)
+    bytes4 constant PERMIT = 0xd505accf;             // permit(address,address,uint256,uint256,uint8,bytes32,bytes32) - EIP-2612
+    bytes4 constant PERMIT_DAI = 0x8fcbaf0c;         // permit(address,address,uint256,uint256,bool,uint8,bytes32,bytes32) - DAI style
+    bytes4 constant PERMIT2_PERMIT = 0x2b67b570;     // Uniswap Permit2 single permit
+    bytes4 constant PERMIT2_PERMIT_BATCH = 0x2a2b8275; // Uniswap Permit2 batch permit
+    bytes4 constant PERMIT2_TRANSFER_FROM = 0x30f28b7a; // Uniswap Permit2 permitTransferFrom
 
     uint256 constant ONE_SIG = 1;
     uint256 constant TWO_SIGS = 2;
 
     /// @notice What a single call spends, decomposed so a batch can be summed.
     /// @dev `alwaysTwoSigs` is a hard escalation that no amount arithmetic can
-    ///      undo -- approvals, unknown selectors, malformed encoding. It rides
+    ///      undo -- approvals, permits, unknown selectors, malformed encoding. It rides
     ///      alongside the amounts rather than replacing them, because a batch
     ///      containing one opaque call must escalate the WHOLE batch.
     struct Spend {
@@ -52,7 +58,7 @@ library SpendPolicy {
         // A plain ETH send with no calldata: the value field says it all.
         if (func.length == 0) return s;
 
-        // Calldata present but too short to carry a selector: opaque.
+        // Calldata present but too short to carry a selector: opaque -> always full quorum.
         if (func.length < 4) {
             s.alwaysTwoSigs = true;
             return s;
@@ -60,10 +66,20 @@ library SpendPolicy {
 
         bytes4 sel = bytes4(func[0:4]);
 
-        // Approvals are unbounded, persistent delegations of spending
-        // authority -- strictly more dangerous than a one-off transfer.
+        // Approvals, allowance changes, and permits are unbounded, persistent delegations of
+        // spending authority -- strictly more dangerous than a one-off transfer.
         // No threshold arithmetic applies; they always escalate.
-        if (sel == APPROVE || sel == INCREASE_ALLOWANCE || sel == SET_APPROVAL_ALL) {
+        if (
+            sel == APPROVE ||
+            sel == INCREASE_ALLOWANCE ||
+            sel == DECREASE_ALLOWANCE ||
+            sel == SET_APPROVAL_ALL ||
+            sel == PERMIT ||
+            sel == PERMIT_DAI ||
+            sel == PERMIT2_PERMIT ||
+            sel == PERMIT2_PERMIT_BATCH ||
+            sel == PERMIT2_TRANSFER_FROM
+        ) {
             s.alwaysTwoSigs = true;
             return s;
         }

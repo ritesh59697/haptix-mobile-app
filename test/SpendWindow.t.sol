@@ -26,14 +26,11 @@ contract SpendWindowTest is Test, Vectors {
     bytes32 constant H = 0x1111111111111111111111111111111111111111111111111111111111111111;
 
     function setUp() public {
-        account = new PasskeyAccount(ENTRYPOINT, _signers1(K0_X, K0_Y), THRESHOLD);
+        account = new PasskeyAccount(ENTRYPOINT, _signers2(K0_X, K0_Y, K1_X, K1_Y), THRESHOLD);
         vm.deal(address(account), 100 ether);
 
         vm.prank(address(account));
-        account.addSigner(K1_X, K1_Y);
-
-        vm.prank(address(account));
-        account.setWindow(address(0), WINDOW_CAP, WINDOW_SECS);
+        account.setWindow(address(0), WINDOW_CAP, WINDOW_SECS, 18);
 
         // Start at a sane timestamp so window arithmetic is realistic.
         vm.warp(1_700_000_000);
@@ -263,10 +260,10 @@ contract SpendWindowTest is Test, Vectors {
     /// `execute` call and therefore takes the 2-signature default.
     function test_Attack_CannotRaiseOwnCap() public {
         vm.expectRevert(PasskeyAccount.NotSelf.selector);
-        account.setWindow(address(0), 1000 ether, 1);
+        account.setWindow(address(0), 1000 ether, 1, 18);
 
         bytes memory cd = abi.encodeCall(
-            PasskeyAccount.setWindow, (address(0), 1000 ether, 1)
+            PasskeyAccount.setWindow, (address(0), 1000 ether, 1, 18)
         );
         uint256 vd = _validate(cd, _one());
         assertEq(vd & ((1 << 160) - 1), 1, "raising the cap needs 2 sigs");
@@ -275,7 +272,7 @@ contract SpendWindowTest is Test, Vectors {
     /// Window disabled (cap 0) means no accounting at all.
     function test_WindowDisabled_NoAccounting() public {
         vm.prank(address(account));
-        account.setWindow(address(0), 0, 0);
+        account.setWindow(address(0), 0, 0, 18);
 
         for (uint256 i = 0; i < 5; i++) {
             assertTrue(_submit(0.9 ether, _one()), "no window -> unconstrained");
@@ -317,5 +314,42 @@ contract SpendWindowTest is Test, Vectors {
             authorized, WINDOW_CAP * windowsElapsed,
             "cannot exceed cap x windows elapsed"
         );
+    }
+
+    // -------------------------------------------------- Bundler multi-op race & sequencing
+
+    /// @notice Documents the bundler multi-op race condition under ERC-7562:
+    ///
+    /// If an ERC-4337 bundler attempts to batch multiple single-signature UserOps from the
+    /// SAME account into a single bundle:
+    ///
+    /// 1. Validation is strictly READ-ONLY on window storage slots (STO-010).
+    /// 2. If Op 1 and Op 2 are simulated concurrently against the same unmutated state,
+    ///    both validations would read _spent = 0.
+    /// 3. When executed on-chain in sequence:
+    ///    - Op 1 executes and advances window spend to 0.9 ETH.
+    ///    - Op 2 (if simulated against updated state or re-validated) sees 0.9 + 0.9 = 1.8 ETH > 1.0 ETH cap.
+    ///    - Op 2 returns validAfter = expiry (deferred) and is rejected at the current timestamp.
+    ///
+    /// This proves why ERC-7562 requires bundlers to sequence UserOps from the same sender or
+    /// limit them to one op per account per bundle.
+    function test_Attack_TwoOpsSameAccount_BundleRace_Documented() public {
+        // Op 1 and Op 2 successfully validate and execute up to 1.8 ETH (under 2.0 ETH cap)
+        assertTrue(_submit(0.9 ether, _one()), "Op 1 executes and records 0.9 ETH");
+        assertTrue(_submit(0.9 ether, _one()), "Op 2 executes and records total 1.8 ETH");
+        assertEq(_spent(), 1.8 ether, "window spent recorded as 1.8 ETH");
+        assertGt(_expiry(), block.timestamp, "window expiry is set");
+
+        // Op 3 validates against the now-updated storage
+        bytes memory cd3 = _send(0.9 ether);
+        uint256 vd3 = _validate(cd3, _one());
+
+        // Because _spent is now 1.8 ETH, 1.8 + 0.9 = 2.7 ETH exceeds WINDOW_CAP (2.0 ETH).
+        // Op 3 is deferred to the next window (validAfter == window expiry)
+        uint48 validAfter = uint48((vd3 >> 208) & ((1 << 48) - 1));
+        assertEq(validAfter, _expiry(), "Op 3 deferred to next window due to accumulated spend");
+
+        // The EntryPoint enforces timestamp >= validAfter and rejects Op 3 right now
+        assertFalse(_submit(0.9 ether, _one()), "Op 3 cannot execute in current window");
     }
 }

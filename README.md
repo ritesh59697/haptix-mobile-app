@@ -151,6 +151,23 @@ The two limits are independent layers, checked in order:
 An op over the per-op threshold needs two signatures no matter how empty the
 window is.
 
+### Token Decimals & Base Units (e.g. USDC 6 decimals)
+
+Thresholds and window caps are stored in each token's **raw base units** ($10^{\text{decimals}}$).
+Because validation runs under strict ERC-7562 storage rules with zero external oracle calls,
+`tokenDecimals` is recorded at configuration time (via `setTokenThreshold` and `setWindow`)
+for client / UI / script reference:
+
+* **Base Sepolia USDC (`0x036CbD53842c5426634e7929541eC2318f3dCF7e`, 6 decimals)**:
+  - $100\text{ USDC per-op threshold} = 100 \times 10^6 = \mathbf{100{,}000{,}000\text{ base units}}$
+  - $500\text{ USDC 24h rolling cap} = 500 \times 10^6 = \mathbf{500{,}000{,}000\text{ base units}}$
+  - Set via: `account.setTokenThreshold(USDC, 100_000_000, 6)` and `account.setWindow(USDC, 500_000_000, 1 days, 6)`
+
+* **18-decimal Tokens (e.g. DAI, native ETH)**:
+  - $0.05\text{ ETH} = 0.05 \times 10^{18} = \mathbf{50{,}000{,}000{,}000{,}000{,}000\text{ wei}}$
+
+`validateUserOp` evaluates stored base units directly without any external `token.decimals()` SLOADs.
+
 `MAX_PRICED_ASSETS` (4) caps distinct assets per op. Each one costs an SLOAD
 plus a merge — measured at ~28k gas, and sixteen distinct tokens reached ~445k,
 past common bundler `verificationGasLimit` defaults. Beyond the cap the op
@@ -187,12 +204,17 @@ whoever reads the disk has it forever.
 ## Layout
 
 ```
-src/WebAuthn.sol         P-256 + WebAuthn assertion verification
-src/PasskeyAccount.sol   the account; policy lives in validateUserOp
-test/PasskeyAccount.t.sol 14 tests, mostly attacks
-test/Vectors.sol         GENERATED — real signatures from tools/genvec.mjs
-tools/genvec.mjs         generates real P-256 test vectors
-web/index.html           browser harness: make a passkey, sign a hash
+src/
+├── PasskeyAccount.sol         the smart account; policy lives in validateUserOp, ERC-1271, and signer lifecycle
+├── PasskeyAccountFactory.sol  CREATE2 factory for deterministic counterfactual deployment
+├── SpendPolicy.sol            calldata parser & allowlist classifier for ETH, ERC-20, and batch pricing
+├── SpendWindow.sol            24h rolling spend limits using ERC-7562 time-bound verification
+└── WebAuthn.sol               P-256 + WebAuthn assertion verification via RIP-7212 precompile (0x100)
+
+test/                          10 test suites (148 tests passing, all using real P-256 vectors)
+script/                        deployment, counterfactual config, and userOp broadcast scripts
+web/                           browser wallet (index.html, app.html, config.js)
+tools/                         genvec.mjs vector generator (WebCrypto P-256)
 ```
 
 ## Run the tests
@@ -284,6 +306,29 @@ Simulated cost: ~5.2M gas, ~0.000057 ETH at 0.011 gwei.
 
 Drop `--broadcast` to simulate first — that needs no key at all.
 
+### Counterfactual Deployment & Factory (CREATE2)
+
+Accounts can be deployed counterfactually via `PasskeyAccountFactory.sol` using standard CREATE2 salts.
+To predict the deterministic wallet address off-chain before broadcast:
+
+```bash
+forge script script/Deploy.s.sol:ComputeCounterfactualAddress --rpc-url https://sepolia.base.org
+```
+
+For ERC-4337 v0.7 user operations, the factory supports `initCode` deployment:
+```solidity
+bytes memory initCode = abi.encodePacked(
+    address(factory),
+    abi.encodeWithSignature(
+        "createAccount((uint256,uint256),(uint256,uint256),uint256,bytes32)",
+        passkey0,
+        passkey1,
+        threshold,
+        salt
+    )
+);
+```
+
 ### Verify after deploying
 
 ```bash
@@ -295,7 +340,7 @@ genuine hardware signature through the on-chain precompile.
 
 ### Configuring an `onlySelf` function
 
-`setWindow`, `setTokenThreshold`, and `addSigner` are all `onlySelf`. Reaching
+`setWindow`, `setTokenThreshold`, `addSigner`, `removeSigner`, and `replaceSigner` are all `onlySelf`. Reaching
 them takes two things that are easy to get wrong:
 
 **1. The call must be wrapped in `execute`.** `onlySelf` requires
@@ -319,8 +364,8 @@ own cap.
 
 The consequence at deploy time: **an account with one enrolled passkey can never
 be configured**, since enrolling the second signer would itself need two
-signatures. `script/Deploy.s.sol` therefore takes both public keys in the
-constructor.
+signatures. `PasskeyAccount` and `PasskeyAccountFactory` strictly enforce enrolling
+at least 2 passkeys at construction (`MinSignersRequired`).
 
 Working end-to-end example: [`script/SendConfigureWindow.s.sol`](script/SendConfigureWindow.s.sol),
 landed on-chain in [`0x8fb6cb54…f05e4`](https://sepolia.basescan.org/tx/0x8fb6cb5460ebf6a203a450c70094da68bc3738be03f4405d55eb90ede99f05e4).
@@ -329,24 +374,14 @@ landed on-chain in [`0x8fb6cb54…f05e4`](https://sepolia.basescan.org/tx/0x8fb6
 
 ## What is deliberately missing
 
-Real accounts need all of this. It is omitted to keep the policy logic readable:
+The following architectural choices are deliberate:
 
-- **No factory / CREATE2 counterfactual deployment** — real 4337 accounts are
-  deployed by a factory via `initCode` at first use
-- **No ERC-1271** (`isValidSignature`) for off-chain signature verification
-- **No signer removal or rotation** — `addSigner` only grows the set, so a lost
-  passkey cannot be revoked
-- **No replay protection across chains** — the UserOp hash should bind `chainId`
-  and the EntryPoint address
-- **No paymaster support**
-- **No batch execution** (`executeBatch`)
-- **No upgrade path** — not a proxy
-- **No per-token decimals awareness** — thresholds are raw base units, so
-  configuring one requires knowing the token's decimals.
-- **No cross-asset risk budget.** Each asset is capped independently, so an
-  attacker can drain *every* asset up to its own cap within one window. Pricing
-  them against a common unit would need an oracle, which cannot run during
-  validation at all.
+- **No proxy / upgradeability** — account implementation is immutable by design
+- **No social recovery / guardians** — key recovery relies on the 2-of-N hardware passkey quorum
+- **No on-chain price oracle or cross-asset unified USD budget** — each asset maintains independent accounting to stay within ERC-7562 opcode/storage validation rules (no external SLOADs or oracle calls during validation)
+- **No multi-chain signer synchronization** — accounts bind `block.chainid` and EntryPoint directly, failing closed across chains
+- **No mobile apps / token swap UI** — browser-native WebAuthn P-256 implementation
+
 - **Windows must be configured per token.** A token with no `setWindow` call has
   no rolling limit — it is still bound by its per-op `tokenThreshold`, but does
   not accumulate. Unlike `tokenThreshold`, where zero means "unknown, require a

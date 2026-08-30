@@ -5,9 +5,8 @@ cache/
 # Dependencies -- restored by `forge install` (see .gitmodules)
 lib/
 
-# Broadcast logs. These contain deployment history and RPC URLs. The dry-run
-# subdirectory is pure local noise; the rest is reproducible from the chain.
-broadcast/*/*/dry-run/
+# Broadcast logs and deployment history
+broadcast/
 
 # Secrets. The deploy flow uses an encrypted Foundry keystore
 # (~/.foundry/keystores/) which lives outside this repo -- nothing secret should

@@ -881,6 +881,22 @@ const ACCOUNT_ADDR = '0x34Aeb3A39fd1838D1C897F879EAB0a258507802c';
 const $ = id => document.getElementById(id);
 const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join('');
 
+// --- Token Decimal Conversion Helpers ---
+// Converts human-readable token amount (e.g. "100" USDC or "0.05" ETH) to base units BigInt
+export function toBaseUnits(amountStr, decimals = 18) {
+  const [whole = '0', fraction = ''] = String(amountStr).split('.');
+  const paddedFraction = fraction.padEnd(decimals, '0').slice(0, decimals);
+  return BigInt(whole + paddedFraction);
+}
+
+// Converts raw base units BigInt to human-readable string (e.g. 1000000n, 6 -> "1.000000")
+export function fromBaseUnits(baseUnits, decimals = 18) {
+  const s = baseUnits.toString().padStart(decimals + 1, '0');
+  const whole = s.slice(0, -decimals) || '0';
+  const frac = s.slice(-decimals);
+  return `${whole}.${frac}`.replace(/\.?0+$/, '') || '0';
+}
+
 // --- Tab Switching ---
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.onclick = () => {

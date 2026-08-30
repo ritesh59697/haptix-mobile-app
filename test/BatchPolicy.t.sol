@@ -24,17 +24,14 @@ contract BatchPolicyTest is Test, Vectors {
         0x1111111111111111111111111111111111111111111111111111111111111111;
 
     function setUp() public {
-        account = new PasskeyAccount(ENTRYPOINT, _signers1(K0_X, K0_Y), THRESHOLD);
+        account = new PasskeyAccount(ENTRYPOINT, _signers2(K0_X, K0_Y, K1_X, K1_Y), THRESHOLD);
         vm.deal(address(account), 100 ether);
 
         vm.prank(address(account));
-        account.addSigner(K1_X, K1_Y);
+        account.setTokenThreshold(USDC, 1000e6, 6);
 
         vm.prank(address(account));
-        account.setTokenThreshold(USDC, 1000e6);
-
-        vm.prank(address(account));
-        account.setTokenThreshold(DAI, 1000e18);
+        account.setTokenThreshold(DAI, 1000e18, 18);
     }
 
     // ---------------------------------------------------------------- helpers
@@ -286,6 +283,65 @@ contract BatchPolicyTest is Test, Vectors {
 
         vm.expectRevert(PasskeyAccount.NotEntryPoint.selector);
         account.executeBatch(dests, values, funcs);
+    }
+
+    /// A permit call hidden inside an otherwise small batch must escalate the entire batch.
+    function test_Attack_PermitHiddenInBatch_Escalates() public {
+        address[] memory dests = new address[](2);
+        uint256[] memory values = new uint256[](2);
+        bytes[] memory funcs = new bytes[](2);
+
+        // Entry 0: small harmless transfer
+        dests[0] = USDC;
+        values[0] = 0;
+        funcs[0] = abi.encodeWithSignature("transfer(address,uint256)", ATTACKER, 10e6);
+
+        // Entry 1: EIP-2612 permit
+        dests[1] = USDC;
+        values[1] = 0;
+        funcs[1] = abi.encodeWithSignature(
+            "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+            address(account), ATTACKER, 1000e6, block.timestamp + 1000, 27, bytes32(0), bytes32(0)
+        );
+
+        bytes memory callData = abi.encodeCall(
+            PasskeyAccount.executeBatch, (dests, values, funcs)
+        );
+        uint256 r = _validate(callData, _one(0, _v_small_k0()));
+        assertEq(r, 1, "permit in batch must escalate entire batch");
+    }
+
+    /// decreaseAllowance hidden in batch must escalate the entire batch.
+    function test_Attack_DecreaseAllowanceHiddenInBatch_Escalates() public {
+        address[] memory dests = new address[](2);
+        uint256[] memory values = new uint256[](2);
+        bytes[] memory funcs = new bytes[](2);
+
+        dests[0] = USDC;
+        values[0] = 0;
+        funcs[0] = abi.encodeWithSignature("transfer(address,uint256)", ATTACKER, 10e6);
+
+        dests[1] = USDC;
+        values[1] = 0;
+        funcs[1] = abi.encodeWithSignature("decreaseAllowance(address,uint256)", ATTACKER, 10e6);
+
+        bytes memory callData = abi.encodeCall(
+            PasskeyAccount.executeBatch, (dests, values, funcs)
+        );
+        uint256 r = _validate(callData, _one(0, _v_small_k0()));
+        assertEq(r, 1, "decreaseAllowance in batch must escalate entire batch");
+    }
+
+    /// Batch array offset smaller than 96 (pointing into static head) must reject.
+    function test_Attack_BatchArrayOffset_TooSmall_Rejected() public {
+        bytes memory callData = abi.encodePacked(
+            PasskeyAccount.executeBatch.selector,
+            bytes32(uint256(64)), // offset 1 < 96
+            bytes32(uint256(128)),
+            bytes32(uint256(192))
+        );
+        uint256 r = _validate(callData, _one(0, _v_small_k0()));
+        assertEq(r, 1, "batch array offset pointing inside head must reject");
     }
 
     // ------------------------------------------------------------------- gas

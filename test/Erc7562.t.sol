@@ -23,12 +23,12 @@ contract Erc7562Test is Test, Vectors {
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 
     function setUp() public {
-        account = new PasskeyAccount(ENTRYPOINT, _signers1(K0_X, K0_Y), 1 ether);
+        account = new PasskeyAccount(ENTRYPOINT, _signers2(K0_X, K0_Y, K1_X, K1_Y), 1 ether);
         vm.deal(address(account), 100 ether);
         vm.startPrank(address(account));
-        account.setWindow(address(0), 2 ether, 1 days);
-        account.setTokenThreshold(USDC, 500e6);
-        account.setWindow(USDC, 1000e6, 1 days);
+        account.setWindow(address(0), 2 ether, 1 days, 18);
+        account.setTokenThreshold(USDC, 500e6, 6);
+        account.setWindow(USDC, 1000e6, 1 days, 6);
         vm.stopPrank();
     }
 

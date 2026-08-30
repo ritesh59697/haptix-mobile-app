@@ -45,12 +45,15 @@ library WebAuthn {
         uint256 x,
         uint256 y
     ) internal view returns (bool) {
-        // --- 1. Signature malleability -------------------------------------
+        // --- 1. Signature malleability & range ----------------------------
         // (r, s) and (r, n-s) are both valid ECDSA signatures over the same
         // message. If we let both through, an attacker can mint a second valid
         // signature for a UserOp they already saw. Anything keyed on the
-        // signature bytes (replay guards, dedup) breaks. Enforce low-s.
-        if (sig.s > P256_N / 2) return false;
+        // signature bytes (replay guards, dedup) breaks. Enforce low-s (s <= n/2)
+        // and ensure 0 < r < n and 0 < s <= n/2.
+        if (sig.r == 0 || sig.r >= P256_N || sig.s == 0 || sig.s > P256_N / 2) {
+            return false;
+        }
 
         // --- 2. authenticatorData flags ------------------------------------
         // Layout: rpIdHash (32) || flags (1) || signCount (4) || [attested data]

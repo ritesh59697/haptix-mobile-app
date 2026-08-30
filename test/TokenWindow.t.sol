@@ -29,19 +29,18 @@ contract TokenWindowTest is Test, Vectors {
     bytes32 constant H = 0x1111111111111111111111111111111111111111111111111111111111111111;
 
     function setUp() public {
-        account = new PasskeyAccount(ENTRYPOINT, _signers1(K0_X, K0_Y), 1 ether);
+        account = new PasskeyAccount(ENTRYPOINT, _signers2(K0_X, K0_Y, K1_X, K1_Y), 1 ether);
         vm.deal(address(account), 100 ether);
         vm.warp(1_700_000_000);
 
         vm.startPrank(address(account));
-        account.addSigner(K1_X, K1_Y);
         // Per-op thresholds (so single transfers are allowed at all).
-        account.setTokenThreshold(USDC, 500e6);
-        account.setTokenThreshold(DAI, 500e18);
+        account.setTokenThreshold(USDC, 500e6, 6);
+        account.setTokenThreshold(DAI, 500e18, 18);
         // Rolling windows.
-        account.setWindow(address(0), ETH_CAP, WINDOW_SECS);
-        account.setWindow(USDC, USDC_CAP, WINDOW_SECS);
-        account.setWindow(DAI, DAI_CAP, WINDOW_SECS);
+        account.setWindow(address(0), ETH_CAP, WINDOW_SECS, 18);
+        account.setWindow(USDC, USDC_CAP, WINDOW_SECS, 6);
+        account.setWindow(DAI, DAI_CAP, WINDOW_SECS, 18);
         vm.stopPrank();
     }
 
@@ -167,7 +166,7 @@ contract TokenWindowTest is Test, Vectors {
     function test_UnwindowedToken_HasNoRollingLimit() public {
         address other = address(0xC0FFEE);
         vm.prank(address(account));
-        account.setTokenThreshold(other, 500e6);
+        account.setTokenThreshold(other, 500e6, 6);
         // deliberately no setWindow for `other`
 
         for (uint256 i = 0; i < 5; i++) {
@@ -334,8 +333,8 @@ contract TokenWindowTest is Test, Vectors {
         vm.startPrank(address(account));
         for (uint256 i = 0; i < n; i++) {
             address t = address(uint160(0x2000 + i));
-            account.setTokenThreshold(t, 1_000_000e6);
-            account.setWindow(t, 1_000_000e6, WINDOW_SECS);
+            account.setTokenThreshold(t, 1_000_000e6, 6);
+            account.setWindow(t, 1_000_000e6, WINDOW_SECS, 6);
         }
         vm.stopPrank();
 
@@ -394,5 +393,36 @@ contract TokenWindowTest is Test, Vectors {
 
         assertLe(usdcTotal, USDC_CAP, "USDC window held");
         assertLe(ethTotal, ETH_CAP, "ETH window held");
+    }
+
+    /// Verifies that 6-decimal USDC base units (1_000_000 = 1 USDC) are correctly evaluated
+    /// against the 6-decimal threshold (500_000_000 = 500 USDC), not misinterpreted as 1e-12.
+    function test_TokenDecimals_UsdcSixDecimals_TreatedAsBaseUnits() public {
+        address baseSepoliaUsdc = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
+        uint8 usdcDecimals = 6;
+        uint256 usdcThreshold = 500 * 10 ** usdcDecimals; // 500_000_000 = 500 USDC
+        uint256 usdcCap = 1000 * 10 ** usdcDecimals;       // 1_000_000_000 = 1000 USDC
+
+        vm.startPrank(address(account));
+        account.setTokenThreshold(baseSepoliaUsdc, usdcThreshold, usdcDecimals);
+        account.setWindow(baseSepoliaUsdc, usdcCap, WINDOW_SECS, usdcDecimals);
+        vm.stopPrank();
+
+        assertEq(account.tokenDecimals(baseSepoliaUsdc), 6, "stored decimals is 6");
+        assertEq(account.tokenThreshold(baseSepoliaUsdc), 500_000_000, "threshold is 500 USDC in base units");
+        assertEq(account.windowCap(baseSepoliaUsdc), 1_000_000_000, "cap is 1000 USDC in base units");
+
+        // 1 USDC (1_000_000 base units) < 500 USDC threshold -> requires 1 signature
+        bytes memory cd1Usdc = _xfer(baseSepoliaUsdc, 1_000_000);
+        uint256 vd1 = _validate(cd1Usdc, _one());
+        assertEq(vd1 & ((1 << 160) - 1), 0, "1 USDC under 500 USDC threshold succeeds with 1 sig");
+
+        // 600 USDC (600_000_000 base units) >= 500 USDC threshold -> requires 2 signatures
+        bytes memory cd600Usdc = _xfer(baseSepoliaUsdc, 600_000_000);
+        uint256 vd600Single = _validate(cd600Usdc, _one());
+        assertEq(vd600Single & ((1 << 160) - 1), 1, "600 USDC over threshold fails with 1 sig");
+
+        uint256 vd600Double = _validate(cd600Usdc, _two());
+        assertEq(vd600Double & ((1 << 160) - 1), 0, "600 USDC over threshold succeeds with 2 sigs");
     }
 }

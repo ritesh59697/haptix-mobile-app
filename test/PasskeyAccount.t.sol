@@ -28,11 +28,8 @@ contract PasskeyAccountTest is Test, Vectors {
     bytes32 constant H_ERC20   = bytes32(uint256(0x6666666666666666666666666666666666666666666666666666666666666666));
 
     function setUp() public {
-        account = new PasskeyAccount(ENTRYPOINT, _signers1(K0_X, K0_Y), THRESHOLD);
+        account = new PasskeyAccount(ENTRYPOINT, _signers2(K0_X, K0_Y, K1_X, K1_Y), THRESHOLD);
         vm.deal(address(account), 100 ether);
-
-        vm.prank(address(account));
-        account.addSigner(K1_X, K1_Y);
     }
 
     // ---------------------------------------------------------------- helpers
@@ -209,7 +206,7 @@ contract PasskeyAccountTest is Test, Vectors {
     /// USDC transfer with `value == 0`. Now caught by decoding the inner call.
     function test_Attack_LargeERC20Transfer_SingleSignature_Rejected() public {
         vm.prank(address(account));
-        account.setTokenThreshold(USDC, 1000e6); // $1000 threshold
+        account.setTokenThreshold(USDC, 1000e6, 6); // $1000 threshold
 
         bytes memory inner = abi.encodeWithSignature(
             "transfer(address,uint256)", address(0xdEaD), 1_000_000e6
@@ -225,7 +222,7 @@ contract PasskeyAccountTest is Test, Vectors {
     /// A small token transfer, under the configured threshold, still needs one.
     function test_SmallERC20Transfer_OneSignature() public {
         vm.prank(address(account));
-        account.setTokenThreshold(USDC, 1000e6);
+        account.setTokenThreshold(USDC, 1000e6, 6);
 
         bytes memory inner = abi.encodeWithSignature(
             "transfer(address,uint256)", address(0xdEaD), 10e6 // $10
@@ -258,7 +255,7 @@ contract PasskeyAccountTest is Test, Vectors {
     /// regardless of amount. This is the `approve()` drain vector.
     function test_Attack_Approve_AlwaysRequiresTwo() public {
         vm.prank(address(account));
-        account.setTokenThreshold(USDC, 1_000_000e6); // very permissive
+        account.setTokenThreshold(USDC, 1_000_000e6, 6); // very permissive
 
         bytes memory inner = abi.encodeWithSignature(
             "approve(address,uint256)", address(0xdEaD), 1 // even 1 unit
@@ -287,7 +284,7 @@ contract PasskeyAccountTest is Test, Vectors {
     /// transferFrom moves tokens too, at a different calldata offset.
     function test_Attack_LargeTransferFrom_RequiresTwo() public {
         vm.prank(address(account));
-        account.setTokenThreshold(USDC, 1000e6);
+        account.setTokenThreshold(USDC, 1000e6, 6);
 
         bytes memory inner = abi.encodeWithSignature(
             "transferFrom(address,address,uint256)",
@@ -329,6 +326,173 @@ contract PasskeyAccountTest is Test, Vectors {
         assertEq(r, 1, "malformed offset must reject cleanly, not revert");
     }
 
+    /// Offset smaller than static head (e.g. 64 < 96) is malformed and must reject cleanly.
+    function test_Attack_MalformedFuncOffset_TooSmall_Rejected() public {
+        bytes memory callData = abi.encodePacked(
+            PasskeyAccount.execute.selector,
+            bytes32(uint256(uint160(USDC))), // dest
+            bytes32(uint256(0)),             // value
+            bytes32(uint256(64))             // func offset pointing into static head
+        );
+        uint256 r = _validate(callData, _one(0, _v_erc20_k0()), H_ERC20);
+        assertEq(r, 1, "offset pointing inside static head must reject");
+    }
+
+    /// Calldata shorter than 4 bytes or partial words must reject without reverting.
+    function test_Attack_ShortCallData_RejectsWithoutReverting() public {
+        bytes memory short1 = hex"12";
+        bytes memory short2 = hex"123456";
+        bytes memory short3 = hex"b61d27f6000000000000000000000000"; // 16 bytes
+
+        assertEq(_validate(short1, _one(0, _v_unknown_k0()), H_UNKNOWN), 1, "1-byte calldata must reject");
+        assertEq(_validate(short2, _one(0, _v_unknown_k0()), H_UNKNOWN), 1, "3-byte calldata must reject");
+        assertEq(_validate(short3, _one(0, _v_unknown_k0()), H_UNKNOWN), 1, "16-byte calldata must reject");
+    }
+
+    /// EIP-2612 Permit selector always requires 2 signatures.
+    function test_Attack_Permit_AlwaysRequiresTwo() public {
+        vm.prank(address(account));
+        account.setTokenThreshold(USDC, 1_000_000e6, 6);
+
+        bytes memory inner = abi.encodeWithSignature(
+            "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+            address(account), address(0xdEaD), 100e6, block.timestamp + 1000, 27, bytes32(0), bytes32(0)
+        );
+        bytes memory callData = abi.encodeCall(
+            PasskeyAccount.execute, (USDC, 0, inner)
+        );
+
+        uint256 r = _validate(callData, _one(0, _v_erc20_k0()), H_ERC20);
+        assertEq(r, 1, "EIP-2612 permit must always require 2 sigs");
+    }
+
+    /// DAI-style permit selector always requires 2 signatures.
+    function test_Attack_PermitDAI_AlwaysRequiresTwo() public {
+        vm.prank(address(account));
+        account.setTokenThreshold(USDC, 1_000_000e6, 6);
+
+        bytes memory inner = abi.encodeWithSignature(
+            "permit(address,address,uint256,uint256,bool,uint8,bytes32,bytes32)",
+            address(account), address(0xdEaD), 0, block.timestamp + 1000, true, 27, bytes32(0), bytes32(0)
+        );
+        bytes memory callData = abi.encodeCall(
+            PasskeyAccount.execute, (USDC, 0, inner)
+        );
+
+        uint256 r = _validate(callData, _one(0, _v_erc20_k0()), H_ERC20);
+        assertEq(r, 1, "DAI permit must always require 2 sigs");
+    }
+
+    /// Permit2 permit selector always requires 2 signatures.
+    function test_Attack_Permit2_AlwaysRequiresTwo() public {
+        vm.prank(address(account));
+        account.setTokenThreshold(USDC, 1_000_000e6, 6);
+
+        bytes memory inner = abi.encodeWithSignature(
+            "permit(address,((address,uint160,uint48,uint48),address,uint256),bytes)",
+            address(account), bytes32(0), hex"1234"
+        );
+        bytes memory callData = abi.encodeCall(
+            PasskeyAccount.execute, (address(0x000000000022D473030F116dDEE9F6B43aC78BA3), 0, inner)
+        );
+
+        uint256 r = _validate(callData, _one(0, _v_erc20_k0()), H_ERC20);
+        assertEq(r, 1, "Permit2 must always require 2 sigs");
+    }
+
+    /// increaseAllowance always requires 2 signatures regardless of threshold.
+    function test_Attack_IncreaseAllowance_AlwaysRequiresTwo() public {
+        vm.prank(address(account));
+        account.setTokenThreshold(USDC, 1_000_000e6, 6);
+
+        bytes memory inner = abi.encodeWithSignature(
+            "increaseAllowance(address,uint256)", address(0xdEaD), 10e6
+        );
+        bytes memory callData = abi.encodeCall(
+            PasskeyAccount.execute, (USDC, 0, inner)
+        );
+
+        uint256 r = _validate(callData, _one(0, _v_erc20_k0()), H_ERC20);
+        assertEq(r, 1, "increaseAllowance must always require 2 sigs");
+    }
+
+    /// decreaseAllowance always requires 2 signatures.
+    function test_Attack_DecreaseAllowance_AlwaysRequiresTwo() public {
+        vm.prank(address(account));
+        account.setTokenThreshold(USDC, 1_000_000e6, 6);
+
+        bytes memory inner = abi.encodeWithSignature(
+            "decreaseAllowance(address,uint256)", address(0xdEaD), 10e6
+        );
+        bytes memory callData = abi.encodeCall(
+            PasskeyAccount.execute, (USDC, 0, inner)
+        );
+
+        uint256 r = _validate(callData, _one(0, _v_erc20_k0()), H_ERC20);
+        assertEq(r, 1, "decreaseAllowance must always require 2 sigs");
+    }
+
+    /// execute wrapping an onlySelf config call (e.g. setThreshold or setWindow) must require 2 signatures.
+    function test_Attack_Execute_WrappingOnlySelfConfig_RequiresTwo() public {
+        bytes memory inner = abi.encodeCall(PasskeyAccount.setThreshold, (100 ether));
+        bytes memory callData = abi.encodeCall(
+            PasskeyAccount.execute, (address(account), 0, inner)
+        );
+
+        uint256 r = _validate(callData, _one(0, _v_unknown_k0()), H_UNKNOWN);
+        assertEq(r, 1, "execute wrapping config call must require 2 sigs");
+    }
+
+    /// An unconfigured token (tokenThreshold == 0) must require 2 signatures.
+    function test_Policy_UnconfiguredToken_ThresholdZero_RequiresTwo() public {
+        address unconfigured = address(0x1234567890123456789012345678901234567890);
+        assertEq(account.tokenThreshold(unconfigured), 0, "token starts unconfigured");
+
+        bytes memory inner = abi.encodeWithSignature(
+            "transfer(address,uint256)", address(0xdEaD), 1
+        );
+        bytes memory callData = abi.encodeCall(
+            PasskeyAccount.execute, (unconfigured, 0, inner)
+        );
+
+        uint256 r = _validate(callData, _one(0, _v_erc20_k0()), H_ERC20);
+        assertEq(r, 1, "threshold 0 must mean unknown/quorum, not no limit");
+    }
+
+    /// When windowCap is 0, no rolling accumulation is enforced, but per-op threshold still applies.
+    function test_Policy_WindowCapZero_HasNoRollingLimit_PerOpThresholdStillApplies() public {
+        vm.prank(address(account));
+        account.setTokenThreshold(USDC, 1000e6, 6);
+        assertEq(account.windowCap(USDC), 0, "window cap is 0");
+
+        // Small transfer under per-op threshold clears with 1 sig
+        bytes memory smallInner = abi.encodeWithSignature(
+            "transfer(address,uint256)", address(0xdEaD), 500e6
+        );
+        bytes memory smallCall = abi.encodeCall(
+            PasskeyAccount.execute, (USDC, 0, smallInner)
+        );
+        assertEq(_validate(smallCall, _one(0, _v_erc20_k0()), H_ERC20), 0, "small transfer clears");
+
+        // Large transfer over per-op threshold requires 2 sigs
+        bytes memory largeInner = abi.encodeWithSignature(
+            "transfer(address,uint256)", address(0xdEaD), 1500e6
+        );
+        bytes memory largeCall = abi.encodeCall(
+            PasskeyAccount.execute, (USDC, 0, largeInner)
+        );
+        assertEq(_validate(largeCall, _one(0, _v_erc20_k0()), H_ERC20), 1, "large transfer requires 2 sigs");
+    }
+
+    /// Empty inner calldata is recognized as a plain ETH send.
+    function test_Policy_EmptyInnerCalldata_TreatedAsPlainETH() public {
+        bytes memory callData = abi.encodeCall(
+            PasskeyAccount.execute, (RECIPIENT, 0.5 ether, "")
+        );
+        uint256 r = _validate(callData, _one(0, _v_small_k0()), H_SMALL);
+        assertEq(r, 0, "empty calldata below threshold is plain ETH and clears with 1 sig");
+    }
+
     // -------------------------------------------------------- construction
 
     /// An account deployed with BOTH signers can configure itself immediately,
@@ -342,7 +506,7 @@ contract PasskeyAccountTest is Test, Vectors {
         PackedUserOperation memory op;
         op.sender = address(acct);
         op.callData = abi.encodeCall(
-            PasskeyAccount.setWindow, (address(0), 1 ether, 1 days)
+            PasskeyAccount.setWindow, (address(0), 1 ether, 1 days, 18)
         );
         op.signature = _two(0, _v_small_k0(), 1, _v_small_k1());
 
@@ -351,29 +515,274 @@ contract PasskeyAccountTest is Test, Vectors {
         assertEq(r, 0, "two enrolled signers can authorize config");
     }
 
-    /// A single-signer account cannot configure itself -- not even to enrol the
-    /// second signer it would need. This is why the deploy script takes both
-    /// keys up front.
-    function test_SingleSignerConstructor_CannotConfigureItself() public {
-        PasskeyAccount acct = new PasskeyAccount(
-            ENTRYPOINT, _signers1(K0_X, K0_Y), THRESHOLD
-        );
-
-        PackedUserOperation memory op;
-        op.sender = address(acct);
-        op.callData = abi.encodeCall(PasskeyAccount.addSigner, (K1_X, K1_Y));
-        op.signature = _one(0, _v_small_k0());
-
-        vm.prank(ENTRYPOINT);
-        uint256 r = acct.validateUserOp(op, H_SMALL, 0);
-        assertEq(r, 1, "one signer cannot enrol a second -- permanently stuck");
+    /// Deploying with fewer than 2 signers is strictly rejected to prevent permanent lockout.
+    function test_Attack_SingleSignerConstructor_Reverts() public {
+        vm.expectRevert(PasskeyAccount.MinSignersRequired.selector);
+        new PasskeyAccount(ENTRYPOINT, _signers1(K0_X, K0_Y), THRESHOLD);
     }
 
-    /// An empty signer set would be an account nobody controls.
-    function test_ZeroSigners_Reverts() public {
+    /// An empty signer set reverts MinSignersRequired.
+    function test_Attack_ZeroSigners_Reverts() public {
         PasskeyAccount.PublicKey[] memory none = new PasskeyAccount.PublicKey[](0);
-        vm.expectRevert(PasskeyAccount.NoSigners.selector);
+        vm.expectRevert(PasskeyAccount.MinSignersRequired.selector);
         new PasskeyAccount(ENTRYPOINT, none, THRESHOLD);
+    }
+
+    // ------------------------------------------------------------------ cross-chain replay & entrypoint
+
+    /// getUserOpHash binds the current chainid and the account's trusted EntryPoint.
+    function test_Policy_UserOpHash_BindsChainIdAndEntryPoint() public view {
+        PackedUserOperation memory op;
+        op.sender = address(account);
+        op.nonce = 0;
+        op.callData = _opValue(0.5 ether);
+
+        bytes32 expected = keccak256(
+            abi.encode(
+                keccak256(
+                    abi.encode(
+                        op.sender,
+                        op.nonce,
+                        keccak256(op.initCode),
+                        keccak256(op.callData),
+                        op.accountGasLimits,
+                        op.preVerificationGas,
+                        op.gasFees,
+                        keccak256(op.paymasterAndData)
+                    )
+                ),
+                ENTRYPOINT,
+                block.chainid
+            )
+        );
+
+        bytes32 h = account.getUserOpHash(op);
+        assertEq(h, expected, "getUserOpHash must bind chainId and trusted entryPoint");
+    }
+
+    /// A valid signature on one chain must be rejected on another chain due to chainId binding in the hash.
+    function test_Attack_CrossChainReplay_DifferentChainId_Rejected() public {
+        // H_SMALL is the hash for the signed vector on the original chain
+        // If we compute the hash under a different chainId (e.g. Ethereum Mainnet 1 vs Base Sepolia 84532):
+        PackedUserOperation memory op;
+        op.sender = address(account);
+        op.callData = _opValue(0.5 ether);
+        op.signature = _one(0, _v_small_k0());
+
+        // Simulate new chainId
+        vm.chainId(1); // switch from default 31337 / 84532 to mainnet 1
+        bytes32 mainnetHash = account.getUserOpHash(op);
+
+        // The signature in _v_small_k0 covers H_SMALL, not mainnetHash
+        vm.prank(ENTRYPOINT);
+        uint256 r = account.validateUserOp(op, mainnetHash, 0);
+        assertEq(r, 1, "replaying signature across different chainId must be rejected");
+    }
+
+    /// validateUserOp called by an untrusted / malicious EntryPoint must revert.
+    function test_Attack_UntrustedEntryPoint_Reverts() public {
+        PackedUserOperation memory op;
+        op.sender = address(account);
+        op.callData = _opValue(0.5 ether);
+        op.signature = _one(0, _v_small_k0());
+
+        address untrustedEP = address(0xBAD4337);
+        vm.prank(untrustedEP);
+        vm.expectRevert(PasskeyAccount.NotEntryPoint.selector);
+        account.validateUserOp(op, H_SMALL, 0);
+    }
+
+    // ------------------------------------------------------------------ signer lifecycle
+
+    /// An account with 2 signers cannot drop to 1 signer (lockout prevention).
+    function test_Attack_RemoveSigner_CannotDropBelowTwo_Reverts() public {
+        assertEq(account.signerCount(), 2, "starts with 2 signers");
+
+        vm.prank(address(account));
+        vm.expectRevert(PasskeyAccount.MinSignersRequired.selector);
+        account.removeSigner(0);
+    }
+
+    /// When 3 signers exist, one can be removed safely, preserving exactly 2 signers.
+    function test_Policy_RemoveSigner_Success_WhenThreeSigners() public {
+        // Add a 3rd signer
+        uint256 k2X = 0x112233;
+        uint256 k2Y = 0x445566;
+        vm.prank(address(account));
+        account.addSigner(k2X, k2Y);
+        assertEq(account.signerCount(), 3, "now 3 signers");
+
+        // Remove signer 0 (swap-and-pop moves signer 2 into index 0)
+        vm.prank(address(account));
+        account.removeSigner(0);
+
+        assertEq(account.signerCount(), 2, "drops back to 2 signers");
+        (uint256 x0, uint256 y0) = account.signers(0);
+        assertEq(x0, k2X, "last signer swapped into index 0");
+        assertEq(y0, k2Y, "last signer swapped into index 0");
+    }
+
+    /// Cannot add an already enrolled public key twice.
+    function test_Attack_AddDuplicateSigner_Reverts() public {
+        vm.prank(address(account));
+        vm.expectRevert(PasskeyAccount.DuplicateSigner.selector);
+        account.addSigner(K0_X, K0_Y);
+    }
+
+    /// Cannot construct an account with duplicate public keys.
+    function test_Attack_Constructor_DuplicateSigners_Reverts() public {
+        PasskeyAccount.PublicKey[] memory dup = new PasskeyAccount.PublicKey[](2);
+        dup[0] = PasskeyAccount.PublicKey(K0_X, K0_Y);
+        dup[1] = PasskeyAccount.PublicKey(K0_X, K0_Y);
+
+        vm.expectRevert(PasskeyAccount.DuplicateSigner.selector);
+        new PasskeyAccount(ENTRYPOINT, dup, THRESHOLD);
+    }
+
+    /// replaceSigner atomically replaces an old key with a new key.
+    function test_Policy_ReplaceSigner_Success() public {
+        uint256 newX = 0xAAAA1111;
+        uint256 newY = 0xBBBB2222;
+
+        vm.prank(address(account));
+        account.replaceSigner(1, newX, newY);
+
+        assertEq(account.signerCount(), 2, "count remains 2");
+        (uint256 x1, uint256 y1) = account.signers(1);
+        assertEq(x1, newX, "signer 1 x updated");
+        assertEq(y1, newY, "signer 1 y updated");
+        assertTrue(account.isSigner(newX, newY), "new key recognized");
+        assertFalse(account.isSigner(K1_X, K1_Y), "old key no longer recognized");
+    }
+
+    /// replaceSigner fails if new key is already enrolled.
+    function test_Attack_ReplaceSigner_WithExistingSigner_Reverts() public {
+        vm.prank(address(account));
+        vm.expectRevert(PasskeyAccount.DuplicateSigner.selector);
+        account.replaceSigner(1, K0_X, K0_Y);
+    }
+
+    /// Duplicate signer ids in userOp.signature are rejected cheap (<40k gas) without paying 107k for precompile.
+    function test_Attack_DuplicateSignerId_CheapGasReject() public {
+        uint256 gasBefore = gasleft();
+        uint256 r = _validate(
+            _opValue(5 ether),
+            _two(0, _v_large_k0(), 0, _v_large_k0()),
+            H_LARGE
+        );
+        uint256 gasUsed = gasBefore - gasleft();
+
+        assertEq(r, 1, "duplicate id rejected");
+        // Gas used must be well under 75k (without precompile, it rejects in ~38k before any WebAuthn.verify calls)
+        assertLt(gasUsed, 75000, "duplicate id must reject cheaply before any crypto");
+    }
+
+    // ------------------------------------------------------------------ paymaster
+
+    address constant PAYMASTER_A = address(0x9999);
+    address constant PAYMASTER_B = address(0x8888);
+
+    /// Sponsored ETH transfer under threshold works with 1 signature.
+    function test_Paymaster_SponsoredETHTransfer_OneSignature() public {
+        PackedUserOperation memory op;
+        op.sender = address(account);
+        op.callData = _opValue(0.5 ether);
+        op.signature = _one(0, _v_small_k0());
+        // ERC-4337 v0.7 paymasterAndData: paymaster address (20 bytes) + gas limits + context
+        op.paymasterAndData = abi.encodePacked(
+            PAYMASTER_A,
+            uint128(100_000), // verificationGasLimit
+            uint128(50_000),  // postOpGasLimit
+            hex"1234"         // paymasterData
+        );
+
+        vm.prank(ENTRYPOINT);
+        uint256 r = account.validateUserOp(op, H_SMALL, 0);
+        assertEq(r, 0, "sponsored ETH transfer under threshold must succeed with 1 sig");
+    }
+
+    /// Sponsored approve still requires 2 signatures (cannot bypass policy via sponsorship).
+    function test_Attack_Paymaster_SponsoredApprove_StillRequiresTwo() public {
+        bytes memory approveCall = abi.encodeWithSignature(
+            "approve(address,uint256)", address(0xDEAD), 1000e6
+        );
+        PackedUserOperation memory op;
+        op.sender = address(account);
+        op.callData = abi.encodeCall(
+            PasskeyAccount.execute, (address(0x1234), 0, approveCall)
+        );
+        op.paymasterAndData = abi.encodePacked(
+            PAYMASTER_A,
+            uint128(100_000),
+            uint128(50_000),
+            hex"1234"
+        );
+
+        // 1 signature: rejected
+        op.signature = _one(0, _v_small_k0());
+        vm.prank(ENTRYPOINT);
+        uint256 r1 = account.validateUserOp(op, H_SMALL, 0);
+        assertEq(r1, 1, "sponsored approve with 1 signature must be rejected");
+
+        // 2 signatures: accepted
+        op.signature = _two(0, _v_large_k0(), 1, _v_large_k1());
+        vm.prank(ENTRYPOINT);
+        uint256 r2 = account.validateUserOp(op, H_LARGE, 0);
+        assertEq(r2, 0, "sponsored approve with 2 signatures must succeed");
+    }
+
+    /// Configured trustedPaymaster allows trusted paymaster and rejects untrusted paymaster.
+    function test_Policy_TrustedPaymaster_ConfigAndEnforcement() public {
+        // Configuring trustedPaymaster requires 2 signatures
+        bytes memory setPmCall = abi.encodeCall(
+            PasskeyAccount.setTrustedPaymaster, (PAYMASTER_A)
+        );
+        bytes memory wrapped = abi.encodeCall(
+            PasskeyAccount.execute, (address(account), 0, setPmCall)
+        );
+
+        // Single signature on config fails policy
+        uint256 rSingle = _validate(wrapped, _one(0, _v_small_k0()), H_SMALL);
+        assertEq(rSingle, 1, "setTrustedPaymaster must require 2 signatures");
+
+        // 2 signatures succeeds on config
+        uint256 rDouble = _validate(wrapped, _two(0, _v_large_k0(), 1, _v_large_k1()), H_LARGE);
+        assertEq(rDouble, 0, "2 signatures can validate config call");
+
+        // Configure trustedPaymaster directly via onlySelf
+        vm.prank(address(account));
+        account.setTrustedPaymaster(PAYMASTER_A);
+        assertEq(account.trustedPaymaster(), PAYMASTER_A, "trustedPaymaster set");
+
+        PackedUserOperation memory op;
+        op.sender = address(account);
+        op.callData = _opValue(0.5 ether);
+        op.signature = _one(0, _v_small_k0());
+
+        // Sponsored by trusted PAYMASTER_A: succeeds
+        op.paymasterAndData = abi.encodePacked(PAYMASTER_A, uint128(100_000), uint128(50_000));
+        vm.prank(ENTRYPOINT);
+        uint256 rTrusted = account.validateUserOp(op, H_SMALL, 0);
+        assertEq(rTrusted, 0, "op with trusted paymaster succeeds");
+
+        // Sponsored by untrusted PAYMASTER_B: fails
+        op.paymasterAndData = abi.encodePacked(PAYMASTER_B, uint128(100_000), uint128(50_000));
+        vm.prank(ENTRYPOINT);
+        uint256 rUntrusted = account.validateUserOp(op, H_SMALL, 0);
+        assertEq(rUntrusted, 1, "op with untrusted paymaster must be rejected");
+    }
+
+    /// Malformed short paymaster data (< 20 bytes) is rejected.
+    function test_Attack_Paymaster_MalformedShortData_Rejected() public {
+        PackedUserOperation memory op;
+        op.sender = address(account);
+        op.callData = _opValue(0.5 ether);
+        op.signature = _one(0, _v_small_k0());
+        op.paymasterAndData = hex"123456"; // only 3 bytes, less than 20
+
+        vm.prank(ENTRYPOINT);
+        uint256 r = account.validateUserOp(op, H_SMALL, 0);
+        assertEq(r, 1, "malformed short paymasterAndData must be rejected");
     }
 
     // ------------------------------------------------------------------ gas
@@ -382,5 +791,180 @@ contract PasskeyAccountTest is Test, Vectors {
         uint256 before = gasleft();
         _validate(_opValue(0.5 ether), _one(0, _v_small_k0()), H_SMALL);
         console.log("validateUserOp, 1 passkey sig, gas:", before - gasleft());
+    }
+
+    // --------------------------------------------- Production Named Verification Tests
+
+    /// Splitting 1.5 ETH across batch entries does not bypass the 1 ETH threshold.
+    function test_Attack_SplitBatch_DoesNotBypass() public {
+        address[] memory targets = new address[](3);
+        targets[0] = RECIPIENT;
+        targets[1] = RECIPIENT;
+        targets[2] = RECIPIENT;
+
+        uint256[] memory values = new uint256[](3);
+        values[0] = 0.5 ether;
+        values[1] = 0.5 ether;
+        values[2] = 0.5 ether; // total = 1.5 ether > 1 ether
+
+        bytes[] memory calls = new bytes[](3);
+        bytes memory batchCd = abi.encodeCall(PasskeyAccount.executeBatch, (targets, values, calls));
+
+        uint256 r = _validate(batchCd, _one(0, _v_small_k0()), H_SMALL);
+        assertEq(r, 1, "split batch exceeding threshold must require 2 sigs");
+    }
+
+    /// Multiple sequential single-sig ops within a window are capped by the window limit.
+    function test_Attack_MultiOpDrip_WindowHolds() public {
+        vm.prank(address(account));
+        account.setWindow(address(0), 1.5 ether, 1 days, 18);
+
+        // Op 1: 0.9 ETH -> authorized
+        bytes memory cd1 = _opValue(0.9 ether);
+        uint256 r1 = _validate(cd1, _one(0, _v_small_k0()), H_SMALL);
+        assertEq(r1 & ((1 << 160) - 1), 0, "first op within window succeeds");
+        vm.prank(ENTRYPOINT);
+        account.execute(RECIPIENT, 0.9 ether, "");
+
+        // Op 2: 0.9 ETH -> exceeds remaining 0.6 ETH in window -> deferred/constrained
+        bytes memory cd2 = _opValue(0.9 ether);
+        uint256 r2 = _validate(cd2, _one(0, _v_small_k0()), H_SMALL);
+        uint48 validAfter = uint48((r2 >> 208) & ((1 << 48) - 1));
+        assertGt(validAfter, block.timestamp, "second op exceeding window cap is deferred");
+    }
+
+    /// Approvals always require full quorum regardless of threshold.
+    function test_Attack_ApproveAlwaysQuorum() public {
+        vm.prank(address(account));
+        account.setTokenThreshold(USDC, 1_000_000e6, 6);
+
+        bytes memory inner = abi.encodeWithSignature("approve(address,uint256)", address(0xdEaD), 1);
+        bytes memory callData = abi.encodeCall(PasskeyAccount.execute, (USDC, 0, inner));
+
+        uint256 r = _validate(callData, _one(0, _v_erc20_k0()), H_ERC20);
+        assertEq(r, 1, "approve must always require 2 signatures");
+    }
+
+    /// Unknown selectors always require 2 signatures.
+    function test_Attack_UnknownSelectorQuorum() public {
+        bytes memory callData = abi.encodeWithSelector(bytes4(0xdeadbeef), uint256(1));
+        uint256 r = _validate(callData, _one(0, _v_small_k0()), H_SMALL);
+        assertEq(r, 1, "unknown selector must require 2 signatures");
+    }
+
+    /// Malformed calldata / ABI offsets fail closed to 2 signatures.
+    function test_Attack_MalformedAbiQuorum() public {
+        bytes memory malformed = abi.encodePacked(PasskeyAccount.execute.selector, uint256(0), uint256(0), uint256(9999));
+        uint256 r = _validate(malformed, _one(0, _v_small_k0()), H_SMALL);
+        assertEq(r, 1, "malformed ABI offsets must require 2 signatures");
+    }
+
+    /// Unconfigured token threshold (0) requires 2 signatures.
+    function test_Attack_UnconfiguredTokenQuorum() public {
+        address unconfigured = address(0x9999999999999999999999999999999999999999);
+        bytes memory inner = abi.encodeWithSignature("transfer(address,uint256)", address(0xdEaD), 10);
+        bytes memory callData = abi.encodeCall(PasskeyAccount.execute, (unconfigured, 0, inner));
+
+        uint256 r = _validate(callData, _one(0, _v_erc20_k0()), H_ERC20);
+        assertEq(r, 1, "unconfigured token must require 2 signatures");
+    }
+
+    /// Signature with raw challenge instead of clientDataJSON SHA-256 is rejected.
+    function test_Attack_RawChallenge_Rejected() public {
+        PackedUserOperation memory op;
+        op.sender = address(account);
+        op.callData = _opValue(0.5 ether);
+
+        WebAuthn.Signature memory badSig = _v_small_k0();
+        badSig.clientDataJSON = '{"type":"webauthn.get","challenge":"badChallenge","origin":"http://localhost:5199","crossOrigin":false}';
+        op.signature = _one(0, badSig);
+
+        vm.prank(ENTRYPOINT);
+        uint256 r = account.validateUserOp(op, H_SMALL, 0);
+        assertEq(r, 1, "raw / mismatch challenge signature must be rejected");
+    }
+
+    /// Duplicate signer IDs are rejected before expensive precompile calls.
+    function test_Attack_DuplicateSigner_CheapReject() public {
+        PackedUserOperation memory op;
+        op.sender = address(account);
+        op.callData = _opValue(0.5 ether);
+        op.signature = _two(0, _v_small_k0(), 0, _v_small_k0());
+
+        uint256 before = gasleft();
+        vm.prank(ENTRYPOINT);
+        uint256 r = account.validateUserOp(op, H_SMALL, 0);
+        uint256 spent = before - gasleft();
+
+        assertEq(r, 1, "duplicate signer id must be rejected");
+        assertLt(spent, 75_000, "duplicate id reject must cost < 75k gas");
+    }
+
+    /// Single signer cannot raise their own window cap.
+    function test_Attack_OneSignerCannotRaiseCap() public {
+        bytes memory inner = abi.encodeCall(PasskeyAccount.setWindow, (address(0), 1000 ether, 1 days, 18));
+        bytes memory callData = abi.encodeCall(PasskeyAccount.execute, (address(account), 0, inner));
+
+        uint256 r = _validate(callData, _one(0, _v_small_k0()), H_SMALL);
+        assertEq(r, 1, "single signer cannot raise window cap");
+    }
+
+    /// Two-signature quorum bypasses rolling spend window constraints.
+    function test_Window_TwoSigBypasses() public {
+        vm.prank(address(account));
+        account.setWindow(address(0), 0.5 ether, 1 days, 18);
+
+        // Op of 10 ether with 2 signatures bypasses the 0.5 ether cap
+        bytes memory callData = _opValue(10 ether);
+        uint256 r = _validate(callData, _two(0, _v_large_k0(), 1, _v_large_k1()), H_LARGE);
+        assertEq(r, 0, "2 signatures must bypass the spend window");
+    }
+
+    /// An op with validUntil in the past is rejected by EntryPoint shape.
+    function test_Window_ValidUntilExpired_RejectedByEntryPointShape() public {
+        vm.warp(1_700_000_000);
+        vm.prank(address(account));
+        account.setWindow(address(0), 1 ether, 1 days, 18);
+
+        // First op opens the window
+        vm.prank(ENTRYPOINT);
+        account.execute(RECIPIENT, 0.2 ether, "");
+
+        // Second op within open window carries validUntil = 1_700_000_000 + 1 days
+        bytes memory callData = _opValue(0.5 ether);
+        uint256 r = _validate(callData, _one(0, _v_small_k0()), H_SMALL);
+
+        uint48 validUntil = uint48((r >> 160) & ((1 << 48) - 1));
+        assertEq(validUntil, 1_700_000_000 + 1 days, "validUntil set to window expiry");
+
+        // If block.timestamp > validUntil, EntryPoint shape rejects
+        vm.warp(1_700_000_000 + 2 days);
+        assertTrue(block.timestamp > validUntil, "op expired past validUntil");
+    }
+
+    /// Calling onlySelf config methods directly from an external caller reverts.
+    function test_Config_OnlySelf_DirectCallReverts() public {
+        vm.expectRevert(PasskeyAccount.NotSelf.selector);
+        account.setThreshold(50 ether);
+
+        vm.expectRevert(PasskeyAccount.NotSelf.selector);
+        account.setWindow(address(0), 10 ether, 1 days, 18);
+    }
+
+    /// Config methods called via UserOp must be wrapped in execute so account is msg.sender.
+    function test_Config_MustBeWrappedInExecute() public {
+        // Direct config call arrives with msg.sender == ENTRYPOINT -> reverts NotSelf
+        vm.prank(ENTRYPOINT);
+        vm.expectRevert(PasskeyAccount.NotSelf.selector);
+        account.setThreshold(50 ether);
+
+        // Wrapped in execute -> msg.sender in setThreshold is address(account) -> succeeds
+        vm.prank(ENTRYPOINT);
+        account.execute(
+            address(account),
+            0,
+            abi.encodeCall(PasskeyAccount.setThreshold, (50 ether))
+        );
+        assertEq(account.threshold(), 50 ether, "wrapped config call succeeds");
     }
 }

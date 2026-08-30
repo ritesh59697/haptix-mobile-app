@@ -53,7 +53,7 @@ contract ConfigureWindow is Script {
             callData: abi.encodeCall(
                 PasskeyAccount.execute,
                 (ACCOUNT, 0, abi.encodeCall(
-                    PasskeyAccount.setWindow, (address(0), 0.05 ether, 1 days)
+                    PasskeyAccount.setWindow, (address(0), 0.05 ether, 1 days, 18)
                 ))
             ),
             accountGasLimits: bytes32(

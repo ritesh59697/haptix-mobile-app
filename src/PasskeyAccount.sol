@@ -56,6 +56,10 @@ contract PasskeyAccount {
     ///      therefore full-quorum -- not as unlimited. See SpendPolicy._checkToken.
     mapping(address => uint256) public tokenThreshold;
 
+    /// @notice Configured decimals per token, stored at configuration time.
+    /// @dev Stored for client/UI reference. validateUserOp compares stored base units directly without SLOADing token.decimals().
+    mapping(address => uint8) public tokenDecimals;
+
     // -----------------------------------------------------------------------
     // Rolling window -- closes the sequential-UserOp hole
     // -----------------------------------------------------------------------
@@ -83,10 +87,17 @@ contract PasskeyAccount {
     ///      validateUserOp and write in execute.
     mapping(address => SpendWindow.Window) public window;
 
+    /// @notice Optional trusted paymaster. If address(0), any standard ERC-4337 paymaster may sponsor UserOps.
+    ///         If set to a non-zero address, only that specific paymaster may sponsor ops.
+    address public trustedPaymaster;
+
     event SignerAdded(uint256 indexed id, uint256 x, uint256 y);
+    event SignerRemoved(uint256 indexed id);
+    event SignerReplaced(uint256 indexed id, uint256 oldX, uint256 oldY, uint256 newX, uint256 newY);
     event ThresholdChanged(uint256 newThreshold);
-    event TokenThresholdChanged(address indexed token, uint256 newThreshold);
-    event WindowConfigured(address indexed asset, uint256 cap, uint256 duration);
+    event TokenThresholdChanged(address indexed token, uint256 newThreshold, uint8 decimals);
+    event WindowConfigured(address indexed asset, uint256 cap, uint256 duration, uint8 decimals);
+    event TrustedPaymasterChanged(address indexed paymaster);
 
     error NotEntryPoint();
     error NotSelf();
@@ -95,6 +106,9 @@ contract PasskeyAccount {
     error CapTooLarge();
     error DurationTooLarge();
     error NoSigners();
+    error DuplicateSigner();
+    error MinSignersRequired();
+    error InvalidPublicKey();
 
     modifier onlyEntryPoint() {
         if (msg.sender != entryPoint) revert NotEntryPoint();
@@ -128,10 +142,16 @@ contract PasskeyAccount {
         PublicKey[] memory initialSigners,
         uint256 _threshold
     ) {
-        if (initialSigners.length == 0) revert NoSigners();
+        if (initialSigners.length < 2) revert MinSignersRequired();
 
         entryPoint = _entryPoint;
         for (uint256 i = 0; i < initialSigners.length; i++) {
+            if (initialSigners[i].x == 0 || initialSigners[i].y == 0) revert InvalidPublicKey();
+            for (uint256 j = 0; j < i; j++) {
+                if (initialSigners[j].x == initialSigners[i].x && initialSigners[j].y == initialSigners[i].y) {
+                    revert DuplicateSigner();
+                }
+            }
             signers[i] = initialSigners[i];
             emit SignerAdded(i, initialSigners[i].x, initialSigners[i].y);
         }
@@ -143,6 +163,35 @@ contract PasskeyAccount {
     // -----------------------------------------------------------------------
     // ERC-4337 entry
     // -----------------------------------------------------------------------
+
+    /// @notice Computes the standard ERC-4337 v0.7 UserOp hash, binding the operation
+    ///         strictly to this account's immutable EntryPoint and the current block.chainid.
+    /// @dev Prevents signature replay across chains or across untrusted EntryPoints.
+    ///      Cross-chain owner / signer updates are intentionally unsupported for v1 to fail closed.
+    function getUserOpHash(PackedUserOperation calldata userOp)
+        public
+        view
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encode(
+                keccak256(
+                    abi.encode(
+                        userOp.sender,
+                        userOp.nonce,
+                        keccak256(userOp.initCode),
+                        keccak256(userOp.callData),
+                        userOp.accountGasLimits,
+                        userOp.preVerificationGas,
+                        userOp.gasFees,
+                        keccak256(userOp.paymasterAndData)
+                    )
+                ),
+                entryPoint,
+                block.chainid
+            )
+        );
+    }
 
     /// @notice Called by the EntryPoint before executing the UserOp.
     ///
@@ -295,6 +344,24 @@ contract PasskeyAccount {
         PackedUserOperation calldata userOp,
         bytes32 userOpHash
     ) internal view returns (bool) {
+        if (userOp.signature.length < 64) return false;
+
+        // Fast calldata check of signer IDs before allocating memory or decoding structs.
+        // Rejects duplicate, unordered, or out-of-range IDs in < 2k gas.
+        uint256 idsOffset = uint256(bytes32(userOp.signature[0:32]));
+        if (idsOffset + 32 <= userOp.signature.length) {
+            uint256 len = uint256(bytes32(userOp.signature[idsOffset:idsOffset + 32]));
+            if (idsOffset + 32 + len * 32 <= userOp.signature.length) {
+                uint256 lastId = 0;
+                for (uint256 i = 0; i < len; i++) {
+                    uint256 id = uint256(bytes32(userOp.signature[idsOffset + 32 + i * 32:idsOffset + 64 + i * 32]));
+                    if (i > 0 && id <= lastId) return false;
+                    if (id >= signerCount) return false;
+                    lastId = id;
+                }
+            }
+        }
+
         (uint256[] memory ids, WebAuthn.Signature[] memory sigs) =
             abi.decode(userOp.signature, (uint256[], WebAuthn.Signature[]));
 
@@ -303,14 +370,15 @@ contract PasskeyAccount {
         uint256 required = _requiredSignatures(userOp.callData);
         if (ids.length < required) return false;
 
-        // Check ALL ids before verifying ANY signature. Signature verification
-        // is the expensive step (~3450 gas each, plus sha256 and calldata); id
-        // checks are nearly free. Interleaving them lets an attacker submit a
-        // valid first signature followed by a duplicate id and make the account
-        // pay for a verification that was always going to be discarded.
-        //
-        // Distinct + ascending: without strict ordering the same passkey could
-        // sign twice and satisfy a 2-of-N policy on its own.
+        // Validate paymaster if present:
+        if (userOp.paymasterAndData.length > 0) {
+            if (userOp.paymasterAndData.length < 20) return false;
+            if (trustedPaymaster != address(0)) {
+                address pm = address(bytes20(userOp.paymasterAndData[0:20]));
+                if (pm != trustedPaymaster) return false;
+            }
+        }
+
         for (uint256 i = 0; i < ids.length; i++) {
             if (i > 0 && ids[i] <= ids[i - 1]) return false;
             if (ids[i] >= signerCount) return false;
@@ -545,7 +613,8 @@ contract PasskeyAccount {
     {
         if (headPos + 32 > callData.length) return (0, false);
         uint256 off = uint256(bytes32(callData[headPos:headPos + 32]));
-        if (off > type(uint32).max) return (0, false);
+        // executeBatch has a 3-word (96 byte) static head; offsets < 96 are malformed
+        if (off < 96 || off > type(uint32).max) return (0, false);
         pos = 4 + off; // offsets are relative to the argument block
         if (pos + 32 > callData.length) return (0, false);
         return (pos, true);
@@ -588,9 +657,9 @@ contract PasskeyAccount {
         if (callData.length < 100) return (callData[0:0], false);
 
         uint256 off = uint256(bytes32(callData[68:100]));
-        // Offset is relative to the argument block, which starts after the
-        // 4-byte selector. Guard against overflow and out-of-range offsets.
-        if (off > type(uint64).max) return (callData[0:0], false);
+        // execute() has a 3-word (96 byte) static head; offsets < 96 are malformed.
+        // Guard against overflow and out-of-range offsets.
+        if (off < 96 || off > type(uint64).max) return (callData[0:0], false);
         uint256 lenPos = 4 + off;
         if (lenPos + 32 > callData.length) return (callData[0:0], false);
 
@@ -670,10 +739,52 @@ contract PasskeyAccount {
     // Config -- reachable only via a UserOp through validateUserOp
     // -----------------------------------------------------------------------
 
+    /// @notice Returns true if the P-256 public key (x, y) is already an enrolled signer.
+    function isSigner(uint256 x, uint256 y) public view returns (bool) {
+        return _isSigner(x, y);
+    }
+
+    function _isSigner(uint256 x, uint256 y) internal view returns (bool) {
+        for (uint256 i = 0; i < signerCount; i++) {
+            if (signers[i].x == x && signers[i].y == y) return true;
+        }
+        return false;
+    }
+
+    /// @notice Enrolls a new P-256 passkey.
+    /// @dev onlySelf, so it requires a 2-of-2 hardware quorum.
     function addSigner(uint256 x, uint256 y) external onlySelf {
+        if (x == 0 || y == 0) revert InvalidPublicKey();
+        if (_isSigner(x, y)) revert DuplicateSigner();
         uint256 id = signerCount++;
         signers[id] = PublicKey(x, y);
         emit SignerAdded(id, x, y);
+    }
+
+    /// @notice Removes an existing passkey by id. Cannot drop remaining signers below 2.
+    /// @dev Uses swap-and-pop to maintain dense contiguous signer indices [0..signerCount-1].
+    function removeSigner(uint256 id) external onlySelf {
+        if (id >= signerCount) revert BadSignerIndex();
+        if (signerCount <= 2) revert MinSignersRequired();
+
+        uint256 lastIdx = signerCount - 1;
+        if (id != lastIdx) {
+            signers[id] = signers[lastIdx];
+        }
+        delete signers[lastIdx];
+        signerCount--;
+        emit SignerRemoved(id);
+    }
+
+    /// @notice Replaces an existing passkey with a new one atomically.
+    function replaceSigner(uint256 id, uint256 newX, uint256 newY) external onlySelf {
+        if (id >= signerCount) revert BadSignerIndex();
+        if (newX == 0 || newY == 0) revert InvalidPublicKey();
+        if (_isSigner(newX, newY)) revert DuplicateSigner();
+
+        PublicKey memory old = signers[id];
+        signers[id] = PublicKey(newX, newY);
+        emit SignerReplaced(id, old.x, old.y, newX, newY);
     }
 
     function setThreshold(uint256 newThreshold) external onlySelf {
@@ -681,28 +792,30 @@ contract PasskeyAccount {
         emit ThresholdChanged(newThreshold);
     }
 
-    /// @notice Configure a per-token spend threshold, in the token's base units.
+    /// @notice Configure a per-token spend threshold in base units, recording token decimals for client reference.
     /// @dev Reachable only via a UserOp, so raising a threshold is itself
     ///      subject to the policy -- and since setTokenThreshold is not an
     ///      `execute` call, it always requires the full quorum.
-    function setTokenThreshold(address token, uint256 newThreshold)
+    function setTokenThreshold(address token, uint256 newThreshold, uint8 decimals)
         external
         onlySelf
     {
         tokenThreshold[token] = newThreshold;
-        emit TokenThresholdChanged(token, newThreshold);
+        tokenDecimals[token] = decimals;
+        emit TokenThresholdChanged(token, newThreshold, decimals);
     }
 
-    /// @notice Configure the rolling spend window for one asset.
+    /// @notice Configure the rolling spend window for one asset in base units, recording decimals.
     /// @param asset address(0) for native ETH, otherwise the token address.
     /// @param cap Cumulative amount a single signature may authorize per
     ///        window, in that asset's base units. Zero removes the rolling
     ///        limit for this asset.
     /// @param duration Window length in seconds, shared across all assets.
+    /// @param decimals Asset decimals (e.g. 6 for USDC, 18 for ETH / DAI).
     /// @dev onlySelf, so changing a cap needs a UserOp -- and since this is not
     ///      an `execute` call, _requiredSignatures gives it the full quorum.
     ///      An attacker holding one passkey cannot raise their own limit.
-    function setWindow(address asset, uint256 cap, uint256 duration)
+    function setWindow(address asset, uint256 cap, uint256 duration, uint8 decimals)
         external
         onlySelf
     {
@@ -710,7 +823,83 @@ contract PasskeyAccount {
         if (duration > type(uint48).max) revert DurationTooLarge();
         windowCap[asset] = cap;
         windowSeconds = duration;
-        emit WindowConfigured(asset, cap, duration);
+        tokenDecimals[asset] = decimals;
+        emit WindowConfigured(asset, cap, duration, decimals);
+    }
+
+    /// @notice Configure a trusted paymaster address.
+    /// @param newPaymaster The address of the trusted paymaster, or address(0) to allow any standard paymaster.
+    /// @dev onlySelf, so changing this configuration requires a 2-of-N quorum via a UserOp.
+    function setTrustedPaymaster(address newPaymaster) external onlySelf {
+        trustedPaymaster = newPaymaster;
+        emit TrustedPaymasterChanged(newPaymaster);
+    }
+
+    // -----------------------------------------------------------------------
+    // ERC-1271 & EIP-712 Off-Chain Message Verification
+    // -----------------------------------------------------------------------
+
+    bytes4 internal constant ERC1271_MAGICVALUE = 0x1626ba7e;
+    bytes4 internal constant ERC1271_INVALID = 0xffffffff;
+
+    bytes32 private constant DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 private constant MSG_TYPEHASH =
+        keccak256("PasskeyAccountMessage(bytes32 messageHash)");
+
+    /// @notice Returns the EIP-712 domain separator for this account.
+    function domainSeparator() public view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                DOMAIN_TYPEHASH,
+                keccak256(bytes("PasskeyAccount")),
+                keccak256(bytes("1")),
+                block.chainid,
+                address(this)
+            )
+        );
+    }
+
+    /// @notice Computes the EIP-712 digest for ERC-1271 message signing.
+    function getMessageHash(bytes32 messageHash) public view returns (bytes32) {
+        return keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator(),
+                keccak256(abi.encode(MSG_TYPEHASH, messageHash))
+            )
+        );
+    }
+
+    /// @notice ERC-1271 off-chain signature verification for dApp sign-in / login.
+    /// @dev 1-of-N enrolled passkeys is sufficient to sign in off-chain.
+    ///      Binds to EIP-712 domain (name, version, chainId, verifyingContract).
+    ///      Replay-safe: digest construction prevents reuse as a UserOp hash.
+    /// @param hash The raw message hash requested by the dApp.
+    /// @param signature abi.encode(uint256 signerId, WebAuthn.Signature sig)
+    function isValidSignature(bytes32 hash, bytes calldata signature)
+        external
+        view
+        returns (bytes4)
+    {
+        if (signature.length < 64) return ERC1271_INVALID;
+
+        (uint256 signerId, WebAuthn.Signature memory sig) =
+            abi.decode(signature, (uint256, WebAuthn.Signature));
+        if (signerId >= signerCount) return ERC1271_INVALID;
+
+        bytes32 digest = getMessageHash(hash);
+        PublicKey memory pk = signers[signerId];
+
+        bool ok = WebAuthn.verify(
+            abi.encodePacked(digest),
+            true, // require user verification (biometric)
+            sig,
+            pk.x,
+            pk.y
+        );
+
+        return ok ? ERC1271_MAGICVALUE : ERC1271_INVALID;
     }
 
     receive() external payable {}

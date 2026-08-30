@@ -39,11 +39,17 @@ contract RealPasskeyTest is Test {
         return WebAuthn.verify(challenge, requireUV, sig, x, y);
     }
 
-    function _signers1(uint256 x, uint256 y)
+    uint256 constant K1_X =
+        0xe674161f196651a12baec4a98706b5ea424f21104b5bf793f75cbdfee531828b;
+    uint256 constant K1_Y =
+        0xd19ebbc657185048e777880b61a909ad683c1ee61df458fd707a802de8a9557e;
+
+    function _signers2(uint256 x0, uint256 y0, uint256 x1, uint256 y1)
         internal pure returns (PasskeyAccount.PublicKey[] memory a)
     {
-        a = new PasskeyAccount.PublicKey[](1);
-        a[0] = PasskeyAccount.PublicKey(x, y);
+        a = new PasskeyAccount.PublicKey[](2);
+        a[0] = PasskeyAccount.PublicKey(x0, y0);
+        a[1] = PasskeyAccount.PublicKey(x1, y1);
     }
 
     /// Real hardware signature must verify through the full WebAuthn path.
@@ -72,7 +78,7 @@ contract RealPasskeyTest is Test {
 
     /// End-to-end: a real passkey authorizing a real UserOp through the account.
     function test_RealPasskey_AuthorizesSmallTransfer() public {
-        PasskeyAccount account = new PasskeyAccount(address(0xE), _signers1(X, Y), 1 ether);
+        PasskeyAccount account = new PasskeyAccount(address(0xE), _signers2(X, Y, K1_X, K1_Y), 1 ether);
         vm.deal(address(account), 10 ether);
 
         uint256[] memory ids = new uint256[](1);
@@ -94,7 +100,7 @@ contract RealPasskeyTest is Test {
     /// And the policy still holds against real hardware: one passkey is not
     /// enough above the threshold, no matter how genuine the signature is.
     function test_RealPasskey_CannotClearThresholdAlone() public {
-        PasskeyAccount account = new PasskeyAccount(address(0xE), _signers1(X, Y), 1 ether);
+        PasskeyAccount account = new PasskeyAccount(address(0xE), _signers2(X, Y, K1_X, K1_Y), 1 ether);
         vm.deal(address(account), 10 ether);
 
         uint256[] memory ids = new uint256[](1);
@@ -111,5 +117,30 @@ contract RealPasskeyTest is Test {
         vm.prank(address(0xE));
         uint256 r = account.validateUserOp(op, CHALLENGE, 0);
         assertEq(r, 1, "genuine signature, but one is not enough above threshold");
+    }
+
+    /// Replaying a real Touch ID signature signed for Base Sepolia on Ethereum Mainnet is rejected.
+    function test_Attack_RealPasskey_CrossChainReplay_Rejected() public {
+        PasskeyAccount account = new PasskeyAccount(address(0xE), _signers2(X, Y, K1_X, K1_Y), 1 ether);
+        vm.deal(address(account), 10 ether);
+
+        uint256[] memory ids = new uint256[](1);
+        WebAuthn.Signature[] memory sigs = new WebAuthn.Signature[](1);
+        ids[0] = 0; sigs[0] = _realSig();
+
+        PackedUserOperation memory op;
+        op.sender = address(account);
+        op.callData = abi.encodeCall(
+            PasskeyAccount.execute, (address(0xBEEF), 0.5 ether, "")
+        );
+        op.signature = abi.encode(ids, sigs);
+
+        // Compute hash under another chainId (e.g. 1)
+        vm.chainId(1);
+        bytes32 mainnetHash = account.getUserOpHash(op);
+
+        vm.prank(address(0xE));
+        uint256 r = account.validateUserOp(op, mainnetHash, 0);
+        assertEq(r, 1, "cross-chain replayed hardware signature must fail validation");
     }
 }
