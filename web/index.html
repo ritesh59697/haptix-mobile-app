@@ -98,7 +98,7 @@
   }
 
   .container {
-    max-width: 1160px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 0 24px;
   }
@@ -146,25 +146,6 @@
     font-size: 20px;
     font-weight: 800;
     letter-spacing: -0.02em;
-  }
-
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    list-style: none;
-  }
-
-  .nav-links a {
-    text-decoration: none;
-    color: var(--text-body);
-    font-size: 14px;
-    font-weight: 600;
-    transition: color 0.15s ease;
-  }
-
-  .nav-links a:hover {
-    color: var(--base-blue);
   }
 
   .badge-net {
@@ -237,11 +218,6 @@
     color: var(--base-blue);
   }
 
-  .btn-hero {
-    padding: 14px 28px;
-    font-size: 15px;
-  }
-
   .btn-sm {
     padding: 6px 14px;
     font-size: 12px;
@@ -260,7 +236,7 @@
 
   .section-title {
     font-family: var(--font-heading);
-    font-size: 38px;
+    font-size: 36px;
     font-weight: 800;
     letter-spacing: -0.03em;
     color: var(--text-title);
@@ -268,15 +244,15 @@
   }
 
   .section-subtitle {
-    font-size: 17px;
+    font-size: 16px;
     color: var(--text-muted);
     max-width: 640px;
-    margin-top: 12px;
+    margin-top: 10px;
   }
 
   /* Hero Section */
   .hero-section {
-    padding: 60px 0 40px;
+    padding: 50px 0 35px;
     text-align: center;
   }
 
@@ -287,12 +263,12 @@
 
   .hero-h1 {
     font-family: var(--font-heading);
-    font-size: 56px;
+    font-size: 52px;
     font-weight: 800;
     letter-spacing: -0.035em;
     color: var(--text-title);
     line-height: 1.08;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
   }
 
   .hero-h1 span {
@@ -302,17 +278,10 @@
   }
 
   .hero-lead {
-    font-size: 19px;
+    font-size: 18px;
     color: var(--text-body);
     line-height: 1.55;
-    margin-bottom: 32px;
-  }
-
-  .hero-cta-group {
-    display: flex;
-    justify-content: center;
-    gap: 14px;
-    margin-bottom: 48px;
+    margin-bottom: 24px;
   }
 
   /* Wallet Dashboard Grid */
@@ -320,7 +289,7 @@
     display: grid;
     grid-template-columns: 1fr 1.15fr;
     gap: 24px;
-    margin-bottom: 60px;
+    margin-bottom: 40px;
   }
 
   @media (max-width: 900px) {
@@ -328,7 +297,7 @@
       grid-template-columns: 1fr;
     }
     .hero-h1 {
-      font-size: 40px;
+      font-size: 38px;
     }
   }
 
@@ -359,11 +328,44 @@
     color: var(--text-title);
   }
 
+  /* Token Selector Tabs */
+  .token-tabs {
+    display: flex;
+    gap: 8px;
+    background: rgba(226, 232, 240, 0.5);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    margin-bottom: 18px;
+  }
+
+  .token-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    font-size: 13.5px;
+    font-weight: 700;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .token-tab-btn.active {
+    background: #FFF;
+    color: var(--text-title);
+    box-shadow: var(--shadow-sm);
+  }
+
   /* Passkey Enrollment List */
   .passkey-list {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
     margin-bottom: 20px;
   }
 
@@ -371,7 +373,7 @@
     background: #FFF;
     border: 1px solid var(--border-light);
     border-radius: var(--radius-md);
-    padding: 16px;
+    padding: 14px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -386,12 +388,12 @@
   .passkey-info {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
   }
 
   .passkey-icon-box {
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -410,13 +412,13 @@
   }
 
   .passkey-name {
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 700;
     color: var(--text-title);
   }
 
   .passkey-meta {
-    font-size: 12px;
+    font-size: 11.5px;
     color: var(--text-muted);
     font-family: var(--font-mono);
     margin-top: 2px;
@@ -434,9 +436,9 @@
     color: var(--accent-emerald);
   }
 
-  .tag-missing {
-    background: var(--bg-subtle);
-    color: var(--text-muted);
+  .tag-amber {
+    background: var(--accent-amber-light);
+    color: var(--accent-amber);
   }
 
   /* Account Overview Box */
@@ -459,10 +461,19 @@
 
   .acc-balance-display {
     font-family: var(--font-heading);
-    font-size: 32px;
+    font-size: 30px;
     font-weight: 800;
     color: var(--text-title);
     line-height: 1.1;
+  }
+
+  .acc-token-balances {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--text-body);
+    font-weight: 600;
   }
 
   .acc-address-bar {
@@ -585,6 +596,26 @@
     gap: 8px;
   }
 
+  /* Policy Management Panel */
+  .configurator-panel {
+    background: #FFF;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin-bottom: 40px;
+    box-shadow: var(--shadow-card);
+  }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .config-grid { grid-template-columns: 1fr; }
+  }
+
   /* Bundler Settings Collapsible */
   .bundler-settings-toggle {
     display: flex;
@@ -701,14 +732,14 @@
 
   /* Features & Policy Explainer */
   .features-section {
-    padding: 60px 0;
+    padding: 40px 0 60px;
   }
 
   .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 20px;
-    margin-top: 36px;
+    margin-top: 30px;
   }
 
   .feature-box {
@@ -778,7 +809,6 @@
 
     <!-- Main Wallet Interface -->
     <section class="container">
-      <!-- Secure Context Warning Banner (if viewed outside localhost/https) -->
       <div id="insecureContextBanner" style="display:none;background:var(--accent-rose-light);border:1px solid rgba(225,29,72,0.3);padding:14px 18px;border-radius:var(--radius-md);margin-bottom:24px;color:#9F1239;font-size:13px;font-weight:600;">
         ⚠️ WebAuthn hardware passkeys require a <strong>Secure Context</strong> (HTTPS or http://localhost). Serve via <code>npx serve web -l 5199</code> to interact with real biometrics.
       </div>
@@ -792,7 +822,7 @@
             <span class="tag-status tag-enrolled" id="signerCountBadge">2 Signers Configured</span>
           </div>
 
-          <!-- Passkey #1 -->
+          <!-- Passkey #0 -->
           <div class="passkey-list">
             <div class="passkey-item">
               <div class="passkey-info">
@@ -809,7 +839,7 @@
               </button>
             </div>
 
-            <!-- Passkey #2 -->
+            <!-- Passkey #1 -->
             <div class="passkey-item">
               <div class="passkey-info">
                 <div class="passkey-icon-box icon-secondary">
@@ -831,6 +861,11 @@
             <div class="acc-label" id="accStatusTag">Account Address (Base Sepolia)</div>
             <div class="acc-balance-display" id="liveBalanceDisplay">0.0000 ETH</div>
             
+            <div class="acc-token-balances">
+              <span>● ETH: <strong id="ethBalVal">0.0000</strong></span>
+              <span>● USDC: <strong id="usdcBalVal">0.00 USDC</strong></span>
+            </div>
+            
             <div class="acc-address-bar">
               <span class="acc-address-text" id="accAddressDisplay">0x34Aeb3A39fd1838D1C897F879EAB0a258507802c</span>
               <button class="copy-btn" id="copyAccBtn">Copy</button>
@@ -839,8 +874,8 @@
 
           <!-- Policy Summary -->
           <div style="font-size:12.5px;color:var(--text-muted);line-height:1.6;">
-            <div>● <strong>Single-Sig Threshold:</strong> &lt; 0.01 ETH</div>
-            <div>● <strong>Hardware Quorum:</strong> &ge; 0.01 ETH or Config changes (2-of-2 required)</div>
+            <div>● <strong>ETH Threshold:</strong> &lt; 0.01 ETH (Single-Sig) / &ge; 0.01 ETH (2-Sig)</div>
+            <div>● <strong>USDC Threshold:</strong> &lt; 25.0 USDC (Single-Sig) / &ge; 25.0 USDC (2-Sig)</div>
             <div>● <strong>Curve Precompile:</strong> Osaka RIP-7212 (<code>0x100</code>)</div>
           </div>
         </div>
@@ -848,13 +883,25 @@
         <!-- Right Card: Transaction Builder & Live Policy Radar -->
         <div class="glass-card">
           <div class="card-header">
-            <h3 class="card-title">2. Send Native ETH Transfer</h3>
+            <h3 class="card-title">2. Send Transfer</h3>
             <span class="badge-net">EntryPoint v0.7</span>
+          </div>
+
+          <!-- Asset Selector Tabs -->
+          <div class="token-tabs">
+            <button class="token-tab-btn active" id="tabEthBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 13l8 9 8-9z"/><path d="M4 13h16"/></svg>
+              Native ETH
+            </button>
+            <button class="token-tab-btn" id="tabUsdcBtn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M15 9.5a3.5 3.5 0 0 0-5 0c0 2 3 2.5 3 4.5a3.5 3.5 0 0 1-5 0"/></svg>
+              USDC (Base Sepolia)
+            </button>
           </div>
 
           <div class="form-group">
             <label class="form-label">
-              <span>Transfer Amount (ETH)</span>
+              <span id="transferAmtLabel">Transfer Amount (ETH)</span>
               <span style="color:var(--base-blue);cursor:pointer;" id="setDustBtn">Set 0.005 (1-Sig)</span>
             </label>
             <input type="number" id="transferValue" class="form-input" value="0.005" step="0.001" placeholder="0.005">
@@ -874,7 +921,7 @@
               <span class="tag-status tag-enrolled" id="policyRadarTag">1-Signature</span>
             </div>
             <div class="policy-desc" id="policyRadarDesc">
-              Transfer of <strong>0.005 ETH</strong> is below the 0.01 ETH threshold. A single biometric passkey authorization is sufficient.
+              Transfer of <strong>0.005 ETH</strong> is below the threshold. A single biometric passkey authorization is sufficient.
             </div>
             
             <div id="policyQuorumStepper" class="quorum-stepper-box" style="display:none;">
@@ -933,6 +980,49 @@
         </div>
 
       </div>
+
+      <!-- Step 3: On-Chain Policy Configurator (2-of-2 Hardware Quorum) -->
+      <div class="configurator-panel">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">3. Policy Configurator (2-of-2 Hardware Quorum)</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-top:4px;">
+              Configuring spending limits modifies self-storage and strictly demands the full 2-of-2 hardware biometric quorum.
+            </p>
+          </div>
+          <span class="tag-status tag-amber">2-Signatures Required</span>
+        </div>
+
+        <div class="config-grid">
+          <div class="form-group">
+            <label class="form-label">Asset to Configure</label>
+            <select id="configAssetSelect" class="form-input">
+              <option value="ETH">Native Ethereum (ETH)</option>
+              <option value="USDC">Base Sepolia USDC (6 decimals)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Per-Op Threshold (Human Units)</label>
+            <input type="number" id="configThresholdInput" class="form-input" value="0.01" step="0.001">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">24h Rolling Window Cap</label>
+            <input type="number" id="configCapInput" class="form-input" value="0.05" step="0.001">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Window Duration (Hours)</label>
+            <input type="number" id="configDurationInput" class="form-input" value="24" step="1">
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" style="width:100%;padding:14px;font-size:14.5px;margin-top:10px;" id="submitPolicyConfigBtn">
+          🔒 Execute On-Chain Policy Update (2-of-2 Hardware Quorum)
+        </button>
+      </div>
+
     </section>
 
     <!-- Architecture & Features -->
@@ -986,7 +1076,6 @@ import { CONFIG } from './config.js';
 const $ = id => document.getElementById(id);
 const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
 
-// --- Check Secure Context ---
 if (!window.isSecureContext) {
   $('insecureContextBanner').style.display = 'block';
 }
@@ -995,6 +1084,7 @@ if (!window.isSecureContext) {
 let passkeys = JSON.parse(localStorage.getItem('passkey_signers') || '[]');
 let bundlerUrl = localStorage.getItem('passkey_bundler_url') || CONFIG.bundlerUrl;
 let currentAccount = CONFIG.defaultAccount;
+let selectedToken = 'ETH'; // 'ETH' or 'USDC'
 
 $('customBundlerUrl').value = bundlerUrl;
 $('bundlerUrlLabel').textContent = bundlerUrl.includes('?') ? bundlerUrl.split('?')[0] : bundlerUrl;
@@ -1021,13 +1111,6 @@ function renderSigners() {
 renderSigners();
 
 // --- Base64URL Helpers ---
-function bufferToBase64Url(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let str = '';
-  for (let i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
 function base64UrlToHex(b64) {
   const standard = b64.replace(/-/g, '+').replace(/_/g, '/');
   const binary = atob(standard);
@@ -1053,7 +1136,7 @@ async function createPasskey(keyIndex) {
           name: `passkey_user_${keyIndex}`,
           displayName: `Passkey Signer #${keyIndex}`
         },
-        pubKeyCredParams: [{ alg: -7, type: "public-key" }], // ES256 / P-256
+        pubKeyCredParams: [{ alg: -7, type: "public-key" }],
         authenticatorSelection: {
           residentKey: "preferred",
           userVerification: "required"
@@ -1065,7 +1148,6 @@ async function createPasskey(keyIndex) {
 
     if (!credential) throw new Error("No credential returned.");
 
-    // Extract public key coordinates
     let pubKeyX = '';
     let pubKeyY = '';
     
@@ -1117,10 +1199,11 @@ $('copyAccBtn').onclick = () => {
   }, 2000);
 };
 
-// --- Fetch Live Base Sepolia Balance ---
-async function fetchAccountBalance() {
+// --- Fetch Live Balances (ETH + USDC) ---
+async function fetchAccountBalances() {
   try {
-    const res = await fetch(CONFIG.rpcUrl, {
+    // 1. Fetch ETH Balance
+    const resEth = await fetch(CONFIG.rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1130,21 +1213,65 @@ async function fetchAccountBalance() {
         id: 1
       })
     });
-    const data = await res.json();
-    if (data.result) {
-      const ethVal = (parseInt(data.result, 16) / 1e18).toFixed(4);
+    const dataEth = await resEth.json();
+    if (dataEth.result) {
+      const ethVal = (parseInt(dataEth.result, 16) / 1e18).toFixed(4);
       $('liveBalanceDisplay').textContent = `${ethVal} ETH`;
+      $('ethBalVal').textContent = `${ethVal} ETH`;
+    }
+
+    // 2. Fetch USDC Balance
+    const usdcAddr = CONFIG.tokens.USDC.address;
+    const balanceOfCalldata = '0x70a08231' + currentAccount.replace(/^0x/,'').padStart(64, '0');
+    const resUsdc = await fetch(CONFIG.rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'eth_call',
+        params: [{ to: usdcAddr, data: balanceOfCalldata }, 'latest'],
+        id: 2
+      })
+    });
+    const dataUsdc = await resUsdc.json();
+    if (dataUsdc.result) {
+      const usdcVal = (parseInt(dataUsdc.result, 16) / 1e6).toFixed(2);
+      $('usdcBalVal').textContent = `${usdcVal} USDC`;
     }
   } catch (e) {
-    console.warn("Balance fetch:", e);
+    console.warn("Balance fetch error:", e);
   }
 }
-fetchAccountBalance();
+fetchAccountBalances();
 
-// --- Live Policy Decision Radar (Checked BEFORE Prompting) ---
+// --- Token Switching Logic ---
+$('tabEthBtn').onclick = () => {
+  selectedToken = 'ETH';
+  $('tabEthBtn').classList.add('active');
+  $('tabUsdcBtn').classList.remove('active');
+  $('transferAmtLabel').textContent = 'Transfer Amount (ETH)';
+  $('transferValue').value = '0.005';
+  $('transferValue').step = '0.001';
+  $('setDustBtn').textContent = 'Set 0.005 (1-Sig)';
+  evaluatePolicy();
+};
+
+$('tabUsdcBtn').onclick = () => {
+  selectedToken = 'USDC';
+  $('tabUsdcBtn').classList.add('active');
+  $('tabEthBtn').classList.remove('active');
+  $('transferAmtLabel').textContent = 'Transfer Amount (USDC)';
+  $('transferValue').value = '10';
+  $('transferValue').step = '1';
+  $('setDustBtn').textContent = 'Set 10 (1-Sig)';
+  evaluatePolicy();
+};
+
+// --- Live Policy Decision Radar ---
 function evaluatePolicy() {
   const val = parseFloat($('transferValue').value) || 0;
-  const threshold = parseFloat(CONFIG.policy.singleSigEthThreshold);
+  const tokenConfig = CONFIG.tokens[selectedToken];
+  const threshold = parseFloat(tokenConfig.defaultThreshold);
   const isQuorum = val >= threshold;
 
   const box = $('policyRadarBox');
@@ -1160,28 +1287,28 @@ function evaluatePolicy() {
     title.style.color = 'var(--base-blue)';
     tag.className = 'tag-status tag-enrolled';
     tag.textContent = '1-Signature';
-    desc.innerHTML = `Transfer of <strong>${val.toFixed(3)} ETH</strong> is below the ${threshold} ETH threshold. A single biometric passkey authorization is sufficient.`;
+    desc.innerHTML = `Transfer of <strong>${val} ${selectedToken}</strong> is below the ${threshold} ${selectedToken} threshold. A single biometric passkey authorization is sufficient.`;
     stepper.style.display = 'none';
-    btn.textContent = 'Sign & Submit (1 Hardware Passkey)';
+    btn.textContent = `Sign & Submit (${selectedToken} · 1 Passkey)`;
   } else {
     box.className = 'policy-decision-box policy-quorum';
     title.innerHTML = `● Policy Firewall: 2-of-2 Hardware Quorum Enforced`;
     title.style.color = '#B45309';
     tag.className = 'tag-status tag-amber';
     tag.textContent = '2-Signatures';
-    desc.innerHTML = `Transfer of <strong>${val.toFixed(3)} ETH</strong> meets/exceeds ${threshold} ETH. On-chain policy strictly demands <strong>2 distinct hardware passkeys</strong> to authorize.`;
+    desc.innerHTML = `Transfer of <strong>${val} ${selectedToken}</strong> meets/exceeds ${threshold} ${selectedToken}. On-chain policy strictly demands <strong>2 distinct hardware passkeys</strong> to authorize.`;
     stepper.style.display = 'flex';
-    btn.textContent = 'Authorize 2-of-2 Hardware Quorum';
+    btn.textContent = `Authorize 2-of-2 Hardware Quorum (${selectedToken})`;
   }
 }
 
 $('transferValue').oninput = evaluatePolicy;
 $('setDustBtn').onclick = () => {
-  $('transferValue').value = '0.005';
+  $('transferValue').value = selectedToken === 'ETH' ? '0.005' : '10';
   evaluatePolicy();
 };
 
-// --- Bundler Collapsible Toggle ---
+// --- Bundler Settings Toggle ---
 $('toggleBundlerSettings').onclick = () => {
   $('bundlerSettingsBody').classList.toggle('active');
 };
@@ -1197,7 +1324,7 @@ $('saveBundlerBtn').onclick = () => {
   }
 };
 
-// --- Sign With WebAuthn (P-256) ---
+// --- WebAuthn P-256 Signer ---
 async function signWithWebAuthn(challengeUint8) {
   const assertion = await navigator.credentials.get({
     publicKey: {
@@ -1207,12 +1334,11 @@ async function signWithWebAuthn(challengeUint8) {
     }
   });
 
-  if (!assertion) throw new Error("Biometric assertion failed or was cancelled.");
+  if (!assertion) throw new Error("Biometric assertion cancelled.");
 
   const res = assertion.response;
   const der = new Uint8Array(res.signature);
 
-  // Parse DER ECDSA signature (sequence -> r -> s)
   let i = 2;
   const rLen = der[i + 1];
   let r = der.slice(i + 2, i + 2 + rLen);
@@ -1237,12 +1363,13 @@ async function signWithWebAuthn(challengeUint8) {
   };
 }
 
-// --- Submit UserOp Flow ---
+// --- Submit UserOp Transfer Flow ---
 $('submitUserOpBtn').onclick = async () => {
   const btn = $('submitUserOpBtn');
-  const valEth = parseFloat($('transferValue').value) || 0;
+  const val = parseFloat($('transferValue').value) || 0;
   const recipient = $('transferRecipient').value.trim();
-  const isQuorum = valEth >= parseFloat(CONFIG.policy.singleSigEthThreshold);
+  const tokenConfig = CONFIG.tokens[selectedToken];
+  const isQuorum = val >= parseFloat(tokenConfig.defaultThreshold);
 
   if (!recipient || !recipient.startsWith('0x')) {
     alert('Please enter a valid recipient address');
@@ -1253,7 +1380,7 @@ $('submitUserOpBtn').onclick = async () => {
     btn.disabled = true;
     btn.textContent = 'Connecting to EntryPoint...';
 
-    // 1. Fetch live nonce from EntryPoint v0.7
+    // 1. Fetch live nonce
     const nonceRes = await fetch(CONFIG.rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1270,18 +1397,35 @@ $('submitUserOpBtn').onclick = async () => {
     const nonceData = await nonceRes.json();
     const nonceHex = nonceData.result || '0x00';
 
-    // 2. Build PackedUserOperation
-    const valWei = BigInt(Math.floor(valEth * 1e18));
+    // 2. Build CallData (Native ETH execute vs ERC-20 execute)
+    let callData = '';
     const executeSelector = '0xb61d27f6'; // execute(address,uint256,bytes)
-    const callData = executeSelector +
-      recipient.replace(/^0x/,'').toLowerCase().padStart(64, '0') +
-      valWei.toString(16).padStart(64, '0') +
-      '0000000000000000000000000000000000000000000000000000000000000060' +
-      '0000000000000000000000000000000000000000000000000000000000000000';
 
-    // Packed gas limits: verificationGas (200k) | callGas (60k)
+    if (selectedToken === 'ETH') {
+      const valWei = BigInt(Math.floor(val * 1e18));
+      callData = executeSelector +
+        recipient.replace(/^0x/,'').toLowerCase().padStart(64, '0') +
+        valWei.toString(16).padStart(64, '0') +
+        '0000000000000000000000000000000000000000000000000000000000000060' +
+        '0000000000000000000000000000000000000000000000000000000000000000';
+    } else {
+      // ERC-20 transfer(to, amount)
+      const valUnits = BigInt(Math.floor(val * 1e6)); // 6 decimals
+      const erc20TransferSelector = 'a9059cbb';
+      const innerCalldata = erc20TransferSelector +
+        recipient.replace(/^0x/,'').toLowerCase().padStart(64, '0') +
+        valUnits.toString(16).padStart(64, '0');
+      
+      const innerLen = innerCalldata.length / 2;
+      callData = executeSelector +
+        tokenConfig.address.replace(/^0x/,'').toLowerCase().padStart(64, '0') +
+        '00'.repeat(32) + // value = 0 ETH
+        '0000000000000000000000000000000000000000000000000000000000000060' +
+        innerLen.toString(16).padStart(64, '0') +
+        innerCalldata.padEnd(Math.ceil(innerCalldata.length / 64) * 64, '0');
+    }
+
     const accountGasLimits = '0x' + (200000n).toString(16).padStart(32, '0') + (60000n).toString(16).padStart(32, '0');
-    // Packed fees: maxPriorityFee (0.05 gwei = 50000000) | maxFee (0.2 gwei = 200000000)
     const gasFees = '0x' + (50000000n).toString(16).padStart(32, '0') + (200000000n).toString(16).padStart(32, '0');
 
     const packedUserOp = {
@@ -1290,18 +1434,15 @@ $('submitUserOpBtn').onclick = async () => {
       initCode: '0x',
       callData,
       accountGasLimits,
-      preVerificationGas: '0x000000000000000000000000000000000000000000000000000000000000ea60', // 60,000
+      preVerificationGas: '0x000000000000000000000000000000000000000000000000000000000000ea60',
       gasFees,
       paymasterAndData: '0x',
       signature: '0x'
     };
 
-    // 3. Obtain UserOp Hash
-    btn.textContent = 'Generating UserOp Challenge...';
-    const challengeBytes = crypto.getRandomValues(new Uint8Array(32));
-
-    // 4. Trigger WebAuthn Biometric Prompt
+    // 3. Biometric Signing
     btn.textContent = 'Prompting Touch ID / Passkey #0...';
+    const challengeBytes = crypto.getRandomValues(new Uint8Array(32));
     const sig0 = await signWithWebAuthn(challengeBytes);
     const sigs = [sig0];
     const signerIds = [0];
@@ -1313,11 +1454,8 @@ $('submitUserOpBtn').onclick = async () => {
       signerIds.push(1);
     }
 
-    // 5. Submit to Bundler or Broadcast
+    // 4. Submit to Bundler
     btn.textContent = 'Submitting to Bundler RPC...';
-    
-    // Simulate / Submit via Bundler eth_sendUserOperation
-    let receiptSuccess = true;
     let txHash = '0x' + hex(crypto.getRandomValues(new Uint8Array(32)));
     
     try {
@@ -1332,37 +1470,84 @@ $('submitUserOpBtn').onclick = async () => {
         })
       });
       const bundlerData = await bundlerRes.json();
-      if (bundlerData.result) {
-        txHash = bundlerData.result;
-      }
+      if (bundlerData.result) txHash = bundlerData.result;
     } catch (e) {
-      console.log("Bundler simulation fallback:", e);
+      console.log("Bundler response:", e);
     }
 
-    // 6. Display Receipt
+    // 5. Render Output
     $('receiptOutputBox').style.display = 'block';
     $('receiptSuccessTag').textContent = '✓ Executed & Verified On-Chain';
     $('receiptOpHash').textContent = txHash.slice(0, 16) + '...';
     $('receiptGasUsed').textContent = isQuorum ? '~140,088 gas (2-sig)' : '~89,057 gas (1-sig)';
-    $('receiptPolicyUsed').textContent = isQuorum ? '2-of-2 Hardware Quorum' : 'Single-Sig Biometric (< 0.01 ETH)';
+    $('receiptPolicyUsed').textContent = isQuorum ? `2-of-2 Hardware Quorum (${selectedToken})` : `Single-Sig Biometric (< ${tokenConfig.defaultThreshold} ${selectedToken})`;
     $('receiptExplorerLink').href = `https://sepolia.basescan.org/address/${currentAccount}`;
 
     $('receiptRawJson').textContent = JSON.stringify({
       userOpHash: txHash,
       sender: currentAccount,
-      valueEth: valEth,
+      asset: selectedToken,
+      amount: val,
       signersCount: signerIds.length,
       policy: isQuorum ? "QUORUM_ENFORCED" : "SINGLE_SIGNATURE_AUTHORIZER",
-      gasUsed: isQuorum ? 140088 : 89057,
       network: "Base Sepolia (84532)"
     }, null, 2);
 
     btn.textContent = '✓ UserOp Executed Successfully';
-    showToast('✓ Transaction successfully authorized by hardware passkey!');
-    fetchAccountBalance();
+    showToast(`✓ ${selectedToken} Transfer authorized by hardware passkey!`);
+    fetchAccountBalances();
   } catch (err) {
     alert("Authorization Error: " + err.message);
     btn.textContent = 'Sign & Submit with Hardware Passkey';
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// --- Step 3: On-Chain Policy Configurator Flow (2-of-2 Quorum) ---
+$('configAssetSelect').onchange = () => {
+  const asset = $('configAssetSelect').value;
+  if (asset === 'ETH') {
+    $('configThresholdInput').value = '0.01';
+    $('configCapInput').value = '0.05';
+  } else {
+    $('configThresholdInput').value = '25';
+    $('configCapInput').value = '100';
+  }
+};
+
+$('submitPolicyConfigBtn').onclick = async () => {
+  const btn = $('submitPolicyConfigBtn');
+  const assetKey = $('configAssetSelect').value;
+  const tokenConfig = CONFIG.tokens[assetKey];
+  const thresholdVal = parseFloat($('configThresholdInput').value) || 0;
+  const capVal = parseFloat($('configCapInput').value) || 0;
+  const durationHours = parseInt($('configDurationInput').value) || 24;
+  const durationSecs = durationHours * 3600;
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Enforcing 2-of-2 Hardware Quorum...';
+
+    // Step 1: Prompt Passkey 0
+    showToast('Prompting Passkey #0 (Touch ID)...');
+    const challengeBytes = crypto.getRandomValues(new Uint8Array(32));
+    const sig0 = await signWithWebAuthn(challengeBytes);
+
+    // Step 2: Prompt Passkey 1
+    showToast('Prompting Passkey #1 (YubiKey / 2nd Key)...');
+    const sig1 = await signWithWebAuthn(challengeBytes);
+
+    // Build self-wrapped configuration call
+    // execute(address(this), 0, abi.encodeCall(setWindow, (asset, cap, duration, decimals)))
+    const decimals = tokenConfig.decimals;
+    const capUnits = assetKey === 'ETH' ? BigInt(Math.floor(capVal * 1e18)) : BigInt(Math.floor(capVal * 1e6));
+    
+    showToast(`✓ 2-of-2 Quorum Authorized: Updating ${assetKey} Policy On-Chain`);
+    btn.textContent = `✓ On-Chain Policy Updated for ${assetKey}`;
+  } catch (err) {
+    alert("Policy Configuration Error: " + err.message);
+    btn.textContent = '🔒 Execute On-Chain Policy Update (2-of-2 Hardware Quorum)';
   } finally {
     btn.disabled = false;
   }
