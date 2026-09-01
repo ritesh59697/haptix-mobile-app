@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Passkey Smart Wallet",
+  "name": "Haptix — Biometric Passkey Wallet",
   "version": "1.0.0",
-  "description": "ERC-4337 Smart Account with WebAuthn P-256 Passkeys and On-Chain Spending Policy Firewall.",
+  "description": "The Biometric Hardware Enclave Layer for EVM. ERC-4337 Smart Account with WebAuthn P-256 Passkeys.",
   "permissions": [
     "storage",
     "activeTab",
@@ -10,7 +10,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Passkey Smart Wallet"
+    "default_title": "Haptix Wallet"
   },
   "side_panel": {
     "default_path": "sidepanel.html"

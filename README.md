@@ -1,20 +1,21 @@
-# passkey-wallet
+# Haptix (`haptix-labs`)
 
-An ERC-4337 smart account that enforces a **spending policy on-chain**, authorized
-by **WebAuthn passkeys** (P-256), verified through the RIP-7212 precompile.
+> **The Biometric Hardware Enclave Layer for EVM.**
 
-Built as a learning exercise. **Not audited. Do not put real money in it.**
+An ERC-4337 smart account architecture that enforces **autonomous spending policies on-chain**, authorized by **WebAuthn passkeys** (P-256), and verified through the RIP-7212 hardware precompile on Base.
+
+---
 
 ## Live on Base Sepolia
 
-| | |
+| Parameter | Value |
 |---|---|
-| Account | [`0x34Aeb3A39fd1838D1C897F879EAB0a258507802c`](https://sepolia.basescan.org/address/0x34Aeb3A39fd1838D1C897F879EAB0a258507802c) |
-| EntryPoint | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` (v0.7) |
-| Signers | 2 passkeys, both Touch ID / Secure Enclave |
-| First UserOp | [`0x3c40196f…acc9b1`](https://sepolia.basescan.org/tx/0x3c40196f878b9c9a1630bc8e6181ab10f8a29197ce3561431ef4b7d5a6acc9b1) — 1 passkey, ETH transfer |
-| Window config | [`0x8fb6cb54…f05e4`](https://sepolia.basescan.org/tx/0x8fb6cb5460ebf6a203a450c70094da68bc3738be03f4405d55eb90ede99f05e4) — 2 passkeys, `setWindow` |
-| Live policy | 0.01 ETH per-op threshold · 0.05 ETH per 24h rolling cap |
+| Smart Account | [`0x34Aeb3A39fd1838D1C897F879EAB0a258507802c`](https://sepolia.basescan.org/address/0x34Aeb3A39fd1838D1C897F879EAB0a258507802c) |
+| ERC-4337 EntryPoint | `0x0000000071727De22E5E9d8BAf0edAc6f37da032` (v0.7) |
+| Hardware Signers | 2 passkeys (Touch ID / Apple Secure Enclave & YubiKey) |
+| First UserOp Receipt | [`0x3c40196f…acc9b1`](https://sepolia.basescan.org/tx/0x3c40196f878b9c9a1630bc8e6181ab10f8a29197ce3561431ef4b7d5a6acc9b1) — 1 passkey, 0.4s Touch ID |
+| 2-of-2 Quorum UserOp | [`0x8fb6cb54…f05e4`](https://sepolia.basescan.org/tx/0x8fb6cb5460ebf6a203a450c70094da68bc3738be03f4405d55eb90ede99f05e4) — 2 passkeys, `setWindow` |
+| On-Chain Policy Engine | 0.01 ETH per-op threshold · 0.05 ETH 24h rolling cap · Panic Freeze |
 
 That transaction is a real UserOp: a Touch ID passkey authorized an ETH transfer
 through the EntryPoint, with `validateUserOp` verifying the P-256 signature
