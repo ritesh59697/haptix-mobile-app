@@ -3,82 +3,177 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Test dApp — Passkey Wallet Integration</title>
+  <title>Passkey dApp Simulator — EIP-6963 &amp; Web3 Testing</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg-black: #000000;
+      --bg-deep: #050508;
+      --bg-surface: #090A0F;
+      --bg-card: rgba(14, 16, 23, 0.85);
+      --text-white: #FFFFFF;
+      --text-body: #E2E8F0;
+      --text-muted: #8E9BAE;
+      --base-blue: #0052FF;
+      --base-blue-hover: #0045D8;
+      --accent-emerald: #10B981;
+      --accent-amber: #F59E0B;
+      --border-light: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(255, 255, 255, 0.18);
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --font-heading: 'Outfit', sans-serif;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      background: #0f172a;
-      color: #f8fafc;
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-black);
+      color: var(--text-body);
+      font-family: var(--font-main);
       padding: 40px 20px;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      margin: 0;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
-    .container {
-      max-width: 540px;
+
+    /* Live Animated Blue Halftone Dither Canvas */
+    #globalDitherCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.75;
+    }
+
+    .noise-overlay {
+      position: fixed;
+      inset: 0;
       width: 100%;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      height: 100%;
+      background: radial-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      z-index: 0;
     }
-    h1 {
-      font-family: 'Outfit', sans-serif;
-      font-size: 24px;
-      margin-bottom: 6px;
-      color: #38bdf8;
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 560px;
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
-    p { font-size: 14px; color: #94a3b8; margin-bottom: 24px; }
-    .btn-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-    button {
-      background: #0052ff;
-      color: white;
-      border: none;
-      padding: 12px 18px;
-      border-radius: 10px;
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
       font-weight: 700;
-      font-size: 14px;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      margin-bottom: 16px;
+      font-family: var(--font-mono);
+    }
+
+    h1 {
+      font-family: var(--font-heading);
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: var(--text-white);
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    button {
+      background: #FFFFFF;
+      color: #000000;
+      border: 1px solid transparent;
+      padding: 13px 18px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 13.5px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      font-family: var(--font-main);
     }
-    button:hover { background: #0045d8; }
-    button.sec { background: #334155; }
-    button.sec:hover { background: #475569; }
+
+    button:hover {
+      background: #E2E8F0;
+      transform: translateY(-1px);
+    }
+
+    button.sec {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-white);
+      border-color: var(--border-light);
+    }
+
+    button.sec:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--border-focus);
+    }
+
     .output-box {
-      background: #090d16;
-      border: 1px solid #1e293b;
-      border-radius: 12px;
-      padding: 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: #38bdf8;
+      background: #000000;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: #93C5FD;
       white-space: pre-wrap;
       word-break: break-all;
-      max-height: 200px;
+      max-height: 220px;
       overflow-y: auto;
-    }
-    .status-pill {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 99px;
-      font-size: 11px;
-      font-weight: 700;
-      background: rgba(56, 189, 248, 0.1);
-      color: #38bdf8;
-      margin-bottom: 16px;
     }
   </style>
 </head>
 <body>
+
+  <canvas id="globalDitherCanvas"></canvas>
+  <div class="noise-overlay"></div>
+
   <div class="container">
     <div class="status-pill" id="statusPill">Checking Provider...</div>
     <h1>Passkey dApp Simulator</h1>
@@ -87,23 +182,23 @@
     <div class="btn-group">
       <button id="btnConnect">
         <span>1. Connect Passkey Wallet</span>
-        <span>eth_requestAccounts →</span>
+        <span style="font-family:var(--font-mono);font-size:12px;">eth_requestAccounts →</span>
       </button>
       <button class="sec" id="btnSmallTx">
         <span>2. Send Small Transfer (0.001 ETH)</span>
-        <span>1-Sig Touch ID →</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-emerald);">1-Sig Touch ID →</span>
       </button>
       <button class="sec" id="btnLargeTx">
         <span>3. Send Large Transfer (0.05 ETH)</span>
-        <span>2-of-2 Quorum Stepper →</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-amber);">2-of-2 Quorum Stepper →</span>
       </button>
       <button class="sec" id="btnSign">
         <span>4. Sign In Message (ERC-1271)</span>
-        <span>personal_sign →</span>
+        <span style="font-family:var(--font-mono);font-size:12px;">personal_sign →</span>
       </button>
     </div>
 
-    <div style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:8px;">RPC Output Console:</div>
+    <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">RPC Output Console</div>
     <div class="output-box" id="outputConsole">Provider ready. Click Connect to start.</div>
   </div>
 
@@ -120,16 +215,18 @@
       const pill = document.getElementById('statusPill');
       if (p) {
         if (p.isPasskey || p === window.passkey) {
-          pill.style.background = '#ECFDF5';
-          pill.style.color = '#059669';
-          pill.textContent = '✓ Passkey Smart Wallet Active (Direct / EIP-6963)';
+          pill.style.background = 'rgba(16, 185, 129, 0.1)';
+          pill.style.color = '#10B981';
+          pill.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          pill.textContent = 'Passkey Smart Wallet Active (Direct / EIP-6963)';
         } else {
-          pill.style.background = '#FEF3C7';
-          pill.style.color = '#D97706';
-          pill.textContent = '⚠️ Generic Wallet Injected (Passkey Fallback Available)';
+          pill.style.background = 'rgba(245, 158, 11, 0.1)';
+          pill.style.color = '#F59E0B';
+          pill.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+          pill.textContent = 'Generic Wallet Injected (Passkey Fallback Available)';
         }
       } else {
-        pill.textContent = '⚠️ Extension Not Detected Yet';
+        pill.textContent = 'Extension Not Detected Yet';
       }
     }
 
@@ -245,6 +342,78 @@
         log({ error: e.message });
       }
     };
+
+    // Live Blue Halftone Dither Canvas Engine
+    const canvas = document.getElementById('globalDitherCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      let width = 0, height = 0;
+      let mouseX = -1000, mouseY = -1000;
+      let targetMouseX = -1000, targetMouseY = -1000;
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      window.addEventListener('mousemove', e => {
+        targetMouseX = e.clientX;
+        targetMouseY = e.clientY;
+      });
+
+      let time = 0;
+      const dotSpacing = 14;
+
+      function draw() {
+        time += 0.022;
+        mouseX += (targetMouseX - mouseX) * 0.08;
+        mouseY += (targetMouseY - mouseY) * 0.08;
+
+        ctx.clearRect(0, 0, width, height);
+
+        const cols = Math.ceil(width / dotSpacing) + 1;
+        const rows = Math.ceil(height / dotSpacing) + 1;
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const x = c * dotSpacing;
+            const y = r * dotSpacing;
+
+            const w1 = Math.sin(x * 0.005 + time * 1.2) * Math.cos(y * 0.006 + time * 0.8);
+            const w2 = Math.sin((x + y) * 0.004 - time * 0.9);
+            const w3 = Math.cos((x - y) * 0.003 + time * 0.6);
+            const combinedWave = (w1 + w2 + w3) / 3;
+
+            const dx = x - mouseX;
+            const dy = y - mouseY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const mouseEffect = Math.max(0, 1 - dist / 200) * 0.75;
+
+            const intensity = Math.max(0, Math.min(1, (combinedWave * 0.5 + 0.5) * 0.75 + mouseEffect));
+            
+            if (intensity > 0.08) {
+              const radius = Math.max(0.6, intensity * 4.2);
+              const alpha = Math.min(0.9, 0.08 + intensity * 0.75);
+
+              if (intensity > 0.65) {
+                ctx.fillStyle = `rgba(6, 182, 212, ${alpha})`;
+              } else {
+                ctx.fillStyle = `rgba(0, 82, 255, ${alpha})`;
+              }
+
+              ctx.beginPath();
+              ctx.arc(x, y, radius, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
   </script>
 </body>
 </html>

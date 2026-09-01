@@ -6,27 +6,38 @@
   <title>Passkey Smart Wallet</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-page: #faf8f2;
-      --bg-card: #FFFFFF;
-      --bg-subtle: #F8FAFC;
-      --text-title: #0F172A;
-      --text-body: #334155;
-      --text-muted: #64748B;
+      --bg-black: #000000;
+      --bg-deep: #050508;
+      --bg-surface: #090A0F;
+      --bg-card: rgba(14, 16, 23, 0.9);
+      --bg-subtle: rgba(255, 255, 255, 0.04);
+      --text-title: #FFFFFF;
+      --text-body: #E2E8F0;
+      --text-muted: #8E9BAE;
+      --text-dark: #525E70;
+
       --base-blue: #0052FF;
       --base-blue-hover: #0045D8;
-      --base-blue-light: #EBF2FF;
-      --accent-emerald: #059669;
-      --accent-emerald-light: #ECFDF5;
-      --accent-amber: #D97706;
-      --accent-amber-light: #FFFBEB;
-      --border-light: #E2E8F0;
-      --radius-sm: 8px;
-      --radius-md: 14px;
-      --radius-lg: 20px;
+      --base-blue-light: rgba(0, 82, 255, 0.18);
+      --accent-emerald: #10B981;
+      --accent-emerald-light: rgba(16, 185, 129, 0.15);
+      --accent-amber: #F59E0B;
+      --accent-amber-light: rgba(245, 158, 11, 0.15);
+      --accent-rose: #F43F5E;
+      --accent-rose-light: rgba(244, 63, 94, 0.15);
+
+      --border-light: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(255, 255, 255, 0.18);
+      --border-blue: rgba(0, 82, 255, 0.35);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
       --radius-full: 9999px;
+
       --font-heading: 'Outfit', sans-serif;
       --font-main: 'Plus Jakarta Sans', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
@@ -37,18 +48,20 @@
     body {
       width: 360px;
       min-height: 560px;
-      background-color: var(--bg-page);
+      background-color: var(--bg-black);
       color: var(--text-body);
       font-family: var(--font-main);
       line-height: 1.4;
       -webkit-font-smoothing: antialiased;
       display: flex;
       flex-direction: column;
+      border: 1px solid var(--border-light);
     }
 
     .popup-header {
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(9, 10, 15, 0.95);
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border-light);
       padding: 12px 16px;
       display: flex;
@@ -68,13 +81,12 @@
     .brand-icon {
       width: 26px;
       height: 26px;
-      border-radius: 7px;
-      background: var(--base-blue);
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, #0052FF, #8B5CF6);
       display: flex;
       align-items: center;
       justify-content: center;
       color: #FFF;
-      font-size: 14px;
     }
 
     .brand-name {
@@ -82,6 +94,7 @@
       font-size: 15px;
       font-weight: 800;
       color: var(--text-title);
+      letter-spacing: -0.02em;
     }
 
     .network-pill {
@@ -89,12 +102,12 @@
       align-items: center;
       gap: 5px;
       padding: 4px 10px;
-      background: #FFF;
+      background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border-light);
       border-radius: var(--radius-full);
       font-size: 11px;
       font-weight: 700;
-      color: var(--text-title);
+      color: var(--text-white);
     }
 
     .pulse-dot {
@@ -102,13 +115,36 @@
       height: 6px;
       border-radius: 50%;
       background: var(--accent-emerald);
+      box-shadow: 0 0 6px var(--accent-emerald);
+    }
+
+    .freeze-pill-btn {
+      background: var(--accent-rose);
+      color: #FFF;
+      border: none;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .freeze-banner {
+      display: none;
+      background: rgba(244, 63, 94, 0.15);
+      border-bottom: 1px solid rgba(244, 63, 94, 0.35);
+      padding: 8px 12px;
+      font-size: 11px;
+      color: #FDA4AF;
+      font-weight: 600;
+      text-align: center;
     }
 
     .popup-content {
       padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       flex: 1;
     }
 
@@ -118,7 +154,7 @@
       border: 1px solid var(--border-light);
       border-radius: var(--radius-lg);
       padding: 18px;
-      box-shadow: 0 4px 12px rgba(0, 82, 255, 0.05);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
     }
 
     .account-row {
@@ -134,9 +170,10 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
       background: var(--base-blue-light);
-      color: var(--base-blue);
+      color: #60A5FA;
       padding: 3px 8px;
-      border-radius: 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 82, 255, 0.3);
     }
 
     .copy-chip {
@@ -147,28 +184,30 @@
       font-size: 11px;
       color: var(--text-muted);
       cursor: pointer;
-      background: var(--bg-subtle);
+      background: rgba(0, 0, 0, 0.6);
       border: 1px solid var(--border-light);
       padding: 3px 8px;
-      border-radius: 6px;
+      border-radius: 4px;
     }
 
     .copy-chip:hover {
-      color: var(--base-blue);
-      border-color: var(--base-blue);
+      color: var(--text-white);
+      border-color: var(--border-focus);
     }
 
     .portfolio-label {
-      font-size: 11.5px;
+      font-size: 11px;
       color: var(--text-muted);
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .portfolio-val {
       font-family: var(--font-heading);
       font-size: 28px;
       font-weight: 800;
-      color: var(--text-title);
+      color: var(--text-white);
       margin: 2px 0 10px 0;
       line-height: 1.1;
     }
@@ -190,7 +229,7 @@
 
     .asset-name {
       font-weight: 700;
-      color: var(--text-title);
+      color: var(--text-white);
       display: flex;
       align-items: center;
       gap: 6px;
@@ -199,28 +238,25 @@
     .asset-val {
       font-family: var(--font-mono);
       font-weight: 600;
-      color: var(--text-body);
+      color: var(--text-muted);
     }
 
-    /* Passkey Status Card */
+    /* Policy & Hardware Key Card */
     .passkey-card {
-      background: #FFF;
+      background: var(--bg-card);
       border: 1px solid var(--border-light);
-      border-radius: var(--radius-md);
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
     }
 
     .card-title {
-      font-size: 12px;
-      font-weight: 800;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--text-muted);
+      margin-bottom: 10px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
     }
 
@@ -228,59 +264,55 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-light);
       font-size: 12px;
     }
+    .key-badge-row:last-child { border-bottom: none; }
 
-    .key-name {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 600;
-      color: var(--text-title);
-    }
+    .key-name { color: var(--text-white); font-weight: 600; }
+    .status-ok { color: var(--accent-emerald); font-weight: 700; font-family: var(--font-mono); font-size: 11px; }
 
-    .status-ok {
-      color: var(--accent-emerald);
-      font-weight: 700;
-      font-size: 11px;
-    }
-
-    /* Actions */
+    /* Actions Bottom */
     .actions-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
     }
 
     .btn-action {
-      background: var(--base-blue);
-      color: #FFF;
+      flex: 1;
+      padding: 10px;
+      background: #FFFFFF;
+      color: #000000;
       border: none;
-      padding: 10px 14px;
       border-radius: var(--radius-md);
-      font-size: 13px;
       font-weight: 700;
+      font-size: 12.5px;
       cursor: pointer;
+      text-align: center;
+      text-decoration: none;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      transition: background 0.15s ease;
+      transition: all 0.15s ease;
     }
 
-    .btn-action:hover { background: var(--base-blue-hover); }
+    .btn-action:hover {
+      background: #E2E8F0;
+    }
 
     .btn-secondary {
-      background: #FFF;
-      color: var(--text-title);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-white);
       border: 1px solid var(--border-light);
     }
-
     .btn-secondary:hover {
-      background: var(--bg-subtle);
+      background: rgba(255, 255, 255, 0.1);
     }
 
-    /* Approval View (Overlay / Active Mode) */
+    /* DApp Approval View */
     #viewApproval {
       display: none;
       flex-direction: column;
@@ -288,20 +320,20 @@
     }
 
     .dapp-card {
-      background: #FFF;
-      border: 1px solid var(--border-light);
+      background: var(--bg-card);
+      border: 1px solid var(--border-blue);
       border-radius: var(--radius-lg);
       padding: 16px;
-      text-align: center;
+      box-shadow: 0 0 20px rgba(0, 82, 255, 0.15);
     }
 
     .dapp-origin {
       font-family: var(--font-mono);
       font-size: 11px;
       color: var(--text-muted);
-      background: var(--bg-subtle);
-      padding: 4px 10px;
-      border-radius: var(--radius-full);
+      background: rgba(0, 0, 0, 0.6);
+      padding: 3px 8px;
+      border-radius: 4px;
       display: inline-block;
       margin-bottom: 8px;
     }
@@ -310,140 +342,134 @@
       font-family: var(--font-heading);
       font-size: 18px;
       font-weight: 800;
-      color: var(--text-title);
-      margin-bottom: 4px;
+      color: var(--text-white);
+      margin-bottom: 12px;
     }
 
     .tx-breakdown {
-      background: var(--bg-subtle);
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-md);
-      padding: 12px;
-      margin-top: 12px;
-      text-align: left;
-      font-size: 12px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border-light);
+      padding: 12px;
+      border-radius: var(--radius-sm);
     }
 
     .tx-row {
       display: flex;
       justify-content: space-between;
+      font-size: 12px;
     }
 
     .tx-label { color: var(--text-muted); }
-    .tx-val { font-family: var(--font-mono); font-weight: 700; color: var(--text-title); }
+    .tx-val { font-family: var(--font-mono); font-weight: 700; color: var(--text-white); overflow: hidden; text-overflow: ellipsis; }
 
-    /* Policy Firewall Indicator */
     .policy-firewall-box {
       border-radius: var(--radius-md);
       padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      border: 1px solid transparent;
     }
 
     .policy-single {
-      background: var(--accent-emerald-light);
-      border: 1px solid rgba(5, 150, 105, 0.2);
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
     }
 
     .policy-quorum {
-      background: var(--accent-amber-light);
-      border: 1px solid rgba(217, 119, 6, 0.2);
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
     }
 
     .policy-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 4px;
     }
 
     .policy-desc {
       font-size: 11.5px;
-      line-height: 1.35;
       color: var(--text-body);
+      line-height: 1.4;
     }
 
     .btn-approve {
-      background: var(--base-blue);
-      color: #FFF;
+      padding: 12px;
+      background: #FFFFFF;
+      color: #000000;
       border: none;
-      padding: 13px;
       border-radius: var(--radius-md);
+      font-weight: 800;
       font-size: 14px;
-      font-weight: 700;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-approve:hover {
+      background: #E2E8F0;
     }
 
     .btn-reject {
-      background: none;
-      border: 1px solid var(--border-light);
-      color: var(--text-muted);
       padding: 10px;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border-light);
       border-radius: var(--radius-md);
-      font-size: 12px;
-      font-weight: 700;
+      font-weight: 600;
+      font-size: 12.5px;
       cursor: pointer;
-    }
-
-    .btn-reject:hover {
-      background: #FFF;
-      color: #DC2626;
-      border-color: #FCA5A5;
     }
   </style>
 </head>
 <body>
+
+  <!-- Header -->
   <header class="popup-header">
     <div class="brand">
-      <div class="brand-icon">🔑</div>
-      <div class="brand-name">Passkey Wallet</div>
+      <div class="brand-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
+      </div>
+      <span class="brand-name">Passkey Wallet</span>
     </div>
+
     <div style="display:flex;align-items:center;gap:6px;">
-      <button id="panicFreezeBtn" style="background:#DC2626;color:#FFF;border:none;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:800;cursor:pointer;">🚨 Freeze</button>
+      <button class="freeze-pill-btn" id="popupFreezeBtn">Freeze</button>
       <div class="network-pill">
         <span class="pulse-dot"></span>
-        <span>Base Sepolia</span>
+        Base Sepolia
       </div>
     </div>
   </header>
 
-  <div id="frozenBanner" style="display:none;background:#FEF2F2;border-bottom:1px solid #FCA5A5;padding:8px 12px;text-align:center;color:#991B1B;font-weight:700;font-size:11px;">
-    🚨 <strong>EMERGENCY FREEZE ACTIVE:</strong> All sub-threshold transfers locked. 2-of-2 Quorum required.
-    <button id="unfreezeBtn" style="margin-left:6px;background:#991B1B;color:#FFF;border:none;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;">Unfreeze</button>
+  <div class="freeze-banner" id="popupFreezeBanner">
+    EMERGENCY FREEZE ACTIVE: 2-of-2 Quorum required.
+    <button id="popupUnfreezeBtn" style="margin-left:6px;background:none;border:none;color:#FFF;text-decoration:underline;cursor:pointer;font-weight:700;">Unfreeze</button>
   </div>
 
   <main class="popup-content">
     <!-- Default Wallet View -->
-    <div id="viewWallet" style="display:flex; flex-direction:column; gap:16px;">
+    <div id="viewDefault" style="display:flex;flex-direction:column;gap:14px;flex:1;">
       <div class="balance-card">
         <div class="account-row">
-          <span class="account-badge">ERC-4337 Smart Account</span>
+          <span class="account-badge">Passkey P-256</span>
           <div class="copy-chip" id="copyAddrBtn">
-            <span id="shortAddr">0x34Ae...802c</span>
-            <span>📋</span>
+            <span id="shortAddr">0x34A...802c</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
           </div>
         </div>
 
         <div class="portfolio-label">Total Smart Account Balance</div>
-        <div class="portfolio-val" id="totalBalanceDisplay">0.00 ETH</div>
+        <div class="portfolio-val" id="totalPortfolioUsd">0.0003 ETH</div>
 
         <div class="assets-grid">
           <div class="asset-row">
-            <span class="asset-name">🔹 Native ETH</span>
+            <span class="asset-name">Native ETH</span>
             <span class="asset-val" id="ethBalance">... ETH</span>
           </div>
           <div class="asset-row">
-            <span class="asset-name">💵 USDC Coin</span>
+            <span class="asset-name">USDC Coin</span>
             <span class="asset-val" id="usdcBalance">... USDC</span>
           </div>
         </div>
@@ -452,24 +478,24 @@
       <div class="passkey-card">
         <div class="card-title">
           <span>Enrolled Hardware Keys</span>
-          <span style="font-size:10px;color:var(--base-blue);">2-of-N Quorum</span>
+          <span style="font-size:10px;color:#60A5FA;">2-of-N Quorum</span>
         </div>
         <div class="key-badge-row">
-          <span class="key-name">💻 Key #0: Touch ID</span>
+          <span class="key-name">Key #0: Touch ID</span>
           <button id="enrollKey0Btn" style="background:var(--base-blue);color:#FFF;border:none;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Enroll Key #0</button>
         </div>
         <div class="key-badge-row">
-          <span class="key-name">🛡️ Key #1: Backup Key</span>
-          <button id="enrollKey1Btn" style="background:var(--accent-amber);color:#FFF;border:none;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Enroll Key #1</button>
+          <span class="key-name">Key #1: Backup Key</span>
+          <button id="enrollKey1Btn" style="background:var(--accent-amber);color:#000;border:none;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Enroll Key #1</button>
         </div>
       </div>
 
       <div class="actions-row">
         <button class="btn-action" id="openWebDashboardBtn">
-          <span>🚀 Open Dashboard</span>
+          <span>Open Dashboard</span>
         </button>
         <button class="btn-action btn-secondary" id="openSidePanelBtn">
-          <span>📂 Side Panel</span>
+          <span>Side Panel</span>
         </button>
       </div>
     </div>
@@ -500,7 +526,7 @@
       <div id="appPolicyBox" class="policy-firewall-box policy-single">
         <div class="policy-header">
           <span id="appPolicyTitle" style="color:var(--accent-emerald);">● 1-Biometric Signature</span>
-          <span id="appPolicyBadge">Single Tap</span>
+          <span id="appPolicyBadge" style="font-family:var(--font-mono);">Single Tap</span>
         </div>
         <div class="policy-desc" id="appPolicyDesc">
           Sub-threshold transfer. Authorize directly with 1 Touch ID tap.
@@ -508,10 +534,10 @@
       </div>
 
       <button class="btn-approve" id="approveWithPasskeyBtn">
-        <span>🔒 Authorize with Touch ID</span>
+        Authorize with Touch ID
       </button>
       <button class="btn-reject" id="rejectRequestBtn">
-        <span>Cancel / Reject</span>
+        Cancel / Reject
       </button>
     </div>
   </main>

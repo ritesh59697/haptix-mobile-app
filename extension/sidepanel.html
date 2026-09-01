@@ -6,24 +6,35 @@
   <title>Passkey Smart Wallet — Side Panel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-page: #faf8f2;
-      --bg-card: #FFFFFF;
-      --bg-subtle: #F8FAFC;
-      --text-title: #0F172A;
-      --text-body: #334155;
-      --text-muted: #64748B;
+      --bg-black: #000000;
+      --bg-deep: #050508;
+      --bg-surface: #090A0F;
+      --bg-card: rgba(14, 16, 23, 0.9);
+      --bg-subtle: rgba(255, 255, 255, 0.04);
+      --text-title: #FFFFFF;
+      --text-body: #E2E8F0;
+      --text-muted: #8E9BAE;
+      --text-dark: #525E70;
+
       --base-blue: #0052FF;
-      --base-blue-light: #EBF2FF;
-      --accent-emerald: #059669;
-      --accent-emerald-light: #ECFDF5;
-      --accent-amber: #D97706;
-      --accent-amber-light: #FFFBEB;
-      --border-light: #E2E8F0;
-      --radius-md: 14px;
-      --radius-lg: 20px;
+      --base-blue-hover: #0045D8;
+      --base-blue-light: rgba(0, 82, 255, 0.18);
+      --accent-emerald: #10B981;
+      --accent-amber: #F59E0B;
+      --accent-rose: #F43F5E;
+
+      --border-light: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(255, 255, 255, 0.18);
+      --border-blue: rgba(0, 82, 255, 0.35);
+
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+
       --font-heading: 'Outfit', sans-serif;
       --font-main: 'Plus Jakarta Sans', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
@@ -32,7 +43,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     body {
-      background-color: var(--bg-page);
+      background-color: var(--bg-black);
       color: var(--text-body);
       font-family: var(--font-main);
       padding: 16px;
@@ -40,6 +51,7 @@
       flex-direction: column;
       gap: 16px;
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
 
     .panel-header {
@@ -55,6 +67,7 @@
       font-size: 16px;
       font-weight: 800;
       color: var(--text-title);
+      letter-spacing: -0.02em;
     }
 
     .card {
@@ -62,15 +75,16 @@
       border: 1px solid var(--border-light);
       border-radius: var(--radius-md);
       padding: 16px;
+      backdrop-filter: blur(12px);
     }
 
     .card-title {
-      font-size: 12px;
-      font-weight: 800;
+      font-size: 11px;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: var(--text-muted);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .balance-val {
@@ -96,8 +110,8 @@
     }
 
     .btn {
-      background: var(--base-blue);
-      color: #FFF;
+      background: #FFFFFF;
+      color: #000000;
       border: none;
       padding: 10px 14px;
       border-radius: var(--radius-md);
@@ -106,76 +120,73 @@
       cursor: pointer;
       width: 100%;
       text-align: center;
+      text-decoration: none;
+      display: block;
+      transition: all 0.15s ease;
     }
+    .btn:hover { background: #E2E8F0; }
 
-    .btn:hover { background: #0045D8; }
-
-    .key-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
+    .btn-freeze {
+      background: var(--accent-rose);
+      color: #FFF;
+      border: none;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
       font-size: 12px;
-      border-bottom: 1px solid var(--border-light);
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
     }
-
-    .key-row:last-child { border-bottom: none; }
   </style>
 </head>
 <body>
-  <header class="panel-header">
-    <div class="brand-title">Passkey Smart Wallet</div>
-    <div style="display:flex;align-items:center;gap:6px;">
-      <button id="spPanicFreezeBtn" style="background:#DC2626;color:#FFF;border:none;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:800;cursor:pointer;">🚨 Freeze</button>
-      <div style="font-size:11px;font-weight:700;background:var(--accent-emerald-light);color:var(--accent-emerald);padding:3px 8px;border-radius:6px;">
-        Base Sepolia
+
+  <div class="panel-header">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg, #0052FF, #8B5CF6);display:flex;align-items:center;justify-content:center;color:#FFF;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
       </div>
+      <span class="brand-title">Passkey Wallet</span>
     </div>
-  </header>
+    <span style="font-size:11px;font-weight:700;color:var(--accent-emerald);font-family:var(--font-mono);">Base Sepolia</span>
+  </div>
 
   <div class="card">
-    <div class="card-title">Smart Account Balance</div>
-    <div class="balance-val" id="spTotalBal">0.00 ETH</div>
-    
+    <div class="card-title">Total Portfolio</div>
+    <div class="balance-val" id="spTotalEth">0.0003 ETH</div>
     <div class="asset-list">
       <div class="asset-item">
-        <span style="font-weight:700;">🔹 ETH</span>
-        <span style="font-family:var(--font-mono);" id="spEth">... ETH</span>
+        <span style="color:var(--text-white);font-weight:600;">Native ETH</span>
+        <span style="font-family:var(--font-mono);color:var(--text-muted);" id="spEthVal">0.0003 ETH</span>
       </div>
       <div class="asset-item">
-        <span style="font-weight:700;">💵 USDC</span>
-        <span style="font-family:var(--font-mono);" id="spUsdc">... USDC</span>
+        <span style="color:var(--text-white);font-weight:600;">USDC Coin</span>
+        <span style="font-family:var(--font-mono);color:var(--text-muted);" id="spUsdcVal">0.00 USDC</span>
       </div>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">Enrolled Passkey Quorum</div>
-    <div class="key-row">
-      <div>
-        <div style="font-weight:700;">Signer #0: Primary Touch ID</div>
-        <div style="color:var(--text-muted);font-size:11px;">Hardware Enclave (P-256)</div>
+    <div class="card-title">Policy Firewall</div>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;">
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text-muted);">Threshold:</span>
+        <strong style="color:#60A5FA;font-family:var(--font-mono);">&lt; 0.010 ETH</strong>
       </div>
-      <span style="color:var(--accent-emerald);font-weight:700;">● Active</span>
-    </div>
-    <div class="key-row">
-      <div>
-        <div style="font-weight:700;">Signer #1: Backup Quorum Key</div>
-        <div style="color:var(--text-muted);font-size:11px;">YubiKey / Secondary Device</div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text-muted);">Address Book:</span>
+        <strong style="color:var(--accent-emerald);font-family:var(--font-mono);">Active</strong>
       </div>
-      <span style="color:var(--accent-emerald);font-weight:700;">● Active</span>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="color:var(--text-muted);">Approval Lock:</span>
+        <strong style="color:var(--accent-amber);font-family:var(--font-mono);">2-of-2 Quorum</strong>
+      </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">On-Chain Spend Policy</div>
-    <div style="font-size:12px;color:var(--text-body);margin-bottom:8px;">
-      • ETH Threshold: <strong>0.01 ETH</strong> (1-Sig)<br>
-      • USDC Threshold: <strong>25 USDC</strong> (1-Sig)<br>
-      • 24h Rolling Cap: <strong>0.05 ETH</strong><br>
-      • Over limit / Approvals: <strong>2-of-2 Quorum</strong>
-    </div>
-    <button class="btn" id="spOpenFullDashboard">Manage Policies & Signers ↗</button>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:auto;">
+    <button class="btn-freeze" id="spPanicFreezeBtn">Emergency Freeze (1-Sig)</button>
+    <a href="/web/app.html" target="_blank" class="btn">Open Full Web Dashboard ↗</a>
   </div>
 
   <script type="module" src="sidepanel.js"></script>

@@ -3,85 +3,132 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Passkey Smart Wallet — Portal Hub</title>
+  <title>Passkey Smart Account — Ecosystem Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-page: #faf8f2;
-      --bg-card: #FFFFFF;
-      --text-title: #0F172A;
-      --text-body: #334155;
-      --text-muted: #64748B;
-      --base-blue: #0052FF;
-      --base-blue-light: #EBF2FF;
-      --accent-emerald: #059669;
-      --accent-emerald-light: #ECFDF5;
-      --accent-amber: #D97706;
-      --accent-amber-light: #FFFBEB;
-      --border-light: #E2E8F0;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
-      --shadow-lg: 0 12px 30px rgba(0,0,0,0.08);
+      --bg-deep: #07080a;
+      --bg-surface: #0e0f14;
+      --bg-card: rgba(18, 20, 29, 0.7);
+      --bg-card-hover: rgba(26, 29, 42, 0.85);
+
+      --text-white: #FFFFFF;
+      --text-main: #E2E8F0;
+      --text-muted: #94A3B8;
+      --text-dark: #64748B;
+
+      --accent-blue: #0052FF;
+      --accent-cyan: #06B6D4;
+      --accent-purple: #8B5CF6;
+      --accent-emerald: #10B981;
+
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(255, 255, 255, 0.18);
+
       --radius-md: 14px;
       --radius-lg: 20px;
+      --radius-xl: 28px;
       --radius-full: 9999px;
+
       --font-heading: 'Outfit', sans-serif;
-      --font-main: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background-color: var(--bg-page);
-      color: var(--text-body);
-      font-family: var(--font-main);
+      background-color: var(--bg-deep);
+      color: var(--text-main);
+      font-family: var(--font-body);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       padding: 24px;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #globalDitherCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.75;
+    }
+
+    .ambient-glow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      filter: blur(140px);
+      opacity: 0.15;
+      pointer-events: none;
+      background: radial-gradient(circle, var(--accent-blue), var(--accent-purple), transparent 70%);
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     .hub-card {
       max-width: 680px;
       width: 100%;
       background: var(--bg-card);
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-lg);
-      padding: 36px;
-      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
       text-align: center;
+      position: relative;
+      z-index: 1;
     }
 
     .brand-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       padding: 6px 14px;
-      background: var(--base-blue-light);
-      color: var(--base-blue);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
       border-radius: var(--radius-full);
       font-size: 12px;
       font-weight: 700;
-      margin-bottom: 16px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 8px var(--accent-emerald);
     }
 
     h1 {
       font-family: var(--font-heading);
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 800;
-      color: var(--text-title);
+      color: var(--text-white);
       margin-bottom: 8px;
+      letter-spacing: -0.03em;
     }
 
     p.subtitle {
-      font-size: 14.5px;
+      font-size: 15px;
       color: var(--text-muted);
-      margin-bottom: 28px;
+      margin-bottom: 32px;
       line-height: 1.5;
     }
 
@@ -96,38 +143,41 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 18px 20px;
-      border: 1px solid var(--border-light);
+      padding: 20px 22px;
+      border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
       text-decoration: none;
       color: inherit;
       transition: all 0.2s ease;
-      background: #FFF;
+      background: rgba(255, 255, 255, 0.02);
     }
 
     .action-item:hover {
-      border-color: var(--base-blue);
-      box-shadow: var(--shadow-md);
+      background: var(--bg-card-hover);
+      border-color: var(--border-focus);
       transform: translateY(-2px);
     }
 
-    .item-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+    .item-icon-box {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
       margin-right: 16px;
       flex-shrink: 0;
+      color: var(--text-white);
     }
 
     .item-title {
       font-weight: 700;
       font-size: 15px;
-      color: var(--text-title);
+      color: var(--text-white);
       margin-bottom: 2px;
+      font-family: var(--font-heading);
     }
 
     .item-desc {
@@ -145,65 +195,142 @@
 </head>
 <body>
 
+  <div class="ambient-glow"></div>
+
   <div class="hub-card">
     <div class="brand-badge">
-      <span>🔑</span> Passkey Smart Wallet Ecosystem
+      <span class="pulse-dot"></span>
+      PASSKEY SMART ACCOUNT ECOSYSTEM
     </div>
 
-    <h1>Project Navigation</h1>
+    <h1>Choose an Interface</h1>
     <p class="subtitle">
-      Explore the full Landing Page, interactive Web App Dashboard, and Chrome Extension simulator below:
+      Explore the Framer-designed Landing Page, interactive Web App Dashboard, and Chrome Extension simulator below:
     </p>
 
     <div class="action-grid">
       <!-- Option 1: Main Landing Page -->
-      <a href="/web/index.html" class="action-item" style="border-color: var(--base-blue); background: var(--base-blue-light);">
+      <a href="/web/index.html" class="action-item" style="border-color: rgba(0, 82, 255, 0.4); background: rgba(0, 82, 255, 0.06);">
         <div style="display:flex;align-items:center;">
-          <div class="item-icon" style="background:#FFF; color:var(--base-blue);">
-            ✨
+          <div class="item-icon-box" style="background: rgba(0, 82, 255, 0.2); border-color: rgba(0, 82, 255, 0.4); color: #60A5FA;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           </div>
           <div>
-            <div class="item-title" style="color:var(--base-blue);">Passkey Smart Account Landing Page</div>
+            <div class="item-title" style="color: #60A5FA;">Passkey Landing Page</div>
             <div class="item-desc">Product showcase, interactive firewall sandbox, security breakdown, and architecture</div>
           </div>
         </div>
-        <span class="tag-badge" style="background:var(--base-blue); color:#FFF;">Landing Page ↗</span>
+        <span class="tag-badge" style="background: var(--accent-blue); color: #FFF;">Landing Page ↗</span>
       </a>
 
       <!-- Option 2: Full Web App -->
       <a href="/web/app.html" class="action-item">
         <div style="display:flex;align-items:center;">
-          <div class="item-icon" style="background:var(--accent-amber-light);color:var(--accent-amber);">
-            📊
+          <div class="item-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
           </div>
           <div>
-            <div class="item-title">Full Smart Wallet Web App</div>
+            <div class="item-title">Smart Wallet Web App</div>
             <div class="item-desc">Live UserOp bundler builder, Panic Freeze, Address Book, and 2-of-2 Configurator</div>
           </div>
         </div>
-        <span class="tag-badge" style="background:var(--border-light);color:var(--text-title);">Web App ↗</span>
+        <span class="tag-badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted);">Web App ↗</span>
       </a>
 
       <!-- Option 3: Test dApp -->
       <a href="/extension/test-dapp.html" class="action-item">
         <div style="display:flex;align-items:center;">
-          <div class="item-icon" style="background:var(--accent-emerald-light);color:var(--accent-emerald);">
-            🌐
+          <div class="item-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg>
           </div>
           <div>
             <div class="item-title">Extension Test dApp Simulator</div>
             <div class="item-desc">Test extension injection, 1-Sig vs 2-Sig popups, and ERC-1271 signing</div>
           </div>
         </div>
-        <span class="tag-badge" style="background:var(--accent-emerald-light);color:var(--accent-emerald);">Extension Test ↗</span>
+        <span class="tag-badge" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald);">Extension Test ↗</span>
       </a>
     </div>
 
-    <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border-light);font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;">
-      <span>Network: <strong>Base Sepolia (84532)</strong></span>
-      <span>Curve: <strong>RIP-7212 (0x100)</strong></span>
+    <div style="margin-top:28px;padding-top:20px;border-top:1px solid var(--border-subtle);font-size:12px;color:var(--text-dark);display:flex;justify-content:space-between;align-items:center;">
+      <span>Network: <strong style="color:var(--text-muted);">Base Sepolia (84532)</strong></span>
+      <span>Precompile: <strong style="color:var(--accent-emerald);">RIP-7212 (0x100)</strong></span>
     </div>
   </div>
 
+  <canvas id="globalDitherCanvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('globalDitherCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      let width = 0, height = 0;
+      let mouseX = -1000, mouseY = -1000;
+      let targetMouseX = -1000, targetMouseY = -1000;
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      window.addEventListener('mousemove', e => {
+        targetMouseX = e.clientX;
+        targetMouseY = e.clientY;
+      });
+
+      let time = 0;
+      const dotSpacing = 14;
+
+      function draw() {
+        time += 0.022;
+        mouseX += (targetMouseX - mouseX) * 0.08;
+        mouseY += (targetMouseY - mouseY) * 0.08;
+
+        ctx.clearRect(0, 0, width, height);
+
+        const cols = Math.ceil(width / dotSpacing) + 1;
+        const rows = Math.ceil(height / dotSpacing) + 1;
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const x = c * dotSpacing;
+            const y = r * dotSpacing;
+
+            const w1 = Math.sin(x * 0.005 + time * 1.2) * Math.cos(y * 0.006 + time * 0.8);
+            const w2 = Math.sin((x + y) * 0.004 - time * 0.9);
+            const w3 = Math.cos((x - y) * 0.003 + time * 0.6);
+            const combinedWave = (w1 + w2 + w3) / 3;
+
+            const dx = x - mouseX;
+            const dy = y - mouseY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const mouseEffect = Math.max(0, 1 - dist / 200) * 0.75;
+
+            const intensity = Math.max(0, Math.min(1, (combinedWave * 0.5 + 0.5) * 0.75 + mouseEffect));
+            
+            if (intensity > 0.08) {
+              const radius = Math.max(0.6, intensity * 4.2);
+              const alpha = Math.min(0.9, 0.08 + intensity * 0.75);
+
+              if (intensity > 0.65) {
+                ctx.fillStyle = `rgba(6, 182, 212, ${alpha})`;
+              } else {
+                ctx.fillStyle = `rgba(0, 82, 255, ${alpha})`;
+              }
+
+              ctx.beginPath();
+              ctx.arc(x, y, radius, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+  </script>
 </body>
 </html>
