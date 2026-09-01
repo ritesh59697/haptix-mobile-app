@@ -1,6 +1,5 @@
 <div align="center">
-  <img src="assets/haptix_banner.jpg" alt="Haptix Labs Brand Banner" width="100%" style="border-radius: 12px; margin-bottom: 20px;" />
-  <h1>Haptix (<code>haptix-labs</code>)</h1>
+  <img src="assets/haptix_official_logo.jpg" alt="Haptix Logo" width="720px" style="border-radius: 14px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);" />
   <p><strong>The Biometric Hardware Enclave Layer for EVM.</strong></p>
 </div>
 
