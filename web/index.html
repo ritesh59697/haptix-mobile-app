@@ -104,27 +104,25 @@
     }
 
     .card-nav {
-      width: fit-content;
-      max-width: 820px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 18px;
-      height: 48px;
-      padding: 4px 6px 4px 14px;
-      background: rgba(255, 255, 255, 0.07);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      gap: 16px;
+      height: 50px;
+      padding: 0 6px 0 16px;
+      background: rgba(14, 10, 28, 0.65);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
       border: 1px solid rgba(255, 255, 255, 0.16);
       border-radius: var(--radius-full);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
       pointer-events: auto;
       transition: all 0.25s ease;
     }
 
     .card-nav:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(20, 14, 38, 0.78);
       border-color: rgba(255, 255, 255, 0.25);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
 
     .brand {
@@ -163,11 +161,11 @@
     }
 
     .nav-link {
-      font-size: 12.5px;
+      font-size: 13px;
       font-weight: 500;
       color: rgba(255, 255, 255, 0.75);
       text-decoration: none;
-      padding: 6px 11px;
+      padding: 6px 12px;
       border-radius: var(--radius-full);
       transition: all 0.15s ease;
       white-space: nowrap;
@@ -178,54 +176,30 @@
       background: rgba(255, 255, 255, 0.09);
     }
 
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-
-    .btn-ghost {
-      font-size: 12px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.9);
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      padding: 6px 12px;
-      border-radius: var(--radius-full);
-      text-decoration: none;
-      transition: all 0.15s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      white-space: nowrap;
-    }
-    .btn-ghost:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(255, 255, 255, 0.3);
-      color: #FFFFFF;
-    }
-
-    .btn-primary {
-      font-size: 12.5px;
-      font-weight: 800;
-      color: #000000;
+    .nav-cta-btn {
+      height: 38px;
+      padding: 0 18px;
       background: #FFFFFF;
-      border: none;
-      padding: 7px 16px;
+      color: #000000;
+      font-family: var(--font-body);
+      font-weight: 800;
+      font-size: 13px;
       border-radius: var(--radius-full);
       text-decoration: none;
-      transition: all 0.15s ease;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      flex-shrink: 0;
       white-space: nowrap;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
     }
-    .btn-primary:hover {
-      background: #F1F5F9;
+
+    .nav-cta-btn:hover {
+      background: #E2E8F0;
       transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 16px rgba(255, 255, 255, 0.25);
     }
 
     /* Hero Section (Clean React Bits + Tholos + Tenbin fusion) */
@@ -901,12 +875,12 @@
         <a href="#sandbox" class="nav-link">Sandbox</a>
         <a href="#trust" class="nav-link">Security</a>
         <a href="#faq" class="nav-link">FAQ</a>
+        <a href="/extension/test-dapp.html" class="nav-link" style="color:#60A5FA;">Extension ↗</a>
       </div>
 
-      <div class="nav-actions">
-        <a href="/extension/test-dapp.html" class="btn-ghost">Extension ↗</a>
-        <a href="/web/app.html" class="btn-primary">Launch App</a>
-      </div>
+      <a href="/web/app.html" class="nav-cta-btn">
+        Launch App
+      </a>
     </nav>
   </header>
 
