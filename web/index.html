@@ -212,11 +212,69 @@
       transform: translateY(-1px);
     }
 
-    /* Hero Section (Tholos + Tenbin fusion) */
+    /* React Bits Style Soft Aurora */
+    .soft-aurora-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -45%);
+      width: 100vw;
+      max-width: 1350px;
+      height: 480px;
+      pointer-events: none;
+      z-index: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .soft-aurora-canvas {
+      width: 100%;
+      height: 100%;
+      filter: blur(55px);
+      -webkit-filter: blur(55px);
+      opacity: 0.85;
+      mix-blend-mode: screen;
+    }
+
+    .soft-aurora-mist {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(139, 92, 246, 0.25), rgba(236, 72, 153, 0.2), rgba(0, 82, 255, 0.22), transparent 75%);
+      filter: blur(40px);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .badge-tag {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin-right: 6px;
+      letter-spacing: 0.05em;
+    }
+
+    .aurora-text-gradient {
+      background: linear-gradient(135deg, #FFFFFF 30%, #F472B6 65%, #60A5FA 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Hero Section (Clean React Bits + Tholos + Tenbin fusion) */
     .hero-section {
-      padding-top: 150px;
-      padding-bottom: 70px;
+      position: relative;
+      padding-top: 160px;
+      padding-bottom: 80px;
       text-align: center;
+      overflow: hidden;
     }
 
     .pill-badge {
@@ -887,10 +945,17 @@
     </div>
   </header>
 
-  <!-- Hero Section with Tholos Cycling Text -->
+  <!-- Hero Section with React Bits Soft Aurora & Dynamic Headline -->
   <section class="hero-section">
-    <div class="container">
+    <!-- Soft Aurora Glow Engine -->
+    <div class="soft-aurora-container">
+      <canvas id="softAuroraCanvas" class="soft-aurora-canvas"></canvas>
+      <div class="soft-aurora-mist"></div>
+    </div>
+
+    <div class="container hero-content">
       <div class="pill-badge">
+        <span class="badge-tag">NEW</span>
         <span class="pulse-dot"></span>
         RIP-7212 P-256 PRECOMPILE · ERC-4337 v0.7 ON BASE
       </div>
@@ -914,11 +979,11 @@
 
       <div class="hero-ctas">
         <a href="/web/app.html" class="btn-primary hero-btn-main">
-          Launch Smart Account
+          Get started
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
-        <a href="https://sepolia.basescan.org/address/0x34Aeb3A39fd1838D1C897F879EAB0a258507802c" target="_blank" class="btn-ghost hero-btn-sec">
-          View Contract on BaseScan ↗
+        <a href="/extension/test-dapp.html" class="btn-ghost hero-btn-sec">
+          Learn more
         </a>
       </div>
     </div>
@@ -1568,6 +1633,62 @@
         requestAnimationFrame(draw);
       }
       draw();
+    }
+    // React Bits Style Soft Aurora Engine
+    const auroraCanvas = document.getElementById('softAuroraCanvas');
+    if (auroraCanvas) {
+      const actx = auroraCanvas.getContext('2d');
+      let aw = 0, ah = 0;
+      let atime = 0;
+
+      function resizeAurora() {
+        const rect = auroraCanvas.getBoundingClientRect();
+        aw = auroraCanvas.width = rect.width || 1200;
+        ah = auroraCanvas.height = rect.height || 480;
+      }
+      window.addEventListener('resize', resizeAurora);
+      resizeAurora();
+
+      function renderAurora() {
+        atime += 0.016;
+        actx.clearRect(0, 0, aw, ah);
+
+        // Multiple overlapping silky luminous aurora layers
+        const layers = [
+          { yBase: ah * 0.52, amp: 48, freq: 0.0035, speed: 0.9, color1: '#F43F5E', color2: '#A855F7', color3: '#3B82F6', alpha: 0.75, width: 85 },
+          { yBase: ah * 0.48, amp: 58, freq: 0.0028, speed: -0.7, color1: '#EC4899', color2: '#8B5CF6', color3: '#06B6D4', alpha: 0.65, width: 105 },
+          { yBase: ah * 0.54, amp: 38, freq: 0.0042, speed: 1.2, color1: '#D946EF', color2: '#6366F1', color3: '#0052FF', alpha: 0.55, width: 75 }
+        ];
+
+        layers.forEach((layer) => {
+          const grad = actx.createLinearGradient(0, 0, aw, 0);
+          grad.addColorStop(0.0, layer.color1);
+          grad.addColorStop(0.35, layer.color2);
+          grad.addColorStop(0.7, layer.color3);
+          grad.addColorStop(1.0, layer.color1);
+
+          actx.save();
+          actx.globalAlpha = layer.alpha;
+          actx.strokeStyle = grad;
+          actx.lineWidth = layer.width;
+          actx.lineCap = 'round';
+          actx.lineJoin = 'round';
+
+          actx.beginPath();
+          for (let x = 0; x <= aw; x += 15) {
+            const y = layer.yBase + 
+              Math.sin(x * layer.freq + atime * layer.speed) * layer.amp +
+              Math.cos(x * layer.freq * 1.5 - atime * 0.5) * (layer.amp * 0.5);
+            if (x === 0) actx.moveTo(x, y);
+            else actx.lineTo(x, y);
+          }
+          actx.stroke();
+          actx.restore();
+        });
+
+        requestAnimationFrame(renderAurora);
+      }
+      renderAurora();
     }
   </script>
 </body>

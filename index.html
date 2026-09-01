@@ -79,10 +79,26 @@
       transform: translateX(-50%);
     }
 
+    /* React Bits Soft Aurora Glow */
+    .soft-aurora-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 900px;
+      height: 500px;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(60px);
+      -webkit-filter: blur(60px);
+      opacity: 0.85;
+      background: radial-gradient(ellipse 65% 45% at 50% 50%, rgba(236, 72, 153, 0.28), rgba(139, 92, 246, 0.35), rgba(0, 82, 255, 0.3), transparent 75%);
+    }
+
     .hub-card {
       max-width: 680px;
       width: 100%;
-      background: var(--bg-card);
+      background: rgba(14, 16, 23, 0.85);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-xl);
       padding: 40px;
@@ -99,12 +115,12 @@
       align-items: center;
       gap: 8px;
       padding: 6px 14px;
-      background: rgba(255, 255, 255, 0.04);
+      background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-full);
       font-size: 12px;
       font-weight: 700;
-      color: var(--text-muted);
+      color: var(--text-white);
       margin-bottom: 20px;
     }
 
@@ -123,6 +139,9 @@
       color: var(--text-white);
       margin-bottom: 8px;
       letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #FFFFFF 30%, #F472B6 70%, #60A5FA 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     p.subtitle {
