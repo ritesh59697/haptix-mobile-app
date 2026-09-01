@@ -68,41 +68,27 @@
     position: relative;
   }
 
-  /* Full Background Dither Canvas */
-  #globalDitherCanvas {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 0;
-    pointer-events: none;
-    opacity: 0.75;
-  }
+    /* React Bits Grainient Background */
+    .grainient-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
 
-  .ambient-glow {
-    position: absolute;
-    width: 700px;
-    height: 700px;
-    border-radius: 50%;
-    filter: blur(160px);
-    opacity: 0.12;
-    pointer-events: none;
-    z-index: 0;
-  }
-  .glow-1 { top: -150px; left: 50%; transform: translateX(-50%); background: radial-gradient(circle, var(--base-blue), #8B5CF6, transparent 70%); }
-  .glow-2 { bottom: -200px; right: -200px; background: radial-gradient(circle, #06B6D4, var(--base-blue), transparent 70%); }
-
-  .noise-overlay {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-    background-size: 24px 24px;
-    pointer-events: none;
-    z-index: 0;
-  }
+    .grain-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.42;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
 
   .app-shell {
     position: relative;
@@ -569,12 +555,11 @@
 </head>
 <body>
 
-<canvas id="globalDitherCanvas"></canvas>
-<div class="ambient-glow glow-1"></div>
-<div class="ambient-glow glow-2"></div>
-<div class="noise-overlay"></div>
+  <!-- React Bits Grainient Canvas & Fine Film Grain Overlay -->
+  <canvas id="grainientCanvas" class="grainient-canvas"></canvas>
+  <div class="grain-overlay"></div>
 
-<div class="app-shell">
+  <div class="app-shell">
   <!-- Header -->
   <header class="app-header">
     <div class="header-inner">
@@ -1194,13 +1179,13 @@ $('appSignSubmitBtn').onclick = async () => {
   }
 };
 
-// --- Live Blue Halftone Dither Canvas Wave Engine (Vessa Design Style) ---
-const canvas = document.getElementById('globalDitherCanvas');
+// --- React Bits Grainient (Grainy Gradient with Soft Motion) Engine ---
+const canvas = document.getElementById('grainientCanvas');
 if (canvas) {
   const ctx = canvas.getContext('2d');
   let width = 0, height = 0;
-  let mouseX = -1000, mouseY = -1000;
-  let targetMouseX = -1000, targetMouseY = -1000;
+  let mouseX = 0, mouseY = 0;
+  let targetMouseX = 0, targetMouseY = 0;
 
   function resize() {
     width = canvas.width = window.innerWidth;
@@ -1210,60 +1195,72 @@ if (canvas) {
   resize();
 
   window.addEventListener('mousemove', e => {
-    targetMouseX = e.clientX;
-    targetMouseY = e.clientY;
+    targetMouseX = (e.clientX / window.innerWidth - 0.5) * 100;
+    targetMouseY = (e.clientY / window.innerHeight - 0.5) * 100;
   });
 
   let time = 0;
-  const dotSpacing = 14;
 
-  function draw() {
-    time += 0.022;
-    mouseX += (targetMouseX - mouseX) * 0.08;
-    mouseY += (targetMouseY - mouseY) * 0.08;
+  function renderGrainient() {
+    time += 0.006;
+    mouseX += (targetMouseX - mouseX) * 0.05;
+    mouseY += (targetMouseY - mouseY) * 0.05;
 
     ctx.clearRect(0, 0, width, height);
 
-    const cols = Math.ceil(width / dotSpacing) + 1;
-    const rows = Math.ceil(height / dotSpacing) + 1;
+    // Midnight base
+    ctx.fillStyle = '#0f0821';
+    ctx.fillRect(0, 0, width, height);
 
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const x = c * dotSpacing;
-        const y = r * dotSpacing;
+    // Blob 1: Vibrant Magenta / Orchid (Top Left / Center)
+    const b1x = width * 0.25 + Math.sin(time * 1.1) * (width * 0.12) + mouseX;
+    const b1y = height * 0.3 + Math.cos(time * 0.8) * (height * 0.12) + mouseY;
+    const b1r = Math.max(width, height) * 0.65;
+    const g1 = ctx.createRadialGradient(b1x, b1y, 0, b1x, b1y, b1r);
+    g1.addColorStop(0, 'rgba(236, 72, 153, 0.88)'); // #EC4899 Pink
+    g1.addColorStop(0.42, 'rgba(217, 70, 239, 0.62)'); // #D946EF Magenta
+    g1.addColorStop(0.85, 'rgba(168, 85, 247, 0.15)');
+    g1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, width, height);
 
-        const w1 = Math.sin(x * 0.005 + time * 1.2) * Math.cos(y * 0.006 + time * 0.8);
-        const w2 = Math.sin((x + y) * 0.004 - time * 0.9);
-        const w3 = Math.cos((x - y) * 0.003 + time * 0.6);
-        const combinedWave = (w1 + w2 + w3) / 3;
+    // Blob 2: Electric Violet / Lavender (Top Right / Middle)
+    const b2x = width * 0.72 + Math.cos(time * 0.9) * (width * 0.15) - mouseX * 0.8;
+    const b2y = height * 0.35 + Math.sin(time * 1.0) * (height * 0.14) - mouseY * 0.8;
+    const b2r = Math.max(width, height) * 0.7;
+    const g2 = ctx.createRadialGradient(b2x, b2y, 0, b2x, b2y, b2r);
+    g2.addColorStop(0, 'rgba(168, 85, 247, 0.92)'); // #A855F7 Purple
+    g2.addColorStop(0.48, 'rgba(139, 92, 246, 0.6)'); // #8B5CF6 Violet
+    g2.addColorStop(0.9, 'rgba(99, 102, 241, 0.15)');
+    g2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, width, height);
 
-        const dx = x - mouseX;
-        const dy = y - mouseY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const mouseEffect = Math.max(0, 1 - dist / 200) * 0.75;
+    // Blob 3: Royal Cobalt Blue / Base Blue (Bottom & Right)
+    const b3x = width * 0.85 + Math.sin(time * 0.7) * (width * 0.12);
+    const b3y = height * 0.75 + Math.cos(time * 0.6) * (height * 0.15);
+    const b3r = Math.max(width, height) * 0.75;
+    const g3 = ctx.createRadialGradient(b3x, b3y, 0, b3x, b3y, b3r);
+    g3.addColorStop(0, 'rgba(0, 82, 255, 0.9)'); // #0052FF Base Blue
+    g3.addColorStop(0.5, 'rgba(67, 56, 202, 0.65)'); // #4338CA Indigo
+    g3.addColorStop(1, 'rgba(0, 82, 255, 0)');
+    ctx.fillStyle = g3;
+    ctx.fillRect(0, 0, width, height);
 
-        const intensity = Math.max(0, Math.min(1, (combinedWave * 0.5 + 0.5) * 0.75 + mouseEffect));
-        
-        if (intensity > 0.08) {
-          const radius = Math.max(0.6, intensity * 4.2);
-          const alpha = Math.min(0.9, 0.08 + intensity * 0.75);
+    // Blob 4: Soft Lilac Highlight (Center Swirl)
+    const b4x = width * 0.48 + Math.cos(time * 1.2) * (width * 0.16);
+    const b4y = height * 0.22 + Math.sin(time * 1.1) * (height * 0.1);
+    const b4r = Math.max(width, height) * 0.5;
+    const g4 = ctx.createRadialGradient(b4x, b4y, 0, b4x, b4y, b4r);
+    g4.addColorStop(0, 'rgba(244, 114, 182, 0.8)'); // #F472B6
+    g4.addColorStop(0.55, 'rgba(192, 132, 252, 0.45)'); // #C084FC
+    g4.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = g4;
+    ctx.fillRect(0, 0, width, height);
 
-          if (intensity > 0.65) {
-            ctx.fillStyle = `rgba(6, 182, 212, ${alpha})`;
-          } else {
-            ctx.fillStyle = `rgba(0, 82, 255, ${alpha})`;
-          }
-
-          ctx.beginPath();
-          ctx.arc(x, y, radius, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-
-    requestAnimationFrame(draw);
+    requestAnimationFrame(renderGrainient);
   }
-  draw();
+  renderGrainient();
 }
 </script>
 </body>
