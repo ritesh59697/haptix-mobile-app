@@ -25,8 +25,8 @@ on-chain via the precompile. `UserOperationEvent` reports `success = true`,
 ## Quick start
 
 ```bash
-git clone --recurse-submodules <repo-url>
-cd passkey-wallet
+git clone --recurse-submodules https://github.com/ritesh59697/haptix.git
+cd haptix
 forge test
 ```
 
