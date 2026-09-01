@@ -89,10 +89,10 @@
       z-index: 1;
     }
 
-    /* React Bits CardNav Floating Navigation System */
+    /* Precision Floating Island Navbar */
     .card-nav-wrapper {
       position: fixed;
-      top: 20px;
+      top: 18px;
       left: 0;
       right: 0;
       z-index: 100;
@@ -103,210 +103,129 @@
       background: transparent !important;
     }
 
-    .card-nav-container {
-      max-width: 820px;
-      width: 100%;
-      pointer-events: auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-    }
-
     .card-nav {
-      width: 100%;
+      width: fit-content;
+      max-width: 820px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      height: 60px;
-      padding: 0 10px 0 16px;
-      background: rgba(18, 14, 34, 0.65);
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      gap: 18px;
+      height: 48px;
+      padding: 4px 6px 4px 14px;
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
       border-radius: var(--radius-full);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      position: relative;
-    }
-
-    .card-nav:hover {
-      background: rgba(24, 18, 44, 0.8);
-      border-color: rgba(255, 255, 255, 0.28);
-      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    }
-
-    /* Left 2-line Hamburger Toggle */
-    .card-nav-toggle {
-      width: 38px;
-      height: 38px;
-      border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      cursor: pointer;
-      padding: 0;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      pointer-events: auto;
       transition: all 0.25s ease;
     }
 
-    .card-nav-toggle:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(255, 255, 255, 0.3);
-      transform: scale(1.05);
+    .card-nav:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
     }
 
-    .toggle-bar {
-      width: 16px;
-      height: 2px;
-      background: #FFFFFF;
-      border-radius: 2px;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    /* Animate Hamburger to Close X when Open */
-    .card-nav-container.open .toggle-bar-1 {
-      transform: translateY(3.5px) rotate(45deg);
-    }
-    .card-nav-container.open .toggle-bar-2 {
-      transform: translateY(-3.5px) rotate(-45deg);
-    }
-
-    /* Center Brand */
-    .card-nav-brand {
+    .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       text-decoration: none;
       color: #FFFFFF;
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
+      flex-shrink: 0;
     }
 
     .brand-logo-box {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       border-radius: 6px;
       background: #FFFFFF;
       color: #000000;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 14px rgba(255, 255, 255, 0.4);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
     }
 
     .brand-title {
       font-family: var(--font-heading);
       font-weight: 800;
-      font-size: 18px;
+      font-size: 15.5px;
       letter-spacing: -0.02em;
       color: #FFFFFF;
-      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
     }
 
-    /* Right Action Button */
-    .card-nav-cta {
-      font-size: 13.5px;
-      font-weight: 800;
-      color: #FFFFFF;
-      background: #0052FF;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 9px 20px;
-      border-radius: var(--radius-full);
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .nav-link {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.75);
       text-decoration: none;
-      transition: all 0.2s ease;
-      display: inline-flex;
+      padding: 6px 11px;
+      border-radius: var(--radius-full);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .nav-link:hover {
+      color: #FFFFFF;
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .nav-actions {
+      display: flex;
       align-items: center;
       gap: 6px;
-      box-shadow: 0 0 20px rgba(0, 82, 255, 0.4);
+      flex-shrink: 0;
     }
 
-    .card-nav-cta:hover {
-      background: #1D4ED8;
-      box-shadow: 0 0 26px rgba(0, 82, 255, 0.6);
-      transform: translateY(-1px);
-    }
-
-    /* Expandable Cards Dropdown Panel */
-    .card-nav-panel {
-      width: 100%;
-      margin-top: 10px;
-      background: rgba(14, 10, 28, 0.88);
-      backdrop-filter: blur(32px);
-      -webkit-backdrop-filter: blur(32px);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: var(--radius-xl);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-      padding: 18px;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
-      max-height: 0;
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(-10px) scale(0.98);
-      overflow: hidden;
-      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .card-nav-container.open .card-nav-panel {
-      max-height: 520px;
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateY(0) scale(1);
-    }
-
-    .nav-panel-card {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: var(--radius-md);
-      padding: 16px;
+    .btn-ghost {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
       text-decoration: none;
-      transition: all 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .nav-panel-card:hover {
-      background: rgba(255, 255, 255, 0.09);
-      border-color: rgba(255, 255, 255, 0.25);
-      transform: translateY(-2px);
-    }
-
-    .nav-card-head {
-      display: flex;
+      transition: all 0.15s ease;
+      display: inline-flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
+      gap: 4px;
+      white-space: nowrap;
     }
-
-    .nav-card-title {
-      font-family: var(--font-heading);
-      font-size: 15px;
-      font-weight: 800;
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.3);
       color: #FFFFFF;
     }
 
-    .nav-card-desc {
-      font-size: 12px;
-      color: var(--text-muted);
-      line-height: 1.45;
+    .btn-primary {
+      font-size: 12.5px;
+      font-weight: 800;
+      color: #000000;
+      background: #FFFFFF;
+      border: none;
+      padding: 7px 16px;
+      border-radius: var(--radius-full);
+      text-decoration: none;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
     }
-
-    .nav-card-tag {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-      background: rgba(0, 82, 255, 0.2);
-      color: #60A5FA;
-      border: 1px solid rgba(0, 82, 255, 0.4);
+    .btn-primary:hover {
+      background: #F1F5F9;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(255, 255, 255, 0.3);
     }
 
     /* Hero Section (Clean React Bits + Tholos + Tenbin fusion) */
@@ -965,69 +884,30 @@
   <canvas id="grainientCanvas" class="grainient-canvas"></canvas>
   <div class="grain-overlay"></div>
 
-  <!-- React Bits CardNav Floating Navigation -->
+  <!-- Precision Floating Island Navbar -->
   <header class="card-nav-wrapper">
-    <div class="card-nav-container" id="cardNavContainer">
-      <div class="card-nav">
-        <!-- Left: 2-line Hamburger Toggle (React Bits style) -->
-        <button class="card-nav-toggle" id="cardNavToggle" aria-label="Toggle navigation menu">
-          <span class="toggle-bar toggle-bar-1"></span>
-          <span class="toggle-bar toggle-bar-2"></span>
-        </button>
+    <nav class="card-nav">
+      <a href="/" class="brand">
+        <div class="brand-logo-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
+        </div>
+        <span class="brand-title">Haptix</span>
+      </a>
 
-        <!-- Center: Brand Logo & Title -->
-        <a href="/" class="card-nav-brand">
-          <div class="brand-logo-box">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
-          </div>
-          <span class="brand-title">Haptix</span>
-        </a>
-
-        <!-- Right: Action Button -->
-        <a href="/web/app.html" class="card-nav-cta">
-          Launch App
-        </a>
+      <div class="nav-links">
+        <a href="#metrics" class="nav-link">Performance</a>
+        <a href="#comparison" class="nav-link">Comparison</a>
+        <a href="#workflows" class="nav-link">Workflows</a>
+        <a href="#sandbox" class="nav-link">Sandbox</a>
+        <a href="#trust" class="nav-link">Security</a>
+        <a href="#faq" class="nav-link">FAQ</a>
       </div>
 
-      <!-- Expandable Bento Card Dropdown Panel -->
-      <div class="card-nav-panel" id="cardNavPanel">
-        <!-- Card 1: Performance -->
-        <a href="#metrics" class="nav-panel-card" onclick="closeCardNav()">
-          <div class="nav-card-head">
-            <span class="nav-card-title">Performance Benchmark</span>
-            <span class="nav-card-tag">0.4s Touch ID</span>
-          </div>
-          <p class="nav-card-desc">Sub-second hardware biometric signing latency with RIP-7212 precompile on Base.</p>
-        </a>
-
-        <!-- Card 2: Comparison -->
-        <a href="#comparison" class="nav-panel-card" onclick="closeCardNav()">
-          <div class="nav-card-head">
-            <span class="nav-card-title">Architecture Comparison</span>
-            <span class="nav-card-tag">&lt; 100k gas</span>
-          </div>
-          <p class="nav-card-desc">Compare native P-256 passkey smart accounts with traditional EOAs and Safe multisigs.</p>
-        </a>
-
-        <!-- Card 3: Firewall & Sandbox -->
-        <a href="#sandbox" class="nav-panel-card" onclick="closeCardNav()">
-          <div class="nav-card-head">
-            <span class="nav-card-title">Firewall Sandbox</span>
-            <span class="nav-card-tag">1-Sig vs 2-Sig</span>
-          </div>
-          <p class="nav-card-desc">Test real-time autonomous policy limits, allowance escalation, and 1-Sig emergency freeze.</p>
-        </a>
-
-        <!-- Card 4: Extension & DApps -->
-        <a href="/extension/test-dapp.html" class="nav-panel-card">
-          <div class="nav-card-head">
-            <span class="nav-card-title">Extension Simulator</span>
-            <span class="nav-card-tag">EIP-6963 ↗</span>
-          </div>
-          <p class="nav-card-desc">Simulate Uniswap &amp; Aave connecting to Haptix with Passkey biometric approvals.</p>
-        </a>
+      <div class="nav-actions">
+        <a href="/extension/test-dapp.html" class="btn-ghost">Extension ↗</a>
+        <a href="/web/app.html" class="btn-primary">Launch App</a>
       </div>
-    </div>
+    </nav>
   </header>
 
   <!-- Hero Section (React Bits Grainient Style) -->
@@ -1560,35 +1440,6 @@
   </footer>
 
   <script>
-    // React Bits CardNav Toggle Engine
-    const cardNavContainer = document.getElementById('cardNavContainer');
-    const cardNavToggle = document.getElementById('cardNavToggle');
-
-    function toggleCardNav() {
-      if (cardNavContainer) {
-        cardNavContainer.classList.toggle('open');
-      }
-    }
-
-    function closeCardNav() {
-      if (cardNavContainer) {
-        cardNavContainer.classList.remove('open');
-      }
-    }
-
-    if (cardNavToggle) {
-      cardNavToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleCardNav();
-      });
-    }
-
-    document.addEventListener('click', (e) => {
-      if (cardNavContainer && !cardNavContainer.contains(e.target)) {
-        closeCardNav();
-      }
-    });
-
     // FAQ Accordion
     document.querySelectorAll('.faq-item').forEach(item => {
       item.querySelector('.faq-question').addEventListener('click', () => {
