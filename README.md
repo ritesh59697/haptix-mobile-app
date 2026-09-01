@@ -1,6 +1,8 @@
-# Haptix (`haptix-labs`)
-
-> **The Biometric Hardware Enclave Layer for EVM.**
+<div align="center">
+  <img src="assets/haptix_banner.jpg" alt="Haptix Labs Brand Banner" width="100%" style="border-radius: 12px; margin-bottom: 20px;" />
+  <h1>Haptix (<code>haptix-labs</code>)</h1>
+  <p><strong>The Biometric Hardware Enclave Layer for EVM.</strong></p>
+</div>
 
 An ERC-4337 smart account architecture that enforces **autonomous spending policies on-chain**, authorized by **WebAuthn passkeys** (P-256), and verified through the RIP-7212 hardware precompile on Base.
 
