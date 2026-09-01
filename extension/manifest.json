@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Passkey Smart Wallet",
+  "version": "1.0.0",
+  "description": "ERC-4337 Smart Account with WebAuthn P-256 Passkeys and On-Chain Spending Policy Firewall.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "sidePanel"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Passkey Smart Wallet"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["inpage.js"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

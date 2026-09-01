@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Passkey Smart Wallet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-page: #faf8f2;
+      --bg-card: #FFFFFF;
+      --bg-subtle: #F8FAFC;
+      --text-title: #0F172A;
+      --text-body: #334155;
+      --text-muted: #64748B;
+      --base-blue: #0052FF;
+      --base-blue-hover: #0045D8;
+      --base-blue-light: #EBF2FF;
+      --accent-emerald: #059669;
+      --accent-emerald-light: #ECFDF5;
+      --accent-amber: #D97706;
+      --accent-amber-light: #FFFBEB;
+      --border-light: #E2E8F0;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --font-heading: 'Outfit', sans-serif;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      width: 360px;
+      min-height: 560px;
+      background-color: var(--bg-page);
+      color: var(--text-body);
+      font-family: var(--font-main);
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .popup-header {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-light);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: var(--base-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFF;
+      font-size: 14px;
+    }
+
+    .brand-name {
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-title);
+    }
+
+    .network-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: #FFF;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-title);
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+    }
+
+    .popup-content {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+    }
+
+    /* Main Balance Card */
+    .balance-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: 0 4px 12px rgba(0, 82, 255, 0.05);
+    }
+
+    .account-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .account-badge {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: var(--base-blue-light);
+      color: var(--base-blue);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .copy-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .copy-chip:hover {
+      color: var(--base-blue);
+      border-color: var(--base-blue);
+    }
+
+    .portfolio-label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .portfolio-val {
+      font-family: var(--font-heading);
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-title);
+      margin: 2px 0 10px 0;
+      line-height: 1.1;
+    }
+
+    .assets-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid var(--border-light);
+      padding-top: 12px;
+    }
+
+    .asset-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+    }
+
+    .asset-name {
+      font-weight: 700;
+      color: var(--text-title);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .asset-val {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--text-body);
+    }
+
+    /* Passkey Status Card */
+    .passkey-card {
+      background: #FFF;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .key-badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .key-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      color: var(--text-title);
+    }
+
+    .status-ok {
+      color: var(--accent-emerald);
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    /* Actions */
+    .actions-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-action {
+      background: var(--base-blue);
+      color: #FFF;
+      border: none;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.15s ease;
+    }
+
+    .btn-action:hover { background: var(--base-blue-hover); }
+
+    .btn-secondary {
+      background: #FFF;
+      color: var(--text-title);
+      border: 1px solid var(--border-light);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-subtle);
+    }
+
+    /* Approval View (Overlay / Active Mode) */
+    #viewApproval {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .dapp-card {
+      background: #FFF;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      text-align: center;
+    }
+
+    .dapp-origin {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-subtle);
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .dapp-action-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-title);
+      margin-bottom: 4px;
+    }
+
+    .tx-breakdown {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin-top: 12px;
+      text-align: left;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .tx-row {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .tx-label { color: var(--text-muted); }
+    .tx-val { font-family: var(--font-mono); font-weight: 700; color: var(--text-title); }
+
+    /* Policy Firewall Indicator */
+    .policy-firewall-box {
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .policy-single {
+      background: var(--accent-emerald-light);
+      border: 1px solid rgba(5, 150, 105, 0.2);
+    }
+
+    .policy-quorum {
+      background: var(--accent-amber-light);
+      border: 1px solid rgba(217, 119, 6, 0.2);
+    }
+
+    .policy-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .policy-desc {
+      font-size: 11.5px;
+      line-height: 1.35;
+      color: var(--text-body);
+    }
+
+    .btn-approve {
+      background: var(--base-blue);
+      color: #FFF;
+      border: none;
+      padding: 13px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-reject {
+      background: none;
+      border: 1px solid var(--border-light);
+      color: var(--text-muted);
+      padding: 10px;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-reject:hover {
+      background: #FFF;
+      color: #DC2626;
+      border-color: #FCA5A5;
+    }
+  </style>
+</head>
+<body>
+  <header class="popup-header">
+    <div class="brand">
+      <div class="brand-icon">🔑</div>
+      <div class="brand-name">Passkey Wallet</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <button id="panicFreezeBtn" style="background:#DC2626;color:#FFF;border:none;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:800;cursor:pointer;">🚨 Freeze</button>
+      <div class="network-pill">
+        <span class="pulse-dot"></span>
+        <span>Base Sepolia</span>
+      </div>
+    </div>
+  </header>
+
+  <div id="frozenBanner" style="display:none;background:#FEF2F2;border-bottom:1px solid #FCA5A5;padding:8px 12px;text-align:center;color:#991B1B;font-weight:700;font-size:11px;">
+    🚨 <strong>EMERGENCY FREEZE ACTIVE:</strong> All sub-threshold transfers locked. 2-of-2 Quorum required.
+    <button id="unfreezeBtn" style="margin-left:6px;background:#991B1B;color:#FFF;border:none;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;">Unfreeze</button>
+  </div>
+
+  <main class="popup-content">
+    <!-- Default Wallet View -->
+    <div id="viewWallet" style="display:flex; flex-direction:column; gap:16px;">
+      <div class="balance-card">
+        <div class="account-row">
+          <span class="account-badge">ERC-4337 Smart Account</span>
+          <div class="copy-chip" id="copyAddrBtn">
+            <span id="shortAddr">0x34Ae...802c</span>
+            <span>📋</span>
+          </div>
+        </div>
+
+        <div class="portfolio-label">Total Smart Account Balance</div>
+        <div class="portfolio-val" id="totalBalanceDisplay">0.00 ETH</div>
+
+        <div class="assets-grid">
+          <div class="asset-row">
+            <span class="asset-name">🔹 Native ETH</span>
+            <span class="asset-val" id="ethBalance">... ETH</span>
+          </div>
+          <div class="asset-row">
+            <span class="asset-name">💵 USDC Coin</span>
+            <span class="asset-val" id="usdcBalance">... USDC</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="passkey-card">
+        <div class="card-title">
+          <span>Enrolled Hardware Keys</span>
+          <span style="font-size:10px;color:var(--base-blue);">2-of-N Quorum</span>
+        </div>
+        <div class="key-badge-row">
+          <span class="key-name">💻 Key #0: Touch ID</span>
+          <button id="enrollKey0Btn" style="background:var(--base-blue);color:#FFF;border:none;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Enroll Key #0</button>
+        </div>
+        <div class="key-badge-row">
+          <span class="key-name">🛡️ Key #1: Backup Key</span>
+          <button id="enrollKey1Btn" style="background:var(--accent-amber);color:#FFF;border:none;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;">Enroll Key #1</button>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn-action" id="openWebDashboardBtn">
+          <span>🚀 Open Dashboard</span>
+        </button>
+        <button class="btn-action btn-secondary" id="openSidePanelBtn">
+          <span>📂 Side Panel</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- DApp Approval View -->
+    <div id="viewApproval">
+      <div class="dapp-card">
+        <div class="dapp-origin" id="appDappOrigin">https://app.uniswap.org</div>
+        <div class="dapp-action-title" id="appActionTitle">Approve Transaction</div>
+        
+        <div class="tx-breakdown">
+          <div class="tx-row">
+            <span class="tx-label">Recipient / Target:</span>
+            <span class="tx-val" id="appTargetAddr">0x...</span>
+          </div>
+          <div class="tx-row">
+            <span class="tx-label">Value:</span>
+            <span class="tx-val" id="appValue">0.00 ETH</span>
+          </div>
+          <div class="tx-row">
+            <span class="tx-label">Calldata:</span>
+            <span class="tx-val" id="appCalldata">0x</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Policy Check Badge -->
+      <div id="appPolicyBox" class="policy-firewall-box policy-single">
+        <div class="policy-header">
+          <span id="appPolicyTitle" style="color:var(--accent-emerald);">● 1-Biometric Signature</span>
+          <span id="appPolicyBadge">Single Tap</span>
+        </div>
+        <div class="policy-desc" id="appPolicyDesc">
+          Sub-threshold transfer. Authorize directly with 1 Touch ID tap.
+        </div>
+      </div>
+
+      <button class="btn-approve" id="approveWithPasskeyBtn">
+        <span>🔒 Authorize with Touch ID</span>
+      </button>
+      <button class="btn-reject" id="rejectRequestBtn">
+        <span>Cancel / Reject</span>
+      </button>
+    </div>
+  </main>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

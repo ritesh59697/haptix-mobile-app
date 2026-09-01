@@ -134,4 +134,26 @@ library SpendPolicy {
         if (threshold == 0) return TWO_SIGS;
         return amount >= threshold ? TWO_SIGS : ONE_SIG;
     }
+
+    /// @notice Extracts the end recipient of a transfer (native ETH or ERC-20).
+    /// @return recipient The destination address receiving the asset, or address(0) if opaque/unknown.
+    function extractRecipient(address dest, bytes calldata func)
+        internal
+        pure
+        returns (address recipient)
+    {
+        if (func.length == 0) return dest;
+        if (func.length < 4) return address(0);
+        bytes4 sel = bytes4(func[0:4]);
+        if (sel == TRANSFER) {
+            if (func.length < 68) return address(0);
+            return address(uint160(uint256(bytes32(func[4:36]))));
+        }
+        if (sel == TRANSFER_FROM) {
+            if (func.length < 100) return address(0);
+            return address(uint160(uint256(bytes32(func[36:68]))));
+        }
+        return address(0);
+    }
 }
+

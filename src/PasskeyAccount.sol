@@ -91,6 +91,15 @@ contract PasskeyAccount {
     ///         If set to a non-zero address, only that specific paymaster may sponsor ops.
     address public trustedPaymaster;
 
+    /// @notice Emergency panic switch. When true, all transfers strictly demand 2-of-2 Quorum.
+    bool public isFrozen;
+
+    /// @notice When true, only allowlisted recipients can receive sub-threshold 1-sig transfers.
+    bool public allowlistEnabled;
+
+    /// @notice Whitelisted recipient addresses for safe 1-sig transfers.
+    mapping(address => bool) public isAllowedRecipient;
+
     event SignerAdded(uint256 indexed id, uint256 x, uint256 y);
     event SignerRemoved(uint256 indexed id);
     event SignerReplaced(uint256 indexed id, uint256 oldX, uint256 oldY, uint256 newX, uint256 newY);
@@ -98,6 +107,10 @@ contract PasskeyAccount {
     event TokenThresholdChanged(address indexed token, uint256 newThreshold, uint8 decimals);
     event WindowConfigured(address indexed asset, uint256 cap, uint256 duration, uint8 decimals);
     event TrustedPaymasterChanged(address indexed paymaster);
+    event AccountFrozen();
+    event AccountUnfrozen();
+    event AllowlistToggled(bool enabled);
+    event RecipientAllowlistUpdated(address indexed recipient, bool allowed);
 
     error NotEntryPoint();
     error NotSelf();
@@ -297,7 +310,7 @@ contract PasskeyAccount {
     /// @dev Per-asset breakdown of what a callData spends.
     function _spendOf(bytes calldata callData)
         internal
-        pure
+        view
         returns (SpendWindow.Spend memory sp)
     {
         if (callData.length < 4) return sp; // ok = false
@@ -309,6 +322,12 @@ contract PasskeyAccount {
             uint256 value = uint256(bytes32(callData[36:68]));
             (bytes calldata func, bool decoded) = _extractFunc(callData);
             if (!decoded) return sp;
+
+            // Emergency freeze is a 0-value self-call that moves no assets
+            if (dest == address(this) && func.length >= 4 && bytes4(func[0:4]) == this.freeze.selector) {
+                sp.ok = true;
+                return sp;
+            }
 
             SpendPolicy.Spend memory s = SpendPolicy.classify(dest, value, func);
             if (s.alwaysTwoSigs) return sp; // unpriceable -> reject
@@ -413,6 +432,18 @@ contract PasskeyAccount {
         if (callData.length < 4) return 2;
         bytes4 sel = bytes4(callData[0:4]);
 
+        // Emergency freeze trigger: allow 1 signature to freeze the account instantly
+        if (sel == this.execute.selector && callData.length >= 68) {
+            address target = address(uint160(uint256(bytes32(callData[4:36]))));
+            (bytes calldata innerFunc, bool decodedInner) = _extractFunc(callData);
+            if (target == address(this) && decodedInner && innerFunc.length >= 4 && bytes4(innerFunc[0:4]) == this.freeze.selector) {
+                return 1;
+            }
+        }
+
+        // If frozen, all other operations strictly require full 2-of-2 quorum
+        if (isFrozen) return 2;
+
         // Length guard: a truncated execute() call must fall through to the
         // 2-signature default, not revert on an out-of-bounds slice. Reverting
         // inside validateUserOp is worse than rejecting -- it fails the whole
@@ -436,6 +467,14 @@ contract PasskeyAccount {
         // full quorum. Conflating the two let garbage calldata masquerade as a
         // harmless zero-value ETH send and clear with a single signature.
         if (!decoded) return 2;
+
+        // Recipient Allowlist Check: transfers to non-allowlisted addresses escalate to Quorum
+        if (allowlistEnabled) {
+            address recipient = SpendPolicy.extractRecipient(dest, func);
+            if (recipient == address(0) || !isAllowedRecipient[recipient]) {
+                return 2;
+            }
+        }
 
         return SpendPolicy.required(
             dest, value, func, threshold, tokenThreshold[dest]
@@ -511,7 +550,7 @@ contract PasskeyAccount {
     ///      per asset. Leaves `ok` false on anything it cannot fully price.
     function _sumBatch(bytes calldata callData)
         private
-        pure
+        view
         returns (BatchTotals memory t)
     {
         // executeBatch(address[] dests, uint256[] values, bytes[] funcs)
@@ -557,7 +596,7 @@ contract PasskeyAccount {
         uint256 vBase,
         uint256 fBase,
         uint256 i
-    ) private pure returns (bool) {
+    ) private view returns (bool) {
         address dest = address(uint160(uint256(
             bytes32(callData[dBase + i * 32:dBase + i * 32 + 32])
         )));
@@ -570,6 +609,14 @@ contract PasskeyAccount {
 
         SpendPolicy.Spend memory s = SpendPolicy.classify(dest, value, func);
         if (s.alwaysTwoSigs) return false;
+
+        // Allowlist check in batch: any unapproved recipient escalates the whole batch
+        if (allowlistEnabled) {
+            address recipient = SpendPolicy.extractRecipient(dest, func);
+            if (recipient == address(0) || !isAllowedRecipient[recipient]) {
+                return false;
+            }
+        }
 
         // Overflow would wrap a huge total into a small one -- the exact shape
         // of bypass this function exists to prevent. Solidity 0.8 reverts on
@@ -833,6 +880,41 @@ contract PasskeyAccount {
     function setTrustedPaymaster(address newPaymaster) external onlySelf {
         trustedPaymaster = newPaymaster;
         emit TrustedPaymasterChanged(newPaymaster);
+    }
+
+    /// @notice Emergency freeze switch. Can be triggered directly or via a 1-sig UserOp.
+    ///         When frozen, ALL transfers strictly demand 2-of-2 Hardware Quorum.
+    function freeze() external {
+        if (msg.sender != address(this) && msg.sender != entryPoint) revert NotSelf();
+        isFrozen = true;
+        emit AccountFrozen();
+    }
+
+    /// @notice Unfreezes the account. Strictly requires 2-of-2 Hardware Quorum via onlySelf.
+    function unfreeze() external onlySelf {
+        isFrozen = false;
+        emit AccountUnfrozen();
+    }
+
+    /// @notice Enables or disables the recipient allowlist address book.
+    function setAllowlistEnabled(bool enabled) external onlySelf {
+        allowlistEnabled = enabled;
+        emit AllowlistToggled(enabled);
+    }
+
+    /// @notice Adds or removes an address from the trusted recipient allowlist.
+    function setAllowedRecipient(address recipient, bool allowed) external onlySelf {
+        isAllowedRecipient[recipient] = allowed;
+        emit RecipientAllowlistUpdated(recipient, allowed);
+    }
+
+    /// @notice Batch updates trusted recipient allowlist.
+    function setAllowedRecipients(address[] calldata recipients, bool[] calldata alloweds) external onlySelf {
+        if (recipients.length != alloweds.length) revert LengthMismatch();
+        for (uint256 i = 0; i < recipients.length; i++) {
+            isAllowedRecipient[recipients[i]] = alloweds[i];
+            emit RecipientAllowlistUpdated(recipients[i], alloweds[i]);
+        }
     }
 
     // -----------------------------------------------------------------------

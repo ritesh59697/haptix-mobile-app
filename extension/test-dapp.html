@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test dApp — Passkey Wallet Integration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      max-width: 540px;
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      margin-bottom: 6px;
+      color: #38bdf8;
+    }
+    p { font-size: 14px; color: #94a3b8; margin-bottom: 24px; }
+    .btn-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    button {
+      background: #0052ff;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    button:hover { background: #0045d8; }
+    button.sec { background: #334155; }
+    button.sec:hover { background: #475569; }
+    .output-box {
+      background: #090d16;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #38bdf8;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .status-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(56, 189, 248, 0.1);
+      color: #38bdf8;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="status-pill" id="statusPill">Checking Provider...</div>
+    <h1>Passkey dApp Simulator</h1>
+    <p>Simulates Uniswap/Aave dApp calling <code>window.ethereum</code> methods to trigger Passkey biometric signatures.</p>
+
+    <div class="btn-group">
+      <button id="btnConnect">
+        <span>1. Connect Passkey Wallet</span>
+        <span>eth_requestAccounts →</span>
+      </button>
+      <button class="sec" id="btnSmallTx">
+        <span>2. Send Small Transfer (0.001 ETH)</span>
+        <span>1-Sig Touch ID →</span>
+      </button>
+      <button class="sec" id="btnLargeTx">
+        <span>3. Send Large Transfer (0.05 ETH)</span>
+        <span>2-of-2 Quorum Stepper →</span>
+      </button>
+      <button class="sec" id="btnSign">
+        <span>4. Sign In Message (ERC-1271)</span>
+        <span>personal_sign →</span>
+      </button>
+    </div>
+
+    <div style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:8px;">RPC Output Console:</div>
+    <div class="output-box" id="outputConsole">Provider ready. Click Connect to start.</div>
+  </div>
+
+  <script>
+    let activeProvider = null;
+    const discoveredWallets = new Map();
+
+    const log = (msg) => {
+      document.getElementById('outputConsole').textContent = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg;
+    };
+
+    function updateStatus() {
+      const p = getProvider();
+      const pill = document.getElementById('statusPill');
+      if (p) {
+        if (p.isPasskey || p === window.passkey) {
+          pill.style.background = '#ECFDF5';
+          pill.style.color = '#059669';
+          pill.textContent = '✓ Passkey Smart Wallet Active (Direct / EIP-6963)';
+        } else {
+          pill.style.background = '#FEF3C7';
+          pill.style.color = '#D97706';
+          pill.textContent = '⚠️ Generic Wallet Injected (Passkey Fallback Available)';
+        }
+      } else {
+        pill.textContent = '⚠️ Extension Not Detected Yet';
+      }
+    }
+
+    function getProvider() {
+      if (activeProvider) return activeProvider;
+      if (window.passkey) return window.passkey;
+      if (window.passkeyProvider) return window.passkeyProvider;
+      if (window.ethereum?.isPasskey) return window.ethereum;
+      if (window.ethereum?.providers) {
+        const pk = window.ethereum.providers.find(p => p.isPasskey);
+        if (pk) return pk;
+      }
+      return window.ethereum;
+    }
+
+    // EIP-6963 Multi-Wallet Discovery Listener
+    window.addEventListener('eip6963:announceProvider', (event) => {
+      const { info, provider } = event.detail;
+      discoveredWallets.set(info.rdns, { info, provider });
+      if (info.name === 'Passkey Smart Wallet' || info.rdns === 'io.passkey.wallet' || provider.isPasskey) {
+        activeProvider = provider;
+        updateStatus();
+      }
+    });
+
+    // Request EIP-6963 providers
+    window.dispatchEvent(new CustomEvent('eip6963:requestProvider'));
+
+    window.addEventListener('load', () => {
+      setTimeout(updateStatus, 100);
+      setTimeout(updateStatus, 500);
+    });
+
+    document.getElementById('btnConnect').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No Web3 provider found. Make sure Passkey Smart Wallet extension is installed & enabled.' });
+        return;
+      }
+      try {
+        log('Calling eth_requestAccounts on Passkey Wallet...');
+        const accounts = await p.request({ method: 'eth_requestAccounts' });
+        const chainId = await p.request({ method: 'eth_chainId' });
+        log({
+          provider: (p.isPasskey || p === window.passkey) ? 'Passkey Smart Wallet' : 'Generic',
+          connectedAccount: accounts[0],
+          chainId: chainId,
+          network: 'Base Sepolia (84532)'
+        });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnSmallTx').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Requesting sub-threshold transfer (0.001 ETH)...');
+        const txHash = await p.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            to: '0x22db962929afe98d0269De0BAa6c442A3Aa6913D',
+            value: '0x38d7ea4c68000', // 0.001 ETH
+            data: '0x'
+          }]
+        });
+        log({ status: 'Success (1-Sig Authorized)', userOpHash: txHash });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnLargeTx').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Requesting large transfer (0.05 ETH - exceeds 0.01 limit)...');
+        const txHash = await p.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            to: '0x22db962929afe98d0269De0BAa6c442A3Aa6913D',
+            value: '0xb1a2bc2ec50000', // 0.05 ETH
+            data: '0x'
+          }]
+        });
+        log({ status: 'Success (2-of-2 Quorum Approved)', userOpHash: txHash });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnSign').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Requesting ERC-1271 off-chain sign-in message...');
+        const sig = await p.request({
+          method: 'personal_sign',
+          params: ['Sign in to Passkey dApp at ' + new Date().toISOString(), p.selectedAddress || '0x34Aeb3A39fd1838D1C897F879EAB0a258507802c']
+        });
+        log({ status: 'Signature Generated (Passkey ERC-1271)', signature: sig });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+  </script>
+</body>
+</html>

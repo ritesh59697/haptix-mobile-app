@@ -8,8 +8,17 @@ export const CONFIG = {
   factoryAddress: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
   defaultAccount: '0x34Aeb3A39fd1838D1C897F879EAB0a258507802c',
   
-  // Bundler URL for eth_sendUserOperation & eth_getUserOperationReceipt
+  // Default Bundler endpoint for Base Sepolia
   bundlerUrl: localStorage.getItem('passkey_bundler_url') || 'https://api.pimlico.io/v2/84532/rpc?apikey=public',
+
+  // Gas limits matching PasskeyAccount benchmarks (P-256 Osaka precompile ~109k gas)
+  gas: {
+    verificationGasLimit: 200000n,
+    callGasLimit: 60000n,
+    preVerificationGas: 60000n,
+    maxPriorityFeePerGas: 50000000n, // 0.05 gwei
+    maxFeePerGas: 200000000n        // 0.20 gwei
+  },
   
   // Supported Assets & Policies
   tokens: {

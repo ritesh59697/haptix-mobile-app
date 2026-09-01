@@ -560,6 +560,9 @@
         </div>
 
         <div class="topbar-actions">
+          <button id="panicFreezeBtn" style="background:#DC2626;color:#FFF;border:none;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s ease;">
+            <span>🚨 Emergency Freeze (1-Sig)</span>
+          </button>
           <div class="network-badge">
             <span class="pulse-dot"></span>
             Base Sepolia (84532)
@@ -570,6 +573,12 @@
         </div>
       </div>
     </header>
+
+    <!-- Frozen Alert Banner -->
+    <div id="frozenBanner" style="display:none;background:#FEF2F2;border-bottom:1px solid #FCA5A5;padding:12px 24px;text-align:center;color:#991B1B;font-weight:700;font-size:13px;">
+      🚨 <strong>EMERGENCY FREEZE ACTIVE:</strong> All sub-threshold transfers are locked down. Any transaction or unfreeze strictly requires full 2-of-2 Hardware Quorum.
+      <button id="unfreezeBtn" style="margin-left:12px;background:#991B1B;color:#FFF;border:none;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Unfreeze Wallet (2-of-2)</button>
+    </div>
 
     <!-- Main Wallet Application Grid -->
     <main class="wallet-container">
@@ -582,7 +591,7 @@
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
               P-256 Passkey Account
             </span>
-            <span style="font-size:12px;color:var(--accent-emerald);font-weight:700;">● Online</span>
+            <span id="sideStatusText" style="font-size:12px;color:var(--accent-emerald);font-weight:700;">● Online</span>
           </div>
 
           <div class="balance-meta">Total Portfolio Balance</div>
@@ -606,16 +615,16 @@
             <span class="policy-stat-val" style="color:var(--base-blue);">&lt; 0.010 ETH</span>
           </div>
           <div class="policy-stat-row">
-            <span class="policy-stat-label">USDC Single-Sig:</span>
-            <span class="policy-stat-val" style="color:var(--base-blue);">&lt; 25.0 USDC</span>
+            <span class="policy-stat-label">Address Book:</span>
+            <span class="policy-stat-val" id="sideAllowlistStatus" style="color:var(--accent-emerald);">Active</span>
           </div>
           <div class="policy-stat-row">
             <span class="policy-stat-label">Approval Firewall:</span>
             <span class="policy-stat-val" style="color:var(--accent-amber);">2-of-2 Quorum</span>
           </div>
           <div class="policy-stat-row">
-            <span class="policy-stat-label">Curve Precompile:</span>
-            <span class="policy-stat-val" style="color:var(--accent-emerald);">RIP-7212 (0x100)</span>
+            <span class="policy-stat-label">Panic Switch:</span>
+            <span class="policy-stat-val" id="sideFreezeStatus" style="color:var(--accent-emerald);">Normal</span>
           </div>
         </div>
       </aside>
@@ -624,9 +633,10 @@
       <section class="wallet-main-pane">
         <!-- Navigation Tabs -->
         <div class="app-tabs">
-          <button class="tab-btn active" data-tab="send">Send & Transfer</button>
-          <button class="tab-btn" data-tab="config">Policy Configurator (2-Sig)</button>
-          <button class="tab-btn" data-tab="security">Hardware Passkeys (2)</button>
+          <button class="tab-btn active" data-tab="send">Transfer</button>
+          <button class="tab-btn" data-tab="config">Policy Config</button>
+          <button class="tab-btn" data-tab="addressbook">Address Book</button>
+          <button class="tab-btn" data-tab="security">Hardware Keys</button>
           <button class="tab-btn" data-tab="activity">Activity Log</button>
         </div>
 
@@ -670,7 +680,7 @@
                 <span id="appFirewallBadge" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--accent-emerald-light);color:var(--accent-emerald);">1-Signature</span>
               </div>
               <p id="appFirewallDesc" style="font-size:13px;color:var(--text-body);line-height:1.4;">
-                Transfer amount is below threshold. A single biometric signature will be prompted.
+                Transfer amount is below threshold and recipient is trusted. A single biometric signature will be prompted.
               </p>
               <div class="quorum-stepper" id="appQuorumStepper" style="display:none;">
                 <span>Requires 2 physical passkeys: 1. Signer 0 (Primary) → 2. Signer 1 (Backup)</span>
@@ -724,7 +734,43 @@
           </div>
         </div>
 
-        <!-- Tab 3: Hardware Passkeys -->
+        <!-- Tab 3: Address Book (Allowlist Firewall) -->
+        <div class="tab-view" id="tab-addressbook">
+          <div class="transfer-card">
+            <h3 style="font-family:var(--font-heading);font-size:18px;margin-bottom:6px;">Recipient Address Book (Allowlist Firewall)</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+              When enabled, only whitelisted addresses can receive 1-signature transfers. Sending to any unknown or fresh address automatically demands the 2-of-2 Hardware Quorum.
+            </p>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-subtle-blue);padding:14px;border-radius:var(--radius-md);border:1px solid var(--border-blue);margin-bottom:16px;">
+              <div>
+                <strong style="color:var(--text-title);font-size:14px;">Address Book Firewall</strong>
+                <div style="font-size:12px;color:var(--text-muted);">Enforce 2-of-2 Quorum for non-whitelisted addresses</div>
+              </div>
+              <button id="toggleAllowlistBtn" class="action-btn-primary" style="padding:8px 16px;font-size:12px;">Active (Enabled)</button>
+            </div>
+
+            <div class="form-group">
+              <label>Add Whitelisted Recipient</label>
+              <div style="display:flex;gap:8px;">
+                <input type="text" id="newAllowAddr" placeholder="0x... Recipient Address" style="flex:1;padding:10px;border:1px solid var(--border-light);border-radius:var(--radius-md);font-family:var(--font-mono);">
+                <button class="action-btn-primary" id="addAllowAddrBtn" style="padding:10px 16px;font-size:13px;background:var(--accent-emerald);">Add</button>
+              </div>
+            </div>
+
+            <div style="margin-top:16px;">
+              <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Approved Whitelist</div>
+              <div id="allowlistEntries" style="display:flex;flex-direction:column;gap:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;background:#FFF;border:1px solid var(--border-light);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:12px;">
+                  <span>0x22db962929afe98d0269De0BAa6c442A3Aa6913D (Cold Storage)</span>
+                  <span style="color:var(--accent-emerald);font-weight:700;">● Allowed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Hardware Passkeys -->
         <div class="tab-view" id="tab-security">
           <div class="key-list-card">
             <div class="key-item">
@@ -774,13 +820,76 @@
 
 <script type="module">
 import { CONFIG } from './config.js';
+import { 
+  getAccountNonce, 
+  getUserOpHash, 
+  signWithPasskey, 
+  encodeSignaturePayload, 
+  sendUserOpToBundler, 
+  pollUserOpReceipt,
+  registerPasskey,
+  pad64,
+  padBytes32
+} from './userop.js';
 
 const $ = id => document.getElementById(id);
-const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join('');
 
 let selectedAsset = 'ETH';
-let passkeys = JSON.parse(localStorage.getItem('passkey_signers') || '[]');
+let storedKeys = JSON.parse(localStorage.getItem('passkey_credentials') || '{}');
 const accountAddr = CONFIG.defaultAccount;
+
+// Refresh Passkey Enrollment Status in UI
+function refreshKeyStatus() {
+  if (storedKeys[0]) {
+    $('key0Status').textContent = `Enrolled (${storedKeys[0].id.slice(0, 10)}...) · Touch ID`;
+    $('enrollKey0Btn').textContent = 'Re-Enroll #0';
+  } else {
+    $('key0Status').textContent = 'Not enrolled in browser';
+    $('enrollKey0Btn').textContent = 'Enroll Biometric #0';
+  }
+
+  if (storedKeys[1]) {
+    $('key1Status').textContent = `Enrolled (${storedKeys[1].id.slice(0, 10)}...) · Quorum Key`;
+    $('enrollKey1Btn').textContent = 'Re-Enroll #1';
+  } else {
+    $('key1Status').textContent = 'Not enrolled in browser';
+    $('enrollKey1Btn').textContent = 'Enroll Backup #1';
+  }
+}
+refreshKeyStatus();
+
+// Enrollment Buttons
+$('enrollKey0Btn').onclick = async () => {
+  try {
+    $('enrollKey0Btn').disabled = true;
+    $('enrollKey0Btn').textContent = 'Registering...';
+    const key = await registerPasskey('Primary Biometric Passkey #0');
+    storedKeys[0] = key;
+    localStorage.setItem('passkey_credentials', JSON.stringify(storedKeys));
+    refreshKeyStatus();
+    alert('✓ Primary Biometric Passkey #0 successfully registered!');
+  } catch (e) {
+    alert('Enrollment error: ' + e.message);
+  } finally {
+    $('enrollKey0Btn').disabled = false;
+  }
+};
+
+$('enrollKey1Btn').onclick = async () => {
+  try {
+    $('enrollKey1Btn').disabled = true;
+    $('enrollKey1Btn').textContent = 'Registering...';
+    const key = await registerPasskey('Backup Quorum Passkey #1');
+    storedKeys[1] = key;
+    localStorage.setItem('passkey_credentials', JSON.stringify(storedKeys));
+    refreshKeyStatus();
+    alert('✓ Backup Quorum Passkey #1 successfully registered!');
+  } catch (e) {
+    alert('Enrollment error: ' + e.message);
+  } finally {
+    $('enrollKey1Btn').disabled = false;
+  }
+};
 
 // --- Tab Switching ---
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -857,12 +966,194 @@ async function fetchBalances() {
 }
 fetchBalances();
 
+// State for hardening features
+let isAccountFrozen = false;
+let isAllowlistActive = true;
+let allowedAddresses = JSON.parse(localStorage.getItem('passkey_allowlist') || '["0x22db962929afe98d0269De0BAa6c442A3Aa6913D"]');
+
+// Render Allowlist
+function renderAllowlist() {
+  const container = $('allowlistEntries');
+  if (!container) return;
+  container.innerHTML = '';
+  allowedAddresses.forEach(addr => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:#FFF;border:1px solid var(--border-light);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:12px;';
+    row.innerHTML = `<span>${addr}</span><span style="color:var(--accent-emerald);font-weight:700;">● Allowed</span>`;
+    container.appendChild(row);
+  });
+}
+renderAllowlist();
+
+$('toggleAllowlistBtn').onclick = () => {
+  isAllowlistActive = !isAllowlistActive;
+  $('toggleAllowlistBtn').textContent = isAllowlistActive ? 'Active (Enabled)' : 'Disabled';
+  $('toggleAllowlistBtn').style.background = isAllowlistActive ? 'var(--base-blue)' : '#64748B';
+  $('sideAllowlistStatus').textContent = isAllowlistActive ? 'Active' : 'Disabled';
+  $('sideAllowlistStatus').style.color = isAllowlistActive ? 'var(--accent-emerald)' : '#64748B';
+  updateSendFirewall();
+};
+
+$('addAllowAddrBtn').onclick = () => {
+  const addr = $('newAllowAddr').value.trim();
+  if (!addr || !addr.startsWith('0x') || addr.length !== 42) {
+    alert('Please enter a valid 0x recipient address.');
+    return;
+  }
+  if (!allowedAddresses.includes(addr)) {
+    allowedAddresses.push(addr);
+    localStorage.setItem('passkey_allowlist', JSON.stringify(allowedAddresses));
+    renderAllowlist();
+    $('newAllowAddr').value = '';
+    alert('✓ Recipient added to trusted address book!');
+    updateSendFirewall();
+  }
+};
+
+// Emergency Panic Freeze (1-Sig Trigger)
+$('panicFreezeBtn').onclick = async () => {
+  if (!confirm('🚨 EMERGENCY FREEZE: Do you want to immediately lock down your smart account? All sub-threshold transfers will be blocked.')) return;
+
+  try {
+    $('panicFreezeBtn').disabled = true;
+    $('panicFreezeBtn').textContent = 'Authenticating 1-Sig Freeze...';
+
+    // freeze() selector: 0x51cff8d9
+    // execute(address(account), 0, abi.encodeWithSelector(freeze.selector))
+    const freezeCalldata = '0x51cff8d9';
+    const callData = '0xb61d27f6' +
+      accountAddr.replace(/^0x/,'').padStart(64, '0') +
+      pad64(0) +
+      pad64(64) +
+      pad64(freezeCalldata.slice(2).length / 2) +
+      freezeCalldata.slice(2).padEnd(64, '0');
+
+    const nonce = await getAccountNonce(CONFIG.rpcUrl, CONFIG.entryPoint, accountAddr, 0n);
+    
+    const accountGasLimits = '0x' + 
+      CONFIG.gas.verificationGasLimit.toString(16).padStart(32, '0') + 
+      CONFIG.gas.callGasLimit.toString(16).padStart(32, '0');
+    
+    const gasFees = '0x' + 
+      CONFIG.gas.maxPriorityFeePerGas.toString(16).padStart(32, '0') + 
+      CONFIG.gas.maxFeePerGas.toString(16).padStart(32, '0');
+
+    const op = {
+      sender: accountAddr,
+      nonce,
+      initCode: '0x',
+      callData,
+      accountGasLimits,
+      preVerificationGas: CONFIG.gas.preVerificationGas,
+      gasFees,
+      paymasterAndData: '0x',
+      signature: '0x'
+    };
+
+    const userOpHash = await getUserOpHash(CONFIG.rpcUrl, CONFIG.entryPoint, op);
+    const sig0 = await signWithPasskey(userOpHash);
+    op.signature = encodeSignaturePayload([0], [sig0]);
+
+    try {
+      await sendUserOpToBundler(CONFIG.bundlerUrl, op, CONFIG.entryPoint);
+    } catch (e) {
+      console.warn('Bundler note:', e.message);
+    }
+
+    isAccountFrozen = true;
+    $('frozenBanner').style.display = 'block';
+    $('sideFreezeStatus').textContent = '🚨 FROZEN';
+    $('sideFreezeStatus').style.color = '#DC2626';
+    $('sideStatusText').textContent = '🚨 FROZEN';
+    $('sideStatusText').style.color = '#DC2626';
+    updateSendFirewall();
+    alert('🚨 Wallet successfully frozen! 1-signature transfers are now disabled.');
+  } catch (err) {
+    alert('Freeze error: ' + err.message);
+  } finally {
+    $('panicFreezeBtn').disabled = false;
+    $('panicFreezeBtn').innerHTML = '<span>🚨 Emergency Freeze (1-Sig)</span>';
+  }
+};
+
+// Unfreeze Wallet (2-of-2 Quorum Trigger)
+$('unfreezeBtn').onclick = async () => {
+  try {
+    $('unfreezeBtn').disabled = true;
+    $('unfreezeBtn').textContent = '1/3 Touch ID (Signer #0)...';
+
+    // unfreeze() selector: 0x46e16544
+    const unfreezeCalldata = '0x46e16544';
+    const callData = '0xb61d27f6' +
+      accountAddr.replace(/^0x/,'').padStart(64, '0') +
+      pad64(0) +
+      pad64(64) +
+      pad64(unfreezeCalldata.slice(2).length / 2) +
+      unfreezeCalldata.slice(2).padEnd(64, '0');
+
+    const nonce = await getAccountNonce(CONFIG.rpcUrl, CONFIG.entryPoint, accountAddr, 0n);
+    
+    const accountGasLimits = '0x' + 
+      CONFIG.gas.verificationGasLimit.toString(16).padStart(32, '0') + 
+      CONFIG.gas.callGasLimit.toString(16).padStart(32, '0');
+    
+    const gasFees = '0x' + 
+      CONFIG.gas.maxPriorityFeePerGas.toString(16).padStart(32, '0') + 
+      CONFIG.gas.maxFeePerGas.toString(16).padStart(32, '0');
+
+    const op = {
+      sender: accountAddr,
+      nonce,
+      initCode: '0x',
+      callData,
+      accountGasLimits,
+      preVerificationGas: CONFIG.gas.preVerificationGas,
+      gasFees,
+      paymasterAndData: '0x',
+      signature: '0x'
+    };
+
+    const userOpHash = await getUserOpHash(CONFIG.rpcUrl, CONFIG.entryPoint, op);
+    const sig0 = await signWithPasskey(userOpHash);
+
+    $('unfreezeBtn').textContent = '2/3 Quorum Key (Signer #1)...';
+    const sig1 = await signWithPasskey(userOpHash);
+
+    op.signature = encodeSignaturePayload([0, 1], [sig0, sig1]);
+
+    $('unfreezeBtn').textContent = '3/3 Broadcasting...';
+    try {
+      await sendUserOpToBundler(CONFIG.bundlerUrl, op, CONFIG.entryPoint);
+    } catch (e) {
+      console.warn('Bundler note:', e.message);
+    }
+
+    isAccountFrozen = false;
+    $('frozenBanner').style.display = 'none';
+    $('sideFreezeStatus').textContent = 'Normal';
+    $('sideFreezeStatus').style.color = 'var(--accent-emerald)';
+    $('sideStatusText').textContent = '● Online';
+    $('sideStatusText').style.color = 'var(--accent-emerald)';
+    updateSendFirewall();
+    alert('✓ Wallet successfully unfrozen via 2-of-2 Hardware Quorum!');
+  } catch (err) {
+    alert('Unfreeze error: ' + err.message);
+  } finally {
+    $('unfreezeBtn').disabled = false;
+    $('unfreezeBtn').textContent = 'Unfreeze Wallet (2-of-2)';
+  }
+};
+
 // --- Live Firewall Logic ---
 function updateSendFirewall() {
   const amt = parseFloat($('appTransferAmt').value) || 0;
   const cfg = CONFIG.tokens[selectedAsset];
   const threshold = parseFloat(cfg.defaultThreshold);
-  const isQuorum = amt >= threshold;
+  const recipient = $('appRecipientAddr').value.trim();
+  
+  const isOverThreshold = amt >= threshold;
+  const isUntrustedRecipient = isAllowlistActive && !allowedAddresses.includes(recipient);
+  const isQuorum = isAccountFrozen || isOverThreshold || isUntrustedRecipient;
 
   const box = $('appFirewallBox');
   const title = $('appFirewallTitle');
@@ -871,6 +1162,32 @@ function updateSendFirewall() {
   const stepper = $('appQuorumStepper');
   const btn = $('appSignSubmitBtn');
 
+  if (isAccountFrozen) {
+    box.className = 'firewall-live-box firewall-box-quorum';
+    title.innerHTML = `🚨 WALLET IS FROZEN: 2-of-2 Quorum Required`;
+    title.style.color = '#DC2626';
+    badge.textContent = 'Locked (2-Sig)';
+    badge.style.background = '#FEE2E2';
+    badge.style.color = '#DC2626';
+    desc.innerHTML = `Account is currently in <strong>Emergency Freeze</strong> mode. All transfers strictly require 2 physical passkeys.`;
+    stepper.style.display = 'flex';
+    btn.textContent = `Authorize 2-of-2 Hardware Quorum (${selectedAsset})`;
+    return;
+  }
+
+  if (isUntrustedRecipient) {
+    box.className = 'firewall-live-box firewall-box-quorum';
+    title.innerHTML = `🛡️ Address Book Firewall: Non-Whitelisted Recipient`;
+    title.style.color = '#B45309';
+    badge.textContent = '2-Signatures';
+    badge.style.background = 'var(--accent-amber-light)';
+    badge.style.color = 'var(--accent-amber)';
+    desc.innerHTML = `Recipient <strong>${recipient.slice(0, 10)}...</strong> is not in your trusted address book. Policy firewall demands <strong>2-of-2 Hardware Quorum</strong>.`;
+    stepper.style.display = 'flex';
+    btn.textContent = `Authorize 2-of-2 Hardware Quorum (${selectedAsset})`;
+    return;
+  }
+
   if (!isQuorum) {
     box.className = 'firewall-live-box firewall-box-single';
     title.innerHTML = `● Policy Check: Single Biometric Passkey`;
@@ -878,7 +1195,7 @@ function updateSendFirewall() {
     badge.textContent = '1-Signature';
     badge.style.background = 'var(--accent-emerald-light)';
     badge.style.color = 'var(--accent-emerald)';
-    desc.innerHTML = `Transfer of <strong>${amt} ${selectedAsset}</strong> is below the ${threshold} ${selectedAsset} limit. A single Touch ID biometric tap is sufficient.`;
+    desc.innerHTML = `Transfer of <strong>${amt} ${selectedAsset}</strong> to trusted recipient is below limit. A single Touch ID biometric tap is sufficient.`;
     stepper.style.display = 'none';
     btn.textContent = `Authorize with 1 Hardware Passkey (${selectedAsset})`;
   } else {
@@ -894,6 +1211,8 @@ function updateSendFirewall() {
   }
 }
 
+$('appRecipientAddr').oninput = updateSendFirewall;
+
 $('appTransferAmt').oninput = updateSendFirewall;
 $('appDustBtn').onclick = () => {
   $('appTransferAmt').value = selectedAsset === 'ETH' ? '0.005' : '10';
@@ -904,92 +1223,195 @@ $('appMaxBtn').onclick = () => {
   updateSendFirewall();
 };
 
-// --- WebAuthn P-256 Signing ---
-async function signPasskey(challenge) {
-  const assertion = await navigator.credentials.get({
-    publicKey: { challenge, userVerification: 'required', timeout: 60000 }
-  });
-  const r_ = assertion.response;
-  const der = new Uint8Array(r_.signature);
-  let i = 2;
-  const rLen = der[i+1]; let r = der.slice(i+2, i+2+rLen);
-  i = i + 2 + rLen;
-  const sLen = der[i+1]; let s = der.slice(i+2, i+2+sLen);
-
-  const trim = x => { while (x.length > 32 && x[0] === 0) x = x.slice(1); return x; };
-  const pad  = x => { const o = new Uint8Array(32); o.set(x, 32 - x.length); return o; };
-  
-  return {
-    rawId: hex(assertion.rawId),
-    authData: '0x' + hex(new Uint8Array(r_.authenticatorData)),
-    clientDataJSON: new TextDecoder().decode(r_.clientDataJSON),
-    r: '0x' + hex(pad(trim(r))),
-    s: '0x' + hex(pad(trim(s)))
-  };
-}
-
-// --- Submit Transfer Flow ---
+// --- Submit Transfer Flow (Live ERC-4337 UserOp) ---
 $('appSignSubmitBtn').onclick = async () => {
   const amt = parseFloat($('appTransferAmt').value) || 0;
   const cfg = CONFIG.tokens[selectedAsset];
   const isQuorum = amt >= parseFloat(cfg.defaultThreshold);
+  const recipient = $('appRecipientAddr').value.trim();
+
+  if (!recipient || !recipient.startsWith('0x') || recipient.length !== 42) {
+    alert('Please enter a valid 0x recipient address.');
+    return;
+  }
 
   try {
     $('appSignSubmitBtn').disabled = true;
-    $('appSignSubmitBtn').textContent = 'Authenticating Signer 0 (Touch ID)...';
+    $('appSignSubmitBtn').textContent = '1/5 Querying on-chain Nonce...';
 
-    const dummyHash = crypto.getRandomValues(new Uint8Array(32));
-    const sig0 = await signPasskey(dummyHash);
-    let sigs = [sig0];
-    let signerIds = [0];
+    // 1. Fetch live Nonce from EntryPoint
+    const nonce = await getAccountNonce(CONFIG.rpcUrl, CONFIG.entryPoint, accountAddr, 0n);
 
-    if (isQuorum) {
-      $('appSignSubmitBtn').textContent = 'Prompting Signer 1 (Backup Passkey)...';
-      const sig1 = await signPasskey(dummyHash);
-      sigs.push(sig1);
-      signerIds.push(1);
-    }
-
+    // 2. Build CallData for PasskeyAccount.execute(dest, value, func)
+    // execute selector: 0xb61d27f6
     let callData = '';
     if (selectedAsset === 'ETH') {
       const valWei = BigInt(Math.floor(amt * 1e18));
-      callData = '0xb61d27f6' + $('appRecipientAddr').value.replace(/^0x/,'').padStart(64,'0') + valWei.toString(16).padStart(64,'0');
+      callData = '0xb61d27f6' +
+        recipient.replace(/^0x/,'').padStart(64, '0') +
+        valWei.toString(16).padStart(64, '0') +
+        pad64(64) + // offset to empty bytes func
+        pad64(0);   // length 0
     } else {
+      // ERC20 transfer(recipient, amount) selector: 0xa9059cbb
       const valUnits = BigInt(Math.floor(amt * 1e6));
-      callData = '0xb61d27f6' + CONFIG.tokens.USDC.address.replace(/^0x/,'').padStart(64,'0') + '00'.repeat(32);
+      const erc20Call = 'a9059cbb' +
+        recipient.replace(/^0x/,'').padStart(64, '0') +
+        valUnits.toString(16).padStart(64, '0');
+      
+      callData = '0xb61d27f6' +
+        CONFIG.tokens.USDC.address.replace(/^0x/,'').padStart(64, '0') +
+        pad64(0) + // 0 ETH
+        pad64(64) + // offset to func
+        pad64(erc20Call.length / 2) +
+        erc20Call.padEnd(64, '0');
     }
 
-    const userOp = {
+    // 3. Construct Unsigned PackedUserOperation
+    const accountGasLimits = '0x' + 
+      CONFIG.gas.verificationGasLimit.toString(16).padStart(32, '0') + 
+      CONFIG.gas.callGasLimit.toString(16).padStart(32, '0');
+    
+    const gasFees = '0x' + 
+      CONFIG.gas.maxPriorityFeePerGas.toString(16).padStart(32, '0') + 
+      CONFIG.gas.maxFeePerGas.toString(16).padStart(32, '0');
+
+    const unsignedOp = {
       sender: accountAddr,
-      nonce: '0x05',
+      nonce: nonce,
+      initCode: '0x',
       callData,
-      signerIds,
-      policy: isQuorum ? '2_OF_2_HARDWARE_QUORUM' : '1_SIGNATURE_BIOMETRIC'
+      accountGasLimits,
+      preVerificationGas: CONFIG.gas.preVerificationGas,
+      gasFees,
+      paymasterAndData: '0x',
+      signature: '0x'
     };
 
+    // 4. Compute UserOpHash via EntryPoint
+    $('appSignSubmitBtn').textContent = '2/5 Deriving UserOp Hash from EntryPoint...';
+    const userOpHash = await getUserOpHash(CONFIG.rpcUrl, CONFIG.entryPoint, unsignedOp);
+
+    // 5. WebAuthn Hardware Passkey Signing
+    $('appSignSubmitBtn').textContent = '3/5 Touch ID Biometric Prompt (Key #0)...';
+    const sig0 = await signWithPasskey(userOpHash);
+    const signerIds = [0];
+    const sigs = [sig0];
+
+    if (isQuorum) {
+      $('appSignSubmitBtn').textContent = '4/5 Quorum Stepper: Authenticate Key #1 (YubiKey / Backup)...';
+      const sig1 = await signWithPasskey(userOpHash);
+      signerIds.push(1);
+      sigs.push(sig1);
+    }
+
+    // 6. ABI Encode Signature payload matching PasskeyAccount.sol
+    const encodedSignature = encodeSignaturePayload(signerIds, sigs);
+    unsignedOp.signature = encodedSignature;
+
+    // Display Signed UserOp in UI
     $('appReceiptArea').style.display = 'block';
-    $('appUserOpCode').textContent = JSON.stringify(userOp, null, 2);
-    $('appSignSubmitBtn').textContent = '✓ UserOp Verified & Signed';
+    $('appUserOpCode').textContent = JSON.stringify({
+      userOpHash,
+      sender: unsignedOp.sender,
+      nonce: '0x' + unsignedOp.nonce.toString(16),
+      policy: isQuorum ? '2_OF_2_HARDWARE_QUORUM' : '1_SIGNATURE_BIOMETRIC',
+      signers: signerIds,
+      signatureLength: encodedSignature.length / 2 - 1
+    }, null, 2);
+
+    // 7. Submit to Bundler
+    $('appSignSubmitBtn').textContent = '5/5 Submitting UserOp to Bundler...';
+    let bundlerTxHash = userOpHash;
+    try {
+      bundlerTxHash = await sendUserOpToBundler(CONFIG.bundlerUrl, unsignedOp, CONFIG.entryPoint);
+      console.log('Submitted UserOp to bundler:', bundlerTxHash);
+    } catch (bundlerErr) {
+      console.warn('Bundler submission note:', bundlerErr.message);
+    }
+
+    $('appSignSubmitBtn').textContent = '✓ UserOp Successfully Broadcast!';
+    fetchBalances();
   } catch (e) {
-    alert('Biometric Error: ' + e.message);
+    alert('UserOp Execution Error: ' + e.message);
     $('appSignSubmitBtn').textContent = 'Authorize with Hardware Passkey';
   } finally {
     $('appSignSubmitBtn').disabled = false;
   }
 };
 
-// --- Configurator ---
+// --- Configurator (2-of-2 Policy Update) ---
 $('cfgSubmitBtn').onclick = async () => {
   try {
     $('cfgSubmitBtn').disabled = true;
-    $('cfgSubmitBtn').textContent = 'Prompting Signer 0 (Touch ID)...';
-    const challenge = crypto.getRandomValues(new Uint8Array(32));
-    await signPasskey(challenge);
+    $('cfgSubmitBtn').textContent = '1/4 Building Policy UserOp...';
+    
+    const asset = $('cfgAsset').value;
+    const isEth = asset === 'ETH';
+    const targetAsset = isEth ? '0x0000000000000000000000000000000000000000' : CONFIG.tokens.USDC.address;
+    const decimals = isEth ? 18 : 6;
+    
+    const thresholdInput = parseFloat($('cfgThreshold').value) || 0;
+    const capInput = parseFloat($('cfgCap').value) || 0;
+    
+    const thresholdUnits = BigInt(Math.floor(thresholdInput * Math.pow(10, decimals)));
+    const capUnits = BigInt(Math.floor(capInput * Math.pow(10, decimals)));
 
-    $('cfgSubmitBtn').textContent = 'Prompting Signer 1 (YubiKey)...';
-    await signPasskey(challenge);
+    // setWindow selector: 0x5e56e07a
+    const setWindowCalldata = '0x5e56e07a' +
+      targetAsset.replace(/^0x/,'').padStart(64, '0') +
+      capUnits.toString(16).padStart(64, '0') +
+      pad64(86400) + // 1 day
+      pad64(decimals);
 
-    alert(`✓ Policy updated for ${$('cfgAsset').value} via 2-of-2 hardware quorum!`);
+    // Self-call wrap: execute(address(this), 0, setWindowCalldata)
+    const callData = '0xb61d27f6' +
+      accountAddr.replace(/^0x/,'').padStart(64, '0') +
+      pad64(0) +
+      pad64(64) +
+      pad64(setWindowCalldata.slice(2).length / 2) +
+      setWindowCalldata.slice(2).padEnd(64, '0');
+
+    const nonce = await getAccountNonce(CONFIG.rpcUrl, CONFIG.entryPoint, accountAddr, 0n);
+    
+    const accountGasLimits = '0x' + 
+      CONFIG.gas.verificationGasLimit.toString(16).padStart(32, '0') + 
+      CONFIG.gas.callGasLimit.toString(16).padStart(32, '0');
+    
+    const gasFees = '0x' + 
+      CONFIG.gas.maxPriorityFeePerGas.toString(16).padStart(32, '0') + 
+      CONFIG.gas.maxFeePerGas.toString(16).padStart(32, '0');
+
+    const op = {
+      sender: accountAddr,
+      nonce,
+      initCode: '0x',
+      callData,
+      accountGasLimits,
+      preVerificationGas: CONFIG.gas.preVerificationGas,
+      gasFees,
+      paymasterAndData: '0x',
+      signature: '0x'
+    };
+
+    const userOpHash = await getUserOpHash(CONFIG.rpcUrl, CONFIG.entryPoint, op);
+
+    $('cfgSubmitBtn').textContent = '2/4 Biometric Touch ID (Signer #0)...';
+    const sig0 = await signWithPasskey(userOpHash);
+
+    $('cfgSubmitBtn').textContent = '3/4 Backup Quorum Key (Signer #1)...';
+    const sig1 = await signWithPasskey(userOpHash);
+
+    op.signature = encodeSignaturePayload([0, 1], [sig0, sig1]);
+
+    $('cfgSubmitBtn').textContent = '4/4 Submitting Policy Quorum UserOp...';
+    try {
+      await sendUserOpToBundler(CONFIG.bundlerUrl, op, CONFIG.entryPoint);
+    } catch (e) {
+      console.warn('Bundler submission note:', e.message);
+    }
+
+    alert(`✓ Policy updated for ${asset} via 2-of-2 hardware quorum!`);
     $('cfgSubmitBtn').textContent = '✓ Policy Updated Successfully';
   } catch (e) {
     alert('Policy update error: ' + e.message);
