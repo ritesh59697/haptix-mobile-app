@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Haptix — The Biometric Hardware Enclave Layer for EVM</title>
   <meta name="description" content="Haptix provides self-custodial WebAuthn biometric smart accounts with autonomous on-chain spending firewalls and RIP-7212 P-256 precompiles on Base.">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon-256.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
@@ -893,14 +896,139 @@
       margin-top: 30px;
     }
 
-    @media (max-width: 900px) {
+    /* ==========================================================================
+       RESPONSIVE DESIGN & MOBILE OPTIMIZATION
+       ========================================================================== */
+    @media (max-width: 1024px) {
+      .container { padding: 0 20px; }
       .tenbin-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-links-row { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 24px; }
+    }
+
+    @media (max-width: 820px) {
+      /* Floating Navbar on Tablet/Mobile */
+      .card-nav-wrapper {
+        top: 12px;
+        padding: 0 12px;
+      }
+      .card-nav {
+        width: 100%;
+        max-width: 100%;
+        height: 46px;
+        padding: 0 6px 0 12px;
+        gap: 10px;
+        justify-content: space-between;
+      }
+      .nav-links { display: none !important; }
+      .brand-title { font-size: 15.5px; }
+      .nav-cta-btn {
+        height: 34px;
+        padding: 0 14px;
+        font-size: 12px;
+      }
+
+      /* Hero Section */
+      .hero-section {
+        padding: 95px 16px 45px 16px;
+        min-height: auto;
+      }
+      .pill-badge {
+        font-size: 11px;
+        padding: 4px 10px;
+        margin-bottom: 18px;
+        white-space: normal;
+        text-align: center;
+      }
+      .hero-title {
+        font-size: clamp(30px, 8vw, 44px);
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+        margin-bottom: 16px;
+      }
+      .hero-sub {
+        font-size: 14.5px;
+        line-height: 1.55;
+        margin-bottom: 24px;
+        max-width: 100%;
+      }
+      .hero-ctas {
+        flex-direction: column;
+        width: 100%;
+        max-width: 360px;
+        margin: 0 auto;
+        gap: 10px;
+      }
+      .hero-btn-main, .hero-btn-sec {
+        width: 100%;
+        justify-content: center;
+        padding: 12px 20px;
+        font-size: 14px;
+      }
+
+      /* Grids */
       .workflows-grid { grid-template-columns: 1fr; }
-      .sandbox-box { grid-template-columns: 1fr; }
+      .sandbox-box { grid-template-columns: 1fr; padding: 20px 16px; }
       .trust-grid { grid-template-columns: 1fr; }
-      .comp-row { grid-template-columns: 1fr 1fr; gap: 8px; }
-      .footer-links-row { grid-template-columns: 1fr 1fr; }
-      .nav-links { display: none; }
+      
+      /* Horizontal Comparison Swipe */
+      .comp-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 8px;
+        border-radius: var(--radius-lg);
+      }
+      .micro-comp-card {
+        min-width: 620px;
+      }
+      .comp-swipe-hint {
+        display: block !important;
+      }
+
+      /* Footer */
+      .footer-cta {
+        padding: 36px 20px;
+        margin-bottom: 40px;
+      }
+      .footer-cta div {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+      }
+      .footer-cta .btn-primary, .footer-cta .btn-ghost {
+        width: 100%;
+        justify-content: center;
+      }
+      .footer-links-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+      }
+      .footer-watermark {
+        font-size: clamp(44px, 14vw, 90px);
+        margin-top: 16px;
+      }
+    }
+
+    @media (max-width: 580px) {
+      .tenbin-metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .tenbin-metric-card {
+        padding: 20px 16px;
+      }
+      .footer-links-row {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .section-header-compact h2 {
+        font-size: clamp(24px, 7vw, 32px);
+      }
+      .faq-question {
+        font-size: 14.5px;
+      }
+      .faq-answer {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -1037,42 +1165,45 @@
       <p class="section-sub">Comparing native P-256 passkey smart accounts with traditional EOAs and multi-signature vaults.</p>
     </div>
 
-    <div class="micro-comp-card">
-      <div class="comp-row comp-header">
-        <div>Metric / Feature</div>
-        <div>Passkey Smart Account</div>
-        <div>Standard EOA (MetaMask)</div>
-        <div>Multisig (Safe)</div>
-      </div>
-      <div class="comp-row">
-        <div class="comp-feature">Signing Latency</div>
-        <div><span class="comp-highlight">0.4 secs (Touch ID)</span></div>
-        <div class="comp-muted">15.0 secs (Password)</div>
-        <div class="comp-muted">4+ hours (Coordination)</div>
-      </div>
-      <div class="comp-row">
-        <div class="comp-feature">Infostealer Malware Exposure</div>
-        <div><span class="comp-highlight">0% (Hardware Enclave)</span></div>
-        <div class="comp-muted">100% (Exposed in RAM)</div>
-        <div class="comp-muted">Partial (1 EOA breach)</div>
-      </div>
-      <div class="comp-row">
-        <div class="comp-feature">Autonomous Policy Firewall</div>
-        <div><span class="comp-highlight">Native On-Chain (1-Sig/2-Sig)</span></div>
-        <div class="comp-muted">None</div>
-        <div class="comp-muted">Manual Approvals</div>
-      </div>
-      <div class="comp-row">
-        <div class="comp-feature">Emergency Panic Freeze</div>
-        <div><span class="comp-highlight">1-Sig Lock · 2-Sig Unlock</span></div>
-        <div class="comp-muted">None</div>
-        <div class="comp-muted">Requires Full Quorum</div>
-      </div>
-      <div class="comp-row">
-        <div class="comp-feature">Curve Gas Optimization</div>
-        <div><span class="comp-highlight">&lt; 100k gas (0x100 Precompile)</span></div>
-        <div class="comp-muted">21k gas (Unsafe EOA)</div>
-        <div class="comp-muted">350k+ gas (Emulated)</div>
+    <div class="comp-table-container">
+      <div class="comp-swipe-hint" style="display:none; text-align:right; font-size:11px; color:var(--accent-cyan); margin-bottom:8px; font-family:var(--font-mono); font-weight:700;">← Swipe to compare all metrics →</div>
+      <div class="micro-comp-card">
+        <div class="comp-row comp-header">
+          <div>Metric / Feature</div>
+          <div>Passkey Smart Account</div>
+          <div>Standard EOA (MetaMask)</div>
+          <div>Multisig (Safe)</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-feature">Signing Latency</div>
+          <div><span class="comp-highlight">0.4 secs (Touch ID)</span></div>
+          <div class="comp-muted">15.0 secs (Password)</div>
+          <div class="comp-muted">4+ hours (Coordination)</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-feature">Infostealer Malware Exposure</div>
+          <div><span class="comp-highlight">0% (Hardware Enclave)</span></div>
+          <div class="comp-muted">100% (Exposed in RAM)</div>
+          <div class="comp-muted">Partial (1 EOA breach)</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-feature">Autonomous Policy Firewall</div>
+          <div><span class="comp-highlight">Native On-Chain (1-Sig/2-Sig)</span></div>
+          <div class="comp-muted">None</div>
+          <div class="comp-muted">Manual Approvals</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-feature">Emergency Panic Freeze</div>
+          <div><span class="comp-highlight">1-Sig Lock · 2-Sig Unlock</span></div>
+          <div class="comp-muted">None</div>
+          <div class="comp-muted">Requires Full Quorum</div>
+        </div>
+        <div class="comp-row">
+          <div class="comp-feature">Curve Gas Optimization</div>
+          <div><span class="comp-highlight">&lt; 100k gas (0x100 Precompile)</span></div>
+          <div class="comp-muted">21k gas (Unsafe EOA)</div>
+          <div class="comp-muted">350k+ gas (Emulated)</div>
+        </div>
       </div>
     </div>
   </section>
