@@ -894,26 +894,44 @@
   <!-- Precision Floating Island Navbar -->
   <header class="card-nav-wrapper">
     <nav class="card-nav">
-      <a href="/" class="brand">
-        <div class="brand-logo-icon">
-          <svg width="26" height="26" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <linearGradient id="navHaptixGradLeft" x1="0%" y1="0%" x2="50%" y2="100%">
-                <stop offset="0%" stop-color="#EC4899"/>
-                <stop offset="40%" stop-color="#D946EF"/>
-                <stop offset="100%" stop-color="#3B82F6"/>
-              </linearGradient>
-              <linearGradient id="navHaptixGradRight" x1="50%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#C084FC"/>
-                <stop offset="60%" stop-color="#0052FF"/>
-                <stop offset="100%" stop-color="#06B6D4"/>
-              </linearGradient>
-            </defs>
-            <path d="M4 8C4 5.24 6.24 3 9 3H10C11.1 3 12 3.9 12 5V12.2L16.2 14.6L12 16.8V27C12 28.1 11.1 29 10 29H9C6.24 29 4 26.76 4 24V8Z" fill="url(#navHaptixGradLeft)"/>
-            <path d="M28 24C28 26.76 25.76 29 23 29H22C20.9 29 20 28.1 20 27V19.8L15.8 17.4L20 15.2V5C20 3.9 20.9 3 22 3H23C25.76 3 28 5.24 28 8V24Z" fill="url(#navHaptixGradRight)"/>
-          </svg>
-        </div>
-        <span class="brand-title">Hapt<span style="position:relative;display:inline-block;">i<span style="position:absolute;top:1.5px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:linear-gradient(135deg,#E879F9,#0052FF);box-shadow:0 0 6px #A855F7;"></span></span>x</span>
+      <a href="/" class="brand" aria-label="Haptix Home">
+        <svg width="102" height="26" viewBox="0 0 102 26" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block; overflow:visible;">
+          <defs>
+            <linearGradient id="navHaptixGradLeft" x1="0%" y1="0%" x2="50%" y2="100%">
+              <stop offset="0%" stop-color="#EC4899"/>
+              <stop offset="40%" stop-color="#D946EF"/>
+              <stop offset="100%" stop-color="#3B82F6"/>
+            </linearGradient>
+            <linearGradient id="navHaptixGradRight" x1="50%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#C084FC"/>
+              <stop offset="60%" stop-color="#0052FF"/>
+              <stop offset="100%" stop-color="#06B6D4"/>
+            </linearGradient>
+            <linearGradient id="navBrandDotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#E879F9"/>
+              <stop offset="50%" stop-color="#C084FC"/>
+              <stop offset="100%" stop-color="#0052FF"/>
+            </linearGradient>
+            <filter id="navBrandLogoGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="#8B5CF6" flood-opacity="0.45"/>
+            </filter>
+            <filter id="navBrandDotGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="1.2" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+          </defs>
+          <!-- Stylized Glowing H Monogram -->
+          <g filter="url(#navBrandLogoGlow)">
+            <path d="M3 6.5C3 4.57 4.57 3 6.5 3H7.5C8.33 3 9 3.67 9 4.5V10.2L12.5 12.1L9 13.9V21.5C9 22.33 8.33 23 7.5 23H6.5C4.57 23 3 21.43 3 19.5V6.5Z" fill="url(#navHaptixGradLeft)"/>
+            <path d="M23 19.5C23 21.43 21.43 23 19.5 23H18.5C17.67 23 17 22.33 17 21.5V15.8L13.5 13.9L17 12.1V4.5C17 3.67 17.67 3 18.5 3H19.5C21.43 3 23 4.57 23 6.5V19.5Z" fill="url(#navHaptixGradRight)"/>
+          </g>
+          <!-- Typography Haptix -->
+          <text x="29" y="19" font-family="'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif" font-size="17" font-weight="800" letter-spacing="-0.03em" fill="#FFFFFF">
+            Hapt<tspan fill="#FFFFFF">&#305;</tspan>x
+          </text>
+          <!-- Single Glowing Gradient Dot on i -->
+          <circle cx="78.2" cy="6.2" r="2.2" fill="url(#navBrandDotGrad)" filter="url(#navBrandDotGlow)"/>
+        </svg>
       </a>
 
       <div class="nav-links">
