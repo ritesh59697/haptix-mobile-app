@@ -37,12 +37,23 @@ Every required real-world gate has been demonstrated end-to-end:
 
 - **Smart Account Address**: [`0xB01543453cF31052c769d79e9C755E3b035d796f`](https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f)
 - **Canonical EntryPoint**: `0x0000000071727De22E5E9d8BAf0edAc6f37da032`
+
+### A. Direct Web App Passkey Execution
 - **UserOperation Hash**: `0xb2e8b0d8d8e0dc4c50cece345c78842c9393a793420a644eebb27108f726fa89`
 - **On-Chain Transaction Hash**: [`0x5c4c413d486754cf8098d4ca4dd2f82a17a72aabc9680174a0bc583bffeb404d`](https://sepolia.basescan.org/tx/0x5c4c413d486754cf8098d4ca4dd2f82a17a72aabc9680174a0bc583bffeb404d)
 - **Block Number**: `46285453`
 - **Gas Used**: `216,897` gas
 - **Execution Status**: `1 (Success)`
-- **EntryPoint Event**: `UserOperationEvent(0xb2e8b0..., sender: 0xB01543..., success: true)`
+- **EntryPoint Event**: `UserOperationEvent(..., sender: 0xB01543..., success: true)`
+
+### B. Chrome Extension EIP-1193 / EIP-6963 dApp Simulator Execution
+- **UserOperation Hash**: `0xb1e365e90397c6b55548bd41bd9f5ae8b0e090e40aa75c7efc9a1af017b31db3`
+- **On-Chain Transaction Hash**: [`0x428fe58b08360238c33bfc6a92264e977283aab0b05965d3abe0f034b5d21d11`](https://sepolia.basescan.org/tx/0x428fe58b08360238c33bfc6a92264e977283aab0b05965d3abe0f034b5d21d11)
+- **Block Number**: `46287256`
+- **Gas Used**: `197,785` gas
+- **Execution Status**: `1 (Success)`
+- **EntryPoint Event**: `UserOperationEvent(..., sender: 0xB01543..., success: true)`
+- **Architecture**: Web Enclave Signer Delegation (`/sign`) via Chrome Profile Touch ID
 
 ---
 
