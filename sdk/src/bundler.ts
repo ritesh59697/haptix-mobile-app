@@ -209,20 +209,34 @@ export class BundlerClient {
   }
 
   /**
-   * Formats a PackedUserOperation for JSON-RPC transport (converting bigints to 0x-hex strings).
+   * Formats a PackedUserOperation for JSON-RPC transport (converting bigints to 0x-hex strings per ERC-4337 v0.7 RPC spec).
    */
   private formatUserOpForRpc(userOp: PackedUserOperation): Record<string, string> {
-    return {
+    const { verificationGasLimit, callGasLimit } = unpackAccountGasLimits(userOp.accountGasLimits);
+    const { maxPriorityFeePerGas, maxFeePerGas } = unpackGasFees(userOp.gasFees);
+
+    const rpcOp: Record<string, string> = {
       sender: userOp.sender,
       nonce: toHex(userOp.nonce),
-      initCode: userOp.initCode,
       callData: userOp.callData,
-      accountGasLimits: userOp.accountGasLimits,
+      callGasLimit: toHex(callGasLimit),
+      verificationGasLimit: toHex(verificationGasLimit),
       preVerificationGas: toHex(userOp.preVerificationGas),
-      gasFees: userOp.gasFees,
-      paymasterAndData: userOp.paymasterAndData,
+      maxFeePerGas: toHex(maxFeePerGas),
+      maxPriorityFeePerGas: toHex(maxPriorityFeePerGas),
       signature: userOp.signature
     };
+
+    if (userOp.initCode && userOp.initCode !== '0x' && userOp.initCode.length >= 42) {
+      rpcOp.factory = userOp.initCode.slice(0, 42);
+      rpcOp.factoryData = '0x' + userOp.initCode.slice(42);
+    }
+
+    if (userOp.paymasterAndData && userOp.paymasterAndData !== '0x' && userOp.paymasterAndData.length >= 42) {
+      rpcOp.paymaster = userOp.paymasterAndData.slice(0, 42);
+    }
+
+    return rpcOp;
   }
 
   /**

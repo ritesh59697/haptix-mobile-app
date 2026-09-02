@@ -966,9 +966,9 @@
           <div style="padding:16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
             <div>
               <div style="font-weight:700;font-size:14px;color:var(--text-white);">Smart Account Deployed on Base Sepolia</div>
-              <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">Account: 0x34Aeb3A3...802c</div>
+              <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">Account: 0x8ad53FB5...3229</div>
             </div>
-            <a href="https://sepolia.basescan.org/address/0x34Aeb3A39fd1838D1C897F879EAB0a258507802c" target="_blank" style="font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;">View on BaseScan ↗</a>
+            <a href="https://sepolia.basescan.org/address/0x8ad53FB549707686c1D6484119Fb2D5842A83229" target="_blank" style="font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;">View on BaseScan ↗</a>
           </div>
         </div>
       </div>
@@ -1411,7 +1411,8 @@ $('appSignSubmitBtn').onclick = async () => {
 
     // Sign Key 0
     $('appSignSubmitBtn').textContent = 'Biometric Touch ID (Key #0)...';
-    const sig0 = await signWithPasskey(userOpHash);
+    const cred0 = storedKeys[0]?.id ? [storedKeys[0].id] : [];
+    const sig0 = await signWithPasskey(userOpHash, cred0);
     const signerIds = [0];
     const sigs = [sig0];
 
@@ -1420,7 +1421,8 @@ $('appSignSubmitBtn').onclick = async () => {
 
     if (isQuorum) {
       $('appSignSubmitBtn').textContent = 'Quorum Prompt: Key #1 (Backup)...';
-      const sig1 = await signWithPasskey(userOpHash);
+      const cred1 = storedKeys[1]?.id ? [storedKeys[1].id] : [];
+      const sig1 = await signWithPasskey(userOpHash, cred1);
       signerIds.push(1);
       sigs.push(sig1);
     }

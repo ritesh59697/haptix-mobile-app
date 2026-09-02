@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-02T07:18:29.130Z",
+  "timestamp": "2026-09-02T07:31:10.822Z",
   "chainId": 84532,
   "rpcUrl": "https://sepolia.base.org",
   "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
@@ -22,7 +22,7 @@
       "status": "PASSED",
       "type": "Autonomous (0x01)",
       "amount": "20.00 USDC",
-      "userOpHash": "0xdb2d9ec43417d617ecd0407ac623b4e622d25dc47e96b946dd169ffdac8c5b8c",
+      "userOpHash": "0x2e0b3bfa136e1cf30a72cf238cb05de415a007c7c1bb7052f238f7885b9584a3",
       "policyCheck": {
         "valid": false,
         "requiresEscalation": false,
@@ -41,35 +41,27 @@
       "enforcement": "Failed Closed on Ceiling Overage"
     },
     "TEST_D_ZERO_SLIPPAGE_REJECT": {
-      "status": "FAILED",
+      "status": "PASSED",
       "enforcement": "Zero-slippage swap rejected"
     },
     "TEST_E_PREFLIGHT_BALANCE_CHECK": {
-      "status": "BLOCKED_BY_PREFUND",
+      "status": "PASSED",
       "requiredPrefundWei": "148000000000000",
-      "accountBalanceWei": "0",
+      "accountBalanceWei": "50000000000000000",
       "entryPointDepositWei": "0",
-      "hint": "The account has insufficient native ETH or EntryPoint deposit to cover the maximum gas cost."
+      "hint": "Account has sufficient balance for gas prefund."
     },
     "TEST_F_BUNDLER_BROADCAST": {
       "status": "BLOCKED",
-      "reason": "Bundler Authentication Failed [HTTP 401]: Missing or invalid API key in bundler URL. Please configure a valid provider endpoint."
+      "reason": "EntryPoint Error [AA24 - Signature error]: The signature could not be verified, is malformed, or curve verification failed. (Details: UserOperation reverted with reason: AA24 signature error)"
     }
   },
   "verdict": "TESTNET E2E BLOCKED",
   "blockers": [
     {
-      "gate": "ACCOUNT_GAS_PREFUND (AA21)",
+      "gate": "ON_CHAIN_AGENT_ENROLLMENT (AA24)",
       "account": "0x8ad53FB549707686c1D6484119Fb2D5842A83229",
-      "balance": "0",
-      "deposit": "0",
-      "required": "148000000000000",
-      "remedy": "Send at least 0.005 Base Sepolia ETH to account 0x8ad53FB549707686c1D6484119Fb2D5842A83229"
-    },
-    {
-      "gate": "BUNDLER_API_CREDENTIALS",
-      "bundlerUrl": "https://api.pimlico.io/v2/84532/rpc?apikey=REDACTED",
-      "remedy": "Configure a valid Base Sepolia bundler endpoint (e.g. Pimlico or Alchemy API key in BUNDLER_RPC_URL)"
+      "remedy": "Autonomous agent key must be enrolled on-chain via grantAgentSession signed by 2-of-2 Hardware Passkey Quorum before autonomous execution."
     }
   ]
 }

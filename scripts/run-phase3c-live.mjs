@@ -19,6 +19,7 @@ import {
   buildPackedUserOp,
   computeUserOpHash,
   calculateAmountOutMinimum,
+  encodeUniswapV3ExactInputSingle,
   parseTokenAmount,
   validateSessionConfig,
   validateAgentSingleCall,
@@ -212,10 +213,17 @@ async function runPhase3C() {
   };
   console.log(`   ✓ TEST C (Over $200 Human Escalation Ceiling -> Fails Closed): PASSED`);
 
-  // TEST D: Zero Slippage Uniswap Swap
+  // TEST D: Zero Slippage Uniswap Swap (amountOutMinimum == 0)
   let slippageFailedClosed = false;
   try {
-    calculateAmountOutMinimum(parseTokenAmount('100', 6), 0n);
+    encodeUniswapV3ExactInputSingle({
+      tokenIn: USDC,
+      tokenOut: '0x4200000000000000000000000000000000000006', // WETH
+      fee: 3000,
+      recipient: ACCOUNT,
+      amountIn: parseTokenAmount('100', 6),
+      amountOutMinimum: 0n // MEV Sandwich vulnerability
+    });
   } catch {
     slippageFailedClosed = true;
   }
@@ -223,7 +231,7 @@ async function runPhase3C() {
     status: slippageFailedClosed ? 'PASSED' : 'FAILED',
     enforcement: 'Zero-slippage swap rejected'
   };
-  console.log(`   ✓ TEST D (Zero Slippage Uniswap Swap -> Rejected): PASSED`);
+  console.log(`   ✓ TEST D (Zero Slippage Uniswap Swap -> Rejected): ${slippageFailedClosed ? 'PASSED' : 'FAILED'}`);
 
   // TEST E: Pre-Flight Prefund Check
   console.log('\n   Checking Pre-Flight Gas Prefund (ERC-4337 v0.7)...');
@@ -294,6 +302,13 @@ async function runPhase3C() {
         gate: 'BUNDLER_API_CREDENTIALS',
         bundlerUrl: BUNDLER_URL.replace(/apikey=[^&]+/, 'apikey=REDACTED'),
         remedy: 'Configure a valid Base Sepolia bundler endpoint (e.g. Pimlico or Alchemy API key in BUNDLER_RPC_URL)'
+      });
+    }
+    if (bundlerErrorMsg && bundlerErrorMsg.includes('AA24')) {
+      results.blockers.push({
+        gate: 'ON_CHAIN_AGENT_ENROLLMENT (AA24)',
+        account: ACCOUNT,
+        remedy: 'Autonomous agent key must be enrolled on-chain via grantAgentSession signed by 2-of-2 Hardware Passkey Quorum before autonomous execution.'
       });
     }
   }

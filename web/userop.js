@@ -310,17 +310,35 @@ export async function getUserOpHash(rpcUrl, entryPointAddress, packedOp) {
  * Submits UserOperation to ERC-4337 Bundler
  */
 export async function sendUserOpToBundler(bundlerUrl, packedOp, entryPointAddress) {
+  // Unpack accountGasLimits: verificationGasLimit (first 16 bytes) | callGasLimit (last 16 bytes)
+  const limitsHex = packedOp.accountGasLimits.replace(/^0x/, '').padStart(64, '0');
+  const verificationGasLimit = BigInt('0x' + limitsHex.slice(0, 32));
+  const callGasLimit = BigInt('0x' + limitsHex.slice(32, 64));
+
+  // Unpack gasFees: maxPriorityFeePerGas (first 16 bytes) | maxFeePerGas (last 16 bytes)
+  const feesHex = packedOp.gasFees.replace(/^0x/, '').padStart(64, '0');
+  const maxPriorityFeePerGas = BigInt('0x' + feesHex.slice(0, 32));
+  const maxFeePerGas = BigInt('0x' + feesHex.slice(32, 64));
+
   const rpcUserOp = {
     sender: packedOp.sender,
     nonce: '0x' + BigInt(packedOp.nonce).toString(16),
-    initCode: packedOp.initCode || '0x',
     callData: packedOp.callData,
-    accountGasLimits: packedOp.accountGasLimits,
+    callGasLimit: '0x' + callGasLimit.toString(16),
+    verificationGasLimit: '0x' + verificationGasLimit.toString(16),
     preVerificationGas: '0x' + BigInt(packedOp.preVerificationGas).toString(16),
-    gasFees: packedOp.gasFees,
-    paymasterAndData: packedOp.paymasterAndData || '0x',
+    maxFeePerGas: '0x' + maxFeePerGas.toString(16),
+    maxPriorityFeePerGas: '0x' + maxPriorityFeePerGas.toString(16),
     signature: packedOp.signature
   };
+
+  if (packedOp.initCode && packedOp.initCode !== '0x' && packedOp.initCode.length >= 42) {
+    rpcUserOp.factory = packedOp.initCode.slice(0, 42);
+    rpcUserOp.factoryData = '0x' + packedOp.initCode.slice(42);
+  }
+  if (packedOp.paymasterAndData && packedOp.paymasterAndData !== '0x' && packedOp.paymasterAndData.length >= 42) {
+    rpcUserOp.paymaster = packedOp.paymasterAndData.slice(0, 42);
+  }
 
   let response;
   try {
