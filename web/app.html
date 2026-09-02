@@ -1438,9 +1438,10 @@ $('appSignSubmitBtn').onclick = async () => {
 
     const userOpHash = await getUserOpHash(CONFIG.rpcUrl, CONFIG.entryPoint, op);
 
-    // Sign Key 0
+    // Sign Key 0 with exact enrolled credential rawId to prevent Chrome from picking an old passkey
     $('appSignSubmitBtn').textContent = 'Biometric Touch ID (Key #0)...';
-    const sig0 = await signWithPasskey(userOpHash);
+    const cred0 = storedKeys[0]?.rawId ? [storedKeys[0].rawId] : (storedKeys[0]?.id ? [storedKeys[0].id] : []);
+    const sig0 = await signWithPasskey(userOpHash, cred0);
     const signerIds = [0];
     const sigs = [sig0];
 
@@ -1449,7 +1450,8 @@ $('appSignSubmitBtn').onclick = async () => {
 
     if (isQuorum) {
       $('appSignSubmitBtn').textContent = 'Quorum Prompt: Key #1 (Backup)...';
-      const sig1 = await signWithPasskey(userOpHash);
+      const cred1 = storedKeys[1]?.rawId ? [storedKeys[1].rawId] : (storedKeys[1]?.id ? [storedKeys[1].id] : []);
+      const sig1 = await signWithPasskey(userOpHash, cred1);
       signerIds.push(1);
       sigs.push(sig1);
     }
