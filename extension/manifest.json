@@ -38,6 +38,12 @@
       "matches": ["<all_urls>"]
     }
   ],
+  "externally_connectable": {
+    "matches": [
+      "*://localhost/*",
+      "*://127.0.0.1/*"
+    ]
+  },
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

@@ -21,6 +21,51 @@ const $ = id => document.getElementById(id);
 let currentRequest = null;
 const accountAddr = CONFIG.defaultAccount;
 
+// Web Enclave Delegation: delegates WebAuthn prompt to localhost:57547 to access Chrome Profile passkeys
+async function signWithPasskeyDelegated(userOpHash) {
+  return new Promise((resolve, reject) => {
+    const extId = (typeof chrome !== 'undefined' && chrome.runtime) ? chrome.runtime.id : '';
+    const signUrl = `http://localhost:57547/sign.html?hash=${userOpHash}&extId=${extId}`;
+    const win = window.open(signUrl, 'HaptixEnclaveSigner', 'width=420,height=520,menubar=no,toolbar=no,location=no');
+
+    let isDone = false;
+
+    function cleanup() {
+      isDone = true;
+      window.removeEventListener('message', onMessage);
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+        chrome.runtime.onMessage.removeListener(onExtMessage);
+      }
+    }
+
+    function onMessage(e) {
+      if (e.data?.type === 'HAPTIX_PASSKEY_SIG' && e.data.hash === userOpHash) {
+        cleanup();
+        resolve(e.data.sig);
+      }
+    }
+
+    function onExtMessage(msg) {
+      if (msg?.type === 'HAPTIX_PASSKEY_SIG' && msg.hash === userOpHash) {
+        cleanup();
+        resolve(msg.sig);
+      }
+    }
+
+    window.addEventListener('message', onMessage);
+    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+      chrome.runtime.onMessage.addListener(onExtMessage);
+    }
+
+    setTimeout(() => {
+      if (!isDone) {
+        cleanup();
+        reject(new Error('Passkey signature prompt timed out or was closed.'));
+      }
+    }, 120000);
+  });
+}
+
 // Initialize
 (async () => {
   // Check for Desktop Mode parameter (?mode=desktop)
@@ -292,7 +337,7 @@ const accountAddr = CONFIG.defaultAccount;
         const userOpHash = await getUserOpHash(CONFIG.rpcUrl, CONFIG.entryPoint, op);
 
         $('btnExecuteSend').textContent = 'Key #0 (Touch ID)...';
-        const sig0 = await signWithPasskey(userOpHash);
+        const sig0 = await signWithPasskeyDelegated(userOpHash);
         const detectedId0 = await identifySignerId(sig0, ENROLLED_SIGNERS);
         const signerIds = [detectedId0];
         const sigs = [sig0];
@@ -769,7 +814,7 @@ async function showApprovalMode(req) {
         const userOpHash = await getUserOpHash(CONFIG.rpcUrl, CONFIG.entryPoint, op);
 
         $('approveWithPasskeyBtn').textContent = 'Biometric Passkey...';
-        const sig0 = await signWithPasskey(userOpHash);
+        const sig0 = await signWithPasskeyDelegated(userOpHash);
         const detectedId0 = await identifySignerId(sig0, ENROLLED_SIGNERS);
         const signerIds = [detectedId0];
         const sigs = [sig0];
@@ -813,7 +858,7 @@ async function showApprovalMode(req) {
       if (req.type === 'SIGNATURE') {
         const msg = req.params?.[0] || '0x';
         const hash = ethers.utils.keccak256(msg.startsWith('0x') ? msg : ethers.utils.toUtf8Bytes(msg));
-        const sig = await signWithPasskey(hash);
+        const sig = await signWithPasskeyDelegated(hash);
         const encoded = encodeSignaturePayload([0], [sig]);
 
         const store = await chrome.storage.local.get(['pendingQueue']);
