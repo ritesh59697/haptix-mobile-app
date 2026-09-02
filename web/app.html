@@ -1471,15 +1471,24 @@ $('appSignSubmitBtn').onclick = async () => {
     }
 
     $('appReceiptArea').style.display = 'block';
+    console.log('PASSKEY SIGNATURE DUMP:', op.signature);
+    console.log('SIG0 RAW DETAILS:', sigs[0]);
     $('appUserOpCode').textContent = JSON.stringify({
       userOpHash,
       bundlerStatus: bundlerTxHash ? 'Broadcast Succeeded' : 'Bundler Execution Blocked',
-      transactionHash: bundlerTxHash || null,
       diagnostic: bundlerDiagnostic || 'UserOp accepted by EntryPoint',
+      signatureHex: op.signature,
+      sig0Details: {
+        authenticatorData: sigs[0]?.authenticatorData,
+        clientDataJSON: sigs[0]?.clientDataJSON,
+        challengeIndex: sigs[0]?.challengeIndex,
+        typeIndex: sigs[0]?.typeIndex,
+        r: '0x' + sigs[0]?.r?.toString(16),
+        s: '0x' + sigs[0]?.s?.toString(16)
+      },
       sender: op.sender,
       nonce: '0x' + op.nonce.toString(16),
-      signers: signerIds,
-      cryptographicVerification: 'Valid P-256 Curve Signatures'
+      signers: signerIds
     }, null, 2);
 
     if (bundlerTxHash) {
