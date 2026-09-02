@@ -52,6 +52,8 @@
     body {
       width: 375px;
       height: 600px;
+      margin: 0;
+      padding: 0;
       background-color: var(--bg-base);
       color: var(--text-secondary);
       font-family: var(--font-body);
@@ -64,23 +66,31 @@
       position: relative;
     }
 
-    /* Desktop Mode Expansion (Rabby / Fullscreen style) */
-    body.desktop-mode {
-      width: 100vw !important;
-      height: 100vh !important;
-      max-height: none !important;
-      overflow-y: auto !important;
-      background: radial-gradient(circle at 50% 0%, #101424 0%, #08090D 100%);
-    }
+    /* Auto-detect Full Browser Tab / Desktop View (Center wallet in screen) */
+    @media (min-width: 500px) {
+      body {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+        max-height: 100vh !important;
+        background: radial-gradient(circle at 50% 20%, #12182D 0%, #06070B 100%) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+      }
 
-    body.desktop-mode .app-container {
-      max-width: 960px;
-      margin: 0 auto;
-      min-height: 100vh;
-      border-left: 1px solid var(--border-subtle);
-      border-right: 1px solid var(--border-subtle);
-      background: var(--bg-base);
-      box-shadow: 0 0 50px rgba(0, 0, 0, 0.6);
+      .app-container {
+        width: 400px !important;
+        height: 650px !important;
+        max-height: 94vh !important;
+        margin: auto !important;
+        border: 1px solid rgba(255, 255, 255, 0.14) !important;
+        border-radius: 20px !important;
+        background: #0C0E17 !important;
+        box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.95), 0 0 50px rgba(0, 82, 255, 0.15) !important;
+      }
     }
 
     .app-container {
@@ -162,21 +172,23 @@
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
+      flex-shrink: 0;
     }
 
     .network-badge {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 4px 9px;
+      gap: 4px;
+      padding: 3px 8px;
       background: linear-gradient(180deg, rgba(0, 82, 255, 0.15) 0%, rgba(0, 82, 255, 0.08) 100%);
       border: 1px solid rgba(0, 82, 255, 0.35);
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
       border-radius: var(--radius-full);
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 700;
       color: #93C5FD;
+      white-space: nowrap;
     }
 
     .btn-header-icon {
@@ -184,14 +196,15 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 1px 3px rgba(0, 0, 0, 0.4);
       color: #CBD5E1;
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      flex-shrink: 0;
     }
     .btn-header-icon:hover {
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.06) 100%);
@@ -204,150 +217,7 @@
       transform: scale(0.96);
     }
 
-    /* Headless UI Style Options Dropdown */
-    .headless-menu-wrapper {
-      position: relative;
-    }
-    .headless-options-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18), 0 1px 3px rgba(0, 0, 0, 0.4);
-      border-radius: 8px;
-      padding: 5px 10px;
-      color: #F1F5F9;
-      font-family: var(--font-body);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-      user-select: none;
-    }
-    .headless-options-btn:hover {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.07) 100%);
-      border-color: rgba(255, 255, 255, 0.24);
-      color: #FFFFFF;
-      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 3px 8px rgba(0, 0, 0, 0.5);
-      transform: translateY(-1px);
-    }
-    .headless-options-btn:active, .headless-options-btn.active {
-      background: rgba(255, 255, 255, 0.06);
-      transform: scale(0.97);
-      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
-    }
-    .headless-options-btn .chevron-icon {
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      color: #94A3B8;
-    }
-    .headless-options-btn.active .chevron-icon {
-      transform: rotate(180deg);
-      color: #FFFFFF;
-    }
 
-    .headless-menu-panel {
-      position: absolute;
-      top: calc(100% + 6px);
-      right: 0;
-      min-width: 220px;
-      background: rgba(18, 20, 27, 0.98);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 18px 45px -8px rgba(0, 0, 0, 0.85),
-                  0 0 0 1px rgba(255, 255, 255, 0.06),
-                  inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      padding: 6px;
-      z-index: 100;
-      display: none;
-      flex-direction: column;
-      gap: 2px;
-      transform-origin: top right;
-      animation: menuEnter 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .headless-menu-panel.open {
-      display: flex;
-    }
-    @keyframes menuEnter {
-      0% { opacity: 0; transform: scale(0.95) translateY(-4px); }
-      100% { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .headless-menu-item {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 7px 10px;
-      border-radius: 7px;
-      color: #CBD5E1;
-      font-size: 12px;
-      font-weight: 500;
-      text-decoration: none;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      transition: all 0.12s ease;
-      width: 100%;
-      box-sizing: border-box;
-      text-align: left;
-    }
-    .headless-menu-item:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #FFFFFF;
-    }
-    .headless-menu-item .item-icon {
-      color: #94A3B8;
-      flex-shrink: 0;
-      transition: color 0.12s ease;
-    }
-    .headless-menu-item:hover .item-icon {
-      color: #FFFFFF;
-    }
-    .headless-menu-item .item-text {
-      flex: 1;
-      white-space: nowrap;
-    }
-    .headless-menu-item .item-badge {
-      font-size: 10px;
-      font-family: var(--font-mono);
-      font-weight: 600;
-      color: #94A3B8;
-      background: rgba(255, 255, 255, 0.06);
-      padding: 1px 5px;
-      border-radius: 4px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .headless-menu-item .item-badge.cyan {
-      color: #38BDF8;
-      background: rgba(56, 189, 248, 0.1);
-      border-color: rgba(56, 189, 248, 0.2);
-    }
-    .headless-menu-item .item-badge.danger {
-      color: #FB7185;
-      background: rgba(244, 63, 94, 0.12);
-      border-color: rgba(244, 63, 94, 0.25);
-    }
-    .headless-menu-item .item-kbd {
-      font-size: 11px;
-      font-family: var(--font-mono);
-      color: #64748B;
-    }
-    .headless-menu-item.danger {
-      color: #FDA4AF;
-    }
-    .headless-menu-item.danger:hover {
-      background: rgba(244, 63, 94, 0.14);
-      color: #FFE4E6;
-    }
-    .headless-menu-item.danger:hover .item-icon {
-      color: #FDA4AF;
-    }
-    .headless-menu-divider {
-      height: 1px;
-      background: rgba(255, 255, 255, 0.08);
-      margin: 4px 6px;
-    }
 
     /* Emergency Alert Banner */
     .alert-banner {
@@ -1273,52 +1143,15 @@
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>
       </button>
 
-      <!-- Headless UI Options Dropdown Menu -->
-      <div class="headless-menu-wrapper">
-        <button class="headless-options-btn" id="btnHeadlessOptions" title="Options Menu">
-          <span>Options</span>
-          <svg class="chevron-icon" width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
-          </svg>
-        </button>
+      <!-- Expand Desktop Mode Button -->
+      <button class="btn-header-icon" id="btnExpandDesktop" title="Expand to Desktop Mode">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </button>
 
-        <div class="headless-menu-panel" id="headlessMenuPanel">
-          <button class="headless-menu-item" id="mnuCopyAddr">
-            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-            <span class="item-text">Copy Address</span>
-            <span class="item-badge">0xB015</span>
-          </button>
-          <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="headless-menu-item" id="mnuBaseScan">
-            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            <span class="item-text">View on BaseScan</span>
-            <span class="item-kbd">↗</span>
-          </a>
-          <button class="headless-menu-item" id="mnuCredentials">
-            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/></svg>
-            <span class="item-text">Passkey Hardware Keys</span>
-            <span class="item-badge cyan">P-256</span>
-          </button>
-          <button class="headless-menu-item" id="mnuFirewall">
-            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span class="item-text">Policy Firewall</span>
-            <span class="item-badge">Strict</span>
-          </button>
-          <button class="headless-menu-item" id="mnuDesktopMode">
-            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-            <span class="item-text">Expand Desktop Mode</span>
-          </button>
-          <button class="headless-menu-item" id="mnuSettings">
-            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <span class="item-text">Wallet Preferences</span>
-          </button>
-          <div class="headless-menu-divider"></div>
-          <button class="headless-menu-item danger" id="mnuPanicFreeze">
-            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span class="item-text">Emergency Panic Lock</span>
-            <span class="item-badge danger">1-Sig</span>
-          </button>
-        </div>
-      </div>
+      <!-- Settings Button -->
+      <button class="btn-header-icon" id="btnOpenSettings" title="Wallet Settings">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
     </div>
   </header>
 
