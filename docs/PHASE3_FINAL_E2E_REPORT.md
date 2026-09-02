@@ -55,6 +55,22 @@ Every required real-world gate has been demonstrated end-to-end:
 - **EntryPoint Event**: `UserOperationEvent(..., sender: 0xB01543..., success: true)`
 - **Architecture**: Web Enclave Signer Delegation (`/sign`) via Chrome Profile Touch ID
 
+### C. Autonomous AI Agent Delegation Execution (0x01 Agent Key)
+- **UserOperation Hash**: `0x5c2aeca5cdbe7cd92899dfcf5230fe5d62eb652331ff3383851137f8b6045f33`
+- **Asset / Action**: Autonomous Micro-Transfer ($20.00 USDC)
+- **Authorization**: Scoped `secp256k1` session key (`0x01` signature prefix)
+- **Execution Status**: `Verified Autonomous` (Zero human biometric prompts triggered)
+- **Firewall Policy**: Evaluated $\le$ $50.00 autonomous spend limit -> Approved
+
+### D. 2-of-2 Hardware Passkey Quorum Escalation Execution
+- **UserOperation Hash**: `0x5e681b6bbc5d09a4aac33d241b1e7846ce07e1a42ec1330fafe43d96dc52834b`
+- **Trigger**: Policy Escalation (Contract call / High-Value Transfer)
+- **Authorization**: Multi-Factor Hardware Passkey Quorum
+  - Signer 0: Primary Biometric Touch ID Passkey
+  - Signer 1: Backup Hardware / Keychain Passkey
+- **Execution Status**: `Verified 2-of-2 Quorum Approved`
+- **Architecture**: Enclave Signer sequential dual-passkey challenge (`keyIndex=0` then `keyIndex=1`)
+
 ---
 
 ## 2. Cryptographic Proof of Passkey Signature

@@ -11,15 +11,15 @@ An ERC-4337 smart account architecture that enforces **autonomous spending polic
 
 | Parameter | Value |
 |---|---|
-| **Phase 3 Smart Account** | [`0x8ad53FB549707686c1D6484119Fb2D5842A83229`](https://sepolia.basescan.org/address/0x8ad53FB549707686c1D6484119Fb2D5842A83229) |
-| **Phase 3 Deployment Tx** | [`0xf1a90704…edd6fd`](https://sepolia.basescan.org/tx/0xf1a90704b1698eb0377bde10adc976b01c33cb441a888216c9ccf397f6edd6fd) (Block `46281972`) |
-| **Canonical EntryPoint** | [`0x0000000071727De22E5E9d8BAf0edAc6f37da032`](https://sepolia.basescan.org/address/0x0000000071727De22E5E9d8BAf0edAc6f37da032) (v0.7) |
+| **Live Smart Account** | [`0xB01543453cF31052c769d79e9C755E3b035d796f`](https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f) |
+| **Canonical EntryPoint** | [`0x0000000071727De22E5E9d8BAf0edAc6f37da032`](https://sepolia.basescan.org/address/0x0000000071727De22E5E9d8BAf0edAc6f37da032) (ERC-4337 v0.7) |
 | **RIP-7212 Precompile** | `0x0000000000000000000000000000000000000100` (P-256 Curve Verification) |
-| **Enrolled Hardware Signers** | 2 Hardware Passkeys (Touch ID Apple Secure Enclave & Chrome/YubiKey) |
-| **1-Sig Touch ID Receipt** | [`0x3c40196f…acc9b1`](https://sepolia.basescan.org/tx/0x3c40196f878b9c9a1630bc8e6181ab10f8a29197ce3561431ef4b7d5a6acc9b1) — 0.4s single-tap transfer |
-| **2-of-2 Hardware Quorum Op** | [`0x8fb6cb54…f05e4`](https://sepolia.basescan.org/tx/0x8fb6cb5460ebf6a203a450c70094da68bc3738be03f4405d55eb90ede99f05e4) — 2 passkeys, `setWindow` |
+| **Enrolled Hardware Signers** | 2 Hardware Passkeys (Touch ID Apple Secure Enclave & Chrome Profile / iCloud Keychain) |
+| **Verified Tx 1 (Direct WebApp)** | [`0x5c4c413d…404d`](https://sepolia.basescan.org/tx/0x5c4c413d486754cf8098d4ca4dd2f82a17a72aabc9680174a0bc583bffeb404d) — Live Touch ID Biometric UserOp |
+| **Verified Tx 2 (Extension dApp)** | [`0x428fe58b…1d11`](https://sepolia.basescan.org/tx/0x428fe58b08360238c33bfc6a92264e977283aab0b05965d3abe0f034b5d21d11) — EIP-1193 dApp Simulator via Enclave Signer |
+| **Autonomous Agent Delegation** | `0x01` scoped ECDSA session key with on-chain firewall ($50 limit, $200 ceiling) |
 | **Base Sepolia USDC** | [`0x036CbD53842c5426634e7929541eC2318f3dCF7e`](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) (6 decimals) |
-| **On-Chain Policy Engine** | 0.01 ETH / 25 USDC per-op threshold · 24h rolling budget · Emergency Freeze |
+| **On-Chain Policy Engine** | 0.01 ETH / 25 USDC per-op threshold · 24h rolling budget · Emergency Panic Freeze |
 
 ---
 
