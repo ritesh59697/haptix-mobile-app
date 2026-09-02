@@ -821,8 +821,8 @@
 
     <div class="header-actions">
       <div class="network-badge">
-        <span class="network-dot"></span>
-        Base Sepolia
+        <img src="assets/base_logo.svg" width="13" height="13" alt="Base" style="display:inline-block;vertical-align:middle;margin-right:5px;" />
+        <span>Base Sepolia</span>
       </div>
 
       <!-- Side Panel Button -->
@@ -854,10 +854,9 @@
     <!-- Hero Balance -->
     <section class="portfolio-hero">
       <span class="hero-label">Smart Account Net Worth</span>
-      <div class="hero-balance" id="totalPortfolioUsd">0.0003 ETH</div>
+      <div class="hero-balance" id="totalPortfolioUsd">0.0041 ETH</div>
       <div class="hero-fiat">
-        <span id="fiatPortfolioUsd">≈ $0.96 USD</span>
-        <span class="pnl-chip">+2.4%</span>
+        <span id="fiatPortfolioUsd">≈ $13.12 USD</span>
       </div>
 
       <!-- Quick Action Buttons -->
@@ -906,11 +905,8 @@
       <div class="tab-pane active" id="tab-tokens">
         <div class="token-row" id="tokenRowEth">
           <div class="token-info">
-            <div class="token-logo-badge">
-              <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
-                <path d="M16 2L6 16.5L16 22.5L26 16.5L16 2Z" fill="#627EEA"/>
-                <path d="M16 22.5L6 16.5L16 30.5L26 16.5L16 22.5Z" fill="#8A92B2"/>
-              </svg>
+            <div class="token-logo-badge" style="background:#161B26;border:1px solid rgba(255,255,255,0.1);padding:4px;display:flex;align-items:center;justify-content:center;">
+              <img src="assets/eth_logo.svg" width="18" height="24" alt="Ethereum" style="display:block;" />
             </div>
             <div class="token-name-wrap">
               <span class="token-title">Ethereum</span>
@@ -918,18 +914,15 @@
             </div>
           </div>
           <div class="token-balance-wrap">
-            <span class="token-crypto-val" id="ethBalance">0.0003 ETH</span>
-            <span class="token-fiat-val" id="ethFiatVal">≈ $0.96 USD</span>
+            <span class="token-crypto-val" id="ethBalance">0.0041 ETH</span>
+            <span class="token-fiat-val" id="ethFiatVal">≈ $13.12 USD</span>
           </div>
         </div>
 
         <div class="token-row" id="tokenRowUsdc">
           <div class="token-info">
-            <div class="token-logo-badge">
-              <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-                <circle cx="16" cy="16" r="16" fill="#2775CA"/>
-                <path d="M19.5 17.8C19.5 16.2 18.3 15.6 16.3 15.2C14.7 14.8 14.1 14.4 14.1 13.5C14.1 12.6 14.9 11.9 16.1 11.9C17.3 11.9 18 12.5 18.2 13.5H20.4C20.1 11.4 18.6 10.1 16.6 9.8V8H15.1V9.8C13.4 10.1 12 11.2 12 13.5C12 15.3 13.2 16.1 15.2 16.5C16.8 16.9 17.4 17.5 17.4 18.3C17.4 19.3 16.4 20.1 15.1 20.1C13.6 20.1 12.8 19.3 12.6 18.2H10.4C10.7 20.4 12.3 21.8 14.3 22.1V24H15.8V22.1C17.7 21.8 19.5 20.5 19.5 17.8Z" fill="#FFFFFF"/>
-              </svg>
+            <div class="token-logo-badge" style="background:transparent;border:none;padding:0;display:flex;align-items:center;justify-content:center;">
+              <img src="assets/usdc_logo.svg" width="30" height="30" alt="USDC" style="display:block;border-radius:50%;" />
             </div>
             <div class="token-name-wrap">
               <span class="token-title">USD Coin</span>

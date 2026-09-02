@@ -58,7 +58,10 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   
   body {
-    background-color: var(--bg-black);
+    background-color: #080A0F;
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 82, 255, 0.12) 0%, transparent 65%),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
     color: var(--text-body);
     font-family: var(--font-main);
     line-height: 1.5;
@@ -69,28 +72,6 @@
     overflow-x: hidden;
     position: relative;
   }
-
-    /* React Bits Grainient Background */
-    .grainient-canvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .grain-overlay {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1;
-      opacity: 0.42;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-      mix-blend-mode: overlay;
-    }
 
   .app-shell {
     position: relative;
@@ -384,36 +365,38 @@
 
   /* Asset Switcher */
   .token-switcher {
-    display: flex;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 4px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: rgba(14, 18, 26, 0.85);
+    padding: 6px;
     border-radius: var(--radius-md);
     border: 1px solid var(--border-light);
-    margin-bottom: 20px;
+    margin-bottom: 24px;
   }
 
   .token-switch-btn {
-    flex: 1;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 10px;
-    font-size: 13px;
+    gap: 10px;
+    padding: 12px 16px;
+    font-size: 13.5px;
     font-weight: 700;
-    background: none;
-    border: none;
+    background: transparent;
+    border: 1px solid transparent;
     border-radius: var(--radius-sm);
     color: var(--text-muted);
     cursor: pointer;
+    white-space: nowrap;
     transition: all 0.2s ease;
   }
 
   .token-switch-btn.active {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--text-white);
-    border: 1px solid var(--border-focus);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   }
 
   .form-group {
@@ -571,10 +554,6 @@
 </head>
 <body>
 
-  <!-- React Bits Grainient Canvas & Fine Film Grain Overlay -->
-  <canvas id="grainientCanvas" class="grainient-canvas"></canvas>
-  <div class="grain-overlay"></div>
-
   <div class="app-shell">
   <!-- Header -->
   <header class="app-header">
@@ -611,11 +590,11 @@
         <button id="panicFreezeBtn" style="background:var(--accent-rose);color:#FFF;border:none;padding:6px 14px;border-radius:var(--radius-full);font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s ease;">
           <span>Emergency Freeze (1-Sig)</span>
         </button>
-        <div class="network-badge">
-          <span class="pulse-dot"></span>
-          Base Sepolia (84532)
+        <div class="network-badge" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,82,255,0.1);border:1px solid rgba(0,82,255,0.25);padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;color:#60A5FA;">
+          <img src="assets/base_logo.svg" width="14" height="14" alt="Base" />
+          <span>Base Sepolia (84532)</span>
         </div>
-        <a href="https://sepolia.basescan.org/address/0x34Aeb3A39fd1838D1C897F879EAB0a258507802c" target="_blank" class="back-link" style="display:inline-flex;align-items:center;gap:3px;">
+        <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="back-link" style="display:inline-flex;align-items:center;gap:4px;">
           <span>BaseScan</span>
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4.5 11.5l7-7M5 4.5h6.5v6.5"/>
@@ -646,12 +625,47 @@
         </div>
 
         <div class="balance-meta">Total Portfolio Balance</div>
-        <div class="big-portfolio-val" id="sidePortfolioEth">0.0003 ETH</div>
-        <div class="big-portfolio-sub" id="sidePortfolioUsdc">0.00 USDC</div>
+        <div class="big-portfolio-val" id="sidePortfolioEth" style="display:flex;align-items:baseline;gap:8px;">
+          <span>0.0041 ETH</span>
+          <span style="font-size:14px;color:var(--text-muted);font-weight:500;" id="sidePortfolioUsd">≈ $13.12 USD</span>
+        </div>
 
         <div class="address-copy-bar">
-          <span style="overflow:hidden;text-overflow:ellipsis;margin-right:8px;" id="sideAccountShort">0x34Aeb3A3...802c</span>
+          <span style="overflow:hidden;text-overflow:ellipsis;margin-right:8px;font-family:var(--font-mono);font-size:12.5px;" id="sideAccountShort">0xB0154345...796f</span>
           <button class="copy-btn" id="sideCopyBtn">Copy</button>
+        </div>
+
+        <!-- Real Token Asset List in Sidebar -->
+        <div class="sidebar-token-list" style="margin-top:18px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:#161B26;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">
+                <img src="assets/eth_logo.svg" width="13" height="18" alt="ETH" />
+              </div>
+              <div>
+                <div style="font-size:12.5px;font-weight:700;color:#FFF;">Ethereum</div>
+                <div style="font-size:10.5px;color:var(--text-muted);">Base Sepolia</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12.5px;font-weight:700;color:#FFF;" id="sideHoldEth">0.0041 ETH</div>
+              <div style="font-size:10.5px;color:var(--text-muted);">≈ $13.12</div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <img src="assets/usdc_logo.svg" width="28" height="28" alt="USDC" style="border-radius:50%;display:block;" />
+              <div>
+                <div style="font-size:12.5px;font-weight:700;color:#FFF;">USD Coin</div>
+                <div style="font-size:10.5px;color:var(--text-muted);">Circle · Native</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12.5px;font-weight:700;color:#FFF;" id="sideHoldUsdc">0.00 USDC</div>
+              <div style="font-size:10.5px;color:var(--text-muted);">$0.00</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -698,12 +712,12 @@
           <!-- Token Switcher -->
           <div class="token-switcher">
             <button class="token-switch-btn active" id="appSelectEth">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 13l8 9 8-9z"/></svg>
-              Native ETH
+              <img src="assets/eth_logo.svg" width="14" height="20" alt="ETH" style="display:inline-block;vertical-align:middle;margin-right:6px;" />
+              <span>Native ETH</span>
             </button>
             <button class="token-switch-btn" id="appSelectUsdc">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M15 9.5a3.5 3.5 0 0 0-5 0c0 2 3 2.5 3 4.5a3.5 3.5 0 0 1-5 0"/></svg>
-              Base Sepolia USDC
+              <img src="assets/usdc_logo.svg" width="18" height="18" alt="USDC" style="display:inline-block;vertical-align:middle;margin-right:6px;border-radius:50%;" />
+              <span>Base Sepolia USDC</span>
             </button>
           </div>
 
@@ -1557,89 +1571,6 @@ $('appSignSubmitBtn').onclick = async () => {
   }
 };
 
-// --- React Bits Grainient (Grainy Gradient with Soft Motion) Engine ---
-const canvas = document.getElementById('grainientCanvas');
-if (canvas) {
-  const ctx = canvas.getContext('2d');
-  let width = 0, height = 0;
-  let mouseX = 0, mouseY = 0;
-  let targetMouseX = 0, targetMouseY = 0;
-
-  function resize() {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  window.addEventListener('mousemove', e => {
-    targetMouseX = (e.clientX / window.innerWidth - 0.5) * 100;
-    targetMouseY = (e.clientY / window.innerHeight - 0.5) * 100;
-  });
-
-  let time = 0;
-
-  function renderGrainient() {
-    time += 0.006;
-    mouseX += (targetMouseX - mouseX) * 0.05;
-    mouseY += (targetMouseY - mouseY) * 0.05;
-
-    ctx.clearRect(0, 0, width, height);
-
-    // Midnight base
-    ctx.fillStyle = '#0f0821';
-    ctx.fillRect(0, 0, width, height);
-
-    // Blob 1: Vibrant Magenta / Orchid (Top Left / Center)
-    const b1x = width * 0.25 + Math.sin(time * 1.1) * (width * 0.12) + mouseX;
-    const b1y = height * 0.3 + Math.cos(time * 0.8) * (height * 0.12) + mouseY;
-    const b1r = Math.max(width, height) * 0.65;
-    const g1 = ctx.createRadialGradient(b1x, b1y, 0, b1x, b1y, b1r);
-    g1.addColorStop(0, 'rgba(236, 72, 153, 0.88)'); // #EC4899 Pink
-    g1.addColorStop(0.42, 'rgba(217, 70, 239, 0.62)'); // #D946EF Magenta
-    g1.addColorStop(0.85, 'rgba(168, 85, 247, 0.15)');
-    g1.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = g1;
-    ctx.fillRect(0, 0, width, height);
-
-    // Blob 2: Electric Violet / Lavender (Top Right / Middle)
-    const b2x = width * 0.72 + Math.cos(time * 0.9) * (width * 0.15) - mouseX * 0.8;
-    const b2y = height * 0.35 + Math.sin(time * 1.0) * (height * 0.14) - mouseY * 0.8;
-    const b2r = Math.max(width, height) * 0.7;
-    const g2 = ctx.createRadialGradient(b2x, b2y, 0, b2x, b2y, b2r);
-    g2.addColorStop(0, 'rgba(168, 85, 247, 0.92)'); // #A855F7 Purple
-    g2.addColorStop(0.48, 'rgba(139, 92, 246, 0.6)'); // #8B5CF6 Violet
-    g2.addColorStop(0.9, 'rgba(99, 102, 241, 0.15)');
-    g2.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = g2;
-    ctx.fillRect(0, 0, width, height);
-
-    // Blob 3: Royal Cobalt Blue / Base Blue (Bottom & Right)
-    const b3x = width * 0.85 + Math.sin(time * 0.7) * (width * 0.12);
-    const b3y = height * 0.75 + Math.cos(time * 0.6) * (height * 0.15);
-    const b3r = Math.max(width, height) * 0.75;
-    const g3 = ctx.createRadialGradient(b3x, b3y, 0, b3x, b3y, b3r);
-    g3.addColorStop(0, 'rgba(0, 82, 255, 0.9)'); // #0052FF Base Blue
-    g3.addColorStop(0.5, 'rgba(67, 56, 202, 0.65)'); // #4338CA Indigo
-    g3.addColorStop(1, 'rgba(0, 82, 255, 0)');
-    ctx.fillStyle = g3;
-    ctx.fillRect(0, 0, width, height);
-
-    // Blob 4: Soft Lilac Highlight (Center Swirl)
-    const b4x = width * 0.48 + Math.cos(time * 1.2) * (width * 0.16);
-    const b4y = height * 0.22 + Math.sin(time * 1.1) * (height * 0.1);
-    const b4r = Math.max(width, height) * 0.5;
-    const g4 = ctx.createRadialGradient(b4x, b4y, 0, b4x, b4y, b4r);
-    g4.addColorStop(0, 'rgba(244, 114, 182, 0.8)'); // #F472B6
-    g4.addColorStop(0.55, 'rgba(192, 132, 252, 0.45)'); // #C084FC
-    g4.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = g4;
-    ctx.fillRect(0, 0, width, height);
-
-    requestAnimationFrame(renderGrainient);
-  }
-  renderGrainient();
-}
 </script>
 </body>
 </html>
