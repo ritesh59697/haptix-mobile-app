@@ -1,0 +1,12 @@
+{
+  "name": "haptix-passkey-wallet",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Biometric Hardware Enclave Layer for EVM. ERC-4337 Smart Account with WebAuthn P-256 Passkeys.",
+  "scripts": {
+    "dev": "npm run dev --prefix extension-app",
+    "build": "npm run build --prefix extension-app",
+    "type-check": "npm run type-check --prefix extension-app",
+    "preview": "npm run preview --prefix extension-app"
+  }
+}
