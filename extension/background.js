@@ -1,6 +1,6 @@
 // Background Service Worker for Passkey Smart Wallet (Manifest V3)
 
-const DEFAULT_ACCOUNT = '0x8ad53FB549707686c1D6484119Fb2D5842A83229';
+const DEFAULT_ACCOUNT = '0xEe8888BDd3d6a2B3F17173773511D151b74961d6';
 const CHAIN_ID_HEX = '0x14a34'; // 84532 Base Sepolia
 
 const pendingRequests = new Map();

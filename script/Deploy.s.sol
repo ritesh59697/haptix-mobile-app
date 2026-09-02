@@ -21,17 +21,17 @@ contract Deploy is Script {
     /// EntryPoint v0.7 -- verified live on Base Sepolia (codesize 16035).
     address constant ENTRYPOINT = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
 
-    /// Signer 0 -- passkey "alpha".
-    /// Signer 1 -- passkey "beta".
+    /// Signer 0 -- fresh Touch ID passkey
+    /// Signer 1 -- fresh Backup Quorum passkey
     uint256 constant SIGNER0_X =
-        0xa3b99c51ae83035154e9aaf7b23b4bb2dcd37721dfb8a1dc10ab204d4b3a6801;
+        0x495fe3f6029fc58c8dabf8621da1ac5f59852bdaee5731157d965ab7f1abb47c;
     uint256 constant SIGNER0_Y =
-        0x9afd5a1669db77182bb11bf8f08456643914de2451a3bf79de98fcafb0cabc3d;
+        0xbf5cb5d1c5bd72b67aeacf82a49150f46dabd7d5a9cd900cda0875c7084ee724;
 
     uint256 constant SIGNER1_X =
-        0xe674161f196651a12baec4a98706b5ea424f21104b5bf793f75cbdfee531828b;
+        0xe81d9e9e0f11c4bdf99afa862f3d95e71134c653806c76bf721c89f327647589;
     uint256 constant SIGNER1_Y =
-        0xd19ebbc657185048e777880b61a909ad683c1ee61df458fd707a802de8a9557e;
+        0xdd5f7284eab028fa81204833b0a769a173efeed237dd844030ba129f8471e1fb;
 
     /// Per-op ETH threshold: above this, a second passkey is required.
     uint256 constant ETH_THRESHOLD = 0.01 ether;

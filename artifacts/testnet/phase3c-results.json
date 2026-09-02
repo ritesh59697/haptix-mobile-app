@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-02T07:31:10.822Z",
+  "timestamp": "2026-09-02T07:50:34.844Z",
   "chainId": 84532,
   "rpcUrl": "https://sepolia.base.org",
   "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-  "deployedAccount": "0x8ad53FB549707686c1D6484119Fb2D5842A83229",
+  "deployedAccount": "0xEe8888BDd3d6a2B3F17173773511D151b74961d6",
   "testToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   "bundlerUrl": "https://api.pimlico.io/v2/84532/rpc?apikey=REDACTED",
   "onChainVerification": {
@@ -22,7 +22,7 @@
       "status": "PASSED",
       "type": "Autonomous (0x01)",
       "amount": "20.00 USDC",
-      "userOpHash": "0x2e0b3bfa136e1cf30a72cf238cb05de415a007c7c1bb7052f238f7885b9584a3",
+      "userOpHash": "0x1a2ac1569eeed44513fa4465630941b6710d0c97a3f098ca1a49d20581b4d4fb",
       "policyCheck": {
         "valid": false,
         "requiresEscalation": false,
@@ -47,7 +47,7 @@
     "TEST_E_PREFLIGHT_BALANCE_CHECK": {
       "status": "PASSED",
       "requiredPrefundWei": "148000000000000",
-      "accountBalanceWei": "50000000000000000",
+      "accountBalanceWei": "450000000000000",
       "entryPointDepositWei": "0",
       "hint": "Account has sufficient balance for gas prefund."
     },
@@ -60,7 +60,7 @@
   "blockers": [
     {
       "gate": "ON_CHAIN_AGENT_ENROLLMENT (AA24)",
-      "account": "0x8ad53FB549707686c1D6484119Fb2D5842A83229",
+      "account": "0xEe8888BDd3d6a2B3F17173773511D151b74961d6",
       "remedy": "Autonomous agent key must be enrolled on-chain via grantAgentSession signed by 2-of-2 Hardware Passkey Quorum before autonomous execution."
     }
   ]

@@ -777,11 +777,13 @@ async function showApprovalMode(req) {
 
         op.signature = encodeSignaturePayload(signerIds, sigs);
 
-        let txHash = '0x';
+        let txHash = userOpHash;
         try {
           const bundlerRes = await sendUserOpToBundler(CONFIG.bundlerUrl, op, CONFIG.entryPoint);
-          txHash = bundlerRes?.result || userOpHash;
+          txHash = bundlerRes || userOpHash;
         } catch (e) {
+          console.warn('Bundler submission error:', e);
+          alert('Bundler Notice: ' + e.message);
           txHash = userOpHash;
         }
 
