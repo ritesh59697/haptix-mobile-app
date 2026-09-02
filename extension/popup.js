@@ -25,7 +25,7 @@ const accountAddr = CONFIG.defaultAccount;
 async function signWithPasskeyDelegated(userOpHash) {
   return new Promise((resolve, reject) => {
     const extId = (typeof chrome !== 'undefined' && chrome.runtime) ? chrome.runtime.id : '';
-    const signUrl = `http://localhost:57547/sign.html?hash=${userOpHash}&extId=${extId}`;
+    const signUrl = `http://localhost:57547/sign?hash=${userOpHash}&extId=${extId}`;
     const win = window.open(signUrl, 'HaptixEnclaveSigner', 'width=420,height=520,menubar=no,toolbar=no,location=no');
 
     let isDone = false;
