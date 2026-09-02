@@ -43,6 +43,61 @@
       --font-mono: 'JetBrains Mono', monospace;
     }
 
+    /* ==========================================================================
+       CRISP LIGHT THEME FOR SIDEPANEL
+       ========================================================================== */
+    [data-theme="light"] {
+      --bg-base: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --bg-card-hover: #F1F5F9;
+      --bg-glass: rgba(0, 0, 0, 0.04);
+      --bg-glass-hover: rgba(0, 0, 0, 0.08);
+
+      --text-white: #0F172A;
+      --text-main: #1E293B;
+      --text-muted: #64748B;
+      --text-dark: #94A3B8;
+
+      --border-subtle: #E2E8F0;
+      --border-focus: #CBD5E1;
+      --border-blue: rgba(0, 82, 255, 0.5);
+    }
+
+    [data-theme="light"] body {
+      background: #F8FAFC;
+      color: #1E293B;
+    }
+    [data-theme="light"] .sp-header {
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid #E2E8F0;
+    }
+    [data-theme="light"] .sp-account-chip {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
+    }
+    [data-theme="light"] .sp-network-pill {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
+    }
+    [data-theme="light"] .sp-btn {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      color: #0F172A;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .sp-btn:hover {
+      background: #F8FAFC;
+      border-color: #CBD5E1;
+    }
+    [data-theme="light"] .sp-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {

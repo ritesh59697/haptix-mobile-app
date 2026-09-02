@@ -1265,4 +1265,82 @@ if (btnOptions && panelOptions) {
   }
 }
 
+// ==========================================
+// THEME MANAGER (DARK / LIGHT MODE)
+// ==========================================
+async function initTheme() {
+  let savedTheme = 'dark';
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      const res = await chrome.storage.local.get(['haptix_theme']);
+      if (res.haptix_theme) savedTheme = res.haptix_theme;
+    } else {
+      savedTheme = localStorage.getItem('haptix_theme') || 'dark';
+    }
+  } catch (e) {}
+  applyTheme(savedTheme);
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+
+  // Update Settings Sheet toggle UI
+  const themeName = $('themeModeName');
+  const themeDesc = $('themeModeDesc');
+  const themeIcon = $('themeIconSlot');
+  const mnuLabel = $('mnuThemeLabel');
+  const mnuBadge = $('mnuThemeBadge');
+  const mnuIcon = $('mnuThemeIcon');
+
+  if (theme === 'light') {
+    if (themeName) themeName.textContent = 'Crisp Light';
+    if (themeDesc) themeDesc.textContent = 'Switch to Dark Obsidian theme';
+    if (themeIcon) themeIcon.textContent = '☀️';
+    if (mnuLabel) mnuLabel.textContent = 'Light';
+    if (mnuBadge) mnuBadge.textContent = 'Dark 🌙';
+    if (mnuIcon) mnuIcon.textContent = '☀️';
+  } else {
+    if (themeName) themeName.textContent = 'Dark Obsidian';
+    if (themeDesc) themeDesc.textContent = 'Switch to Crisp Light theme';
+    if (themeIcon) themeIcon.textContent = '🌙';
+    if (mnuLabel) mnuLabel.textContent = 'Dark';
+    if (mnuBadge) mnuBadge.textContent = 'Light ☀️';
+    if (mnuIcon) mnuIcon.textContent = '🌙';
+  }
+}
+
+async function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = current === 'dark' ? 'light' : 'dark';
+  applyTheme(newTheme);
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      await chrome.storage.local.set({ haptix_theme: newTheme });
+    } else {
+      localStorage.setItem('haptix_theme', newTheme);
+    }
+  } catch (e) {}
+}
+
+// Wire theme toggles
+if ($('btnThemeToggle')) {
+  $('btnThemeToggle').onclick = () => toggleTheme();
+}
+
+if ($('mnuToggleTheme')) {
+  $('mnuToggleTheme').onclick = () => {
+    toggleTheme();
+    if (typeof panelOptions !== 'undefined' && panelOptions) {
+      panelOptions.classList.remove('open');
+    }
+    if (typeof btnOptions !== 'undefined' && btnOptions) {
+      btnOptions.classList.remove('active');
+    }
+  };
+}
+
+// Run theme init immediately
+initTheme();
+
+
 

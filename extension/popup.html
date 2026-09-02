@@ -47,6 +47,206 @@
       --font-mono: 'JetBrains Mono', monospace;
     }
 
+    /* ==========================================================================
+       CRISP LIGHT THEME (DaisyUI / Apple Clean Aesthetic)
+       ========================================================================== */
+    [data-theme="light"] {
+      --bg-base: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --bg-card: #FFFFFF;
+      --bg-card-hover: #F1F5F9;
+      --bg-elevated: #F8FAFC;
+      --bg-subtle: rgba(0, 0, 0, 0.04);
+      --bg-subtle-hover: rgba(0, 0, 0, 0.08);
+
+      --text-primary: #0F172A;
+      --text-secondary: #334155;
+      --text-muted: #64748B;
+      --text-dark: #94A3B8;
+
+      --base-blue: #0052FF;
+      --base-blue-hover: #0041CC;
+      --base-blue-light: rgba(0, 82, 255, 0.10);
+
+      --border-subtle: #E2E8F0;
+      --border-medium: #CBD5E1;
+      --border-focus: rgba(0, 82, 255, 0.5);
+    }
+
+    [data-theme="light"] body {
+      background-color: #F8FAFC;
+      color: #334155;
+    }
+
+    @media (min-width: 500px) {
+      [data-theme="light"] body {
+        background: radial-gradient(circle at 50% 20%, #E2E8F0 0%, #F1F5F9 100%) !important;
+      }
+      [data-theme="light"] .app-container {
+        background: #FFFFFF !important;
+        border: 1px solid #CBD5E1 !important;
+        box-shadow: 0 25px 70px -15px rgba(15, 23, 42, 0.15), 0 0 40px rgba(0, 82, 255, 0.08) !important;
+      }
+    }
+
+    [data-theme="light"] .wallet-header {
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid #E2E8F0;
+    }
+
+    [data-theme="light"] .account-pill {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="light"] .account-pill:hover {
+      background: #E2E8F0;
+      color: #000;
+    }
+
+    [data-theme="light"] .btn-header-icon {
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      color: #475569;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="light"] .btn-header-icon:hover {
+      background: #E2E8F0;
+      color: #0F172A;
+    }
+
+    [data-theme="light"] .headless-options-btn {
+      background: #F1F5F9;
+      border: 1px solid #CBD5E1;
+      color: #0F172A;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="light"] .headless-options-btn:hover {
+      background: #E2E8F0;
+    }
+
+    [data-theme="light"] .headless-menu-panel {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 20px 45px -8px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .headless-menu-item {
+      color: #334155;
+    }
+    [data-theme="light"] .headless-menu-item:hover {
+      background: #F1F5F9;
+      color: #0F172A;
+    }
+    [data-theme="light"] .headless-menu-item .item-badge {
+      background: #F1F5F9;
+      color: #64748B;
+      border-color: #E2E8F0;
+    }
+    [data-theme="light"] .headless-menu-divider {
+      background: #E2E8F0;
+    }
+
+    [data-theme="light"] .action-icon-circle {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 #FFFFFF;
+      color: #0F172A;
+    }
+    [data-theme="light"] .action-btn-item:hover .action-icon-circle {
+      background: #F8FAFC;
+      border-color: var(--base-blue);
+      box-shadow: 0 4px 14px rgba(0, 82, 255, 0.2);
+    }
+    [data-theme="light"] .action-btn-item {
+      color: #64748B;
+    }
+    [data-theme="light"] .action-btn-item:hover {
+      color: #0F172A;
+    }
+
+    [data-theme="light"] .nav-tabs-bar {
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+    }
+    [data-theme="light"] .tab-btn {
+      color: #64748B;
+    }
+    [data-theme="light"] .tab-btn:hover {
+      color: #0F172A;
+      background: rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .tab-btn.active {
+      background: #FFFFFF;
+      color: var(--base-blue);
+      border: 1px solid #CBD5E1;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    [data-theme="light"] .asset-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .asset-card:hover {
+      background: #F8FAFC;
+      border-color: #CBD5E1;
+    }
+
+    [data-theme="light"] .sheet-overlay {
+      background: #FFFFFF;
+      color: #0F172A;
+    }
+    [data-theme="light"] .surface-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+    }
+    [data-theme="light"] .tx-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .tx-card:hover {
+      background: #F8FAFC;
+      border-color: #CBD5E1;
+    }
+    [data-theme="light"] .wallet-footer {
+      background: #F8FAFC;
+      border-top: 1px solid #E2E8F0;
+      color: #64748B;
+    }
+
+    /* DaisyUI Switch Component for Theme */
+    .theme-switch-btn {
+      width: 44px;
+      height: 24px;
+      background: #334155;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+      cursor: pointer;
+      padding: 2px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+    }
+    [data-theme="light"] .theme-switch-btn {
+      background: #0052FF;
+      border-color: #0052FF;
+    }
+    .theme-switch-thumb {
+      width: 18px;
+      height: 18px;
+      background: #FFFFFF;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: block;
+    }
+    [data-theme="light"] .theme-switch-thumb {
+      transform: translateX(20px);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -1325,6 +1525,11 @@
             <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             <span class="item-text">Wallet Preferences</span>
           </button>
+          <button class="headless-menu-item" id="mnuToggleTheme">
+            <span class="theme-icon-indicator" id="mnuThemeIcon" style="font-size:13px;width:14px;display:inline-block;text-align:center;">🌙</span>
+            <span class="item-text">Theme: <strong id="mnuThemeLabel">Dark</strong></span>
+            <span class="item-badge" id="mnuThemeBadge">Light ☀️</span>
+          </button>
           <div class="headless-menu-divider"></div>
           <button class="headless-menu-item danger" id="mnuPanicFreeze">
             <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1671,6 +1876,25 @@
     </div>
 
     <div style="display:flex;flex-direction:column;gap:12px;">
+      <!-- Appearance & Theme Mode (Light / Dark) -->
+      <div class="surface-card">
+        <div class="card-title-text">Appearance &amp; Theme</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div id="themeIconSlot" style="width:32px;height:32px;border-radius:8px;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;font-size:16px;">
+              🌙
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text-primary);" id="themeModeName">Dark Mode</div>
+              <div style="font-size:11px;color:var(--text-muted);" id="themeModeDesc">Switch to Crisp Light theme</div>
+            </div>
+          </div>
+          <button class="theme-switch-btn" id="btnThemeToggle" title="Toggle Theme (Light / Dark)">
+            <span class="theme-switch-thumb"></span>
+          </button>
+        </div>
+      </div>
+
       <div class="surface-card">
         <div class="card-title-text">Connected DApps</div>
         <div id="connectedDappsList" style="font-size:12px;color:var(--text-muted);display:flex;flex-direction:column;gap:6px;">

@@ -343,4 +343,30 @@ refreshSpAgentView();
 fetchBalances();
 renderSpTxHistory();
 
+// Synchronize Theme (Light / Dark)
+async function syncTheme() {
+  let theme = 'dark';
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      const res = await chrome.storage.local.get(['haptix_theme']);
+      if (res.haptix_theme) theme = res.haptix_theme;
+    } else {
+      theme = localStorage.getItem('haptix_theme') || 'dark';
+    }
+  } catch (e) {}
+  document.documentElement.setAttribute('data-theme', theme);
+}
+
+// Listen for storage changes
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.haptix_theme) {
+      document.documentElement.setAttribute('data-theme', changes.haptix_theme.newValue);
+    }
+  });
+}
+
+syncTheme();
+
+
 
