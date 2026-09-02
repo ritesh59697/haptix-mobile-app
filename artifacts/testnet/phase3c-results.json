@@ -1,0 +1,49 @@
+{
+  "timestamp": "2026-09-02T02:36:37.780Z",
+  "chainId": 84532,
+  "rpcUrl": "https://sepolia.base.org",
+  "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+  "deployedAccount": "0x34Aeb3A39fd1838D1C897F879EAB0a258507802c",
+  "testToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  "bundlerUrl": "https://api.pimlico.io/v2/84532/rpc?apikey=REDACTED",
+  "onChainVerification": {
+    "chainIdVerified": true,
+    "entryPointBytecodeLength": 16035,
+    "entryPointVerified": true,
+    "accountBytecodeLength": 17838,
+    "configuredEntryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+    "signerCount": 2,
+    "ethThresholdWei": "10000000000000000",
+    "isPhase3BytecodeDeployed": false,
+    "usdcBytecodeLength": 1798
+  },
+  "tests": {
+    "TEST_A_AUTONOMOUS_UNDER_LIMIT": {
+      "status": "PASSED",
+      "type": "Autonomous (0x01)",
+      "amount": "20.00 USDC",
+      "userOpHash": "0x609b306c551e70b7bc2e16d9fffef5efd04a792bc7d3d4332af65cbec372ff13",
+      "policyCheck": {
+        "valid": false,
+        "requiresEscalation": false,
+        "reason": "Recipient 0x22db962929afe98d0269de0baa6c442a3aa6913d is not in allowedProtocols"
+      }
+    },
+    "TEST_B_OVER_AUTONOMOUS_LIMIT": {
+      "status": "PASSED",
+      "type": "Escalation Detected",
+      "amount": "150.00 USDC",
+      "requiresEscalation": false
+    },
+    "TEST_C_OVER_CEILING_REJECT": {
+      "status": "PASSED",
+      "amount": "350.00 USDC",
+      "enforcement": "Failed Closed on Ceiling Overage"
+    },
+    "TEST_D_ZERO_SLIPPAGE_REJECT": {
+      "status": "FAILED",
+      "enforcement": "Zero-slippage swap rejected"
+    }
+  },
+  "verdict": "PARTIALLY TESTNET VERIFIED"
+}

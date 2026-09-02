@@ -5,8 +5,33 @@ const $ = id => document.getElementById(id);
 const accountAddr = CONFIG.defaultAccount;
 
 $('spOpenFullDashboard').onclick = () => {
-  chrome.tabs.create({ url: 'http://localhost:8080/web/app.html' });
+  chrome.tabs.create({ url: 'http://localhost:57547/app.html' });
 };
+
+function refreshSpAgentView() {
+  const agentSession = JSON.parse(localStorage.getItem('haptix_agent_session') || JSON.stringify({
+    active: true,
+    agentKey: '0x8a912e73f912a738c821938491029381029b819e',
+    autoLimit: 50.0,
+    rollingCap: 100.0,
+    rollingSpent: 30.0
+  }));
+
+  if ($('spAgentBadge')) {
+    if (agentSession.active) {
+      $('spAgentBadge').textContent = '● Active';
+      $('spAgentBadge').style.color = 'var(--accent-emerald)';
+    } else {
+      $('spAgentBadge').textContent = '○ Revoked';
+      $('spAgentBadge').style.color = 'var(--accent-rose)';
+    }
+    $('spAgentKey').textContent = agentSession.agentKey;
+    const pct = Math.min(100, Math.round((agentSession.rollingSpent / agentSession.rollingCap) * 100));
+    $('spAgentFill').style.width = pct + '%';
+    $('spAgentUsage').textContent = `${pct}% ($${agentSession.rollingSpent.toFixed(0)} / $${agentSession.rollingCap.toFixed(0)})`;
+  }
+}
+refreshSpAgentView();
 
 async function fetchBalances() {
   try {

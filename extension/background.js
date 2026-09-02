@@ -7,15 +7,16 @@ const pendingRequests = new Map();
 
 // Initialize default storage
 chrome.runtime.onInstalled.addListener(async () => {
-  const data = await chrome.storage.local.get(['account', 'connectedOrigins', 'pendingQueue']);
-  if (!data.account) {
-    await chrome.storage.local.set({
-      account: DEFAULT_ACCOUNT,
-      connectedOrigins: {},
-      pendingQueue: []
-    });
-  }
+  const data = await chrome.storage.local.get(['account', 'connectedOrigins']);
+  await chrome.storage.local.set({
+    account: data.account || DEFAULT_ACCOUNT,
+    connectedOrigins: data.connectedOrigins || {},
+    pendingQueue: []
+  });
 });
+
+// Clear stale queue on service worker wakeup
+chrome.storage.local.set({ pendingQueue: [] });
 
 // Enable Side Panel on click
 if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {

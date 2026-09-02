@@ -39,3 +39,4 @@ tools/vectors.json
 # Node (the harness has no dependencies, but keep this honest)
 node_modules/
 npm-debug.log*
+dist/

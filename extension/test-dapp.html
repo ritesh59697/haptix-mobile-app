@@ -185,15 +185,23 @@
         <span style="font-family:var(--font-mono);font-size:12px;">eth_requestAccounts →</span>
       </button>
       <button class="sec" id="btnSmallTx">
-        <span>2. Send Small Transfer (0.001 ETH)</span>
+        <span>2. Send Small ETH (0.001 ETH)</span>
         <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-emerald);">1-Sig Touch ID →</span>
       </button>
+      <button class="sec" id="btnUsdcTx">
+        <span>3. Send $20.00 USDC (Autonomous Agent)</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-emerald);">0x01 Agent Sig →</span>
+      </button>
       <button class="sec" id="btnLargeTx">
-        <span>3. Send Large Transfer (0.05 ETH)</span>
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-amber);">2-of-2 Quorum Stepper →</span>
+        <span>4. Send Large Transfer (0.05 ETH)</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-amber);">2-of-2 Quorum →</span>
+      </button>
+      <button class="sec" id="btnCeilingTx" style="border-color:rgba(244,63,94,0.3);color:#FDA4AF;">
+        <span>5. Over Ceiling Transfer ($350 USDC)</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-rose);">Policy Block ✕</span>
       </button>
       <button class="sec" id="btnSign">
-        <span>4. Sign In Message (ERC-1271)</span>
+        <span>6. Sign In Message (ERC-1271)</span>
         <span style="font-family:var(--font-mono);font-size:12px;">personal_sign →</span>
       </button>
     </div>
@@ -300,6 +308,62 @@
         log({ status: 'Success (1-Sig Authorized)', userOpHash: txHash });
       } catch (e) {
         log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnUsdcTx').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Requesting Autonomous Agent Transfer ($20.00 USDC)...');
+        const usdcAddr = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+        const recipient = '0x22db962929afe98d0269De0BAa6c442A3Aa6913D';
+        const transferCalldata = '0xa9059cbb' +
+          recipient.slice(2).padStart(64, '0') +
+          (20000000).toString(16).padStart(64, '0'); // 20 USDC
+
+        const txHash = await p.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            to: usdcAddr,
+            value: '0x0',
+            data: transferCalldata
+          }]
+        });
+        log({ status: 'Success (Autonomous Agent 0x01 Signed)', userOpHash: txHash, amount: '20.00 USDC' });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnCeilingTx').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Attempting Over-Ceiling Transfer ($350.00 USDC - exceeds $200.00 Ceiling)...');
+        const usdcAddr = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+        const recipient = '0x22db962929afe98d0269De0BAa6c442A3Aa6913D';
+        const transferCalldata = '0xa9059cbb' +
+          recipient.slice(2).padStart(64, '0') +
+          (350000000).toString(16).padStart(64, '0'); // 350 USDC
+
+        const txHash = await p.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            to: usdcAddr,
+            value: '0x0',
+            data: transferCalldata
+          }]
+        });
+        log({ status: 'Blocked by SpendPolicy Firewall', response: txHash });
+      } catch (e) {
+        log({ status: 'Strict Policy Block (Fail-Closed)', error: e.message });
       }
     };
 

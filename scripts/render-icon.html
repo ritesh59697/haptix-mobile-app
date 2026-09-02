@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 512px;
+    height: 512px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .icon-canvas {
+    width: 512px;
+    height: 512px;
+    background: #0B0D14;
+    border-radius: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: inset 0 0 0 8px rgba(255, 255, 255, 0.1);
+  }
+  .glow {
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 82, 255, 0.45) 0%, rgba(217, 70, 239, 0.25) 50%, transparent 80%);
+    filter: blur(40px);
+  }
+  svg {
+    position: relative;
+    z-index: 2;
+    width: 340px;
+    height: 340px;
+    filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.6));
+  }
+</style>
+</head>
+<body>
+  <div class="icon-canvas">
+    <div class="glow"></div>
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="haptixGradLeft" x1="0%" y1="0%" x2="50%" y2="100%">
+          <stop offset="0%" stop-color="#EC4899"/>
+          <stop offset="40%" stop-color="#D946EF"/>
+          <stop offset="100%" stop-color="#3B82F6"/>
+        </linearGradient>
+        <linearGradient id="haptixGradRight" x1="50%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#C084FC"/>
+          <stop offset="60%" stop-color="#0052FF"/>
+          <stop offset="100%" stop-color="#06B6D4"/>
+        </linearGradient>
+      </defs>
+      <path d="M4 8C4 5.24 6.24 3 9 3H10C11.1 3 12 3.9 12 5V12.2L16.2 14.6L12 16.8V27C12 28.1 11.1 29 10 29H9C6.24 29 4 26.76 4 24V8Z" fill="url(#haptixGradLeft)"/>
+      <path d="M28 24C28 26.76 25.76 29 23 29H22C20.9 29 20 28.1 20 27V19.8L15.8 17.4L20 15.2V5C20 3.9 20.9 3 22 3H23C25.76 3 28 5.24 28 8V24Z" fill="url(#haptixGradRight)"/>
+    </svg>
+  </div>
+</body>
+</html>

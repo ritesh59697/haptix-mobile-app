@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Haptix dApp Simulator — EIP-6963 &amp; Web3 Testing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-black: #000000;
+      --bg-deep: #050508;
+      --bg-surface: #090A0F;
+      --bg-card: rgba(14, 16, 23, 0.85);
+      --text-white: #FFFFFF;
+      --text-body: #E2E8F0;
+      --text-muted: #8E9BAE;
+      --base-blue: #0052FF;
+      --base-blue-hover: #0045D8;
+      --accent-emerald: #10B981;
+      --accent-amber: #F59E0B;
+      --accent-rose: #F43F5E;
+      --border-light: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(255, 255, 255, 0.18);
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --font-heading: 'Outfit', sans-serif;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg-black);
+      color: var(--text-body);
+      font-family: var(--font-main);
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* React Bits Grainient Background */
+    .grainient-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .grain-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.42;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 560px;
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      margin-bottom: 16px;
+      font-family: var(--font-mono);
+    }
+
+    h1 {
+      font-family: var(--font-heading);
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      color: var(--text-white);
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    button {
+      background: #FFFFFF;
+      color: #000000;
+      border: 1px solid transparent;
+      padding: 13px 18px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 13.5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-main);
+    }
+
+    button:hover {
+      background: #E2E8F0;
+      transform: translateY(-1px);
+    }
+
+    button.sec {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-white);
+      border-color: var(--border-light);
+    }
+
+    button.sec:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--border-focus);
+    }
+
+    .output-box {
+      background: #000000;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: #93C5FD;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- React Bits Grainient Canvas & Grain Overlay -->
+  <canvas id="grainientCanvas" class="grainient-canvas"></canvas>
+  <div class="grain-overlay"></div>
+
+  <div class="container">
+    <div class="status-pill" id="statusPill">Checking Provider...</div>
+    <h1>Haptix dApp Simulator</h1>
+    <p>Simulates Uniswap/Aave dApp calling <code>window.ethereum</code> methods to trigger Haptix biometric passkey signatures.</p>
+
+    <div class="btn-group">
+      <button id="btnConnect">
+        <span>1. Connect Haptix Wallet</span>
+        <span style="font-family:var(--font-mono);font-size:12px;">eth_requestAccounts →</span>
+      </button>
+      <button class="sec" id="btnSmallTx">
+        <span>2. Send Small ETH (0.001 ETH)</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-emerald);">1-Sig Touch ID →</span>
+      </button>
+      <button class="sec" id="btnUsdcTx">
+        <span>3. Send $20.00 USDC (Autonomous Agent)</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-emerald);">0x01 Agent Sig →</span>
+      </button>
+      <button class="sec" id="btnLargeTx">
+        <span>4. Send Large Transfer (0.05 ETH)</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-amber);">2-of-2 Quorum →</span>
+      </button>
+      <button class="sec" id="btnCeilingTx" style="border-color:rgba(244,63,94,0.3);color:#FDA4AF;">
+        <span>5. Over Ceiling Transfer ($350 USDC)</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-rose);">Policy Block ✕</span>
+      </button>
+      <button class="sec" id="btnSign">
+        <span>6. Sign In Message (ERC-1271)</span>
+        <span style="font-family:var(--font-mono);font-size:12px;">personal_sign →</span>
+      </button>
+    </div>
+
+    <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">RPC Output Console</div>
+    <div class="output-box" id="outputConsole">Provider ready. Click Connect to start.</div>
+  </div>
+
+  <script>
+    let activeProvider = null;
+    const discoveredWallets = new Map();
+
+    const log = (msg) => {
+      document.getElementById('outputConsole').textContent = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg;
+    };
+
+    function updateStatus() {
+      const p = getProvider();
+      const pill = document.getElementById('statusPill');
+      if (p) {
+        if (p.isPasskey || p === window.passkey) {
+          pill.style.background = 'rgba(16, 185, 129, 0.1)';
+          pill.style.color = '#10B981';
+          pill.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+          pill.textContent = 'Passkey Smart Wallet Active (Direct / EIP-6963)';
+        } else {
+          pill.style.background = 'rgba(245, 158, 11, 0.1)';
+          pill.style.color = '#F59E0B';
+          pill.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+          pill.textContent = 'Generic Wallet Injected (Passkey Fallback Available)';
+        }
+      } else {
+        pill.textContent = 'Extension Not Detected Yet (Load extension in chrome://extensions)';
+      }
+    }
+
+    function getProvider() {
+      if (activeProvider) return activeProvider;
+      if (window.passkey) return window.passkey;
+      if (window.passkeyProvider) return window.passkeyProvider;
+      if (window.ethereum?.isPasskey) return window.ethereum;
+      if (window.ethereum?.providers) {
+        const pk = window.ethereum.providers.find(p => p.isPasskey);
+        if (pk) return pk;
+      }
+      return window.ethereum;
+    }
+
+    // EIP-6963 Multi-Wallet Discovery Listener
+    window.addEventListener('eip6963:announceProvider', (event) => {
+      const { info, provider } = event.detail;
+      discoveredWallets.set(info.rdns, { info, provider });
+      if (info.name === 'Passkey Smart Wallet' || info.rdns === 'io.passkey.wallet' || provider.isPasskey) {
+        activeProvider = provider;
+        updateStatus();
+      }
+    });
+
+    // Request EIP-6963 providers
+    window.dispatchEvent(new CustomEvent('eip6963:requestProvider'));
+
+    window.addEventListener('load', () => {
+      setTimeout(updateStatus, 100);
+      setTimeout(updateStatus, 500);
+    });
+
+    document.getElementById('btnConnect').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No Web3 provider found. Make sure Haptix extension is loaded in chrome://extensions.' });
+        return;
+      }
+      try {
+        log('Calling eth_requestAccounts on Haptix Wallet...');
+        const accounts = await p.request({ method: 'eth_requestAccounts' });
+        const chainId = await p.request({ method: 'eth_chainId' });
+        log({
+          provider: (p.isPasskey || p === window.passkey) ? 'Haptix Biometric Wallet' : 'Generic Web3',
+          connectedAccount: accounts[0],
+          chainId: chainId,
+          network: 'Base Sepolia (84532)'
+        });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnSmallTx').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Requesting sub-threshold transfer (0.001 ETH)...');
+        const txHash = await p.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            to: '0x22db962929afe98d0269De0BAa6c442A3Aa6913D',
+            value: '0x38d7ea4c68000', // 0.001 ETH
+            data: '0x'
+          }]
+        });
+        log({ status: 'Success (1-Sig Authorized)', userOpHash: txHash });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnUsdcTx').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Requesting Autonomous Agent Transfer ($20.00 USDC)...');
+        const usdcAddr = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+        const recipient = '0x22db962929afe98d0269De0BAa6c442A3Aa6913D';
+        const transferCalldata = '0xa9059cbb' +
+          recipient.slice(2).padStart(64, '0') +
+          (20000000).toString(16).padStart(64, '0'); // 20 USDC
+
+        const txHash = await p.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            to: usdcAddr,
+            value: '0x0',
+            data: transferCalldata
+          }]
+        });
+        log({ status: 'Success (Autonomous Agent 0x01 Signed)', userOpHash: txHash, amount: '20.00 USDC' });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnCeilingTx').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Attempting Over-Ceiling Transfer ($350.00 USDC - exceeds $200.00 Ceiling)...');
+        const usdcAddr = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+        const recipient = '0x22db962929afe98d0269De0BAa6c442A3Aa6913D';
+        const transferCalldata = '0xa9059cbb' +
+          recipient.slice(2).padStart(64, '0') +
+          (350000000).toString(16).padStart(64, '0'); // 350 USDC
+
+        const txHash = await p.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            to: usdcAddr,
+            value: '0x0',
+            data: transferCalldata
+          }]
+        });
+        log({ status: 'Blocked by SpendPolicy Firewall', response: txHash });
+      } catch (e) {
+        log({ status: 'Strict Policy Block (Fail-Closed)', error: e.message });
+      }
+    };
+
+    document.getElementById('btnLargeTx').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Requesting large transfer (0.05 ETH - exceeds 0.01 limit)...');
+        const txHash = await p.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            to: '0x22db962929afe98d0269De0BAa6c442A3Aa6913D',
+            value: '0xb1a2bc2ec50000', // 0.05 ETH
+            data: '0x'
+          }]
+        });
+        log({ status: 'Success (2-of-2 Quorum Approved)', userOpHash: txHash });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnSign').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Requesting ERC-1271 off-chain sign-in message...');
+        const sig = await p.request({
+          method: 'personal_sign',
+          params: ['Sign in to Haptix dApp at ' + new Date().toISOString(), p.selectedAddress || '0x34Aeb3A39fd1838D1C897F879EAB0a258507802c']
+        });
+        log({ status: 'Signature Generated (Passkey ERC-1271)', signature: sig });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    // React Bits Grainient Engine
+    const canvas = document.getElementById('grainientCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      let width = 0, height = 0;
+      let mouseX = 0, mouseY = 0;
+      let targetMouseX = 0, targetMouseY = 0;
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      window.addEventListener('mousemove', e => {
+        targetMouseX = (e.clientX / window.innerWidth - 0.5) * 100;
+        targetMouseY = (e.clientY / window.innerHeight - 0.5) * 100;
+      });
+
+      let time = 0;
+
+      function renderGrainient() {
+        time += 0.006;
+        mouseX += (targetMouseX - mouseX) * 0.05;
+        mouseY += (targetMouseY - mouseY) * 0.05;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Midnight base
+        ctx.fillStyle = '#0f0821';
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 1: Vibrant Magenta
+        const b1x = width * 0.25 + Math.sin(time * 1.1) * (width * 0.12) + mouseX;
+        const b1y = height * 0.3 + Math.cos(time * 0.8) * (height * 0.12) + mouseY;
+        const b1r = Math.max(width, height) * 0.65;
+        const g1 = ctx.createRadialGradient(b1x, b1y, 0, b1x, b1y, b1r);
+        g1.addColorStop(0, 'rgba(236, 72, 153, 0.88)');
+        g1.addColorStop(0.42, 'rgba(217, 70, 239, 0.62)');
+        g1.addColorStop(0.85, 'rgba(168, 85, 247, 0.15)');
+        g1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g1;
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 2: Electric Violet
+        const b2x = width * 0.72 + Math.cos(time * 0.9) * (width * 0.15) - mouseX * 0.8;
+        const b2y = height * 0.35 + Math.sin(time * 1.0) * (height * 0.14) - mouseY * 0.8;
+        const b2r = Math.max(width, height) * 0.7;
+        const g2 = ctx.createRadialGradient(b2x, b2y, 0, b2x, b2y, b2r);
+        g2.addColorStop(0, 'rgba(168, 85, 247, 0.92)');
+        g2.addColorStop(0.48, 'rgba(139, 92, 246, 0.6)');
+        g2.addColorStop(0.9, 'rgba(99, 102, 241, 0.15)');
+        g2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g2;
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 3: Royal Base Blue
+        const b3x = width * 0.85 + Math.sin(time * 0.7) * (width * 0.12);
+        const b3y = height * 0.75 + Math.cos(time * 0.6) * (height * 0.15);
+        const b3r = Math.max(width, height) * 0.75;
+        const g3 = ctx.createRadialGradient(b3x, b3y, 0, b3x, b3y, b3r);
+        g3.addColorStop(0, 'rgba(0, 82, 255, 0.9)');
+        g3.addColorStop(0.5, 'rgba(67, 56, 202, 0.65)');
+        g3.addColorStop(1, 'rgba(0, 82, 255, 0)');
+        ctx.fillStyle = g3;
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 4: Soft Lilac Highlight
+        const b4x = width * 0.48 + Math.cos(time * 1.2) * (width * 0.16);
+        const b4y = height * 0.22 + Math.sin(time * 1.1) * (height * 0.1);
+        const b4r = Math.max(width, height) * 0.5;
+        const g4 = ctx.createRadialGradient(b4x, b4y, 0, b4x, b4y, b4r);
+        g4.addColorStop(0, 'rgba(244, 114, 182, 0.8)');
+        g4.addColorStop(0.55, 'rgba(192, 132, 252, 0.45)');
+        g4.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g4;
+        ctx.fillRect(0, 0, width, height);
+
+        requestAnimationFrame(renderGrainient);
+      }
+      renderGrainient();
+    }
+  </script>
+</body>
+</html>

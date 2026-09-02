@@ -1,0 +1,32 @@
+{
+  "name": "@haptix/sdk",
+  "version": "0.1.0",
+  "description": "Production TypeScript SDK for Haptix - On-Chain AI Agent Spending Delegation Layer",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "erc4337",
+    "passkey",
+    "webauthn",
+    "ai-agents",
+    "account-abstraction",
+    "solidity",
+    "delegation"
+  ],
+  "author": "Haptix Team",
+  "license": "MIT",
+  "dependencies": {
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  }
+}

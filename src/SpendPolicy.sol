@@ -29,6 +29,10 @@ library SpendPolicy {
     bytes4 constant PERMIT2_PERMIT_BATCH = 0x2a2b8275; // Uniswap Permit2 batch permit
     bytes4 constant PERMIT2_TRANSFER_FROM = 0x30f28b7a; // Uniswap Permit2 permitTransferFrom
 
+    // --- DeFi / Uniswap V3 selectors ------------------------------------
+    bytes4 constant UNISWAP_V3_EXACT_INPUT_SINGLE = 0x04e45aaf; // SwapRouter02 exactInputSingle
+    bytes4 constant UNISWAP_V3_EXACT_INPUT_SINGLE_ROUTER1 = 0x414bf389; // SwapRouter exactInputSingle
+
     uint256 constant ONE_SIG = 1;
     uint256 constant TWO_SIGS = 2;
 
@@ -42,6 +46,49 @@ library SpendPolicy {
         address token;      // address(0) when this call moves no tokens
         uint256 tokenAmount;
         bool alwaysTwoSigs;
+    }
+
+    /// @notice Parsed parameters from a Uniswap V3 exactInputSingle call.
+    struct SwapParams {
+        address tokenIn;
+        address tokenOut;
+        address recipient;
+        uint256 amountIn;
+        uint256 amountOutMinimum;
+        bool isValid;
+    }
+
+    /// @notice Safely decodes parameters of a Uniswap V3 exactInputSingle call.
+    function decodeUniswapV3ExactInputSingle(bytes calldata func)
+        internal
+        pure
+        returns (SwapParams memory p)
+    {
+        if (func.length < 4) return p;
+        bytes4 sel = bytes4(func[0:4]);
+        if (sel == UNISWAP_V3_EXACT_INPUT_SINGLE) {
+            if (func.length < 228) return p;
+            p.tokenIn = address(uint160(uint256(bytes32(func[4:36]))));
+            p.tokenOut = address(uint160(uint256(bytes32(func[36:68]))));
+            p.recipient = address(uint160(uint256(bytes32(func[100:132]))));
+            p.amountIn = uint256(bytes32(func[132:164]));
+            p.amountOutMinimum = uint256(bytes32(func[164:196]));
+            if (p.tokenIn == address(0) || p.tokenOut == address(0) || p.tokenIn == p.tokenOut) return p;
+            p.isValid = true;
+            return p;
+        }
+        if (sel == UNISWAP_V3_EXACT_INPUT_SINGLE_ROUTER1) {
+            if (func.length < 260) return p;
+            p.tokenIn = address(uint160(uint256(bytes32(func[4:36]))));
+            p.tokenOut = address(uint160(uint256(bytes32(func[36:68]))));
+            p.recipient = address(uint160(uint256(bytes32(func[100:132]))));
+            p.amountIn = uint256(bytes32(func[164:196]));
+            p.amountOutMinimum = uint256(bytes32(func[196:228]));
+            if (p.tokenIn == address(0) || p.tokenOut == address(0) || p.tokenIn == p.tokenOut) return p;
+            p.isValid = true;
+            return p;
+        }
+        return p;
     }
 
     /// @notice Decompose one call into what it spends.
@@ -100,6 +147,17 @@ library SpendPolicy {
             return s;
         }
 
+        if (sel == UNISWAP_V3_EXACT_INPUT_SINGLE || sel == UNISWAP_V3_EXACT_INPUT_SINGLE_ROUTER1) {
+            SwapParams memory sp = decodeUniswapV3ExactInputSingle(func);
+            if (!sp.isValid) {
+                s.alwaysTwoSigs = true;
+                return s;
+            }
+            s.token = sp.tokenIn;
+            s.tokenAmount = sp.amountIn;
+            return s;
+        }
+
         // Arbitrary contract calls, DeFi interactions, unknown selectors --
         // not something this policy can price.
         s.alwaysTwoSigs = true;
@@ -135,7 +193,7 @@ library SpendPolicy {
         return amount >= threshold ? TWO_SIGS : ONE_SIG;
     }
 
-    /// @notice Extracts the end recipient of a transfer (native ETH or ERC-20).
+    /// @notice Extracts the end recipient of a transfer or swap.
     /// @return recipient The destination address receiving the asset, or address(0) if opaque/unknown.
     function extractRecipient(address dest, bytes calldata func)
         internal
@@ -152,6 +210,10 @@ library SpendPolicy {
         if (sel == TRANSFER_FROM) {
             if (func.length < 100) return address(0);
             return address(uint160(uint256(bytes32(func[36:68]))));
+        }
+        if (sel == UNISWAP_V3_EXACT_INPUT_SINGLE || sel == UNISWAP_V3_EXACT_INPUT_SINGLE_ROUTER1) {
+            SwapParams memory sp = decodeUniswapV3ExactInputSingle(func);
+            if (sp.isValid) return sp.recipient;
         }
         return address(0);
     }

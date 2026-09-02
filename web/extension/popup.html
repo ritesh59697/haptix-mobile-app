@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Haptix Biometric Wallet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #08090D;
+      --bg-surface: #10121A;
+      --bg-card: #151822;
+      --bg-card-hover: #1A1E2B;
+      --bg-elevated: #1F2332;
+      --bg-subtle: rgba(255, 255, 255, 0.04);
+      --bg-subtle-hover: rgba(255, 255, 255, 0.08);
+
+      --text-primary: #FFFFFF;
+      --text-secondary: #E2E8F0;
+      --text-muted: #8E9BAE;
+      --text-dark: #505B6E;
+
+      --base-blue: #0052FF;
+      --base-blue-hover: #0045D8;
+      --base-blue-light: rgba(0, 82, 255, 0.15);
+      --accent-emerald: #10B981;
+      --accent-emerald-light: rgba(16, 185, 129, 0.12);
+      --accent-amber: #F59E0B;
+      --accent-amber-light: rgba(245, 158, 11, 0.12);
+      --accent-rose: #F43F5E;
+      --accent-rose-light: rgba(244, 63, 94, 0.12);
+
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-medium: rgba(255, 255, 255, 0.12);
+      --border-focus: rgba(0, 82, 255, 0.4);
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
+      --radius-full: 9999px;
+
+      --font-heading: 'Outfit', -apple-system, sans-serif;
+      --font-body: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 375px;
+      height: 600px;
+      background-color: var(--bg-base);
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+      position: relative;
+    }
+
+    /* Desktop Mode Expansion (Rabby / Fullscreen style) */
+    body.desktop-mode {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-height: none !important;
+      overflow-y: auto !important;
+      background: radial-gradient(circle at 50% 0%, #101424 0%, #08090D 100%);
+    }
+
+    body.desktop-mode .app-container {
+      max-width: 960px;
+      margin: 0 auto;
+      min-height: 100vh;
+      border-left: 1px solid var(--border-subtle);
+      border-right: 1px solid var(--border-subtle);
+      background: var(--bg-base);
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.6);
+    }
+
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 4px; }
+
+    /* Header Bar */
+    .wallet-header {
+      background: rgba(16, 18, 26, 0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 20;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-logo-icon {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .account-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      padding: 4px 8px;
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .account-pill:hover {
+      background: var(--bg-subtle-hover);
+      border-color: var(--border-medium);
+    }
+
+    .account-avatar-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #38BDF8, #0052FF);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .network-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      background: var(--base-blue-light);
+      border: 1px solid rgba(0, 82, 255, 0.3);
+      border-radius: var(--radius-full);
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #60A5FA;
+    }
+
+    .network-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #60A5FA;
+      box-shadow: 0 0 6px #60A5FA;
+    }
+
+    .btn-header-icon {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-header-icon:hover {
+      background: var(--bg-subtle-hover);
+      color: var(--text-primary);
+      border-color: var(--border-medium);
+    }
+
+    /* Emergency Alert Banner */
+    .alert-banner {
+      display: none;
+      background: var(--accent-rose-light);
+      border-bottom: 1px solid rgba(244, 63, 94, 0.3);
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #FDA4AF;
+      text-align: center;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* Main Scrollable View */
+    .main-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Hero Balance Section */
+    .portfolio-hero {
+      padding: 18px 16px 14px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      background: radial-gradient(circle at 50% 0%, rgba(0, 82, 255, 0.08) 0%, transparent 70%);
+    }
+
+    .hero-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .hero-balance {
+      font-family: var(--font-heading);
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-fiat {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pnl-chip {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-emerald);
+      background: var(--accent-emerald-light);
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+    }
+
+    /* Quick Action Buttons */
+    .quick-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 14px;
+      width: 100%;
+    }
+
+    .action-btn-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .action-btn-item:hover { color: var(--text-primary); }
+
+    .action-icon-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      transition: all 0.15s ease;
+    }
+    .action-btn-item:hover .action-icon-circle {
+      background: var(--bg-elevated);
+      border-color: var(--border-medium);
+      transform: translateY(-1px);
+    }
+
+    /* Segmented Navigation Tabs */
+    .nav-tabs-bar {
+      display: flex;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-top: 10px;
+      gap: 4px;
+      background: var(--bg-surface);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 9px 0;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dark);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .tab-btn:hover { color: var(--text-secondary); }
+    .tab-btn.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--base-blue);
+    }
+
+    /* Tab Panes Container */
+    .tab-content-area {
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tab-pane {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .tab-pane.active { display: flex; }
+
+    /* Token Asset Rows */
+    .token-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .token-row:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-medium);
+    }
+
+    .token-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .token-logo-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .token-name-wrap {
+      display: flex;
+      flex-direction: column;
+    }
+    .token-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .token-chain-tag {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .token-balance-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .token-crypto-val {
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .token-fiat-val {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Cards */
+    .surface-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title-text {
+      font-size: 11.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .status-chip {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .chip-active {
+      background: var(--accent-emerald-light);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .chip-revoked {
+      background: var(--accent-rose-light);
+      color: var(--accent-rose);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+    .chip-quorum {
+      background: var(--accent-amber-light);
+      color: var(--accent-amber);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .key-spec-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 12.5px;
+    }
+    .key-spec-row:last-child { border-bottom: none; }
+
+    .btn-action-primary {
+      background: #FFFFFF;
+      color: #000000;
+      border: none;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      width: 100%;
+    }
+    .btn-action-primary:hover {
+      background: #E2E8F0;
+      transform: translateY(-1px);
+    }
+
+    .btn-action-secondary {
+      background: var(--bg-subtle);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      padding: 9px 12px;
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .btn-action-secondary:hover {
+      background: var(--bg-subtle-hover);
+      color: var(--text-primary);
+      border-color: var(--border-medium);
+    }
+
+    .btn-action-danger {
+      background: var(--accent-rose-light);
+      color: var(--accent-rose);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .btn-action-danger:hover {
+      background: rgba(244, 63, 94, 0.22);
+    }
+
+    /* Activity Timeline Item */
+    .timeline-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+    }
+    .timeline-icon-box {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      background: var(--bg-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--text-primary);
+    }
+
+    /* Modal / Drawer Overlay Sheets (Send, Receive, Settings) */
+    .sheet-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-base);
+      z-index: 50;
+      display: none;
+      flex-direction: column;
+      padding: 14px;
+      overflow-y: auto;
+      animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sheet-overlay.active { display: flex; }
+
+    @keyframes slideIn {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+    }
+
+    .sheet-title {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-close-sheet {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      width: 26px;
+      height: 26px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-close-sheet:hover {
+      background: var(--bg-subtle-hover);
+      color: var(--text-primary);
+    }
+
+    /* Form Fields */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .form-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .form-input {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      color: #FFF;
+      font-family: var(--font-body);
+      font-size: 13px;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    .form-input:focus {
+      border-color: var(--base-blue);
+      box-shadow: 0 0 0 2px rgba(0, 82, 255, 0.2);
+    }
+
+    .input-with-action {
+      display: flex;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding-right: 6px;
+    }
+    .input-with-action input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 10px 12px;
+      color: #FFF;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .btn-inline-action {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: #60A5FA;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+    .btn-inline-action:hover { background: var(--bg-subtle-hover); }
+
+    /* Policy Assessment Box */
+    .policy-box {
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 8px 0;
+    }
+    .policy-box.safe {
+      background: var(--accent-emerald-light);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .policy-box.quorum {
+      background: var(--accent-amber-light);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .policy-box.freeze {
+      background: var(--accent-rose-light);
+      border-color: rgba(244, 63, 94, 0.35);
+    }
+
+    /* DApp Approval View (Sheet Mode) */
+    #viewApproval {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      padding: 14px;
+      background: var(--bg-base);
+      overflow-y: auto;
+      gap: 12px;
+    }
+
+    .approval-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 8px;
+    }
+
+    .btn-dismiss {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-dismiss:hover { color: var(--text-primary); }
+
+    .origin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .approval-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .approval-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    /* Bottom Status Bar */
+    .wallet-footer {
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-dark);
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header Bar -->
+  <header class="wallet-header">
+    <div class="brand-section">
+      <div class="brand-logo-icon">
+        <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+          <defs>
+            <linearGradient id="hdrHaptixGradLeft" x1="0%" y1="0%" x2="50%" y2="100%">
+              <stop offset="0%" stop-color="#EC4899"/>
+              <stop offset="40%" stop-color="#D946EF"/>
+              <stop offset="100%" stop-color="#3B82F6"/>
+            </linearGradient>
+            <linearGradient id="hdrHaptixGradRight" x1="50%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#C084FC"/>
+              <stop offset="60%" stop-color="#0052FF"/>
+              <stop offset="100%" stop-color="#06B6D4"/>
+            </linearGradient>
+          </defs>
+          <path d="M4 8C4 5.24 6.24 3 9 3H10C11.1 3 12 3.9 12 5V12.2L16.2 14.6L12 16.8V27C12 28.1 11.1 29 10 29H9C6.24 29 4 26.76 4 24V8Z" fill="url(#hdrHaptixGradLeft)"/>
+          <path d="M28 24C28 26.76 25.76 29 23 29H22C20.9 29 20 28.1 20 27V19.8L15.8 17.4L20 15.2V5C20 3.9 20.9 3 22 3H23C25.76 3 28 5.24 28 8V24Z" fill="url(#hdrHaptixGradRight)"/>
+        </svg>
+      </div>
+      
+      <div class="account-pill" id="copyAddrBtn" title="Click to copy address">
+        <span class="account-avatar-dot"></span>
+        <span id="shortAddr">0x34Ae...802c</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="network-badge">
+        <span class="network-dot"></span>
+        Base Sepolia
+      </div>
+
+      <!-- Side Panel Button -->
+      <button class="btn-header-icon" id="btnOpenSidePanel" title="Open Chrome Side Panel">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>
+      </button>
+
+      <!-- Expand Desktop Mode Button -->
+      <button class="btn-header-icon" id="btnExpandDesktop" title="Expand to Desktop Mode">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </button>
+
+      <!-- Settings Button -->
+      <button class="btn-header-icon" id="btnOpenSettings" title="Wallet Settings">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Emergency Freeze Alert Banner -->
+  <div class="alert-banner" id="popupFreezeBanner">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>FREEZE ACTIVE: 2-of-2 Quorum Required</span>
+    <button id="popupUnfreezeBtn" style="background:none;border:none;color:#FFF;text-decoration:underline;cursor:pointer;font-weight:800;margin-left:4px;">Unfreeze</button>
+  </div>
+
+  <!-- Main Wallet View -->
+  <main class="main-scroll-area" id="viewDefault">
+    <!-- Hero Balance -->
+    <section class="portfolio-hero">
+      <span class="hero-label">Smart Account Net Worth</span>
+      <div class="hero-balance" id="totalPortfolioUsd">0.0003 ETH</div>
+      <div class="hero-fiat">
+        <span id="fiatPortfolioUsd">≈ $0.96 USD</span>
+        <span class="pnl-chip">+2.4%</span>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="quick-actions">
+        <button class="action-btn-item" id="btnActionSend">
+          <div class="action-icon-circle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+          </div>
+          <span>Send</span>
+        </button>
+
+        <button class="action-btn-item" id="btnActionReceive">
+          <div class="action-icon-circle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+          </div>
+          <span>Receive</span>
+        </button>
+
+        <button class="action-btn-item" id="btnActionAgents">
+          <div class="action-icon-circle" style="background:linear-gradient(135deg, rgba(56,189,248,0.15), rgba(0,82,255,0.2));border-color:rgba(0,82,255,0.4);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          </div>
+          <span>AI Agents</span>
+        </button>
+
+        <button class="action-btn-item" id="popupFreezeBtn">
+          <div class="action-icon-circle" style="background:var(--accent-rose-light);border-color:rgba(244,63,94,0.3);color:var(--accent-rose);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <span>Freeze</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Segmented Navigation Tabs -->
+    <nav class="nav-tabs-bar">
+      <button class="tab-btn active" data-tab="tab-tokens">Tokens</button>
+      <button class="tab-btn" data-tab="tab-agents">AI Agents</button>
+      <button class="tab-btn" data-tab="tab-security">Security</button>
+      <button class="tab-btn" data-tab="tab-activity">Activity</button>
+    </nav>
+
+    <!-- Content Area -->
+    <div class="tab-content-area">
+      <!-- Tab 1: Tokens -->
+      <div class="tab-pane active" id="tab-tokens">
+        <div class="token-row" id="tokenRowEth">
+          <div class="token-info">
+            <div class="token-logo-badge">
+              <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
+                <path d="M16 2L6 16.5L16 22.5L26 16.5L16 2Z" fill="#627EEA"/>
+                <path d="M16 22.5L6 16.5L16 30.5L26 16.5L16 22.5Z" fill="#8A92B2"/>
+              </svg>
+            </div>
+            <div class="token-name-wrap">
+              <span class="token-title">Ethereum</span>
+              <span class="token-chain-tag">ETH · Base Sepolia</span>
+            </div>
+          </div>
+          <div class="token-balance-wrap">
+            <span class="token-crypto-val" id="ethBalance">0.0003 ETH</span>
+            <span class="token-fiat-val" id="ethFiatVal">≈ $0.96 USD</span>
+          </div>
+        </div>
+
+        <div class="token-row" id="tokenRowUsdc">
+          <div class="token-info">
+            <div class="token-logo-badge">
+              <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                <circle cx="16" cy="16" r="16" fill="#2775CA"/>
+                <path d="M19.5 17.8C19.5 16.2 18.3 15.6 16.3 15.2C14.7 14.8 14.1 14.4 14.1 13.5C14.1 12.6 14.9 11.9 16.1 11.9C17.3 11.9 18 12.5 18.2 13.5H20.4C20.1 11.4 18.6 10.1 16.6 9.8V8H15.1V9.8C13.4 10.1 12 11.2 12 13.5C12 15.3 13.2 16.1 15.2 16.5C16.8 16.9 17.4 17.5 17.4 18.3C17.4 19.3 16.4 20.1 15.1 20.1C13.6 20.1 12.8 19.3 12.6 18.2H10.4C10.7 20.4 12.3 21.8 14.3 22.1V24H15.8V22.1C17.7 21.8 19.5 20.5 19.5 17.8Z" fill="#FFFFFF"/>
+              </svg>
+            </div>
+            <div class="token-name-wrap">
+              <span class="token-title">USD Coin</span>
+              <span class="token-chain-tag">USDC · Circle</span>
+            </div>
+          </div>
+          <div class="token-balance-wrap">
+            <span class="token-crypto-val" id="usdcBalance">0.00 USDC</span>
+            <span class="token-fiat-val" id="usdcFiatVal">≈ $0.00 USD</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: AI Agents -->
+      <div class="tab-pane" id="tab-agents">
+        <div class="surface-card">
+          <div class="card-header-row">
+            <span class="card-title-text">Active Session Delegation</span>
+            <span class="status-chip chip-active" id="popAgentBadge">● Active</span>
+          </div>
+
+          <div style="font-size:11.5px;color:var(--text-muted);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:rgba(0,0,0,0.4);padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);" id="popAgentKey">
+            0x8a912e73f912a738c821938491029381029b819e
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:var(--bg-surface);padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+              <div style="font-size:10.5px;color:var(--text-muted);">Autonomous Limit</div>
+              <strong style="font-size:13px;color:#FFF;font-family:var(--font-mono);">$50.00 USDC</strong>
+            </div>
+            <div style="background:var(--bg-surface);padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+              <div style="font-size:10.5px;color:var(--text-muted);">Escalation Ceiling</div>
+              <strong style="font-size:13px;color:#FFF;font-family:var(--font-mono);">$200.00 USDC</strong>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px;">
+              <span>24h Rolling Spend</span>
+              <span id="popAgentSpendLabel">30% Used ($30 / $100)</span>
+            </div>
+            <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:var(--radius-full);overflow:hidden;">
+              <div id="popAgentUsageFill" style="height:100%;width:30%;background:linear-gradient(90deg, #38BDF8, #0052FF);border-radius:var(--radius-full);transition:width 0.3s ease;"></div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:4px;">
+            <button class="btn-action-secondary" style="flex:1;" id="popOpenDashboardAgentBtn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Reconfigure
+            </button>
+            <button class="btn-action-danger" style="flex:1;" id="popRevokeAgentBtn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>
+              Revoke Session
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Security -->
+      <div class="tab-pane" id="tab-security">
+        <div class="surface-card">
+          <div class="card-header-row">
+            <span class="card-title-text">Enrolled Hardware Keys</span>
+            <span class="status-chip chip-quorum">2-of-2 Quorum</span>
+          </div>
+
+          <div class="key-spec-row">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><path d="M12 2a10 10 0 0 0-10 10c0 4.4 2.9 8.2 7 9.5V17H7v-2h2v-1.5c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.2 0-1.7.8-1.7 1.6V15h2.7l-.4 2h-2.3v4.5c4.1-1.3 7-5.1 7-9.5A10 10 0 0 0 12 2z"/></svg>
+              <strong>Key #0: Primary Touch ID</strong>
+            </div>
+            <button id="enrollKey0Btn" class="btn-action-secondary" style="padding:3px 10px;font-size:11px;">Enroll Key #0</button>
+          </div>
+
+          <div class="key-spec-row">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+              <strong>Key #1: Backup Quorum Key</strong>
+            </div>
+            <button id="enrollKey1Btn" class="btn-action-secondary" style="padding:3px 10px;font-size:11px;">Enroll Key #1</button>
+          </div>
+        </div>
+
+        <div class="surface-card">
+          <div class="card-header-row">
+            <span class="card-title-text">On-Chain Spending Firewall</span>
+          </div>
+          <div class="key-spec-row">
+            <span style="color:var(--text-muted);">Threshold (1-Sig):</span>
+            <strong style="font-family:var(--font-mono);color:#60A5FA;">&lt; 0.010 ETH</strong>
+          </div>
+          <div class="key-spec-row">
+            <span style="color:var(--text-muted);">Address Whitelist:</span>
+            <strong style="color:var(--accent-emerald);">Active (Strict)</strong>
+          </div>
+          <div class="key-spec-row">
+            <span style="color:var(--text-muted);">Emergency Panic Switch:</span>
+            <strong style="color:var(--text-secondary);">Normal</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Activity -->
+      <div class="tab-pane" id="tab-activity">
+        <div class="timeline-item">
+          <div class="timeline-icon-box" style="color:var(--accent-emerald);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:#FFF;">
+              <span>Send 20.00 USDC</span>
+              <span style="color:var(--accent-emerald);font-size:11px;">Success</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);">Autonomous Agent (0x01) · 0.4s</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-icon-box" style="color:var(--accent-amber);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/></svg>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:#FFF;">
+              <span>Send 0.05 ETH</span>
+              <span style="color:var(--accent-amber);font-size:11px;">2-Sig Quorum</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);">Touch ID + Backup Key Verified</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- SEND ASSET SHEET -->
+  <div class="sheet-overlay" id="sheetSend">
+    <div class="sheet-header">
+      <div class="sheet-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+        Send Asset
+      </div>
+      <button class="btn-close-sheet" id="btnCloseSend">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Asset</label>
+      <select class="form-input" id="sendAssetSelect" style="background:var(--bg-card);color:#FFF;">
+        <option value="ETH">Ethereum (ETH) — Base Sepolia</option>
+        <option value="USDC">USD Coin (USDC)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">
+        <span>Recipient Address</span>
+        <span style="color:#60A5FA;cursor:pointer;" id="btnUseWhitelist">Use Whitelist</span>
+      </div>
+      <div class="input-with-action">
+        <input type="text" id="sendRecipientInput" placeholder="0x... or ENS name">
+        <button class="btn-inline-action" id="btnPasteRecipient">Paste</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">
+        <span>Amount</span>
+        <span style="color:var(--text-muted);" id="sendBalanceHint">Available: 0.0003 ETH</span>
+      </div>
+      <div class="input-with-action">
+        <input type="number" id="sendAmountInput" placeholder="0.0" step="0.0001">
+        <button class="btn-inline-action" id="btnMaxAmount">Max</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px;" id="sendFiatEstimate">≈ $0.00 USD</div>
+    </div>
+
+    <div class="policy-box safe" id="sendPolicyPreview">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;">
+        <span id="sendPolicyStatus" style="color:var(--accent-emerald);">● Single Touch ID Tap</span>
+        <span id="sendPolicyBadge">Sub-threshold</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);" id="sendPolicyReason">
+        Amount is within safe spending threshold (&lt; 0.010 ETH).
+      </div>
+    </div>
+
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;">
+      <button class="btn-action-primary" id="btnExecuteSend">
+        Review &amp; Sign with Touch ID
+      </button>
+      <button class="btn-action-secondary" id="btnCancelSend">Cancel</button>
+    </div>
+  </div>
+
+  <!-- RECEIVE ASSET SHEET -->
+  <div class="sheet-overlay" id="sheetReceive">
+    <div class="sheet-header">
+      <div class="sheet-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        Receive Assets
+      </div>
+      <button class="btn-close-sheet" id="btnCloseReceive">✕</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:16px 0;">
+      <!-- Vector QR Code representation -->
+      <div style="background:#FFF;padding:14px;border-radius:var(--radius-md);box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+        <svg width="140" height="140" viewBox="0 0 120 120" fill="#000">
+          <rect x="10" y="10" width="30" height="30" fill="#000"/>
+          <rect x="15" y="15" width="20" height="20" fill="#FFF"/>
+          <rect x="20" y="20" width="10" height="10" fill="#000"/>
+          <rect x="80" y="10" width="30" height="30" fill="#000"/>
+          <rect x="85" y="15" width="20" height="20" fill="#FFF"/>
+          <rect x="90" y="20" width="10" height="10" fill="#000"/>
+          <rect x="10" y="80" width="30" height="30" fill="#000"/>
+          <rect x="15" y="85" width="20" height="20" fill="#FFF"/>
+          <rect x="20" y="90" width="10" height="10" fill="#000"/>
+          <rect x="50" y="20" width="10" height="10" fill="#000"/>
+          <rect x="65" y="20" width="10" height="20" fill="#000"/>
+          <rect x="50" y="45" width="20" height="10" fill="#000"/>
+          <rect x="20" y="55" width="15" height="15" fill="#000"/>
+          <rect x="80" y="50" width="15" height="15" fill="#000"/>
+          <rect x="50" y="80" width="25" height="25" fill="#000"/>
+          <rect x="85" y="85" width="20" height="10" fill="#000"/>
+        </svg>
+      </div>
+
+      <div style="font-size:12px;color:var(--text-muted);">
+        Send native ETH or ERC-20 tokens on <strong style="color:#60A5FA;">Base Sepolia</strong> to:
+      </div>
+
+      <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px;width:100%;word-break:break-all;font-family:var(--font-mono);font-size:11.5px;color:#FFF;" id="receiveFullAddr">
+        0x34Aeb3A39fd1838D1C897F879EAB0a258507802c
+      </div>
+
+      <button class="btn-action-primary" id="btnCopyReceiveAddr">
+        Copy Address
+      </button>
+
+      <a href="https://sepolia.basescan.org/address/0x34Aeb3A39fd1838D1C897F879EAB0a258507802c" target="_blank" class="btn-action-secondary" style="width:100%;text-decoration:none;">
+        View on BaseScan Explorer ↗
+      </a>
+    </div>
+  </div>
+
+  <!-- SETTINGS SHEET -->
+  <div class="sheet-overlay" id="sheetSettings">
+    <div class="sheet-header">
+      <div class="sheet-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Wallet Settings
+      </div>
+      <button class="btn-close-sheet" id="btnCloseSettings">✕</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="surface-card">
+        <div class="card-title-text">Connected DApps</div>
+        <div id="connectedDappsList" style="font-size:12px;color:var(--text-muted);display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-surface);padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <span>http://localhost:57547</span>
+            <button id="btnRevokeLocalOrigin" class="btn-inline-action" style="color:var(--accent-rose);">Revoke</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="surface-card">
+        <div class="card-title-text">Network &amp; RPC Infrastructure</div>
+        <div class="key-spec-row">
+          <span style="color:var(--text-muted);">Network:</span>
+          <strong>Base Sepolia (84532)</strong>
+        </div>
+        <div class="key-spec-row">
+          <span style="color:var(--text-muted);">EntryPoint:</span>
+          <span style="font-family:var(--font-mono);font-size:11px;">v0.7 (Canonical)</span>
+        </div>
+        <div class="key-spec-row">
+          <span style="color:var(--text-muted);">RIP-7212 Precompile:</span>
+          <span style="color:var(--accent-emerald);font-size:11px;">Active (0x100)</span>
+        </div>
+      </div>
+
+      <div class="surface-card">
+        <div class="card-title-text">Maintenance &amp; Diagnostics</div>
+        <button class="btn-action-secondary" id="btnClearApprovalQueue">
+          Clear Pending Approval Queue
+        </button>
+        <button class="btn-action-danger" id="btnResetExtensionStorage">
+          Reset Local Extension Cache
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DApp Approval View (Sheet Mode) -->
+  <div id="viewApproval">
+    <div class="approval-header">
+      <button class="btn-dismiss" id="btnDismissApproval">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        <span>Back to Wallet</span>
+      </button>
+
+      <div class="origin-badge">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span id="appDappOrigin">localhost:57547</span>
+      </div>
+    </div>
+
+    <div class="approval-card">
+      <div class="approval-title" id="appActionTitle">Confirm Request</div>
+
+      <div style="background:var(--bg-base);padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);display:flex;flex-direction:column;gap:6px;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--text-muted);">Target / Recipient:</span>
+          <span class="tx-val" id="appTargetAddr" style="font-family:var(--font-mono);font-weight:700;color:#FFF;">0x...</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--text-muted);">Amount / Value:</span>
+          <span class="tx-val" id="appValue" style="font-family:var(--font-mono);font-weight:700;color:#FFF;">0.00 ETH</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--text-muted);">Calldata:</span>
+          <span class="tx-val" id="appCalldata" style="font-family:var(--font-mono);color:var(--text-muted);">0x</span>
+        </div>
+      </div>
+
+      <!-- Policy Risk Assessment Box -->
+      <div id="appPolicyBox" class="policy-box safe">
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;">
+          <span id="appPolicyTitle" style="color:var(--accent-emerald);">● Safe Operation</span>
+          <span id="appPolicyBadge" style="font-family:var(--font-mono);">1-Sig</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-secondary);line-height:1.4;" id="appPolicyDesc">
+          Sub-threshold transfer. Authorized with 1 Touch ID biometric signature.
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+        <button class="btn-action-primary" id="approveWithPasskeyBtn">
+          Authorize with Touch ID
+        </button>
+        <button class="btn-action-secondary" id="rejectRequestBtn">
+          Cancel / Reject
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <footer class="wallet-footer">
+    <div style="display:flex;align-items:center;gap:5px;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Enclave v0.7 · RIP-7212</span>
+    </div>
+    <span style="font-family:var(--font-mono);font-size:11px;">Haptix Labs</span>
+  </footer>
+</div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

@@ -100,6 +100,57 @@ contract PasskeyAccount {
     /// @notice Whitelisted recipient addresses for safe 1-sig transfers.
     mapping(address => bool) public isAllowedRecipient;
 
+    // -----------------------------------------------------------------------
+    // Agent Delegation & Session State
+    // -----------------------------------------------------------------------
+
+    uint8 internal constant SIG_TYPE_PASSKEY = 0x00;
+    uint8 internal constant SIG_TYPE_AGENT = 0x01;
+    uint8 internal constant SIG_TYPE_ESCALATED = 0x02;
+
+    struct AgentSession {
+        uint48 validAfter;
+        uint48 validUntil;
+        bool isRegistered;
+        bool revoked;
+        uint256 humanApprovalThreshold;
+        uint256 perTxLimitEth;
+        uint256 perTxLimitToken;
+        uint256 windowSeconds;
+    }
+
+    struct SessionConfig {
+        address agentKey;
+        uint48 validAfter;
+        uint48 validUntil;
+        uint256 humanApprovalThreshold;
+        uint256 perTxLimitEth;
+        uint256 perTxLimitToken;
+        uint256 windowDuration;
+        address[] allowedProtocols;
+        bytes4[] allowedSelectors;
+        address[] allowedTokens;
+        uint256[] tokenWindowCaps;
+    }
+
+    /// @notice Agent sessions by secp256k1 public address.
+    mapping(address => AgentSession) public agentSessions;
+
+    /// @notice Agent address => Protocol address => allowed.
+    mapping(address => mapping(address => bool)) public agentAllowedProtocols;
+
+    /// @notice Agent address => Protocol address => Selector => allowed.
+    mapping(address => mapping(address => mapping(bytes4 => bool))) public agentAllowedSelectors;
+
+    /// @notice Agent address => Token address => allowed.
+    mapping(address => mapping(address => bool)) public agentAllowedTokens;
+
+    /// @notice Agent address => Asset (0 for ETH, token address) => Rolling Cap.
+    mapping(address => mapping(address => uint256)) public agentWindowCap;
+
+    /// @notice Agent address => Asset => Rolling spend accounting.
+    mapping(address => mapping(address => SpendWindow.Window)) public agentWindow;
+
     event SignerAdded(uint256 indexed id, uint256 x, uint256 y);
     event SignerRemoved(uint256 indexed id);
     event SignerReplaced(uint256 indexed id, uint256 oldX, uint256 oldY, uint256 newX, uint256 newY);
@@ -112,6 +163,20 @@ contract PasskeyAccount {
     event AllowlistToggled(bool enabled);
     event RecipientAllowlistUpdated(address indexed recipient, bool allowed);
 
+    event AgentSessionGranted(
+        address indexed agentKey,
+        uint48 validAfter,
+        uint48 validUntil,
+        uint256 perTxLimitEth,
+        uint256 perTxLimitToken,
+        uint256 humanApprovalThreshold
+    );
+    event AgentSessionRevoked(address indexed agentKey);
+    event AgentProtocolUpdated(address indexed agentKey, address indexed protocol, bool allowed);
+    event AgentSelectorUpdated(address indexed agentKey, address indexed protocol, bytes4 indexed selector, bool allowed);
+    event AgentTokenUpdated(address indexed agentKey, address indexed token, bool allowed, uint256 windowCap);
+    event AgentActionExecuted(address indexed agentKey, address indexed dest, bytes4 indexed selector, uint256 value);
+
     error NotEntryPoint();
     error NotSelf();
     error BadSignerIndex();
@@ -122,6 +187,10 @@ contract PasskeyAccount {
     error DuplicateSigner();
     error MinSignersRequired();
     error InvalidPublicKey();
+    error AgentNotRegistered();
+    error AgentRevoked();
+    error InvalidAgentKey();
+    error InvalidSessionDuration();
 
     modifier onlyEntryPoint() {
         if (msg.sender != entryPoint) revert NotEntryPoint();
@@ -226,8 +295,6 @@ contract PasskeyAccount {
         bytes32 userOpHash,
         uint256 missingAccountFunds
     ) external onlyEntryPoint returns (uint256 validationData) {
-        bool ok = _validateSignature(userOp, userOpHash);
-
         // Pay the EntryPoint for gas regardless of validity; the EntryPoint
         // handles refunds. Must happen even on failure per the 4337 spec.
         if (missingAccountFunds > 0) {
@@ -235,6 +302,12 @@ contract PasskeyAccount {
             sent; // EntryPoint reverts on shortfall; nothing useful to do here.
         }
 
+        // Dedicated Agent Signature Dispatch
+        if (userOp.signature.length > 0 && (uint8(userOp.signature[0]) == SIG_TYPE_AGENT || uint8(userOp.signature[0]) == SIG_TYPE_ESCALATED)) {
+            return _validateAgentUserOp(userOp, userOpHash);
+        }
+
+        bool ok = _validateSignature(userOp, userOpHash);
         if (!ok) return SIG_VALIDATION_FAILED;
 
         // Signature is good. Now: does this op fit inside the rolling window?
@@ -252,6 +325,492 @@ contract PasskeyAccount {
         return SpendWindow.packValidationData(
             SIG_VALIDATION_SUCCESS, c.validUntil, c.validAfter
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // Agent Validation Logic
+    // -----------------------------------------------------------------------
+
+    function _validateAgentUserOp(
+        PackedUserOperation calldata userOp,
+        bytes32 userOpHash
+    ) internal view returns (uint256) {
+        if (isFrozen) return SIG_VALIDATION_FAILED;
+        if (userOp.signature.length < 2) return SIG_VALIDATION_FAILED;
+
+        // Validate paymaster if present
+        if (userOp.paymasterAndData.length > 0) {
+            if (userOp.paymasterAndData.length < 20) return SIG_VALIDATION_FAILED;
+            if (trustedPaymaster != address(0)) {
+                address pm = address(bytes20(userOp.paymasterAndData[0:20]));
+                if (pm != trustedPaymaster) return SIG_VALIDATION_FAILED;
+            }
+        }
+
+        uint8 sigType = uint8(userOp.signature[0]);
+
+        if (sigType == SIG_TYPE_AGENT) {
+            if (userOp.signature.length < 129) return SIG_VALIDATION_FAILED;
+
+            (address agentKey, bytes memory agentSig) =
+                abi.decode(userOp.signature[1:], (address, bytes));
+
+            if (!_verifyAgentEcdsa(agentKey, agentSig, userOpHash)) {
+                return SIG_VALIDATION_FAILED;
+            }
+
+            return _validateAgentPermissions(userOp, agentKey, false);
+        } else if (sigType == SIG_TYPE_ESCALATED) {
+            if (userOp.signature.length < 193) return SIG_VALIDATION_FAILED;
+
+            (
+                address agentKey,
+                bytes memory agentSig,
+                uint256[] memory passkeyIds,
+                WebAuthn.Signature[] memory passkeySigs
+            ) = abi.decode(
+                userOp.signature[1:],
+                (address, bytes, uint256[], WebAuthn.Signature[])
+            );
+
+            if (!_verifyAgentEcdsa(agentKey, agentSig, userOpHash)) {
+                return SIG_VALIDATION_FAILED;
+            }
+
+            // Require 2-of-N hardware passkey quorum for escalated operations
+            if (!_verifyPasskeys(passkeyIds, passkeySigs, userOpHash, 2)) {
+                return SIG_VALIDATION_FAILED;
+            }
+
+            return _validateAgentPermissions(userOp, agentKey, true);
+        }
+
+        return SIG_VALIDATION_FAILED;
+    }
+
+    function _verifyAgentEcdsa(
+        address agentKey,
+        bytes memory agentSig,
+        bytes32 userOpHash
+    ) internal pure returns (bool) {
+        if (agentKey == address(0) || agentSig.length != 65) return false;
+
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := mload(add(agentSig, 32))
+            s := mload(add(agentSig, 64))
+            v := byte(0, mload(add(agentSig, 96)))
+        }
+
+        // EIP-2 signature malleability guard
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+            return false;
+        }
+        if (v != 27 && v != 28) return false;
+
+        address recovered = ecrecover(userOpHash, v, r, s);
+        return (recovered != address(0) && recovered == agentKey);
+    }
+
+    function _verifyPasskeys(
+        uint256[] memory ids,
+        WebAuthn.Signature[] memory sigs,
+        bytes32 userOpHash,
+        uint256 minRequired
+    ) internal view returns (bool) {
+        if (ids.length != sigs.length || ids.length < minRequired) return false;
+
+        for (uint256 i = 0; i < ids.length; i++) {
+            if (i > 0 && ids[i] <= ids[i - 1]) return false;
+            if (ids[i] >= signerCount) return false;
+        }
+
+        for (uint256 i = 0; i < ids.length; i++) {
+            PublicKey memory pk = signers[ids[i]];
+            bool ok = WebAuthn.verify(
+                abi.encodePacked(userOpHash),
+                true, // require biometric user verification
+                sigs[i],
+                pk.x,
+                pk.y
+            );
+            if (!ok) return false;
+        }
+        return true;
+    }
+
+    function _validateAgentSingleCall(
+        address agentKey,
+        bytes calldata callData,
+        bool isEscalated
+    ) internal view returns (bool ok, SpendWindow.Spend memory sp) {
+        if (callData.length < 132) return (false, sp);
+        address cdAgent = address(uint160(uint256(bytes32(callData[4:36]))));
+        if (cdAgent != agentKey) return (false, sp);
+
+        address dest = address(uint160(uint256(bytes32(callData[36:68]))));
+        if (dest == address(this)) return (false, sp);
+
+        uint256 value = uint256(bytes32(callData[68:100]));
+        (bytes calldata func, bool decoded) = _extractFuncFromAgentCall(callData);
+        if (!decoded) return (false, sp);
+
+        return _classifyAgentCall(agentKey, dest, value, func, isEscalated);
+    }
+
+    function _validateAgentPermissions(
+        PackedUserOperation calldata userOp,
+        address agentKey,
+        bool isEscalated
+    ) internal view returns (uint256) {
+        AgentSession storage session = agentSessions[agentKey];
+        if (!session.isRegistered || session.revoked) {
+            return SIG_VALIDATION_FAILED;
+        }
+
+        if (userOp.callData.length < 4) return SIG_VALIDATION_FAILED;
+        bytes4 sel = bytes4(userOp.callData[0:4]);
+
+        bool ok;
+        SpendWindow.Spend memory sp;
+
+        if (sel == this.executeByAgent.selector) {
+            (ok, sp) = _validateAgentSingleCall(agentKey, userOp.callData, isEscalated);
+            if (!ok) return SIG_VALIDATION_FAILED;
+        } else if (sel == this.executeBatchByAgent.selector) {
+            (ok, sp) = _classifyAgentBatch(agentKey, userOp.callData, isEscalated);
+            if (!ok) return SIG_VALIDATION_FAILED;
+        } else {
+            return SIG_VALIDATION_FAILED;
+        }
+
+        if (!isEscalated) {
+            SpendWindow.Check memory c = _checkAgentWindows(agentKey, sp);
+            if (c.exceeds) return SIG_VALIDATION_FAILED;
+
+            uint48 validAfter = c.validAfter > session.validAfter ? c.validAfter : session.validAfter;
+            uint48 validUntil = session.validUntil;
+            if (c.validUntil != 0) {
+                validUntil = (validUntil == 0 || c.validUntil < validUntil) ? c.validUntil : validUntil;
+            }
+
+            if (validUntil != 0 && validAfter > validUntil) {
+                return SIG_VALIDATION_FAILED;
+            }
+
+            return SpendWindow.packValidationData(SIG_VALIDATION_SUCCESS, validUntil, validAfter);
+        }
+
+        return SpendWindow.packValidationData(SIG_VALIDATION_SUCCESS, session.validUntil, session.validAfter);
+    }
+
+    function _classifyAgentCall(
+        address agentKey,
+        address dest,
+        uint256 value,
+        bytes calldata func,
+        bool isEscalated
+    ) internal view returns (bool ok, SpendWindow.Spend memory sp) {
+        (bool elOk, address tok, uint256 amt, uint256 ethVal) = _inspectAgentCall(agentKey, dest, value, func, isEscalated);
+        if (!elOk) return (false, sp);
+
+        sp.ethAmount = ethVal;
+        if (tok != address(0)) {
+            sp.tokens[0] = tok;
+            sp.amounts[0] = amt;
+            sp.nTokens = 1;
+        }
+        sp.ok = true;
+        return (true, sp);
+    }
+
+    function _inspectAgentCall(
+        address agentKey,
+        address dest,
+        uint256 value,
+        bytes calldata func,
+        bool isEscalated
+    ) internal view returns (bool ok, address token, uint256 tokenAmount, uint256 ethAmount) {
+        AgentSession storage session = agentSessions[agentKey];
+
+        // 1. Plain ETH transfer
+        if (func.length == 0) {
+            if (!agentAllowedTokens[agentKey][ETH]) return (false, address(0), 0, 0);
+            if (!agentAllowedProtocols[agentKey][dest] && !isAllowedRecipient[dest]) {
+                return (false, address(0), 0, 0);
+            }
+            if (!isEscalated) {
+                if (value == 0 || value > session.perTxLimitEth) return (false, address(0), 0, 0);
+            } else {
+                if (session.humanApprovalThreshold > 0 && value > session.humanApprovalThreshold) {
+                    return (false, address(0), 0, 0);
+                }
+            }
+            return (true, address(0), 0, value);
+        }
+
+        if (func.length < 4) return (false, address(0), 0, 0);
+        bytes4 innerSel = bytes4(func[0:4]);
+
+        // 2. ERC-20 transfer
+        if (innerSel == SpendPolicy.TRANSFER) {
+            if (value > 0) return (false, address(0), 0, 0);
+            if (func.length < 68) return (false, address(0), 0, 0);
+            if (!agentAllowedTokens[agentKey][dest]) return (false, address(0), 0, 0);
+            address recipient = address(uint160(uint256(bytes32(func[4:36]))));
+            if (!agentAllowedProtocols[agentKey][recipient] && !isAllowedRecipient[recipient]) {
+                return (false, address(0), 0, 0);
+            }
+            uint256 amt = uint256(bytes32(func[36:68]));
+            if (!isEscalated) {
+                if (amt == 0 || amt > session.perTxLimitToken) return (false, address(0), 0, 0);
+            } else {
+                if (session.humanApprovalThreshold > 0 && amt > session.humanApprovalThreshold) {
+                    return (false, address(0), 0, 0);
+                }
+            }
+            return (true, dest, amt, 0);
+        }
+
+        // 3. Uniswap V3 Swaps
+        if (innerSel == SpendPolicy.UNISWAP_V3_EXACT_INPUT_SINGLE || innerSel == SpendPolicy.UNISWAP_V3_EXACT_INPUT_SINGLE_ROUTER1) {
+            if (value > 0) return (false, address(0), 0, 0);
+            if (!agentAllowedProtocols[agentKey][dest]) return (false, address(0), 0, 0);
+            if (!agentAllowedSelectors[agentKey][dest][innerSel]) return (false, address(0), 0, 0);
+
+            SpendPolicy.SwapParams memory swapParams = SpendPolicy.decodeUniswapV3ExactInputSingle(func);
+            if (!swapParams.isValid) return (false, address(0), 0, 0);
+            if (!agentAllowedTokens[agentKey][swapParams.tokenIn]) return (false, address(0), 0, 0);
+            if (!agentAllowedTokens[agentKey][swapParams.tokenOut]) return (false, address(0), 0, 0);
+
+            // RECIPIENT LOCK: Swap proceeds MUST remain in this account!
+            if (swapParams.recipient != address(this)) return (false, address(0), 0, 0);
+
+            if (!isEscalated) {
+                if (swapParams.amountIn == 0 || swapParams.amountIn > session.perTxLimitToken) return (false, address(0), 0, 0);
+                // Disallow zero slippage protection for autonomous ops (prevents MEV sandwiching)
+                if (swapParams.amountOutMinimum == 0) return (false, address(0), 0, 0);
+            } else {
+                if (session.humanApprovalThreshold > 0 && swapParams.amountIn > session.humanApprovalThreshold) {
+                    return (false, address(0), 0, 0);
+                }
+            }
+            return (true, swapParams.tokenIn, swapParams.amountIn, 0);
+        }
+
+        // 4. Approvals and permits are strictly disallowed for autonomous agent ops
+        if (
+            innerSel == SpendPolicy.APPROVE ||
+            innerSel == SpendPolicy.INCREASE_ALLOWANCE ||
+            innerSel == SpendPolicy.DECREASE_ALLOWANCE ||
+            innerSel == SpendPolicy.SET_APPROVAL_ALL ||
+            innerSel == SpendPolicy.PERMIT ||
+            innerSel == SpendPolicy.PERMIT_DAI ||
+            innerSel == SpendPolicy.PERMIT2_PERMIT ||
+            innerSel == SpendPolicy.PERMIT2_PERMIT_BATCH ||
+            innerSel == SpendPolicy.PERMIT2_TRANSFER_FROM
+        ) {
+            return (false, address(0), 0, 0);
+        }
+
+        // 5. Generic whitelisted protocol call (only if escalated)
+        if (agentAllowedProtocols[agentKey][dest] && agentAllowedSelectors[agentKey][dest][innerSel]) {
+            if (isEscalated) {
+                return (true, address(0), 0, 0);
+            }
+        }
+
+        return (false, address(0), 0, 0);
+    }
+
+    struct BatchOffsets {
+        uint256 n;
+        uint256 dBase;
+        uint256 vBase;
+        uint256 fBase;
+    }
+
+    function _agentBatchOffsets(bytes calldata callData)
+        private
+        pure
+        returns (BatchOffsets memory off, bool ok)
+    {
+        if (callData.length < 132) return (off, false);
+        (uint256 dOff, bool d1) = _arrayStart(callData, 36, 128);
+        (uint256 vOff, bool d2) = _arrayStart(callData, 68, 128);
+        (uint256 fOff, bool d3) = _arrayStart(callData, 100, 128);
+        if (!d1 || !d2 || !d3) return (off, false);
+
+        off.n = uint256(bytes32(callData[dOff:dOff + 32]));
+        if (off.n != uint256(bytes32(callData[vOff:vOff + 32]))) return (off, false);
+        if (off.n != uint256(bytes32(callData[fOff:fOff + 32]))) return (off, false);
+        if (off.n > MAX_PRICED_BATCH) return (off, false);
+
+        off.dBase = dOff + 32;
+        off.vBase = vOff + 32;
+        off.fBase = fOff + 32;
+        if (off.dBase + off.n * 32 > callData.length) return (off, false);
+        if (off.vBase + off.n * 32 > callData.length) return (off, false);
+        if (off.fBase + off.n * 32 > callData.length) return (off, false);
+
+        return (off, true);
+    }
+
+    function _processBatchElement(
+        address agentKey,
+        bytes calldata callData,
+        BatchOffsets memory off,
+        uint256 i,
+        bool isEscalated
+    ) private view returns (bool ok, address tok, uint256 amt, uint256 ethVal) {
+        address dest = address(uint160(uint256(bytes32(callData[off.dBase + i * 32:off.dBase + i * 32 + 32]))));
+        if (dest == address(this)) return (false, address(0), 0, 0);
+
+        uint256 value = uint256(bytes32(callData[off.vBase + i * 32:off.vBase + i * 32 + 32]));
+        (bytes calldata func, bool fok) = _batchElement(callData, off.fBase, i);
+        if (!fok) return (false, address(0), 0, 0);
+
+        return _inspectAgentCall(agentKey, dest, value, func, isEscalated);
+    }
+
+    function _accumulateAgentBatch(
+        address agentKey,
+        bytes calldata callData,
+        BatchOffsets memory off,
+        bool isEscalated
+    ) private view returns (bool ok, SpendWindow.Spend memory sp) {
+        for (uint256 i = 0; i < off.n; i++) {
+            (bool elOk, address elTok, uint256 elAmt, uint256 elEth) =
+                _processBatchElement(agentKey, callData, off, i, isEscalated);
+            if (!elOk) return (false, sp);
+
+            unchecked {
+                uint256 newEth = sp.ethAmount + elEth;
+                if (newEth < sp.ethAmount) return (false, sp);
+                sp.ethAmount = newEth;
+            }
+
+            if (elTok != address(0)) {
+                uint256 j = 0;
+                for (; j < sp.nTokens; j++) {
+                    if (sp.tokens[j] == elTok) break;
+                }
+                if (j == sp.nTokens) {
+                    if (sp.nTokens == MAX_PRICED_ASSETS) return (false, sp);
+                    sp.tokens[j] = elTok;
+                    sp.nTokens++;
+                }
+                unchecked {
+                    uint256 newAmt = sp.amounts[j] + elAmt;
+                    if (newAmt < sp.amounts[j]) return (false, sp);
+                    sp.amounts[j] = newAmt;
+                }
+            }
+        }
+        sp.ok = true;
+        return (true, sp);
+    }
+
+    function _classifyAgentBatch(
+        address agentKey,
+        bytes calldata callData,
+        bool isEscalated
+    ) internal view returns (bool ok, SpendWindow.Spend memory sp) {
+        if (callData.length < 132) return (false, sp);
+        address cdAgent = address(uint160(uint256(bytes32(callData[4:36]))));
+        if (cdAgent != agentKey) return (false, sp);
+
+        (BatchOffsets memory off, bool bOk) = _agentBatchOffsets(callData);
+        if (!bOk) return (false, sp);
+
+        (ok, sp) = _accumulateAgentBatch(agentKey, callData, off, isEscalated);
+        if (!ok) return (false, sp);
+
+        AgentSession storage session = agentSessions[agentKey];
+        if (!isEscalated) {
+            if (sp.ethAmount > session.perTxLimitEth) return (false, sp);
+
+            for (uint256 j = 0; j < sp.nTokens; j++) {
+                if (sp.amounts[j] > session.perTxLimitToken) return (false, sp);
+            }
+        } else {
+            if (session.humanApprovalThreshold > 0 && sp.ethAmount > session.humanApprovalThreshold) {
+                return (false, sp);
+            }
+            for (uint256 j = 0; j < sp.nTokens; j++) {
+                if (session.humanApprovalThreshold > 0 && sp.amounts[j] > session.humanApprovalThreshold) {
+                    return (false, sp);
+                }
+            }
+        }
+
+        return (true, sp);
+    }
+
+    function _checkAgentWindows(address agentKey, SpendWindow.Spend memory sp)
+        internal
+        view
+        returns (SpendWindow.Check memory c)
+    {
+        uint256 ethCap = agentWindowCap[agentKey][ETH];
+        if (ethCap != 0) {
+            c = agentWindow[agentKey][ETH].check(sp.ethAmount, ethCap);
+            if (c.exceeds) return c;
+        }
+
+        if (sp.nTokens > MAX_PRICED_ASSETS) {
+            c.exceeds = true;
+            return c;
+        }
+
+        for (uint256 i = 0; i < sp.nTokens; i++) {
+            uint256 cap = agentWindowCap[agentKey][sp.tokens[i]];
+            if (cap == 0) continue;
+
+            SpendWindow.Check memory tc = agentWindow[agentKey][sp.tokens[i]].check(sp.amounts[i], cap);
+            c = SpendWindow.merge(c, tc);
+            if (c.exceeds) return c;
+        }
+        return c;
+    }
+
+    function _recordAgentCall(address agentKey, address dest, uint256 value, bytes calldata func)
+        private
+    {
+        AgentSession storage session = agentSessions[agentKey];
+        uint256 dur = session.windowSeconds;
+        if (dur == 0) return;
+
+        SpendPolicy.Spend memory s = SpendPolicy.classify(dest, value, func);
+
+        if (value > 0 && agentWindowCap[agentKey][ETH] != 0) {
+            agentWindow[agentKey][ETH].record(value, dur);
+        }
+        if (s.token != address(0) && s.tokenAmount > 0 && agentWindowCap[agentKey][s.token] != 0) {
+            agentWindow[agentKey][s.token].record(s.tokenAmount, dur);
+        }
+    }
+
+    function _extractFuncFromAgentCall(bytes calldata callData)
+        private
+        pure
+        returns (bytes calldata func, bool decoded)
+    {
+        if (callData.length < 132) return (callData[0:0], false);
+
+        uint256 off = uint256(bytes32(callData[100:132]));
+        if (off < 128 || off > type(uint64).max) return (callData[0:0], false);
+        uint256 lenPos = 4 + off;
+        if (lenPos + 32 > callData.length) return (callData[0:0], false);
+
+        uint256 len = uint256(bytes32(callData[lenPos:lenPos + 32]));
+        if (len > type(uint64).max) return (callData[0:0], false);
+        uint256 start = lenPos + 32;
+        if (start + len > callData.length) return (callData[0:0], false);
+
+        return (callData[start:start + len], true);
     }
 
     /// @dev Check this call against EVERY asset window it touches, and
@@ -557,9 +1116,9 @@ contract PasskeyAccount {
         // Three dynamic arrays; head is 3 offsets at 4, 36, 68.
         if (callData.length < 100) return t;
 
-        (uint256 dOff, bool d1) = _arrayStart(callData, 4);
-        (uint256 vOff, bool d2) = _arrayStart(callData, 36);
-        (uint256 fOff, bool d3) = _arrayStart(callData, 68);
+        (uint256 dOff, bool d1) = _arrayStart(callData, 4, 96);
+        (uint256 vOff, bool d2) = _arrayStart(callData, 36, 96);
+        (uint256 fOff, bool d3) = _arrayStart(callData, 68, 96);
         if (!d1 || !d2 || !d3) return t;
 
         uint256 n = uint256(bytes32(callData[dOff:dOff + 32]));
@@ -653,15 +1212,14 @@ contract PasskeyAccount {
 
     /// @dev Read a dynamic array's offset word at `headPos` and return the
     ///      absolute position of its length word.
-    function _arrayStart(bytes calldata callData, uint256 headPos)
+    function _arrayStart(bytes calldata callData, uint256 headPos, uint256 minOff)
         private
         pure
         returns (uint256 pos, bool ok)
     {
         if (headPos + 32 > callData.length) return (0, false);
         uint256 off = uint256(bytes32(callData[headPos:headPos + 32]));
-        // executeBatch has a 3-word (96 byte) static head; offsets < 96 are malformed
-        if (off < 96 || off > type(uint32).max) return (0, false);
+        if (off < minOff || off > type(uint32).max) return (0, false);
         pos = 4 + off; // offsets are relative to the argument block
         if (pos + 32 > callData.length) return (0, false);
         return (pos, true);
@@ -730,6 +1288,21 @@ contract PasskeyAccount {
         _call(dest, value, func);
     }
 
+    /// @notice Executes a single transaction on behalf of an authorized agent.
+    /// @dev Called by EntryPoint after validateUserOp verifies agent permissions.
+    function executeByAgent(
+        address agentKey,
+        address dest,
+        uint256 value,
+        bytes calldata func
+    ) external onlyEntryPoint {
+        _recordAgentCall(agentKey, dest, value, func);
+        _recordCall(dest, value, func);
+        bytes4 sel = func.length >= 4 ? bytes4(func[0:4]) : bytes4(0);
+        emit AgentActionExecuted(agentKey, dest, sel, value);
+        _call(dest, value, func);
+    }
+
     /// @notice Execute several calls atomically.
     /// @dev The policy sums this batch per-asset before authorizing it. See
     ///      _requiredSignaturesBatch -- without that, batching would be a free
@@ -749,6 +1322,30 @@ contract PasskeyAccount {
         }
 
         for (uint256 i = 0; i < dests.length; i++) {
+            _call(dests[i], values[i], funcs[i]);
+        }
+    }
+
+    /// @notice Executes a batch of calls on behalf of an authorized agent.
+    /// @dev Called by EntryPoint after validateUserOp verifies batch limits.
+    function executeBatchByAgent(
+        address agentKey,
+        address[] calldata dests,
+        uint256[] calldata values,
+        bytes[] calldata funcs
+    ) external onlyEntryPoint {
+        if (dests.length != values.length || dests.length != funcs.length) {
+            revert LengthMismatch();
+        }
+
+        for (uint256 i = 0; i < dests.length; i++) {
+            _recordAgentCall(agentKey, dests[i], values[i], funcs[i]);
+            _recordCall(dests[i], values[i], funcs[i]);
+        }
+
+        for (uint256 i = 0; i < dests.length; i++) {
+            bytes4 sel = funcs[i].length >= 4 ? bytes4(funcs[i][0:4]) : bytes4(0);
+            emit AgentActionExecuted(agentKey, dests[i], sel, values[i]);
             _call(dests[i], values[i], funcs[i]);
         }
     }
@@ -780,6 +1377,81 @@ contract PasskeyAccount {
                 revert(add(ret, 32), mload(ret))
             }
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Config -- reachable only via a UserOp through validateUserOp
+    // -----------------------------------------------------------------------
+
+    /// @notice Grants a bounded session to an autonomous agent key.
+    /// @dev strictly onlySelf, so it requires a 2-of-N hardware passkey quorum.
+    function grantAgentSession(SessionConfig calldata config) external onlySelf {
+        if (config.agentKey == address(0)) revert InvalidAgentKey();
+        if (config.validUntil <= config.validAfter) revert InvalidSessionDuration();
+        if (config.allowedTokens.length != config.tokenWindowCaps.length) revert LengthMismatch();
+        if (config.allowedProtocols.length != config.allowedSelectors.length) revert LengthMismatch();
+
+        AgentSession storage session = agentSessions[config.agentKey];
+        session.validAfter = config.validAfter;
+        session.validUntil = config.validUntil;
+        session.isRegistered = true;
+        session.revoked = false;
+        session.humanApprovalThreshold = config.humanApprovalThreshold;
+        session.perTxLimitEth = config.perTxLimitEth;
+        session.perTxLimitToken = config.perTxLimitToken;
+        session.windowSeconds = config.windowDuration;
+
+        for (uint256 i = 0; i < config.allowedProtocols.length; i++) {
+            agentAllowedProtocols[config.agentKey][config.allowedProtocols[i]] = true;
+            emit AgentProtocolUpdated(config.agentKey, config.allowedProtocols[i], true);
+            agentAllowedSelectors[config.agentKey][config.allowedProtocols[i]][config.allowedSelectors[i]] = true;
+            emit AgentSelectorUpdated(config.agentKey, config.allowedProtocols[i], config.allowedSelectors[i], true);
+        }
+
+        for (uint256 i = 0; i < config.allowedTokens.length; i++) {
+            agentAllowedTokens[config.agentKey][config.allowedTokens[i]] = true;
+            agentWindowCap[config.agentKey][config.allowedTokens[i]] = config.tokenWindowCaps[i];
+            emit AgentTokenUpdated(config.agentKey, config.allowedTokens[i], true, config.tokenWindowCaps[i]);
+        }
+
+        emit AgentSessionGranted(
+            config.agentKey,
+            config.validAfter,
+            config.validUntil,
+            config.perTxLimitEth,
+            config.perTxLimitToken,
+            config.humanApprovalThreshold
+        );
+    }
+
+    /// @notice Revokes an agent session immediately.
+    /// @dev onlySelf, requiring 2-of-N passkey quorum.
+    function revokeAgentSession(address agentKey) external onlySelf {
+        if (!agentSessions[agentKey].isRegistered) revert AgentNotRegistered();
+        agentSessions[agentKey].revoked = true;
+        emit AgentSessionRevoked(agentKey);
+    }
+
+    /// @notice Whitelists or removes a protocol for an agent.
+    function setAgentProtocol(address agentKey, address protocol, bool allowed) external onlySelf {
+        if (!agentSessions[agentKey].isRegistered) revert AgentNotRegistered();
+        agentAllowedProtocols[agentKey][protocol] = allowed;
+        emit AgentProtocolUpdated(agentKey, protocol, allowed);
+    }
+
+    /// @notice Whitelists or removes a function selector for an agent on a protocol.
+    function setAgentSelector(address agentKey, address protocol, bytes4 selector, bool allowed) external onlySelf {
+        if (!agentSessions[agentKey].isRegistered) revert AgentNotRegistered();
+        agentAllowedSelectors[agentKey][protocol][selector] = allowed;
+        emit AgentSelectorUpdated(agentKey, protocol, selector, allowed);
+    }
+
+    /// @notice Whitelists or configures rolling limit for an asset for an agent.
+    function setAgentToken(address agentKey, address token, bool allowed, uint256 cap) external onlySelf {
+        if (!agentSessions[agentKey].isRegistered) revert AgentNotRegistered();
+        agentAllowedTokens[agentKey][token] = allowed;
+        agentWindowCap[agentKey][token] = cap;
+        emit AgentTokenUpdated(agentKey, token, allowed, cap);
     }
 
     // -----------------------------------------------------------------------

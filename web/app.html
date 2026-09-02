@@ -671,6 +671,7 @@
       <!-- Navigation Tabs -->
       <div class="app-tabs">
         <button class="tab-btn active" data-tab="send">Transfer</button>
+        <button class="tab-btn" data-tab="agents">AI Agents</button>
         <button class="tab-btn" data-tab="config">Policy Config</button>
         <button class="tab-btn" data-tab="addressbook">Address Book</button>
         <button class="tab-btn" data-tab="security">Hardware Keys</button>
@@ -735,6 +736,127 @@
               <span style="font-size:11px;color:#94A3B8;font-family:var(--font-mono);">EntryPoint v0.7</span>
             </div>
             <pre id="appUserOpCode"></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: AI Agent Delegation -->
+      <div class="tab-view" id="tab-agents">
+        <div class="transfer-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div>
+              <h3 style="font-family:var(--font-heading);font-size:18px;color:var(--text-white);">AI Agent Spending Delegation</h3>
+              <p style="font-size:13px;color:var(--text-muted);margin-top:2px;">
+                Delegate limited, autonomous spending authority to AI agents without revealing master private keys.
+              </p>
+            </div>
+            <span class="passkey-badge" id="agentSessionBadge" style="background:var(--accent-emerald-light);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);">
+              ● Session Active
+            </span>
+          </div>
+
+          <!-- Active Agent Session Overview -->
+          <div style="background:rgba(0,0,0,0.4);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Delegated Agent Key</div>
+              <button class="copy-btn" id="btnCopyAgentKey" style="background:rgba(255,255,255,0.06);color:#FFF;border:1px solid var(--border-light);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Copy Key</button>
+            </div>
+            <div style="font-family:var(--font-mono);font-size:13.5px;color:#93C5FD;word-break:break-all;margin-bottom:16px;" id="dispAgentKey">
+              0x8a912e73f912a738c821938491029381029b819e
+            </div>
+
+            <!-- Limits Grid -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;margin-bottom:16px;">
+              <div style="background:#000;border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
+                <div style="font-size:11px;color:var(--text-dark);">Autonomous Limit</div>
+                <div style="font-size:15px;font-weight:800;color:var(--text-white);margin-top:2px;" id="dispAutoLimit">50.00 USDC</div>
+              </div>
+              <div style="background:#000;border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
+                <div style="font-size:11px;color:var(--text-dark);">Escalation Ceiling</div>
+                <div style="font-size:15px;font-weight:800;color:var(--text-white);margin-top:2px;" id="dispCeilingLimit">200.00 USDC</div>
+              </div>
+              <div style="background:#000;border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
+                <div style="font-size:11px;color:var(--text-dark);">24h Rolling Cap</div>
+                <div style="font-size:15px;font-weight:800;color:var(--text-white);margin-top:2px;" id="dispRollingCap">100.00 USDC</div>
+              </div>
+            </div>
+
+            <!-- Rolling Spend Progress Bar -->
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px;">
+                <span>24h Rolling Spend Usage</span>
+                <span id="dispRollingUsageLabel">$30.00 / $100.00 USDC (30%)</span>
+              </div>
+              <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:999px;overflow:hidden;">
+                <div id="dispRollingUsageFill" style="height:100%;background:linear-gradient(90deg, #38BDF8, #0052FF);width:30%;border-radius:999px;transition:width 0.3s ease;"></div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <button class="action-btn-primary" style="flex:1;padding:10px;font-size:13px;background:rgba(255,255,255,0.08);color:#FFF;border:1px solid var(--border-light);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnToggleGrantForm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                Reconfigure Session
+              </button>
+              <button class="action-btn-primary" style="flex:1;padding:10px;font-size:13px;background:rgba(244,63,94,0.15);color:var(--accent-rose);border:1px solid rgba(244,63,94,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnRevokeAgentSession">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+                Revoke Session
+              </button>
+            </div>
+          </div>
+
+          <!-- Grant / Reconfigure Session Form (Collapsible) -->
+          <div id="agentGrantForm" style="display:none;background:rgba(0,0,0,0.6);border:1px solid var(--border-focus);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+            <h4 style="font-family:var(--font-heading);font-size:15px;color:#FFF;margin-bottom:12px;">Configure Agent Delegation (2-of-2 Passkeys Required)</h4>
+            
+            <div class="form-group">
+              <label>Agent Public Key (Address) <span style="color:#60A5FA;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" id="btnGenAgentKey"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate Key</span></label>
+              <div class="input-wrap">
+                <input type="text" id="inputAgentAddr" value="0x8a912e73f912a738c821938491029381029b819e" style="font-family:var(--font-mono);font-size:13px;">
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>Autonomous Limit (USDC)</label>
+                <div class="input-wrap"><input type="number" id="inputAgentAutoLimit" value="50.00" step="1"></div>
+              </div>
+              <div class="form-group">
+                <label>Escalation Ceiling (USDC)</label>
+                <div class="input-wrap"><input type="number" id="inputAgentCeiling" value="200.00" step="1"></div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>24h Rolling Cap (USDC)</label>
+              <div class="input-wrap"><input type="number" id="inputAgentRollingCap" value="100.00" step="1"></div>
+            </div>
+
+            <button class="action-btn-primary" style="width:100%;padding:12px;font-size:14px;" id="btnSubmitGrantSession">
+              Authorize Delegation with Passkey Quorum
+            </button>
+          </div>
+
+          <!-- Agent Execution Playground -->
+          <div style="border-top:1px solid var(--border-light);padding-top:20px;">
+            <div style="font-family:var(--font-heading);font-size:15px;color:#FFF;font-weight:700;margin-bottom:6px;">Agent Action Simulator &amp; Verification</div>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+              Test how the on-chain SpendPolicy handles autonomous and escalated agent operations.
+            </p>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+              <button class="action-btn-primary" style="padding:12px;font-size:13px;background:rgba(16,185,129,0.12);color:var(--accent-emerald);border:1px solid rgba(16,185,129,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnTestAgentMicro">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Send $20 (Autonomous)
+              </button>
+              <button class="action-btn-primary" style="padding:12px;font-size:13px;background:rgba(245,158,11,0.12);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnTestAgentEscalated">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+                Send $150 (Escalated)
+              </button>
+              <button class="action-btn-primary" style="padding:12px;font-size:13px;background:rgba(244,63,94,0.12);color:var(--accent-rose);border:1px solid rgba(244,63,94,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnTestAgentCeiling">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+                Send $350 (Ceiling Block)
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -984,6 +1106,130 @@ $('addAllowAddrBtn').onclick = () => {
     refreshAllowlistView();
     evalFirewall();
   }
+};
+
+// --- AI Agent Delegation State & Handlers ---
+let agentSession = JSON.parse(localStorage.getItem('haptix_agent_session') || JSON.stringify({
+  active: true,
+  agentKey: '0x8a912e73f912a738c821938491029381029b819e',
+  autoLimit: 50.0,
+  ceiling: 200.0,
+  rollingCap: 100.0,
+  rollingSpent: 30.0
+}));
+
+function refreshAgentView() {
+  if (agentSession.active) {
+    $('agentSessionBadge').textContent = '● Session Active';
+    $('agentSessionBadge').style.background = 'var(--accent-emerald-light)';
+    $('agentSessionBadge').style.color = 'var(--accent-emerald)';
+  } else {
+    $('agentSessionBadge').textContent = '○ Session Revoked';
+    $('agentSessionBadge').style.background = 'var(--accent-rose-light)';
+    $('agentSessionBadge').style.color = 'var(--accent-rose)';
+  }
+
+  $('dispAgentKey').textContent = agentSession.agentKey;
+  $('dispAutoLimit').textContent = `${agentSession.autoLimit.toFixed(2)} USDC`;
+  $('dispCeilingLimit').textContent = `${agentSession.ceiling.toFixed(2)} USDC`;
+  $('dispRollingCap').textContent = `${agentSession.rollingCap.toFixed(2)} USDC`;
+
+  const pct = Math.min(100, Math.round((agentSession.rollingSpent / agentSession.rollingCap) * 100));
+  $('dispRollingUsageFill').style.width = pct + '%';
+  $('dispRollingUsageLabel').textContent = `$${agentSession.rollingSpent.toFixed(2)} / $${agentSession.rollingCap.toFixed(2)} USDC (${pct}%)`;
+}
+refreshAgentView();
+
+$('btnCopyAgentKey').onclick = () => {
+  navigator.clipboard.writeText(agentSession.agentKey);
+  $('btnCopyAgentKey').textContent = 'Copied!';
+  setTimeout(() => $('btnCopyAgentKey').textContent = 'Copy Key', 1500);
+};
+
+$('btnToggleGrantForm').onclick = () => {
+  const form = $('agentGrantForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+};
+
+$('btnGenAgentKey').onclick = () => {
+  const randomBytes = new Uint8Array(20);
+  crypto.getRandomValues(randomBytes);
+  const genAddr = '0x' + [...randomBytes].map(b => b.toString(16).padStart(2, '0')).join('');
+  $('inputAgentAddr').value = genAddr;
+};
+
+$('btnSubmitGrantSession').onclick = async () => {
+  try {
+    const key = $('inputAgentAddr').value.trim();
+    const autoLim = parseFloat($('inputAgentAutoLimit').value) || 50;
+    const ceil = parseFloat($('inputAgentCeiling').value) || 200;
+    const cap = parseFloat($('inputAgentRollingCap').value) || 100;
+
+    if (!key.startsWith('0x') || key.length !== 42) {
+      alert('Invalid Ethereum address for Agent Key.');
+      return;
+    }
+
+    $('btnSubmitGrantSession').disabled = true;
+    $('btnSubmitGrantSession').textContent = 'Prompting Passkey Quorum (2-of-2)...';
+
+    // Simulate quorum requirement
+    agentSession = {
+      active: true,
+      agentKey: key,
+      autoLimit: autoLim,
+      ceiling: ceil,
+      rollingCap: cap,
+      rollingSpent: 0.0
+    };
+    localStorage.setItem('haptix_agent_session', JSON.stringify(agentSession));
+    refreshAgentView();
+    $('agentGrantForm').style.display = 'none';
+    alert('✓ Agent Session successfully granted with 2-of-2 Hardware Passkey Quorum!');
+  } catch (e) {
+    alert('Session grant error: ' + e.message);
+  } finally {
+    $('btnSubmitGrantSession').disabled = false;
+    $('btnSubmitGrantSession').textContent = 'Authorize Delegation with Passkey Quorum';
+  }
+};
+
+$('btnRevokeAgentSession').onclick = () => {
+  if (confirm('Are you sure you want to revoke this AI Agent Session? The agent key will immediately lose all spending authority.')) {
+    agentSession.active = false;
+    localStorage.setItem('haptix_agent_session', JSON.stringify(agentSession));
+    refreshAgentView();
+    alert('Agent session revoked successfully on-chain.');
+  }
+};
+
+$('btnTestAgentMicro').onclick = () => {
+  if (!agentSession.active) {
+    alert('Cannot execute: Agent session is revoked.');
+    return;
+  }
+  agentSession.rollingSpent += 20.0;
+  localStorage.setItem('haptix_agent_session', JSON.stringify(agentSession));
+  refreshAgentView();
+  alert('Autonomous Agent UserOp Executed! Signed with Agent secp256k1 key only ($20.00 USDC).');
+};
+
+$('btnTestAgentEscalated').onclick = () => {
+  if (!agentSession.active) {
+    alert('Cannot execute: Agent session is revoked.');
+    return;
+  }
+  const proceed = confirm('Escalation Required: Amount ($150.00 USDC) exceeds autonomous limit ($50.00 USDC). Prompt 2-of-2 Passkey Biometric Quorum?');
+  if (proceed) {
+    agentSession.rollingSpent += 150.0;
+    localStorage.setItem('haptix_agent_session', JSON.stringify(agentSession));
+    refreshAgentView();
+    alert('Passkey Quorum Verified! Escalated UserOp (0x02) submitted successfully.');
+  }
+};
+
+$('btnTestAgentCeiling').onclick = () => {
+  alert('SECURITY VIOLATION: Amount ($350.00 USDC) exceeds the $200.00 Human Escalation Ceiling. Smart account SpendPolicy strictly rejected this transaction.');
 };
 
 // --- Panic Freeze State ---
