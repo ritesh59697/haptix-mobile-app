@@ -972,9 +972,9 @@
           <div style="padding:16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
             <div>
               <div style="font-weight:700;font-size:14px;color:var(--text-white);">Smart Account Deployed on Base Sepolia</div>
-              <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">Account: 0xEe8888BD...61d6</div>
+              <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">Account: 0xB3Bf...a081</div>
             </div>
-            <a href="https://sepolia.basescan.org/address/0xEe8888BDd3d6a2B3F17173773511D151b74961d6" target="_blank" style="font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;">View on BaseScan ↗</a>
+            <a href="https://sepolia.basescan.org/address/0xB3Bfeee1cA3De9E736A742345C761947962Ca081" target="_blank" style="font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;">View on BaseScan ↗</a>
           </div>
         </div>
       </div>
@@ -1438,10 +1438,9 @@ $('appSignSubmitBtn').onclick = async () => {
 
     const userOpHash = await getUserOpHash(CONFIG.rpcUrl, CONFIG.entryPoint, op);
 
-    // Sign Key 0 with exact enrolled credential rawId to prevent Chrome from picking an old passkey
+    // Sign Key 0 with user's active passkey
     $('appSignSubmitBtn').textContent = 'Biometric Touch ID (Key #0)...';
-    const cred0 = storedKeys[0]?.rawId ? [storedKeys[0].rawId] : (storedKeys[0]?.id ? [storedKeys[0].id] : []);
-    const sig0 = await signWithPasskey(userOpHash, cred0);
+    const sig0 = await signWithPasskey(userOpHash);
     const signerIds = [0];
     const sigs = [sig0];
 

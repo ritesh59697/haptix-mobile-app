@@ -5,7 +5,7 @@ const P256_N = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc63255
 export const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
 export const fromHex = h => new Uint8Array((h.startsWith('0x') ? h.slice(2) : h).match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []);
 export const pad64 = n => (typeof n === 'bigint' ? n.toString(16) : BigInt(n).toString(16)).padStart(64, '0');
-export const padBytes32 = h => (h.startsWith('0x') ? h.slice(2) : h).padStart(64, '0');
+export const padBytes32 = h => (typeof h === 'bigint' ? h.toString(16) : typeof h === 'number' ? h.toString(16) : (h.startsWith('0x') ? h.slice(2) : h)).padStart(64, '0');
 
 export function base64url(buffer) {
   const bytes = new Uint8Array(buffer);

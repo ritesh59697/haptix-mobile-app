@@ -33,17 +33,24 @@ contract Deploy is Script {
     uint256 constant SIGNER1_Y =
         0xdd5f7284eab028fa81204833b0a769a173efeed237dd844030ba129f8471e1fb;
 
+    /// Active Google Password Manager Key
+    uint256 constant GPM_KEY_X =
+        0xde73dbc86e03d4aa9628ee13307fedc7f2df56d4766e1f5bc466137d98c09b6e;
+    uint256 constant GPM_KEY_Y =
+        0x11dfbd44c54c38772973112c386c8187591fa90b49945373102bde780fb19900;
+
     /// Per-op ETH threshold: above this, a second passkey is required.
     uint256 constant ETH_THRESHOLD = 0.01 ether;
 
     function run() external {
         require(block.chainid == 84532, "not Base Sepolia");
 
-        // Both signers are enrolled at construction.
+        // Enroll all 3 keys to cover any selected hardware passkey
         PasskeyAccount.PublicKey[] memory initial =
-            new PasskeyAccount.PublicKey[](2);
-        initial[0] = PasskeyAccount.PublicKey(SIGNER0_X, SIGNER0_Y);
-        initial[1] = PasskeyAccount.PublicKey(SIGNER1_X, SIGNER1_Y);
+            new PasskeyAccount.PublicKey[](3);
+        initial[0] = PasskeyAccount.PublicKey(GPM_KEY_X, GPM_KEY_Y);
+        initial[1] = PasskeyAccount.PublicKey(SIGNER0_X, SIGNER0_Y);
+        initial[2] = PasskeyAccount.PublicKey(SIGNER1_X, SIGNER1_Y);
 
         vm.startBroadcast();
 
