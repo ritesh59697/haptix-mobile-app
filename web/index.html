@@ -697,6 +697,9 @@
       -webkit-backdrop-filter: blur(28px);
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
       transition: all 0.25s ease;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .workflow-card:hover {
       border-color: var(--border-focus);
@@ -721,6 +724,7 @@
       align-items: center;
       justify-content: center;
       color: var(--accent-blue);
+      flex-shrink: 0;
     }
 
     .workflow-title {
@@ -741,7 +745,10 @@
       background: var(--bg-black);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
-      overflow: hidden;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      max-width: 100%;
+      min-width: 0;
       font-size: 12px;
     }
 
@@ -1208,10 +1215,18 @@
     @media (max-width: 1024px) {
       .container { padding: 0 20px; }
       .tenbin-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .workflows-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
       .footer-links-row { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 24px; }
     }
 
     @media (max-width: 820px) {
+      .container {
+        padding: 0 16px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
       /* Floating Navbar on Tablet/Mobile */
       .card-nav-wrapper {
         top: 12px;
@@ -1245,23 +1260,26 @@
       .trust-section, 
       .faq-section {
         scroll-margin-top: 76px !important;
-        padding: 60px 0 !important;
+        padding: 55px 0 !important;
         position: relative;
         z-index: 1;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
       }
 
       .section-header-compact {
         margin: 0 auto 32px auto !important;
-        padding: 0 12px;
+        padding: 0 8px;
       }
       .section-title {
-        font-size: clamp(25px, 6.8vw, 36px) !important;
+        font-size: clamp(24px, 6.5vw, 34px) !important;
         line-height: 1.18 !important;
         margin-bottom: 12px !important;
         word-break: break-word;
       }
       .section-sub {
-        font-size: 14px !important;
+        font-size: 13.5px !important;
         line-height: 1.5 !important;
       }
 
@@ -1307,10 +1325,14 @@
       .tenbin-metrics-grid {
         grid-template-columns: 1fr !important;
         gap: 12px !important;
+        width: 100% !important;
+        min-width: 0 !important;
       }
       .tenbin-metric-card {
-        padding: 20px 16px !important;
+        padding: 18px 16px !important;
         background: rgba(11, 14, 22, 0.92) !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
       }
 
       /* Comparison Section (Fix Horizontal Truncation) */
@@ -1320,62 +1342,77 @@
         padding-bottom: 10px !important;
         border-radius: var(--radius-lg) !important;
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         background: rgba(11, 14, 22, 0.94) !important;
         border: 1px solid var(--border-subtle) !important;
         box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5) !important;
+        box-sizing: border-box !important;
       }
       .micro-comp-card {
-        min-width: 620px !important;
+        min-width: 580px !important;
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
       }
       .comp-row {
         grid-template-columns: 1.4fr 1.1fr 1fr 1fr !important;
-        padding: 14px 16px !important;
+        padding: 12px 14px !important;
         font-size: 12px !important;
       }
       .comp-swipe-hint {
         display: block !important;
       }
 
-      /* Workflows & Institutional Cards (Prevent Overlapping) */
+      /* Workflows & Institutional Cards (100% Full-Width, Never Showing Half) */
       .workflows-grid {
-        grid-template-columns: 1fr !important;
-        gap: 22px !important;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 20px !important;
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
       }
       .workflow-card {
-        padding: 22px 18px !important;
+        padding: 20px 16px !important;
         background: rgba(11, 14, 22, 0.94) !important;
         border-radius: var(--radius-lg) !important;
         box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5) !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
       }
       .workflow-title {
-        font-size: 16.5px !important;
+        font-size: 16px !important;
       }
       .workflow-sub {
-        font-size: 12.5px !important;
-        margin-bottom: 14px !important;
+        font-size: 12px !important;
+        margin-bottom: 12px !important;
       }
 
-      /* Embedded Data Tables (Fix Overflow & Word Breaking) */
+      /* Embedded Data Tables (Full Contained Mobile Scroll) */
       .embedded-table-wrap {
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch !important;
         width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         border-radius: var(--radius-md) !important;
         background: #05070B !important;
-        margin-top: 12px !important;
+        margin-top: 10px !important;
+        box-sizing: border-box !important;
       }
       .embedded-table {
-        min-width: 480px !important;
+        min-width: 420px !important;
         width: 100% !important;
         border-collapse: collapse !important;
       }
       .embedded-table th, .embedded-table td {
-        padding: 9px 12px !important;
-        font-size: 11.5px !important;
+        padding: 8px 10px !important;
+        font-size: 11px !important;
         white-space: nowrap !important;
       }
 
