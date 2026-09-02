@@ -4,6 +4,7 @@ out = "out"
 libs = ["lib"]
 evm_version = "osaka"
 optimizer = true
-optimizer_runs = 200
+optimizer_runs = 50
+via_ir = true
 gas_reports = ["PasskeyAccount", "SpendPolicy", "SpendWindow", "WebAuthn"]
 fs_permissions = [{ access = "read-write", path = "./" }]
