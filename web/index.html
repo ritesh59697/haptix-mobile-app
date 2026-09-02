@@ -872,35 +872,20 @@
     }
 
     /* ==========================================================================
-       ACETERNITY UI GLOWING EFFECT (@aceternity/glowing-effect)
+       ACETERNITY UI LIVE GLOWING EFFECT (@aceternity/glowing-effect)
+       Continuous corner-orbiting beam with mouse interaction
        ========================================================================== */
     .glowing-card-wrap {
       position: relative;
       border-radius: var(--radius-xl);
-      padding: 1.5px;
+      padding: 2.5px;
       margin-bottom: 70px;
       isolation: isolate;
     }
 
     .glowing-effect-container {
-      --blur: 24px;
-      --spread: 42;
-      --start: 0;
-      --active: 0.35;
-      --glowingeffect-border-width: 2px;
-      --repeating-conic-gradient-times: 5;
-      --gradient: radial-gradient(circle, #dd7bbb 10%, #dd7bbb00 20%),
-        radial-gradient(circle at 40% 40%, #0052FF 6%, #0052FF00 16%),
-        radial-gradient(circle at 60% 60%, #38BDF8 10%, #38BDF800 20%), 
-        radial-gradient(circle at 40% 60%, #A855F7 10%, #A855F700 20%),
-        repeating-conic-gradient(
-          from 236.84deg at 50% 50%,
-          #0052FF 0%,
-          #38BDF8 calc(25% / var(--repeating-conic-gradient-times)),
-          #A855F7 calc(50% / var(--repeating-conic-gradient-times)), 
-          #EC4899 calc(75% / var(--repeating-conic-gradient-times)),
-          #0052FF calc(100% / var(--repeating-conic-gradient-times))
-        );
+      --start: 0deg;
+      --blur: 32px;
       pointer-events: none;
       position: absolute;
       inset: 0;
@@ -908,70 +893,65 @@
       z-index: 0;
     }
 
-    /* Ambient Diffused Glow Aura */
+    /* Ambient Diffused Glow Aura that travels around the card */
     .glowing-effect-blur {
       position: absolute;
-      inset: 0;
+      inset: -8px;
       border-radius: inherit;
       filter: blur(var(--blur));
-      opacity: calc(var(--active, 0) * 0.9);
-      transition: opacity 0.35s ease;
+      opacity: 0.9;
       z-index: 0;
       transform: translate3d(0, 0, 0);
-      will-change: opacity;
+      will-change: transform;
+      background: conic-gradient(
+        from var(--start, 0deg),
+        transparent 0deg,
+        rgba(0, 82, 255, 0.45) 30deg,
+        #0052FF 65deg,
+        #38BDF8 95deg,
+        #A855F7 125deg,
+        #EC4899 155deg,
+        rgba(236, 72, 153, 0.45) 185deg,
+        transparent 215deg,
+        transparent 360deg
+      );
     }
 
-    .glowing-effect-blur::after {
-      content: "";
-      border-radius: inherit;
-      position: absolute;
-      inset: -6px;
-      border: 6px solid transparent;
-      background: var(--gradient);
-      background-attachment: fixed;
-      -webkit-mask-clip: padding-box, border-box;
-      mask-clip: padding-box, border-box;
-      -webkit-mask-composite: source-in;
-      mask-composite: intersect;
-      -webkit-mask-image: linear-gradient(#0000, #0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg));
-      mask-image: linear-gradient(#0000, #0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg));
-    }
-
-    /* Crisp Glowing Border Beam */
+    /* Crisp live glowing border beam running continuously around the corners */
     .glowing-effect-glow {
       position: absolute;
       inset: 0;
       border-radius: inherit;
+      padding: 2.5px;
+      background: conic-gradient(
+        from var(--start, 0deg),
+        transparent 0deg,
+        rgba(0, 82, 255, 0.4) 30deg,
+        #0052FF 65deg,
+        #38BDF8 95deg,
+        #A855F7 125deg,
+        #EC4899 155deg,
+        rgba(236, 72, 153, 0.4) 185deg,
+        transparent 215deg,
+        transparent 360deg
+      );
+      -webkit-mask: 
+        linear-gradient(#fff 0 0) content-box, 
+        linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
       z-index: 1;
+      pointer-events: none;
     }
 
-    .glowing-effect-glow::after {
-      content: "";
-      border-radius: inherit;
-      position: absolute;
-      inset: calc(-1 * var(--glowingeffect-border-width));
-      border: var(--glowingeffect-border-width) solid transparent;
-      background: var(--gradient);
-      background-attachment: fixed;
-      opacity: var(--active, 0);
-      transition: opacity 0.3s ease;
-      -webkit-mask-clip: padding-box, border-box;
-      mask-clip: padding-box, border-box;
-      -webkit-mask-composite: source-in;
-      mask-composite: intersect;
-      -webkit-mask-image: linear-gradient(#0000, #0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg));
-      mask-image: linear-gradient(#0000, #0000), conic-gradient(from calc((var(--start) - var(--spread)) * 1deg), #00000000 0deg, #fff, #00000000 calc(var(--spread) * 2deg));
-    }
-
-    /* Fallback / Subtle Baseline Border */
+    /* Subtle resting border */
     .glowing-effect-rest {
       position: absolute;
       inset: 0;
       border-radius: inherit;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       pointer-events: none;
       z-index: 1;
-      transition: border-color 0.3s ease;
     }
 
     .footer-cta {
@@ -1965,89 +1945,42 @@
       renderGrainient();
     }
 
-    // Aceternity UI Glowing Effect Engine (@aceternity/glowing-effect)
+    // Aceternity UI Live Glowing Effect Engine (@aceternity/glowing-effect)
+    // Continuously orbits around the corners & magnetically tracks cursor on hover
     (function initAceternityGlowingEffect() {
       const card = document.getElementById('glowingCtaCard');
       const glowEl = document.getElementById('glowingEffectEl');
       if (!card || !glowEl) return;
 
-      const spread = 42;
-      const proximity = 120;
-      const inactiveZone = 0.01;
       let currentAngle = 0;
-      let targetAngle = 0;
-      let isAnimating = false;
-      let lastX = 0, lastY = 0;
-      let hasMouse = false;
-      let idleAngle = 0;
+      let isHovered = false;
+      let mouseAngle = 0;
+      const baseSpeed = 1.25; // Smooth live orbit around corners
 
-      glowEl.style.setProperty('--spread', String(spread));
-      glowEl.style.setProperty('--active', '0.3');
-
-      function handlePointer(e) {
-        hasMouse = true;
-        const mouseX = e.clientX;
-        const mouseY = e.clientY;
-        lastX = mouseX;
-        lastY = mouseY;
-
+      card.addEventListener('pointerenter', () => { isHovered = true; });
+      card.addEventListener('pointerleave', () => { isHovered = false; });
+      card.addEventListener('pointermove', (e) => {
+        isHovered = true;
         const rect = card.getBoundingClientRect();
         const center = [rect.left + rect.width * 0.5, rect.top + rect.height * 0.5];
-        const distanceFromCenter = Math.hypot(mouseX - center[0], mouseY - center[1]);
-        const inactiveRadius = 0.5 * Math.min(rect.width, rect.height) * inactiveZone;
+        mouseAngle = (180 * Math.atan2(e.clientY - center[1], e.clientX - center[0])) / Math.PI + 90;
+      });
 
-        if (distanceFromCenter < inactiveRadius) {
-          glowEl.style.setProperty('--active', '0.2');
-          return;
-        }
-
-        const isNearby =
-          mouseX > rect.left - proximity &&
-          mouseX < rect.left + rect.width + proximity &&
-          mouseY > rect.top - proximity &&
-          mouseY < rect.top + rect.height + proximity;
-
-        glowEl.style.setProperty('--active', isNearby ? '1' : '0.3');
-
-        if (!isNearby) return;
-
-        targetAngle = (180 * Math.atan2(mouseY - center[1], mouseX - center[0])) / Math.PI + 90;
-
-        const angleDiff = ((targetAngle - currentAngle + 180) % 360) - 180;
-        targetAngle = currentAngle + angleDiff;
-
-        if (!isAnimating) {
-          isAnimating = true;
-          requestAnimationFrame(renderGlow);
-        }
-      }
-
-      function renderGlow() {
-        const diff = targetAngle - currentAngle;
-        if (Math.abs(diff) > 0.08) {
-          currentAngle += diff * 0.18;
-          glowEl.style.setProperty('--start', String(currentAngle));
-          requestAnimationFrame(renderGlow);
+      function animate() {
+        if (isHovered) {
+          // Magnetically glide toward mouse angle with smooth physical easing
+          const diff = ((mouseAngle - currentAngle + 180) % 360) - 180;
+          currentAngle += diff * 0.12;
         } else {
-          currentAngle = targetAngle;
-          glowEl.style.setProperty('--start', String(currentAngle));
-          isAnimating = false;
+          // Continuously keep moving around the corners non-stop!
+          currentAngle = (currentAngle + baseSpeed) % 360;
         }
+
+        glowEl.style.setProperty('--start', currentAngle.toFixed(2) + 'deg');
+        requestAnimationFrame(animate);
       }
 
-      function ambientDrift() {
-        if (!hasMouse) {
-          idleAngle = (idleAngle + 0.35) % 360;
-          glowEl.style.setProperty('--start', String(idleAngle));
-        }
-        requestAnimationFrame(ambientDrift);
-      }
-      requestAnimationFrame(ambientDrift);
-
-      window.addEventListener('pointermove', handlePointer, { passive: true });
-      window.addEventListener('scroll', () => {
-        if (hasMouse) handlePointer({ clientX: lastX, clientY: lastY });
-      }, { passive: true });
+      requestAnimationFrame(animate);
     })();
   </script>
 </body>
