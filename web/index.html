@@ -1945,37 +1945,17 @@
       renderGrainient();
     }
 
-    // Aceternity UI Live Glowing Effect Engine (@aceternity/glowing-effect)
-    // Continuously orbits around the corners & magnetically tracks cursor on hover
+    // Aceternity UI Live Glowing Effect Engine
+    // Continuously moves around the corners non-stop (independent of mouse/cursor)
     (function initAceternityGlowingEffect() {
-      const card = document.getElementById('glowingCtaCard');
       const glowEl = document.getElementById('glowingEffectEl');
-      if (!card || !glowEl) return;
+      if (!glowEl) return;
 
       let currentAngle = 0;
-      let isHovered = false;
-      let mouseAngle = 0;
-      const baseSpeed = 1.25; // Smooth live orbit around corners
-
-      card.addEventListener('pointerenter', () => { isHovered = true; });
-      card.addEventListener('pointerleave', () => { isHovered = false; });
-      card.addEventListener('pointermove', (e) => {
-        isHovered = true;
-        const rect = card.getBoundingClientRect();
-        const center = [rect.left + rect.width * 0.5, rect.top + rect.height * 0.5];
-        mouseAngle = (180 * Math.atan2(e.clientY - center[1], e.clientX - center[0])) / Math.PI + 90;
-      });
+      const baseSpeed = 1.35; // Smooth continuous live orbit around corners
 
       function animate() {
-        if (isHovered) {
-          // Magnetically glide toward mouse angle with smooth physical easing
-          const diff = ((mouseAngle - currentAngle + 180) % 360) - 180;
-          currentAngle += diff * 0.12;
-        } else {
-          // Continuously keep moving around the corners non-stop!
-          currentAngle = (currentAngle + baseSpeed) % 360;
-        }
-
+        currentAngle = (currentAngle + baseSpeed) % 360;
         glowEl.style.setProperty('--start', currentAngle.toFixed(2) + 'deg');
         requestAnimationFrame(animate);
       }
