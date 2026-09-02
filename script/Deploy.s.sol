@@ -21,23 +21,17 @@ contract Deploy is Script {
     /// EntryPoint v0.7 -- verified live on Base Sepolia (codesize 16035).
     address constant ENTRYPOINT = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
 
-    /// Signer 0 -- fresh Touch ID passkey
-    /// Signer 1 -- fresh Backup Quorum passkey
+    /// Signer 0 -- fresh Chrome Browser Profile passkey
+    /// Signer 1 -- fresh iCloud Keychain passkey
     uint256 constant SIGNER0_X =
-        0x495fe3f6029fc58c8dabf8621da1ac5f59852bdaee5731157d965ab7f1abb47c;
+        0xae5316b13623a2e70ed4cf6e3fe5356eeea7fe05a18ba0f86a66d3dfc9a8d826;
     uint256 constant SIGNER0_Y =
-        0xbf5cb5d1c5bd72b67aeacf82a49150f46dabd7d5a9cd900cda0875c7084ee724;
+        0x19c60579b3b5d02a6cfe835ac591bcff782355bdc03b2f5aa29b48a784a4b52d;
 
     uint256 constant SIGNER1_X =
-        0xe81d9e9e0f11c4bdf99afa862f3d95e71134c653806c76bf721c89f327647589;
+        0xa93626e906df62e77f7f3ed41dcbe0145f02a1d684a771d3f8e10350a536daa8;
     uint256 constant SIGNER1_Y =
-        0xdd5f7284eab028fa81204833b0a769a173efeed237dd844030ba129f8471e1fb;
-
-    /// Active Google Password Manager Key
-    uint256 constant GPM_KEY_X =
-        0xde73dbc86e03d4aa9628ee13307fedc7f2df56d4766e1f5bc466137d98c09b6e;
-    uint256 constant GPM_KEY_Y =
-        0x11dfbd44c54c38772973112c386c8187591fa90b49945373102bde780fb19900;
+        0x6c3bbdc0764ed1da9890ed719306d0c909e231a13fd0be53e88be740380e02fa;
 
     /// Per-op ETH threshold: above this, a second passkey is required.
     uint256 constant ETH_THRESHOLD = 0.01 ether;
@@ -45,12 +39,11 @@ contract Deploy is Script {
     function run() external {
         require(block.chainid == 84532, "not Base Sepolia");
 
-        // Enroll all 3 keys to cover any selected hardware passkey
+        // Both fresh signers enrolled at construction
         PasskeyAccount.PublicKey[] memory initial =
-            new PasskeyAccount.PublicKey[](3);
-        initial[0] = PasskeyAccount.PublicKey(GPM_KEY_X, GPM_KEY_Y);
-        initial[1] = PasskeyAccount.PublicKey(SIGNER0_X, SIGNER0_Y);
-        initial[2] = PasskeyAccount.PublicKey(SIGNER1_X, SIGNER1_Y);
+            new PasskeyAccount.PublicKey[](2);
+        initial[0] = PasskeyAccount.PublicKey(SIGNER0_X, SIGNER0_Y);
+        initial[1] = PasskeyAccount.PublicKey(SIGNER1_X, SIGNER1_Y);
 
         vm.startBroadcast();
 

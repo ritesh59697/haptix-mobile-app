@@ -5,7 +5,7 @@ export const CONFIG = {
   chainName: 'Base Sepolia',
   rpcUrl: 'https://sepolia.base.org',
   entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
-  defaultAccount: '0xB3Bfeee1cA3De9E736A742345C761947962Ca081',
+  defaultAccount: '0xB01543453cF31052c769d79e9C755E3b035d796f',
   bundlerUrl: 'https://api.pimlico.io/v2/84532/rpc?apikey=pim_hkKhRbcJfLUYSzezx8ofPd',
   
   gas: {
