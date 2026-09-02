@@ -1042,6 +1042,20 @@ async function recordTransaction(tx) {
 
 let currentFilter = 'ALL';
 
+function getTxSvgComponent(type, status) {
+  if (type === 'RECEIVE') {
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg>`;
+  } else if (type === 'AGENT') {
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
+  } else if (status === 'QUORUM') {
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>`;
+  } else if (type === 'SECURITY') {
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/></svg>`;
+  } else {
+    return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>`;
+  }
+}
+
 async function renderTxHistory(filter = currentFilter) {
   currentFilter = filter;
   const container = $('txHistoryContainer');
@@ -1065,7 +1079,7 @@ async function renderTxHistory(filter = currentFilter) {
   if (filtered.length === 0) {
     container.innerHTML = `
       <div style="text-align:center;padding:32px 16px;color:var(--text-muted);font-size:12px;">
-        <div style="font-size:24px;margin-bottom:6px;">📭</div>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin:0 auto 8px auto;display:block;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
         <div>No transactions found for this filter.</div>
       </div>
     `;
@@ -1074,19 +1088,19 @@ async function renderTxHistory(filter = currentFilter) {
 
   container.innerHTML = filtered.map(tx => {
     let iconBoxClass = 'send';
-    let iconChar = '↗';
-    if (tx.type === 'RECEIVE') { iconBoxClass = 'receive'; iconChar = '↙'; }
-    else if (tx.type === 'AGENT') { iconBoxClass = 'agent'; iconChar = '⚡'; }
-    else if (tx.status === 'QUORUM') { iconBoxClass = 'quorum'; iconChar = '🛡'; }
-    else if (tx.type === 'SECURITY') { iconBoxClass = 'deploy'; iconChar = '🚀'; }
+    if (tx.type === 'RECEIVE') { iconBoxClass = 'receive'; }
+    else if (tx.type === 'AGENT') { iconBoxClass = 'agent'; }
+    else if (tx.status === 'QUORUM') { iconBoxClass = 'quorum'; }
+    else if (tx.type === 'SECURITY') { iconBoxClass = 'deploy'; }
 
+    const iconSvg = getTxSvgComponent(tx.type, tx.status);
     const statusClass = tx.status === 'QUORUM' ? 'quorum' : (tx.status === 'SUCCESS' ? 'success' : 'pending');
     const toShort = tx.to && tx.to.length > 10 ? `${tx.to.slice(0, 6)}...${tx.to.slice(-4)}` : tx.to;
     const hashShort = tx.txHash ? `${tx.txHash.slice(0, 6)}...${tx.txHash.slice(-4)}` : '0x...';
 
     return `
       <div class="tx-item" data-tx-id="${tx.id}">
-        <div class="tx-icon-box ${iconBoxClass}">${iconChar}</div>
+        <div class="tx-icon-box ${iconBoxClass}">${iconSvg}</div>
         <div class="tx-content">
           <div class="tx-row-top">
             <span class="tx-action-title">${tx.action}</span>
@@ -1120,7 +1134,17 @@ async function renderTxHistory(filter = currentFilter) {
 
 function openTxDetails(tx) {
   if (!$('sheetTxDetails')) return;
-  $('dtTxIcon').textContent = tx.type === 'RECEIVE' ? '↙' : (tx.type === 'AGENT' ? '⚡' : (tx.status === 'QUORUM' ? '🛡' : '↗'));
+  const iconSvg = getTxSvgComponent(tx.type, tx.status);
+  let iconBoxClass = 'send';
+  if (tx.type === 'RECEIVE') { iconBoxClass = 'receive'; }
+  else if (tx.type === 'AGENT') { iconBoxClass = 'agent'; }
+  else if (tx.status === 'QUORUM') { iconBoxClass = 'quorum'; }
+  else if (tx.type === 'SECURITY') { iconBoxClass = 'deploy'; }
+
+  if ($('dtTxIcon')) {
+    $('dtTxIcon').className = `tx-icon-box ${iconBoxClass}`;
+    $('dtTxIcon').innerHTML = iconSvg;
+  }
   $('dtTxAmount').textContent = tx.amount || tx.action;
   $('dtTxFiat').textContent = tx.fiat;
   $('dtTxStatus').textContent = tx.statusLabel;
