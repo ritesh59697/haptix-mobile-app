@@ -673,6 +673,104 @@
     }
     .comp-muted { color: var(--text-muted); font-family: var(--font-mono); }
 
+    /* Mobile-Native Comparison Cards */
+    .comp-mobile-cards {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .comp-m-card {
+      background: rgba(11, 14, 22, 0.94);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .comp-m-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .comp-m-title {
+      font-family: var(--font-heading);
+      font-size: 15.5px;
+      font-weight: 700;
+      color: var(--text-white);
+    }
+
+    .comp-m-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.12);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+    }
+
+    .comp-m-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .comp-m-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.02);
+      font-size: 12px;
+    }
+
+    .comp-m-winner {
+      background: rgba(0, 82, 255, 0.09);
+      border: 1px solid rgba(56, 189, 248, 0.28);
+    }
+
+    .comp-m-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .comp-m-winner .comp-m-label {
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+
+    .comp-m-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+      flex-shrink: 0;
+    }
+
+    .comp-m-dot.active {
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px var(--accent-cyan);
+    }
+
     /* Tholos 4-Card Live Data Table Grid (Workflows & Policies) */
     .tholos-workflows-section {
       padding: 90px 0;
@@ -1229,8 +1327,11 @@
 
       /* Floating Navbar on Tablet/Mobile */
       .card-nav-wrapper {
-        top: 12px;
-        padding: 0 12px;
+        top: 0;
+        padding: 10px 12px 6px 12px;
+        background: linear-gradient(180deg, rgba(8, 4, 20, 0.98) 0%, rgba(8, 4, 20, 0.82) 65%, transparent 100%) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
       }
       .card-nav {
         width: 100%;
@@ -1251,7 +1352,7 @@
 
       /* Sections & Scroll Clearances - Prevent Fixed Navbar Collisions */
       html {
-        scroll-padding-top: 76px;
+        scroll-padding-top: 80px;
       }
       section, 
       .micro-comp-section, 
@@ -1259,8 +1360,8 @@
       .sandbox-section, 
       .trust-section, 
       .faq-section {
-        scroll-margin-top: 76px !important;
-        padding: 55px 0 !important;
+        scroll-margin-top: 80px !important;
+        padding: 50px 0 !important;
         position: relative;
         z-index: 1;
         width: 100% !important;
@@ -1269,7 +1370,7 @@
       }
 
       .section-header-compact {
-        margin: 0 auto 32px auto !important;
+        margin: 0 auto 28px auto !important;
         padding: 0 8px;
       }
       .section-title {
@@ -1322,6 +1423,11 @@
       }
 
       /* Tenbin Metric Grid */
+      .tenbin-metrics-section {
+        padding: 30px 0 45px 0 !important;
+        margin-bottom: 20px !important;
+        border-bottom: 1px solid var(--border-subtle) !important;
+      }
       .tenbin-metrics-grid {
         grid-template-columns: 1fr !important;
         gap: 12px !important;
@@ -1335,33 +1441,19 @@
         box-sizing: border-box !important;
       }
 
-      /* Comparison Section (Fix Horizontal Truncation) */
+      /* Comparison Section (Render Clean Mobile Cards on Mobile) */
+      .micro-comp-section {
+        scroll-margin-top: 85px !important;
+        padding: 45px 0 !important;
+      }
       .comp-table-container {
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        padding-bottom: 10px !important;
-        border-radius: var(--radius-lg) !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        background: rgba(11, 14, 22, 0.94) !important;
-        border: 1px solid var(--border-subtle) !important;
-        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5) !important;
-        box-sizing: border-box !important;
-      }
-      .micro-comp-card {
-        min-width: 580px !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-      }
-      .comp-row {
-        grid-template-columns: 1.4fr 1.1fr 1fr 1fr !important;
-        padding: 12px 14px !important;
-        font-size: 12px !important;
+        display: none !important;
       }
       .comp-swipe-hint {
-        display: block !important;
+        display: none !important;
+      }
+      .comp-mobile-cards {
+        display: flex !important;
       }
 
       /* Workflows & Institutional Cards (100% Full-Width, Never Showing Half) */
@@ -1791,6 +1883,164 @@
           <div><span class="comp-highlight">&lt; 100k gas (0x100 Precompile)</span></div>
           <div class="comp-muted">21k gas (Unsafe EOA)</div>
           <div class="comp-muted">350k+ gas (Emulated)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile-Native Comparison Cards (100% Clean Mobile Stack, Zero Overlap) -->
+    <div class="comp-mobile-cards">
+      <!-- Card 1: Signing Latency -->
+      <div class="comp-m-card">
+        <div class="comp-m-header">
+          <div class="comp-m-title">Signing Latency</div>
+          <span class="comp-m-tag">Speed</span>
+        </div>
+        <div class="comp-m-rows">
+          <div class="comp-m-row comp-m-winner">
+            <div class="comp-m-label">
+              <span class="comp-m-dot active"></span>
+              <span>Passkey Smart Account</span>
+            </div>
+            <span class="comp-highlight">0.4s (Touch ID)</span>
+          </div>
+          <div class="comp-m-row">
+            <div class="comp-m-label">
+              <span class="comp-m-dot"></span>
+              <span>Standard EOA (MetaMask)</span>
+            </div>
+            <span class="comp-muted">15.0s (Password)</span>
+          </div>
+          <div class="comp-m-row">
+            <div class="comp-m-label">
+              <span class="comp-m-dot"></span>
+              <span>Multisig (Safe)</span>
+            </div>
+            <span class="comp-muted">4+ hours (Coordination)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Malware Exposure -->
+      <div class="comp-m-card">
+        <div class="comp-m-header">
+          <div class="comp-m-title">Infostealer Malware Exposure</div>
+          <span class="comp-m-tag">Security</span>
+        </div>
+        <div class="comp-m-rows">
+          <div class="comp-m-row comp-m-winner">
+            <div class="comp-m-label">
+              <span class="comp-m-dot active"></span>
+              <span>Passkey Smart Account</span>
+            </div>
+            <span class="comp-highlight">0% (Hardware Enclave)</span>
+          </div>
+          <div class="comp-m-row">
+            <div class="comp-m-label">
+              <span class="comp-m-dot"></span>
+              <span>Standard EOA (MetaMask)</span>
+            </div>
+            <span class="comp-muted">100% (Exposed in RAM)</span>
+          </div>
+          <div class="comp-m-row">
+            <div class="comp-m-label">
+              <span class="comp-m-dot"></span>
+              <span>Multisig (Safe)</span>
+            </div>
+            <span class="comp-muted">Partial (1 EOA breach)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Autonomous Policy Firewall -->
+      <div class="comp-m-card">
+        <div class="comp-m-header">
+          <div class="comp-m-title">Autonomous Policy Firewall</div>
+          <span class="comp-m-tag">Automation</span>
+        </div>
+        <div class="comp-m-rows">
+          <div class="comp-m-row comp-m-winner">
+            <div class="comp-m-label">
+              <span class="comp-m-dot active"></span>
+              <span>Passkey Smart Account</span>
+            </div>
+            <span class="comp-highlight">Native On-Chain (1-Sig/2-Sig)</span>
+          </div>
+          <div class="comp-m-row">
+            <div class="comp-m-label">
+              <span class="comp-m-dot"></span>
+              <span>Standard EOA (MetaMask)</span>
+            </div>
+            <span class="comp-muted">None</span>
+          </div>
+          <div class="comp-m-row">
+            <div class="comp-m-label">
+              <span class="comp-m-dot"></span>
+              <span>Multisig (Safe)</span>
+            </div>
+            <span class="comp-muted">Manual Approvals</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Emergency Panic Freeze -->
+      <div class="comp-m-card">
+        <div class="comp-m-header">
+          <div class="comp-m-title">Emergency Panic Freeze</div>
+          <span class="comp-m-tag">Safety</span>
+        </div>
+        <div class="comp-m-rows">
+          <div class="comp-m-row comp-m-winner">
+            <div class="comp-m-label">
+              <span class="comp-m-dot active"></span>
+              <span>Passkey Smart Account</span>
+            </div>
+            <span class="comp-highlight">1-Sig Lock · 2-Sig Unlock</span>
+          </div>
+          <div class="comp-m-row">
+            <div class="comp-m-label">
+              <span class="comp-m-dot"></span>
+              <span>Standard EOA (MetaMask)</span>
+            </div>
+            <span class="comp-muted">None</span>
+          </div>
+          <div class="comp-m-row">
+            <div class="comp-m-label">
+              <span class="comp-m-dot"></span>
+              <span>Multisig (Safe)</span>
+            </div>
+            <span class="comp-muted">Requires Full Quorum</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5: Curve Gas Optimization -->
+      <div class="comp-m-card">
+        <div class="comp-m-header">
+          <div class="comp-m-title">Curve Gas Optimization</div>
+          <span class="comp-m-tag">Efficiency</span>
+        </div>
+        <div class="comp-m-rows">
+          <div class="comp-m-row comp-m-winner">
+            <div class="comp-m-label">
+              <span class="comp-m-dot active"></span>
+              <span>Passkey Smart Account</span>
+            </div>
+            <span class="comp-highlight">&lt; 100k gas (RIP-7212)</span>
+          </div>
+          <div class="comp-m-row">
+            <div class="comp-m-label">
+              <span class="comp-m-dot"></span>
+              <span>Standard EOA (MetaMask)</span>
+            </div>
+            <span class="comp-muted">21k gas (Unsafe EOA)</span>
+          </div>
+          <div class="comp-m-row">
+            <div class="comp-m-label">
+              <span class="comp-m-dot"></span>
+              <span>Multisig (Safe)</span>
+            </div>
+            <span class="comp-muted">350k+ gas (Emulated)</span>
+          </div>
         </div>
       </div>
     </div>
