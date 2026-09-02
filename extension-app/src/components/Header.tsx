@@ -4,7 +4,7 @@ import { OptionsMenu } from './OptionsMenu';
 import { PanelRight, Copy, Check } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { shortAccount, copyAddress, copied, network } = useWallet();
+  const { shortAccount, copyAddress, copied } = useWallet();
 
   const handleOpenSidePanel = () => {
     try {
@@ -19,7 +19,7 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between px-3.5 py-2.5 bg-base-200/90 backdrop-blur-md border-b border-base-content/10">
+    <header className="sticky top-0 z-30 flex items-center justify-between px-3 py-2.5 bg-[#10121A]/85 backdrop-blur-xl border-b border-white/[0.08]">
       {/* Brand & Account Chip */}
       <div className="flex items-center gap-2">
         {/* Haptix Icon */}
@@ -51,31 +51,31 @@ export const Header: React.FC = () => {
         {/* Account Pill */}
         <button
           onClick={copyAddress}
-          className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-base-100/90 hover:bg-base-300/80 border border-base-content/10 text-[11px] font-mono font-medium transition-all active:scale-95"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-[11px] font-mono font-medium text-[#E2E8F0] transition-all active:scale-95"
           title="Click to copy address"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
           <span>{shortAccount}</span>
           {copied ? (
-            <Check className="w-3 h-3 text-success" />
+            <Check className="w-3 h-3 text-[#10B981]" />
           ) : (
-            <Copy className="w-3 h-3 text-base-content/50" />
+            <Copy className="w-3 h-3 text-[#94A3B8]" />
           )}
         </button>
       </div>
 
       {/* Header Right Actions */}
-      <div className="flex items-center gap-1.5">
-        {/* Network Badge */}
-        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-baseBlue/10 border border-baseBlue/20 text-baseBlue text-[10.5px] font-semibold">
-          <span className="w-1.5 h-1.5 rounded-full bg-baseBlue" />
-          <span>{network}</span>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {/* Network Badge - No Wrap, exact pill from Image 2 */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#0052FF]/15 border border-[#0052FF]/30 text-[#38BDF8] text-[11px] font-semibold whitespace-nowrap flex-shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0052FF]" />
+          <span>Base Sepolia</span>
         </div>
 
         {/* Sidepanel Button */}
         <button
           onClick={handleOpenSidePanel}
-          className="w-7 h-7 rounded-lg bg-base-200/80 hover:bg-base-300 border border-base-content/10 flex items-center justify-center text-base-content/70 hover:text-base-content transition-all active:scale-95"
+          className="w-7 h-7 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 flex items-center justify-center text-[#94A3B8] hover:text-white transition-all active:scale-95 flex-shrink-0"
           title="Open Side Panel"
         >
           <PanelRight className="w-3.5 h-3.5" />

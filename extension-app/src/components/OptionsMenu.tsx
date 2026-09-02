@@ -58,18 +58,18 @@ export const OptionsMenu: React.FC = () => {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* Options ▾ Button (DaisyUI style) */}
+      {/* Options ▾ Button (Exact Image 2 Style) */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="btn btn-xs sm:btn-sm bg-base-200/80 hover:bg-base-300 border border-base-content/10 shadow-sm text-xs font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1.5 transition-all active:scale-95"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-b from-white/[0.09] to-white/[0.04] hover:from-white/[0.15] hover:to-white/[0.07] border border-white/[0.14] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.18),0_1px_3px_rgba(0,0,0,0.4)] text-[#F1F5F9] text-[11.5px] font-semibold transition-all active:scale-95 select-none whitespace-nowrap"
       >
         <span>Options</span>
-        <ChevronDown className={`w-3.5 h-3.5 text-base-content/60 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-[#94A3B8] transition-transform duration-200 ${isOpen ? 'rotate-180 text-white' : ''}`} />
       </button>
 
       {/* Floating Dropdown Panel */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-56 p-1.5 rounded-xl bg-base-200/95 backdrop-blur-xl border border-base-content/10 shadow-2xl z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 top-full mt-2 w-56 p-1.5 rounded-xl bg-[#12141B]/98 backdrop-blur-2xl border border-white/[0.13] shadow-[0_18px_45px_-8px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.06),inset_0_1px_0_0_rgba(255,255,255,0.15)] z-50 flex flex-col gap-0.5 animate-in fade-in zoom-in-95 duration-150">
           {/* Copy Address */}
           <button
             onClick={() => {
