@@ -330,10 +330,13 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .app-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
     background: rgba(14, 16, 23, 0.75);
     padding: 5px;
@@ -343,7 +346,8 @@
   }
 
   .tab-btn {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 110px;
     padding: 10px 14px;
     background: none;
     border: none;
@@ -354,6 +358,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     font-family: var(--font-main);
+    text-align: center;
   }
 
   .tab-btn.active {
@@ -362,7 +367,7 @@
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
   }
 
-  .tab-view { display: none; }
+  .tab-view { display: none; width: 100%; min-width: 0; }
   .tab-view.active { display: block; }
 
   .transfer-card {
@@ -372,6 +377,9 @@
     padding: 28px;
     box-shadow: var(--shadow-md);
     backdrop-filter: blur(12px);
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   /* Asset Switcher */
@@ -535,11 +543,13 @@
   /* Receipt Box */
   .userop-receipt-box {
     margin-top: 20px;
-    background: #000000;
-    border: 1px solid var(--border-light);
+    background: #0B0E14;
+    border: 1px solid rgba(96, 165, 250, 0.3);
     border-radius: var(--radius-lg);
     padding: 20px;
     color: #FFF;
+    max-width: 100%;
+    overflow: hidden;
   }
 
   .userop-receipt-box pre {
@@ -551,7 +561,11 @@
     font-family: var(--font-mono);
     font-size: 11.5px;
     color: #93C5FD;
-    overflow-x: auto;
+    max-height: 240px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    word-break: break-all;
   }
 </style>
 </head>
@@ -731,8 +745,18 @@
 
           <!-- UserOp & Transaction Receipt -->
           <div class="userop-receipt-box" id="appReceiptArea" style="display:none;">
+            <div id="txSuccessBanner" style="display:none;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.4);border-radius:8px;padding:14px;margin-bottom:14px;">
+              <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--accent-emerald);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+                Transaction Confirmed on Base Sepolia!
+              </div>
+              <div style="font-size:12px;color:#94A3B8;margin-top:6px;word-break:break-all;font-family:var(--font-mono);" id="txHashDisplay"></div>
+              <a href="#" target="_blank" id="txBaseScanLink" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;">
+                View on BaseScan Explorer ↗
+              </a>
+            </div>
             <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;font-weight:700;text-transform:uppercase;color:#60A5FA;">UserOp Verified &amp; Signed</span>
+              <span style="font-size:12px;font-weight:700;text-transform:uppercase;color:#60A5FA;">UserOp Execution Details</span>
               <span style="font-size:11px;color:#94A3B8;font-family:var(--font-mono);">EntryPoint v0.7</span>
             </div>
             <pre id="appUserOpCode"></pre>
@@ -1001,6 +1025,27 @@ const $ = id => document.getElementById(id);
 let selectedAsset = 'ETH';
 let storedKeys = JSON.parse(localStorage.getItem('passkey_credentials') || '{}');
 const accountAddr = CONFIG.defaultAccount;
+
+async function refreshOnChainBalance() {
+  try {
+    if ($('sideAccountShort')) {
+      $('sideAccountShort').textContent = accountAddr.slice(0, 10) + '...' + accountAddr.slice(-4);
+    }
+    const res = await fetch(CONFIG.rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [accountAddr, 'latest'] })
+    }).then(r => r.json());
+    if (res?.result) {
+      const balWei = BigInt(res.result);
+      const balEth = (Number(balWei) / 1e18).toFixed(4);
+      if ($('sidePortfolioEth')) $('sidePortfolioEth').textContent = balEth + ' ETH';
+    }
+  } catch (e) {
+    console.warn('Balance refresh error:', e);
+  }
+}
+refreshOnChainBalance();
 
 // Refresh Passkey Enrollment Status in UI
 function refreshKeyStatus() {
@@ -1493,8 +1538,15 @@ $('appSignSubmitBtn').onclick = async () => {
     }, null, 2);
 
     if (bundlerTxHash) {
+      if ($('txSuccessBanner')) {
+        $('txSuccessBanner').style.display = 'block';
+        $('txHashDisplay').textContent = 'Tx: ' + bundlerTxHash;
+        $('txBaseScanLink').href = 'https://sepolia.basescan.org/tx/' + bundlerTxHash;
+      }
+      await refreshOnChainBalance();
       alert(`✓ UserOp successfully executed on Base Sepolia!\nTx: ${bundlerTxHash}`);
     } else {
+      if ($('txSuccessBanner')) $('txSuccessBanner').style.display = 'none';
       alert(`UserOp Signed with Passkey!\n\n${bundlerDiagnostic || 'Note: Configure a funded account and bundler API key for live broadcast.'}`);
     }
   } catch (e) {
