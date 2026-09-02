@@ -939,10 +939,10 @@
               </div>
               <div>
                 <div style="font-weight:700;color:var(--text-white);font-size:14px;">Signer #0: Primary Biometric</div>
-                <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="key0Status">Enrolled · Touch ID</div>
+                <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="key0Status">Not enrolled in browser</div>
               </div>
             </div>
-            <button class="action-btn-primary" style="padding:6px 14px;font-size:12px;" id="enrollKey0Btn">Re-Enroll #0</button>
+            <button class="action-btn-primary" style="padding:6px 14px;font-size:12px;" id="enrollKey0Btn">Enroll Biometric #0</button>
           </div>
 
           <div class="key-item">
@@ -952,10 +952,16 @@
               </div>
               <div>
                 <div style="font-weight:700;color:var(--text-white);font-size:14px;">Signer #1: Backup Quorum Key</div>
-                <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="key1Status">Enrolled · YubiKey</div>
+                <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="key1Status">Not enrolled in browser</div>
               </div>
             </div>
-            <button class="action-btn-primary" style="padding:6px 14px;font-size:12px;background:var(--accent-amber);color:#000;" id="enrollKey1Btn">Re-Enroll #1</button>
+            <button class="action-btn-primary" style="padding:6px 14px;font-size:12px;background:var(--accent-amber);color:#000;" id="enrollKey1Btn">Enroll Backup #1</button>
+          </div>
+
+          <div style="margin-top:14px;padding:12px;background:#000;border:1px solid var(--border-light);border-radius:8px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Fresh Deployment Public Keys</div>
+            <textarea id="freshKeysDisplay" style="width:100%;height:110px;background:transparent;border:none;color:#38BDF8;font-family:var(--font-mono);font-size:11px;resize:none;" readonly placeholder="Enroll Key #0 and Key #1 above to generate your on-chain public keys..."></textarea>
+            <button class="action-btn-primary" id="btnCopyDeployKeys" style="margin-top:8px;width:100%;font-size:12px;padding:8px;">Copy Keys for Contract Deployment</button>
           </div>
         </div>
       </div>
@@ -999,7 +1005,7 @@ const accountAddr = CONFIG.defaultAccount;
 // Refresh Passkey Enrollment Status in UI
 function refreshKeyStatus() {
   if (storedKeys[0]) {
-    $('key0Status').textContent = `Enrolled (${storedKeys[0].id.slice(0, 10)}...) · Touch ID`;
+    $('key0Status').textContent = `Enrolled · Touch ID`;
     $('enrollKey0Btn').textContent = 'Re-Enroll #0';
   } else {
     $('key0Status').textContent = 'Not enrolled in browser';
@@ -1007,14 +1013,37 @@ function refreshKeyStatus() {
   }
 
   if (storedKeys[1]) {
-    $('key1Status').textContent = `Enrolled (${storedKeys[1].id.slice(0, 10)}...) · Quorum Key`;
+    $('key1Status').textContent = `Enrolled · Quorum Key`;
     $('enrollKey1Btn').textContent = 'Re-Enroll #1';
   } else {
     $('key1Status').textContent = 'Not enrolled in browser';
     $('enrollKey1Btn').textContent = 'Enroll Backup #1';
   }
+
+  let codeStr = '';
+  if (storedKeys[0]?.x && storedKeys[0]?.y) {
+    codeStr += `SIGNER0_X = ${storedKeys[0].x};\nSIGNER0_Y = ${storedKeys[0].y};\n`;
+  }
+  if (storedKeys[1]?.x && storedKeys[1]?.y) {
+    codeStr += `SIGNER1_X = ${storedKeys[1].x};\nSIGNER1_Y = ${storedKeys[1].y};\n`;
+  }
+  if ($('freshKeysDisplay')) {
+    $('freshKeysDisplay').value = codeStr || 'Enroll Key #0 and Key #1 above to generate your on-chain public keys...';
+  }
 }
 refreshKeyStatus();
+
+if ($('btnCopyDeployKeys')) {
+  $('btnCopyDeployKeys').onclick = () => {
+    const val = $('freshKeysDisplay').value;
+    if (!val || val.startsWith('Enroll')) {
+      alert('Please enroll Key #0 and Key #1 first.');
+      return;
+    }
+    navigator.clipboard.writeText(val);
+    alert('✓ Copied deployment keys to clipboard! Paste them in chat to deploy your new contract.');
+  };
+}
 
 // Enrollment Buttons
 $('enrollKey0Btn').onclick = async () => {
