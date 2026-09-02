@@ -7,8 +7,14 @@ import {
   registerPasskey,
   encodeSignaturePayload, 
   sendUserOpToBundler,
+  identifySignerId,
   pad64
 } from './userop.js';
+
+const ENROLLED_SIGNERS = [
+  { x: '0xae5316b13623a2e70ed4cf6e3fe5356eeea7fe05a18ba0f86a66d3dfc9a8d826', y: '0x19c60579b3b5d02a6cfe835ac591bcff782355bdc03b2f5aa29b48a784a4b52d' },
+  { x: '0xa93626e906df62e77f7f3ed41dcbe0145f02a1d684a771d3f8e10350a536daa8', y: '0x6c3bbdc0764ed1da9890ed719306d0c909e231a13fd0be53e88be740380e02fa' }
+];
 
 const $ = id => document.getElementById(id);
 
@@ -287,14 +293,18 @@ const accountAddr = CONFIG.defaultAccount;
 
         $('btnExecuteSend').textContent = 'Key #0 (Touch ID)...';
         const sig0 = await signWithPasskey(userOpHash);
-        const signerIds = [0];
+        const detectedId0 = await identifySignerId(sig0, ENROLLED_SIGNERS);
+        const signerIds = [detectedId0];
         const sigs = [sig0];
 
         const isQuorum = (asset === 'ETH' && valWei >= 10000000000000000n) || (asset === 'USDC' && parseFloat(amountStr) > 50);
         if (isQuorum) {
           $('btnExecuteSend').textContent = 'Key #1 (Backup Quorum)...';
           const sig1 = await signWithPasskey(userOpHash);
-          signerIds.push(1);
+          const detectedId1 = await identifySignerId(sig1, ENROLLED_SIGNERS);
+          const nextId = (detectedId1 === detectedId0) ? (detectedId0 === 0 ? 1 : 0) : detectedId1;
+          signerIds.push(nextId);
+          signerIds.sort((a, b) => a - b);
           sigs.push(sig1);
         }
 
@@ -758,9 +768,10 @@ async function showApprovalMode(req) {
 
         const userOpHash = await getUserOpHash(CONFIG.rpcUrl, CONFIG.entryPoint, op);
 
-        $('approveWithPasskeyBtn').textContent = 'Biometric Touch ID (Key #0)...';
+        $('approveWithPasskeyBtn').textContent = 'Biometric Passkey...';
         const sig0 = await signWithPasskey(userOpHash);
-        const signerIds = [0];
+        const detectedId0 = await identifySignerId(sig0, ENROLLED_SIGNERS);
+        const signerIds = [detectedId0];
         const sigs = [sig0];
 
         const pStore = await chrome.storage.local.get(['isFrozen', 'allowedAddresses']);
@@ -771,7 +782,10 @@ async function showApprovalMode(req) {
         if (isQuorum) {
           $('approveWithPasskeyBtn').textContent = 'Quorum Prompt: Key #1 (Backup)...';
           const sig1 = await signWithPasskey(userOpHash);
-          signerIds.push(1);
+          const detectedId1 = await identifySignerId(sig1, ENROLLED_SIGNERS);
+          const nextId = (detectedId1 === detectedId0) ? (detectedId0 === 0 ? 1 : 0) : detectedId1;
+          signerIds.push(nextId);
+          signerIds.sort((a, b) => a - b);
           sigs.push(sig1);
         }
 

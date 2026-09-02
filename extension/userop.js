@@ -1,4 +1,5 @@
 // WebAuthn, ERC-4337 UserOp Builder, and Bundler Client for Passkey Smart Wallet
+import { p256 } from './p256.js';
 
 const P256_N = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
 
@@ -425,4 +426,35 @@ export async function pollUserOpReceipt(bundlerUrl, userOpHash, maxAttempts = 20
     }
   }
   return null;
+}
+
+/**
+ * Automatically identifies which on-chain signer index (0, 1, etc.) produced the passkey signature.
+ */
+export async function identifySignerId(sig, signers) {
+  try {
+    const authDataBytes = fromHex(sig.authenticatorData);
+    const cdBytes = new TextEncoder().encode(sig.clientDataJSON);
+    const cdHash = new Uint8Array(await crypto.subtle.digest('SHA-256', cdBytes));
+    const total = new Uint8Array(authDataBytes.length + cdHash.length);
+    total.set(authDataBytes, 0);
+    total.set(cdHash, authDataBytes.length);
+    const msgHash = new Uint8Array(await crypto.subtle.digest('SHA-256', total));
+
+    const signature = new p256.Signature(BigInt(sig.r), BigInt(sig.s));
+
+    for (let i = 0; i < signers.length; i++) {
+      const s = signers[i];
+      if (!s || !s.x || !s.y) continue;
+      const xBig = BigInt(s.x);
+      const yBig = BigInt(s.y);
+      const pub = new p256.ProjectivePoint(xBig, yBig, 1n);
+      if (p256.verify(signature, msgHash, pub.toHex(false))) {
+        return i;
+      }
+    }
+  } catch (e) {
+    console.warn('Signer auto-identification fallback:', e);
+  }
+  return 0;
 }
