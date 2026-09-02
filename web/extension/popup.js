@@ -262,13 +262,13 @@ const accountAddr = CONFIG.defaultAccount;
           callData = '0xb61d27f6' +
             target.replace(/^0x/,'').padStart(64, '0') +
             valWei.toString(16).padStart(64, '0') +
-            pad64(64) +
+            pad64(96) +
             pad64(0);
         } else {
           callData = '0xb61d27f6' +
             target.replace(/^0x/,'').padStart(64, '0') +
             valWei.toString(16).padStart(64, '0') +
-            pad64(64) +
+            pad64(96) +
             pad64(innerCall.length / 2) +
             innerCall.padEnd(Math.ceil(innerCall.length / 64) * 64, '0');
         }
@@ -483,7 +483,7 @@ const accountAddr = CONFIG.defaultAccount;
         const callData = '0xb61d27f6' +
           accountAddr.replace(/^0x/,'').padStart(64, '0') +
           pad64(0) +
-          pad64(64) +
+          pad64(96) +
           pad64(freezeCalldata.slice(2).length / 2) +
           freezeCalldata.slice(2).padEnd(64, '0');
 
@@ -524,7 +524,7 @@ const accountAddr = CONFIG.defaultAccount;
         const callData = '0xb61d27f6' +
           accountAddr.replace(/^0x/,'').padStart(64, '0') +
           pad64(0) +
-          pad64(64) +
+          pad64(96) +
           pad64(unfreezeCalldata.slice(2).length / 2) +
           unfreezeCalldata.slice(2).padEnd(64, '0');
 
@@ -730,13 +730,13 @@ async function showApprovalMode(req) {
           callData = '0xb61d27f6' +
             dest.replace(/^0x/,'').padStart(64, '0') +
             valWei.toString(16).padStart(64, '0') +
-            pad64(64) +
+            pad64(96) +
             pad64(0);
         } else {
           callData = '0xb61d27f6' +
             dest.replace(/^0x/,'').padStart(64, '0') +
             valWei.toString(16).padStart(64, '0') +
-            pad64(64) +
+            pad64(96) +
             pad64(innerCall.length / 2) +
             innerCall.padEnd(Math.ceil(innerCall.length / 64) * 64, '0');
         }

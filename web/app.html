@@ -1398,7 +1398,7 @@ $('appSignSubmitBtn').onclick = async () => {
       callData = '0xb61d27f6' +
         recipient.replace(/^0x/,'').padStart(64, '0') +
         valWei.toString(16).padStart(64, '0') +
-        pad64(64) +
+        pad64(96) +
         pad64(0);
     } else {
       const valRaw = BigInt(Math.floor(amt * 1e6));
@@ -1409,7 +1409,7 @@ $('appSignSubmitBtn').onclick = async () => {
       callData = '0xb61d27f6' +
         CONFIG.usdc.replace(/^0x/,'').padStart(64, '0') +
         pad64(0) +
-        pad64(64) +
+        pad64(96) +
         pad64(usdcTransferData.length / 2) +
         usdcTransferData.padEnd(Math.ceil(usdcTransferData.length / 64) * 64, '0');
     }
