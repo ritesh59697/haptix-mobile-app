@@ -120,20 +120,27 @@
     const params = new URLSearchParams(window.location.search);
     const hash = params.get('hash');
     const extId = params.get('extId');
+    const keyIndex = parseInt(params.get('keyIndex') || '0', 10);
 
     if (hash) {
       document.getElementById('hashDisplay').textContent = hash.slice(0, 14) + '...' + hash.slice(-8);
     }
 
+    if (keyIndex === 1) {
+      document.querySelector('h2').textContent = 'Quorum Verification (Key #1)';
+      document.getElementById('statusMsg').textContent = 'Touch ID prompt is active for Backup Quorum Passkey #1.';
+    }
+
     const storedKeys = JSON.parse(localStorage.getItem('passkey_credentials') || '{}');
-    const cred0 = storedKeys[0]?.rawId ? [storedKeys[0].rawId] : (storedKeys[0]?.id ? [storedKeys[0].id] : []);
+    const targetKey = storedKeys[keyIndex] || storedKeys[0];
+    const cred = targetKey?.rawId ? [targetKey.rawId] : (targetKey?.id ? [targetKey.id] : []);
 
     async function doAuth() {
       try {
-        document.getElementById('statusMsg').textContent = 'Waiting for your Touch ID...';
+        document.getElementById('statusMsg').textContent = `Waiting for Passkey #${keyIndex}...`;
         document.getElementById('btnTriggerAuth').disabled = true;
 
-        const sig = await signWithPasskey(hash, cred0);
+        const sig = await signWithPasskey(hash, cred);
 
         document.getElementById('statusMsg').style.display = 'none';
         document.getElementById('btnTriggerAuth').style.display = 'none';
@@ -141,13 +148,13 @@
 
         // Deliver result via window.opener
         if (window.opener) {
-          window.opener.postMessage({ type: 'HAPTIX_PASSKEY_SIG', hash, sig }, '*');
+          window.opener.postMessage({ type: 'HAPTIX_PASSKEY_SIG', hash, keyIndex, sig }, '*');
         }
 
         // Deliver result via chrome.runtime if extension ID passed
         if (extId && window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
           try {
-            chrome.runtime.sendMessage(extId, { type: 'HAPTIX_PASSKEY_SIG', hash, sig });
+            chrome.runtime.sendMessage(extId, { type: 'HAPTIX_PASSKEY_SIG', hash, keyIndex, sig });
           } catch (e) {
             console.warn('Direct extension message error:', e);
           }

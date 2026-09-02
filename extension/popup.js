@@ -22,10 +22,10 @@ let currentRequest = null;
 const accountAddr = CONFIG.defaultAccount;
 
 // Web Enclave Delegation: delegates WebAuthn prompt to localhost:57547 to access Chrome Profile passkeys
-async function signWithPasskeyDelegated(userOpHash) {
+async function signWithPasskeyDelegated(userOpHash, keyIndex = 0) {
   return new Promise((resolve, reject) => {
     const extId = (typeof chrome !== 'undefined' && chrome.runtime) ? chrome.runtime.id : '';
-    const signUrl = `http://localhost:57547/sign?hash=${userOpHash}&extId=${extId}`;
+    const signUrl = `http://localhost:57547/sign?hash=${userOpHash}&keyIndex=${keyIndex}&extId=${extId}`;
     const win = window.open(signUrl, 'HaptixEnclaveSigner', 'width=420,height=520,menubar=no,toolbar=no,location=no');
 
     let isDone = false;
@@ -39,14 +39,14 @@ async function signWithPasskeyDelegated(userOpHash) {
     }
 
     function onMessage(e) {
-      if (e.data?.type === 'HAPTIX_PASSKEY_SIG' && e.data.hash === userOpHash) {
+      if (e.data?.type === 'HAPTIX_PASSKEY_SIG' && e.data.hash === userOpHash && (e.data.keyIndex === undefined || e.data.keyIndex === keyIndex)) {
         cleanup();
         resolve(e.data.sig);
       }
     }
 
     function onExtMessage(msg) {
-      if (msg?.type === 'HAPTIX_PASSKEY_SIG' && msg.hash === userOpHash) {
+      if (msg?.type === 'HAPTIX_PASSKEY_SIG' && msg.hash === userOpHash && (msg.keyIndex === undefined || msg.keyIndex === keyIndex)) {
         cleanup();
         resolve(msg.sig);
       }
@@ -345,7 +345,7 @@ async function signWithPasskeyDelegated(userOpHash) {
         const isQuorum = (asset === 'ETH' && valWei >= 10000000000000000n) || (asset === 'USDC' && parseFloat(amountStr) > 50);
         if (isQuorum) {
           $('btnExecuteSend').textContent = 'Key #1 (Backup Quorum)...';
-          const sig1 = await signWithPasskey(userOpHash);
+          const sig1 = await signWithPasskeyDelegated(userOpHash, 1);
           const detectedId1 = await identifySignerId(sig1, ENROLLED_SIGNERS);
           const nextId = (detectedId1 === detectedId0) ? (detectedId0 === 0 ? 1 : 0) : detectedId1;
           signerIds.push(nextId);
@@ -826,7 +826,7 @@ async function showApprovalMode(req) {
         const isQuorum = isFrozen || isUntrusted || (valWei >= 10000000000000000n) || (innerCall.length > 0);
         if (isQuorum) {
           $('approveWithPasskeyBtn').textContent = 'Quorum Prompt: Key #1 (Backup)...';
-          const sig1 = await signWithPasskey(userOpHash);
+          const sig1 = await signWithPasskeyDelegated(userOpHash, 1);
           const detectedId1 = await identifySignerId(sig1, ENROLLED_SIGNERS);
           const nextId = (detectedId1 === detectedId0) ? (detectedId0 === 0 ? 1 : 0) : detectedId1;
           signerIds.push(nextId);
