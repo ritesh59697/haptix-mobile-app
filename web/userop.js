@@ -322,20 +322,45 @@ export async function sendUserOpToBundler(bundlerUrl, packedOp, entryPointAddres
     signature: packedOp.signature
   };
 
-  const response = await fetch(bundlerUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: Date.now(),
-      method: 'eth_sendUserOperation',
-      params: [rpcUserOp, entryPointAddress]
-    })
-  });
+  let response;
+  try {
+    response = await fetch(bundlerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: Date.now(),
+        method: 'eth_sendUserOperation',
+        params: [rpcUserOp, entryPointAddress]
+      })
+    });
+  } catch (netErr) {
+    throw new Error(`Bundler Network Connection Failed: ${netErr.message}. Check your bundler endpoint URL.`);
+  }
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(`Bundler Authentication Failed (HTTP ${response.status}): Missing or invalid API key. Please configure a valid Base Sepolia bundler endpoint in Settings.`);
+    }
+    throw new Error(`Bundler HTTP Error ${response.status}: ${response.statusText}`);
+  }
 
   const json = await response.json();
   if (json.error) {
-    throw new Error(`Bundler Error (${json.error.code}): ${json.error.message}`);
+    const msg = json.error.message || '';
+    if (msg.includes('AA21')) {
+      throw new Error(`EntryPoint Revert [AA21]: Account does not have enough native ETH or EntryPoint deposit to pay gas prefund. Fund ${packedOp.sender} with Base Sepolia ETH.`);
+    }
+    if (msg.includes('AA22')) {
+      throw new Error(`EntryPoint Revert [AA22]: Operation expired or not due (timestamp outside window).`);
+    }
+    if (msg.includes('AA23')) {
+      throw new Error(`EntryPoint Revert [AA23]: Validation logic reverted inside account (policy violation or unauthorized agent).`);
+    }
+    if (msg.includes('AA24')) {
+      throw new Error(`EntryPoint Revert [AA24]: Signature verification failed.`);
+    }
+    throw new Error(`Bundler Error (${json.error.code}): ${msg}`);
   }
   return json.result;
 }

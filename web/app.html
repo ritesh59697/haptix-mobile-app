@@ -1427,16 +1427,37 @@ $('appSignSubmitBtn').onclick = async () => {
 
     op.signature = encodeSignaturePayload(signerIds, sigs);
 
+    $('appSignSubmitBtn').textContent = 'Submitting to Bundler RPC...';
+    let bundlerTxHash = null;
+    let receipt = null;
+    let bundlerDiagnostic = null;
+    try {
+      const uoHash = await sendUserOpToBundler(CONFIG.bundlerUrl, op, CONFIG.entryPoint);
+      $('appSignSubmitBtn').textContent = 'Waiting for On-Chain Receipt...';
+      receipt = await pollUserOpReceipt(CONFIG.bundlerUrl, uoHash, 15, 2000);
+      bundlerTxHash = receipt?.receipt?.transactionHash || uoHash;
+    } catch (bErr) {
+      bundlerDiagnostic = bErr.message;
+      console.warn('Bundler submission diagnostic:', bErr.message);
+    }
+
     $('appReceiptArea').style.display = 'block';
     $('appUserOpCode').textContent = JSON.stringify({
       userOpHash,
+      bundlerStatus: bundlerTxHash ? 'Broadcast Succeeded' : 'Bundler Execution Blocked',
+      transactionHash: bundlerTxHash || null,
+      diagnostic: bundlerDiagnostic || 'UserOp accepted by EntryPoint',
       sender: op.sender,
       nonce: '0x' + op.nonce.toString(16),
       signers: signerIds,
-      status: 'Submitted & Verified'
+      cryptographicVerification: 'Valid P-256 Curve Signatures'
     }, null, 2);
 
-    alert('✓ UserOp successfully signed and submitted with hardware passkey!');
+    if (bundlerTxHash) {
+      alert(`✓ UserOp successfully executed on Base Sepolia!\nTx: ${bundlerTxHash}`);
+    } else {
+      alert(`UserOp Signed with Passkey!\n\n${bundlerDiagnostic || 'Note: Configure a funded account and bundler API key for live broadcast.'}`);
+    }
   } catch (e) {
     alert('Execution error: ' + e.message);
   } finally {

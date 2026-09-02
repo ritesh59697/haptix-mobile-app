@@ -21,12 +21,14 @@ import {
   calculateAmountOutMinimum,
   parseTokenAmount,
   validateSessionConfig,
-  validateAgentSingleCall
+  validateAgentSingleCall,
+  checkPreflightBalance,
+  BundlerClient
 } from '../sdk/dist/index.js';
 
 const RPC_URL = process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org';
 const ENTRYPOINT = process.env.ENTRYPOINT_ADDRESS || CANONICAL_ENTRYPOINT_V07;
-const ACCOUNT = process.env.DEPLOYED_PASSKEY_ACCOUNT_ADDRESS || '0x34Aeb3A39fd1838D1C897F879EAB0a258507802c';
+const ACCOUNT = process.env.DEPLOYED_PASSKEY_ACCOUNT_ADDRESS || '0x8ad53FB549707686c1D6484119Fb2D5842A83229';
 const USDC = process.env.USDC_TOKEN_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 const BUNDLER_URL = process.env.BUNDLER_RPC_URL || 'https://api.pimlico.io/v2/84532/rpc?apikey=public';
 
@@ -223,6 +225,79 @@ async function runPhase3C() {
   };
   console.log(`   ✓ TEST D (Zero Slippage Uniswap Swap -> Rejected): PASSED`);
 
+  // TEST E: Pre-Flight Prefund Check
+  console.log('\n   Checking Pre-Flight Gas Prefund (ERC-4337 v0.7)...');
+  const preflight = await checkPreflightBalance(client, userOpA, ENTRYPOINT);
+  results.tests.TEST_E_PREFLIGHT_BALANCE_CHECK = {
+    status: preflight.ok ? 'PASSED' : 'BLOCKED_BY_PREFUND',
+    requiredPrefundWei: preflight.requiredPrefundWei.toString(),
+    accountBalanceWei: preflight.accountBalanceWei.toString(),
+    entryPointDepositWei: preflight.entryPointDepositWei.toString(),
+    hint: preflight.hint || 'Account has sufficient balance for gas prefund.'
+  };
+  if (preflight.ok) {
+    console.log(`   ✓ TEST E (Pre-Flight Prefund): SUFFICIENT (${preflight.totalAvailableWei} wei available)`);
+  } else {
+    console.log(`   ⚠️ TEST E (Pre-Flight Prefund): INSUFFICIENT (${preflight.error})`);
+  }
+
+  // TEST F: Real Bundler RPC Submission Attempt
+  console.log('\n   Attempting Real Bundler Submission via eth_sendUserOperation...');
+  let bundlerClient;
+  let broadcastSuccess = false;
+  let bundlerErrorMsg = null;
+  let txHash = null;
+
+  try {
+    bundlerClient = new BundlerClient(BUNDLER_URL, ENTRYPOINT, 84532);
+    const uoHash = await bundlerClient.sendUserOperation(userOpA);
+    console.log(`   ✓ Bundler accepted UserOp! Hash: ${uoHash}`);
+    console.log('   Waiting for on-chain receipt from bundler...');
+    const receipt = await bundlerClient.waitForUserOperationReceipt(uoHash, 30000, 2000);
+    txHash = receipt.receipt.transactionHash;
+    broadcastSuccess = true;
+    console.log(`   🎉 Transaction confirmed on Base Sepolia! TxHash: ${txHash}`);
+    results.tests.TEST_F_BUNDLER_BROADCAST = {
+      status: 'SUCCESS',
+      userOpHash: uoHash,
+      transactionHash: txHash,
+      blockNumber: receipt.receipt.blockNumber,
+      gasUsed: receipt.actualGasUsed.toString()
+    };
+  } catch (bErr) {
+    bundlerErrorMsg = bErr.message;
+    console.log(`   ⚠️ Bundler Submission Notice: ${bErr.message}`);
+    results.tests.TEST_F_BUNDLER_BROADCAST = {
+      status: 'BLOCKED',
+      reason: bundlerErrorMsg
+    };
+  }
+
+  // Final Verdict Calculation
+  if (broadcastSuccess) {
+    results.verdict = 'REAL TESTNET E2E VERIFIED';
+  } else {
+    results.verdict = 'TESTNET E2E BLOCKED';
+    results.blockers = [];
+    if (!preflight.ok) {
+      results.blockers.push({
+        gate: 'ACCOUNT_GAS_PREFUND (AA21)',
+        account: ACCOUNT,
+        balance: preflight.accountBalanceWei.toString(),
+        deposit: preflight.entryPointDepositWei.toString(),
+        required: preflight.requiredPrefundWei.toString(),
+        remedy: `Send at least 0.005 Base Sepolia ETH to account ${ACCOUNT}`
+      });
+    }
+    if (bundlerErrorMsg && (bundlerErrorMsg.includes('401') || bundlerErrorMsg.includes('Authentication') || bundlerErrorMsg.includes('apikey'))) {
+      results.blockers.push({
+        gate: 'BUNDLER_API_CREDENTIALS',
+        bundlerUrl: BUNDLER_URL.replace(/apikey=[^&]+/, 'apikey=REDACTED'),
+        remedy: 'Configure a valid Base Sepolia bundler endpoint (e.g. Pimlico or Alchemy API key in BUNDLER_RPC_URL)'
+      });
+    }
+  }
+
   // Save JSON Artifact
   const artifactDir = path.join(process.cwd(), 'artifacts', 'testnet');
   if (!fs.existsSync(artifactDir)) {
@@ -233,7 +308,7 @@ async function runPhase3C() {
   console.log(`\nMachine-readable results saved to: ${artifactPath}`);
 
   console.log('\n================================================================');
-  console.log('       🎉 PHASE 3C TESTNET EXECUTION GATE COMPLETED!            ');
+  console.log(`   FINAL TESTNET GATE VERDICT: ${results.verdict}`);
   console.log('================================================================\n');
 }
 

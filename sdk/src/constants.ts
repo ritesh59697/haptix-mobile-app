@@ -99,3 +99,39 @@ export const SUPPORTED_NETWORKS = {
     }
   }
 } as const;
+
+/**
+ * Standard ERC-4337 v0.7 EntryPoint Error Codes and Diagnostic Explanations
+ */
+export const ENTRYPOINT_ERRORS: Record<string, { code: string; title: string; hint: string }> = {
+  AA10: { code: 'AA10', title: 'Sender already constructed', hint: 'InitCode was provided but account already exists on-chain.' },
+  AA13: { code: 'AA13', title: 'InitCode failed or reverted', hint: 'The factory failed to deploy the account.' },
+  AA14: { code: 'AA14', title: 'InitCode must return sender address', hint: 'The factory did not return the expected sender address.' },
+  AA15: { code: 'AA15', title: 'InitCode must create sender', hint: 'After initCode execution, the sender address has no deployed bytecode.' },
+  AA20: { code: 'AA20', title: 'Account not deployed', hint: 'Sender has no code and no initCode was provided.' },
+  AA21: { code: 'AA21', title: "Didn't pay prefund", hint: 'The account has insufficient native ETH or EntryPoint deposit to cover the maximum gas cost.' },
+  AA22: { code: 'AA22', title: 'Expired or not due', hint: 'The operation time-range (validUntil/validAfter) is not satisfied at the current block timestamp.' },
+  AA23: { code: 'AA23', title: 'Reverted (or OOG)', hint: 'Account validation reverted inside validateUserOp (e.g. policy violation, unauthorized agent, or invalid parameters).' },
+  AA24: { code: 'AA24', title: 'Signature error', hint: 'The signature could not be verified, is malformed, or curve verification failed.' },
+  AA25: { code: 'AA25', title: 'Invalid account nonce', hint: 'The UserOperation nonce does not match the EntryPoint nonce sequence.' },
+  AA31: { code: 'AA31', title: 'Paymaster deposit too low', hint: 'The paymaster has insufficient deposit in EntryPoint to sponsor gas.' },
+  AA32: { code: 'AA32', title: 'Paymaster expired or not due', hint: 'Paymaster validation time-range expired.' },
+  AA33: { code: 'AA33', title: 'Paymaster reverted', hint: 'Paymaster validation logic reverted.' },
+  AA34: { code: 'AA34', title: 'Paymaster signature error', hint: 'Paymaster signature verification failed.' }
+};
+
+/**
+ * Standard ERC-4337 Bundler JSON-RPC Error Codes
+ */
+export const BUNDLER_RPC_ERRORS: Record<number, string> = {
+  [-32602]: 'Invalid method parameters',
+  [-32500]: 'Transaction rejected by bundler rules or simulation validation',
+  [-32501]: 'ExtCodeHash or opcode rule violation during ERC-7562 simulation',
+  [-32502]: 'Paymaster / Account reputation or stake too low',
+  [-32503]: 'UserOperation out of time-range (validUntil expired)',
+  [-32504]: 'Bundler throttling: too many operations from this entity',
+  [-32505]: 'Paymaster deposit too low for requested gas limits',
+  [-32506]: 'Unsupported EntryPoint version',
+  [-32507]: 'UserOperation rejected: existing op in mempool cannot be replaced (fee bump too low)'
+};
+

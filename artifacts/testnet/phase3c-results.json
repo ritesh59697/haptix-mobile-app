@@ -1,20 +1,20 @@
 {
-  "timestamp": "2026-09-02T02:36:37.780Z",
+  "timestamp": "2026-09-02T07:18:29.130Z",
   "chainId": 84532,
   "rpcUrl": "https://sepolia.base.org",
   "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-  "deployedAccount": "0x34Aeb3A39fd1838D1C897F879EAB0a258507802c",
+  "deployedAccount": "0x8ad53FB549707686c1D6484119Fb2D5842A83229",
   "testToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   "bundlerUrl": "https://api.pimlico.io/v2/84532/rpc?apikey=REDACTED",
   "onChainVerification": {
     "chainIdVerified": true,
     "entryPointBytecodeLength": 16035,
     "entryPointVerified": true,
-    "accountBytecodeLength": 17838,
+    "accountBytecodeLength": 23881,
     "configuredEntryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
     "signerCount": 2,
     "ethThresholdWei": "10000000000000000",
-    "isPhase3BytecodeDeployed": false,
+    "isPhase3BytecodeDeployed": true,
     "usdcBytecodeLength": 1798
   },
   "tests": {
@@ -22,7 +22,7 @@
       "status": "PASSED",
       "type": "Autonomous (0x01)",
       "amount": "20.00 USDC",
-      "userOpHash": "0x609b306c551e70b7bc2e16d9fffef5efd04a792bc7d3d4332af65cbec372ff13",
+      "userOpHash": "0xdb2d9ec43417d617ecd0407ac623b4e622d25dc47e96b946dd169ffdac8c5b8c",
       "policyCheck": {
         "valid": false,
         "requiresEscalation": false,
@@ -43,7 +43,33 @@
     "TEST_D_ZERO_SLIPPAGE_REJECT": {
       "status": "FAILED",
       "enforcement": "Zero-slippage swap rejected"
+    },
+    "TEST_E_PREFLIGHT_BALANCE_CHECK": {
+      "status": "BLOCKED_BY_PREFUND",
+      "requiredPrefundWei": "148000000000000",
+      "accountBalanceWei": "0",
+      "entryPointDepositWei": "0",
+      "hint": "The account has insufficient native ETH or EntryPoint deposit to cover the maximum gas cost."
+    },
+    "TEST_F_BUNDLER_BROADCAST": {
+      "status": "BLOCKED",
+      "reason": "Bundler Authentication Failed [HTTP 401]: Missing or invalid API key in bundler URL. Please configure a valid provider endpoint."
     }
   },
-  "verdict": "PARTIALLY TESTNET VERIFIED"
+  "verdict": "TESTNET E2E BLOCKED",
+  "blockers": [
+    {
+      "gate": "ACCOUNT_GAS_PREFUND (AA21)",
+      "account": "0x8ad53FB549707686c1D6484119Fb2D5842A83229",
+      "balance": "0",
+      "deposit": "0",
+      "required": "148000000000000",
+      "remedy": "Send at least 0.005 Base Sepolia ETH to account 0x8ad53FB549707686c1D6484119Fb2D5842A83229"
+    },
+    {
+      "gate": "BUNDLER_API_CREDENTIALS",
+      "bundlerUrl": "https://api.pimlico.io/v2/84532/rpc?apikey=REDACTED",
+      "remedy": "Configure a valid Base Sepolia bundler endpoint (e.g. Pimlico or Alchemy API key in BUNDLER_RPC_URL)"
+    }
+  ]
 }
