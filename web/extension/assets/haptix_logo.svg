@@ -1,0 +1,35 @@
+<svg width="120" height="36" viewBox="0 0 120 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="haptixGradLeft" x1="0%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#EC4899"/>
+      <stop offset="40%" stop-color="#D946EF"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="haptixGradRight" x1="50%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C084FC"/>
+      <stop offset="60%" stop-color="#0052FF"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="haptixDotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E879F9"/>
+      <stop offset="100%" stop-color="#0052FF"/>
+    </linearGradient>
+    <filter id="haptixGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.5" flood-color="#8B5CF6" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Stylized Gradient H Monogram -->
+  <g filter="url(#haptixGlow)">
+    <!-- Left Wing -->
+    <path d="M4 9C4 5.69 6.69 3 10 3H11C12.1 3 13 3.9 13 5V13.2L17.2 15.6L13 17.8V31C13 32.1 12.1 33 11 33H10C6.69 33 4 30.31 4 27V9Z" fill="url(#haptixGradLeft)"/>
+    <!-- Right Wing -->
+    <path d="M26 27C26 30.31 23.31 33 20 33H19C17.9 33 17 32.1 17 31V22.8L12.8 20.4L17 18.2V5C17 3.9 17.9 3 19 3H20C23.31 3 26 5.69 26 9V27Z" fill="url(#haptixGradRight)"/>
+  </g>
+
+  <!-- Typography: Haptix with Gradient Dot on i -->
+  <text x="36" y="25" font-family="'Outfit', 'Plus Jakarta Sans', -apple-system, sans-serif" font-size="21" font-weight="800" letter-spacing="-0.03em" fill="#FFFFFF">
+    Hapt<tspan fill="#FFFFFF">i</tspan>x
+  </text>
+  <circle cx="95.5" cy="11.5" r="2.8" fill="url(#haptixDotGrad)"/>
+</svg>
