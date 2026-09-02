@@ -53,16 +53,35 @@
     html { scroll-behavior: smooth; }
 
     body {
-      background-color: #080A0F;
-      background-image: 
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(0, 82, 255, 0.12) 0%, transparent 65%),
-        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
+      background-color: var(--bg-black);
       color: var(--text-main);
       font-family: var(--font-body);
       min-height: 100vh;
       overflow-x: hidden;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+    }
+
+    /* React Bits Grainient Background */
+    .grainient-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .grain-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.35;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
     }
 
     .container {
@@ -1072,6 +1091,10 @@
 </head>
 <body>
 
+  <!-- React Bits Grainient Canvas & Fine Film Grain Overlay -->
+  <canvas id="grainientCanvas" class="grainient-canvas"></canvas>
+  <div class="grain-overlay"></div>
+
   <!-- Precision Floating Island Navbar -->
   <header class="card-nav-wrapper">
     <nav class="card-nav">
@@ -1758,6 +1781,89 @@
     approvalToggle.addEventListener('change', updateSandbox);
     freezeToggle.addEventListener('change', updateSandbox);
 
+    // React Bits Grainient (Grainy Gradient with Soft Motion) Engine
+    const canvas = document.getElementById('grainientCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      let width = 0, height = 0;
+      let mouseX = 0, mouseY = 0;
+      let targetMouseX = 0, targetMouseY = 0;
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      window.addEventListener('mousemove', e => {
+        targetMouseX = (e.clientX / window.innerWidth - 0.5) * 100;
+        targetMouseY = (e.clientY / window.innerHeight - 0.5) * 100;
+      });
+
+      let time = 0;
+
+      function renderGrainient() {
+        time += 0.006;
+        mouseX += (targetMouseX - mouseX) * 0.05;
+        mouseY += (targetMouseY - mouseY) * 0.05;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Midnight base
+        ctx.fillStyle = '#0f0821';
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 1: Vibrant Magenta / Orchid (Top Left / Center)
+        const b1x = width * 0.25 + Math.sin(time * 1.1) * (width * 0.12) + mouseX;
+        const b1y = height * 0.3 + Math.cos(time * 0.8) * (height * 0.12) + mouseY;
+        const b1r = Math.max(width, height) * 0.65;
+        const g1 = ctx.createRadialGradient(b1x, b1y, 0, b1x, b1y, b1r);
+        g1.addColorStop(0, 'rgba(236, 72, 153, 0.88)'); // #EC4899 Pink
+        g1.addColorStop(0.42, 'rgba(217, 70, 239, 0.62)'); // #D946EF Magenta
+        g1.addColorStop(0.85, 'rgba(168, 85, 247, 0.15)');
+        g1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g1;
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 2: Electric Violet / Lavender (Top Right / Middle)
+        const b2x = width * 0.72 + Math.cos(time * 0.9) * (width * 0.15) - mouseX * 0.8;
+        const b2y = height * 0.35 + Math.sin(time * 1.0) * (height * 0.14) - mouseY * 0.8;
+        const b2r = Math.max(width, height) * 0.7;
+        const g2 = ctx.createRadialGradient(b2x, b2y, 0, b2x, b2y, b2r);
+        g2.addColorStop(0, 'rgba(168, 85, 247, 0.92)'); // #A855F7 Purple
+        g2.addColorStop(0.48, 'rgba(139, 92, 246, 0.6)'); // #8B5CF6 Violet
+        g2.addColorStop(0.9, 'rgba(99, 102, 241, 0.15)');
+        g2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g2;
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 3: Royal Cobalt Blue / Base Blue (Bottom & Right)
+        const b3x = width * 0.85 + Math.sin(time * 0.7) * (width * 0.12);
+        const b3y = height * 0.75 + Math.cos(time * 0.6) * (height * 0.15);
+        const b3r = Math.max(width, height) * 0.75;
+        const g3 = ctx.createRadialGradient(b3x, b3y, 0, b3x, b3y, b3r);
+        g3.addColorStop(0, 'rgba(0, 82, 255, 0.9)'); // #0052FF Base Blue
+        g3.addColorStop(0.5, 'rgba(67, 56, 202, 0.65)'); // #4338CA Indigo
+        g3.addColorStop(1, 'rgba(0, 82, 255, 0)');
+        ctx.fillStyle = g3;
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 4: Soft Lilac Highlight (Center Swirl)
+        const b4x = width * 0.48 + Math.cos(time * 1.2) * (width * 0.16);
+        const b4y = height * 0.22 + Math.sin(time * 1.1) * (height * 0.1);
+        const b4r = Math.max(width, height) * 0.5;
+        const g4 = ctx.createRadialGradient(b4x, b4y, 0, b4x, b4y, b4r);
+        g4.addColorStop(0, 'rgba(244, 114, 182, 0.8)'); // #F472B6
+        g4.addColorStop(0.55, 'rgba(192, 132, 252, 0.45)'); // #C084FC
+        g4.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g4;
+        ctx.fillRect(0, 0, width, height);
+
+        requestAnimationFrame(renderGrainient);
+      }
+      renderGrainient();
+    }
   </script>
 </body>
 </html>
