@@ -1440,8 +1440,7 @@ $('appSignSubmitBtn').onclick = async () => {
 
     // Sign Key 0
     $('appSignSubmitBtn').textContent = 'Biometric Touch ID (Key #0)...';
-    const cred0 = storedKeys[0]?.id ? [storedKeys[0].id] : [];
-    const sig0 = await signWithPasskey(userOpHash, cred0);
+    const sig0 = await signWithPasskey(userOpHash);
     const signerIds = [0];
     const sigs = [sig0];
 
@@ -1450,8 +1449,7 @@ $('appSignSubmitBtn').onclick = async () => {
 
     if (isQuorum) {
       $('appSignSubmitBtn').textContent = 'Quorum Prompt: Key #1 (Backup)...';
-      const cred1 = storedKeys[1]?.id ? [storedKeys[1].id] : [];
-      const sig1 = await signWithPasskey(userOpHash, cred1);
+      const sig1 = await signWithPasskey(userOpHash);
       signerIds.push(1);
       sigs.push(sig1);
     }

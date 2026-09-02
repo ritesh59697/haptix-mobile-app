@@ -124,10 +124,28 @@ export async function signWithPasskey(challenge32Bytes, allowCredentialIds = [])
   };
 
   if (allowCredentialIds && allowCredentialIds.length > 0) {
-    getOptions.allowCredentials = allowCredentialIds.map(id => ({
-      type: 'public-key',
-      id: typeof id === 'string' ? fromHex(id) : id
-    }));
+    getOptions.allowCredentials = allowCredentialIds.map(id => {
+      let buf = id;
+      if (typeof id === 'string') {
+        if (id.startsWith('0x')) {
+          buf = fromHex(id);
+        } else {
+          try {
+            const b64 = id.replace(/-/g, '+').replace(/_/g, '/');
+            const bin = atob(b64);
+            const u8 = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+            buf = u8;
+          } catch {
+            buf = fromHex(id);
+          }
+        }
+      }
+      return {
+        type: 'public-key',
+        id: buf
+      };
+    });
   }
 
   const assertion = await navigator.credentials.get({
