@@ -1501,6 +1501,338 @@
       color: var(--text-dark);
       flex-shrink: 0;
     }
+
+    /* =========================================================
+       LIGHT THEME BULLETPROOF HOVER & TEXT VISIBILITY OVERRIDES
+       ========================================================= */
+    [data-theme="light"] {
+      --bg-base: #FFFFFF;
+      --bg-surface: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --border-subtle: #E2E8F0;
+      --border-medium: #CBD5E1;
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #64748B;
+      --text-dark: #94A3B8;
+    }
+
+    [data-theme="light"] body {
+      background-color: #FFFFFF !important;
+      color: #334155 !important;
+    }
+
+    /* 1. Header Buttons & Hover */
+    [data-theme="light"] .wallet-header {
+      background: rgba(255, 255, 255, 0.98) !important;
+      border-bottom: 1px solid #E2E8F0 !important;
+    }
+
+    [data-theme="light"] .account-pill {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .account-pill:hover {
+      background: #E2E8F0 !important;
+      border-color: #94A3B8 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .account-pill svg {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .account-pill:hover svg {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .btn-header-icon {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #475569 !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .btn-header-icon:hover {
+      background: #E2E8F0 !important;
+      border-color: #94A3B8 !important;
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .headless-options-btn {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .headless-options-btn:hover {
+      background: #E2E8F0 !important;
+      border-color: #94A3B8 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .headless-options-btn .chevron-icon {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .headless-options-btn:hover .chevron-icon {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .headless-options-btn.active {
+      background: #E2E8F0 !important;
+      color: #0F172A !important;
+    }
+
+    /* 2. Options Menu Panel & Items */
+    [data-theme="light"] .headless-menu-panel {
+      background: rgba(255, 255, 255, 0.99) !important;
+      border: 1px solid #CBD5E1 !important;
+      box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .headless-menu-item {
+      color: #334155 !important;
+    }
+    [data-theme="light"] .headless-menu-item .item-icon {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .headless-menu-item:hover {
+      background: #F1F5F9 !important;
+      color: #0F172A !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] .headless-menu-item:hover .item-icon {
+      color: #0052FF !important;
+    }
+    [data-theme="light"] .headless-menu-item .item-badge {
+      background: #F1F5F9 !important;
+      color: #475569 !important;
+      border: 1px solid #CBD5E1 !important;
+    }
+    [data-theme="light"] .headless-menu-item:hover .item-badge {
+      border-color: #94A3B8 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .headless-menu-item .item-badge.cyan {
+      background: rgba(0, 82, 255, 0.08) !important;
+      color: #0052FF !important;
+      border-color: rgba(0, 82, 255, 0.25) !important;
+    }
+    [data-theme="light"] .headless-menu-item .item-badge.danger {
+      background: rgba(244, 63, 94, 0.08) !important;
+      color: #E11D48 !important;
+      border-color: rgba(244, 63, 94, 0.25) !important;
+    }
+    [data-theme="light"] .headless-menu-item.danger {
+      color: #E11D48 !important;
+    }
+    [data-theme="light"] .headless-menu-item.danger .item-icon {
+      color: #E11D48 !important;
+    }
+    [data-theme="light"] .headless-menu-item.danger:hover {
+      background: rgba(244, 63, 94, 0.08) !important;
+      color: #BE123C !important;
+    }
+    [data-theme="light"] .headless-menu-item.danger:hover .item-icon {
+      color: #BE123C !important;
+    }
+    [data-theme="light"] .headless-menu-divider {
+      background: #E2E8F0 !important;
+    }
+
+    /* 3. Hero Net Worth Section */
+    [data-theme="light"] .hero-label {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .hero-balance {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .hero-fiat {
+      color: #64748B !important;
+    }
+
+    /* 4. Quick Action Buttons (Send, Receive, AI Agents, Freeze) */
+    [data-theme="light"] .action-btn-item {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .action-btn-item:hover {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .action-btn-item span {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .action-btn-item:hover span {
+      color: #0F172A !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .action-icon-circle {
+      background: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), inset 0 1px 0 #FFFFFF !important;
+      color: #1E293B !important;
+    }
+    [data-theme="light"] .action-btn-item:hover .action-icon-circle {
+      background: #F8FAFC !important;
+      border-color: #0052FF !important;
+      color: #0052FF !important;
+      box-shadow: 0 4px 14px rgba(0, 82, 255, 0.2) !important;
+    }
+    /* AI Agents Button in light mode */
+    [data-theme="light"] #btnActionAgents .action-icon-circle {
+      background: rgba(0, 82, 255, 0.07) !important;
+      border: 1px solid rgba(0, 82, 255, 0.3) !important;
+      color: #0052FF !important;
+    }
+    [data-theme="light"] #btnActionAgents:hover .action-icon-circle {
+      background: rgba(0, 82, 255, 0.14) !important;
+      border-color: #0052FF !important;
+      box-shadow: 0 4px 14px rgba(0, 82, 255, 0.25) !important;
+    }
+    [data-theme="light"] #btnActionAgents span {
+      color: #0052FF !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] #btnActionAgents:hover span {
+      color: #0038B8 !important;
+    }
+    /* Freeze Button in light mode */
+    [data-theme="light"] #btnActionFreeze .action-icon-circle {
+      background: rgba(244, 63, 94, 0.07) !important;
+      border: 1px solid rgba(244, 63, 94, 0.3) !important;
+      color: #E11D48 !important;
+    }
+    [data-theme="light"] #btnActionFreeze:hover .action-icon-circle {
+      background: rgba(244, 63, 94, 0.14) !important;
+      border-color: #E11D48 !important;
+      box-shadow: 0 4px 14px rgba(244, 63, 94, 0.25) !important;
+    }
+    [data-theme="light"] #btnActionFreeze span {
+      color: #E11D48 !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] #btnActionFreeze:hover span {
+      color: #BE123C !important;
+    }
+
+    /* 5. Navigation Tab Buttons (Tokens | AI Agents | Security | Activity) */
+    [data-theme="light"] .nav-tabs-bar {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+    }
+    [data-theme="light"] .tab-btn {
+      color: #475569 !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] .tab-btn:hover {
+      color: #0F172A !important;
+      background: rgba(0, 0, 0, 0.06) !important;
+    }
+    [data-theme="light"] .tab-btn.active {
+      background: #FFFFFF !important;
+      color: #0052FF !important;
+      border: 1px solid #CBD5E1 !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+      font-weight: 700 !important;
+    }
+
+    /* 6. Token Cards / Rows */
+    [data-theme="light"] .token-row {
+      background: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    }
+    [data-theme="light"] .token-row:hover {
+      background: #F8FAFC !important;
+      border-color: #0052FF !important;
+      box-shadow: 0 4px 12px rgba(0, 82, 255, 0.08) !important;
+    }
+    [data-theme="light"] .token-name {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .token-row:hover .token-name {
+      color: #0052FF !important;
+    }
+    [data-theme="light"] .token-sym {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .token-fiat {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .token-amount {
+      color: #64748B !important;
+    }
+
+    /* 7. Activity Filter Chips and Transaction Cards */
+    [data-theme="light"] .tx-filter-chip {
+      background: #F1F5F9 !important;
+      color: #475569 !important;
+      border: 1px solid #CBD5E1 !important;
+    }
+    [data-theme="light"] .tx-filter-chip:hover {
+      background: #E2E8F0 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .tx-filter-chip.active {
+      background: #0052FF !important;
+      color: #FFFFFF !important;
+      border-color: #0052FF !important;
+    }
+    [data-theme="light"] .tx-card {
+      background: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+    }
+    [data-theme="light"] .tx-card:hover {
+      background: #F8FAFC !important;
+      border-color: #CBD5E1 !important;
+    }
+    [data-theme="light"] .tx-title {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .tx-sub {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .tx-amount {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .tx-fiat {
+      color: #64748B !important;
+    }
+
+    /* 8. Session Delegation & Security Cards */
+    [data-theme="light"] .surface-card {
+      background: #F8FAFC !important;
+      border: 1px solid #E2E8F0 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .session-box {
+      background: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+    }
+
+    /* 9. Modals and Settings Sheet */
+    [data-theme="light"] .sheet-overlay {
+      background: #FFFFFF !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .btn-action-primary {
+      background: #0052FF !important;
+      color: #FFFFFF !important;
+    }
+    [data-theme="light"] .btn-action-primary:hover {
+      background: #0045D8 !important;
+      color: #FFFFFF !important;
+    }
+    [data-theme="light"] .btn-action-secondary {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .btn-action-secondary:hover {
+      background: #E2E8F0 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .wallet-footer {
+      background: #F8FAFC !important;
+      border-top: 1px solid #E2E8F0 !important;
+      color: #64748B !important;
+    }
   </style>
 </head>
 <body>
@@ -1529,18 +1861,12 @@
       </div>
       
       <div class="account-pill" id="copyAddrBtn" title="Click to copy address">
-        <span class="account-avatar-dot"></span>
         <span id="shortAddr">0xB015...796f</span>
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
       </div>
     </div>
 
     <div class="header-actions">
-      <div class="network-badge">
-        <img src="assets/base_logo.svg" width="13" height="13" alt="Base" style="display:inline-block;vertical-align:middle;margin-right:5px;" />
-        <span>Base Sepolia</span>
-      </div>
-
       <!-- Side Panel Button -->
       <button class="btn-header-icon" id="btnOpenSidePanel" title="Open Chrome Side Panel">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>
