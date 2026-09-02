@@ -310,44 +310,51 @@
     /* Header Bar */
     .wallet-header {
       background: rgba(16, 18, 26, 0.96);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border-subtle);
-      padding: 10px 14px;
+      padding: 10px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
       z-index: 20;
+      box-sizing: border-box;
+      height: 48px;
     }
 
     .brand-section {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
+      flex-shrink: 0;
     }
 
     .brand-logo-icon {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
     }
 
     .account-pill {
-      display: flex;
+      height: 28px;
+      box-sizing: border-box;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
       border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.16), 0 1px 3px rgba(0, 0, 0, 0.3);
-      padding: 5px 9px;
+      padding: 0 9px;
       border-radius: var(--radius-full);
       font-family: var(--font-mono);
       font-size: 11px;
       font-weight: 600;
       color: #F1F5F9;
       cursor: pointer;
+      line-height: 1;
       transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .account-pill:hover {
@@ -362,11 +369,12 @@
     }
 
     .account-avatar-dot {
-      width: 7px;
-      height: 7px;
+      width: 6.5px;
+      height: 6.5px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #38BDF8, #0052FF);
-      box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+      background: #10B981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+      flex-shrink: 0;
     }
 
     .header-actions {
@@ -377,29 +385,34 @@
     }
 
     .network-badge {
+      height: 28px;
+      box-sizing: border-box;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 3px 8px;
-      background: linear-gradient(180deg, rgba(0, 82, 255, 0.15) 0%, rgba(0, 82, 255, 0.08) 100%);
-      border: 1px solid rgba(0, 82, 255, 0.35);
+      gap: 5px;
+      padding: 0 9px;
+      background: linear-gradient(180deg, rgba(0, 82, 255, 0.18) 0%, rgba(0, 82, 255, 0.08) 100%);
+      border: 1px solid rgba(0, 82, 255, 0.36);
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
       border-radius: var(--radius-full);
-      font-size: 10px;
+      font-size: 10.5px;
       font-weight: 700;
       color: #93C5FD;
       white-space: nowrap;
+      line-height: 1;
+      flex-shrink: 0;
     }
 
     .btn-header-icon {
+      width: 28px;
+      height: 28px;
+      box-sizing: border-box;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
       border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 1px 3px rgba(0, 0, 0, 0.4);
       color: #CBD5E1;
-      width: 28px;
-      height: 28px;
-      border-radius: 7px;
-      display: flex;
+      border-radius: 8px;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
@@ -420,8 +433,11 @@
     /* Headless UI Style Options Dropdown */
     .headless-menu-wrapper {
       position: relative;
+      flex-shrink: 0;
     }
     .headless-options-btn {
+      height: 28px;
+      box-sizing: border-box;
       display: inline-flex;
       align-items: center;
       gap: 5px;
@@ -429,15 +445,17 @@
       border: 1px solid rgba(255, 255, 255, 0.14);
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18), 0 1px 3px rgba(0, 0, 0, 0.4);
       border-radius: 8px;
-      padding: 4px 9px;
+      padding: 0 9px;
       color: #F1F5F9;
       font-family: var(--font-body);
       font-size: 11.5px;
       font-weight: 600;
+      line-height: 1;
       cursor: pointer;
       transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       user-select: none;
       flex-shrink: 0;
+      white-space: nowrap;
     }
     .headless-options-btn:hover {
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.07) 100%);
@@ -454,6 +472,7 @@
     .headless-options-btn .chevron-icon {
       transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       color: #94A3B8;
+      display: inline-block;
     }
     .headless-options-btn.active .chevron-icon {
       transform: rotate(180deg);
@@ -462,16 +481,16 @@
 
     .headless-menu-panel {
       position: absolute;
-      top: calc(100% + 7px);
+      top: calc(100% + 6px);
       right: 0;
-      width: 225px;
-      background: rgba(18, 20, 27, 0.98);
+      width: 228px;
+      background: rgba(14, 16, 24, 0.98);
       backdrop-filter: blur(28px);
       -webkit-backdrop-filter: blur(28px);
       border: 1px solid rgba(255, 255, 255, 0.13);
-      box-shadow: 0 18px 45px -8px rgba(0, 0, 0, 0.85),
+      box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.95),
                   0 0 0 1px rgba(255, 255, 255, 0.06),
-                  inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+                  inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
       border-radius: 12px;
       padding: 6px;
       z-index: 1000;
@@ -485,15 +504,15 @@
       display: flex;
     }
     @keyframes menuEnter {
-      0% { opacity: 0; transform: scale(0.95) translateY(-4px); }
+      0% { opacity: 0; transform: scale(0.96) translateY(-4px); }
       100% { opacity: 1; transform: scale(1) translateY(0); }
     }
     .headless-menu-item {
       display: flex;
       align-items: center;
       gap: 9px;
-      padding: 7px 10px;
-      border-radius: 7px;
+      padding: 6px 9px;
+      border-radius: 8px;
       color: #CBD5E1;
       font-size: 12px;
       font-weight: 500;
@@ -503,6 +522,7 @@
       cursor: pointer;
       transition: all 0.12s ease;
       width: 100%;
+      height: 32px;
       box-sizing: border-box;
       text-align: left;
     }
@@ -513,6 +533,11 @@
     .headless-menu-item .item-icon {
       color: #94A3B8;
       flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       transition: color 0.12s ease;
     }
     .headless-menu-item:hover .item-icon {
@@ -521,6 +546,8 @@
     .headless-menu-item .item-text {
       flex: 1;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .headless-menu-item .item-badge {
       font-size: 10px;
@@ -528,24 +555,37 @@
       font-weight: 600;
       color: #94A3B8;
       background: rgba(255, 255, 255, 0.06);
-      padding: 1px 5px;
+      padding: 2px 6px;
       border-radius: 4px;
       border: 1px solid rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
     }
     .headless-menu-item .item-badge.cyan {
       color: #38BDF8;
-      background: rgba(56, 189, 248, 0.1);
-      border-color: rgba(56, 189, 248, 0.2);
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.24);
     }
     .headless-menu-item .item-badge.danger {
-      color: #FB7185;
-      background: rgba(244, 63, 94, 0.12);
-      border-color: rgba(244, 63, 94, 0.25);
+      color: #FDA4AF;
+      background: rgba(244, 63, 94, 0.14);
+      border-color: rgba(244, 63, 94, 0.28);
     }
     .headless-menu-item .item-kbd {
-      font-size: 11px;
+      font-size: 10.5px;
       font-family: var(--font-mono);
-      color: #64748B;
+      font-weight: 700;
+      color: #94A3B8;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
     }
     .headless-menu-item.danger {
       color: #FDA4AF;
@@ -560,7 +600,7 @@
     .headless-menu-divider {
       height: 1px;
       background: rgba(255, 255, 255, 0.08);
-      margin: 4px 6px;
+      margin: 3px 6px;
     }
 
     /* Emergency Alert Banner */
@@ -1526,9 +1566,11 @@
             <span class="item-text">Wallet Preferences</span>
           </button>
           <button class="headless-menu-item" id="mnuToggleTheme">
-            <span class="theme-icon-indicator" id="mnuThemeIcon" style="font-size:13px;width:14px;display:inline-block;text-align:center;">🌙</span>
+            <span class="item-icon" id="mnuThemeIcon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </span>
             <span class="item-text">Theme: <strong id="mnuThemeLabel">Dark</strong></span>
-            <span class="item-badge" id="mnuThemeBadge">Light ☀️</span>
+            <span class="item-badge" id="mnuThemeBadge">Light</span>
           </button>
           <div class="headless-menu-divider"></div>
           <button class="headless-menu-item danger" id="mnuPanicFreeze">
