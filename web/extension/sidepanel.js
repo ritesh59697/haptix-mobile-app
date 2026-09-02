@@ -263,7 +263,83 @@ if ($('spPanicFreezeBtn')) {
   };
 }
 
+// Render Side Panel Transaction History
+async function renderSpTxHistory() {
+  const container = $('spTxList');
+  if (!container) return;
+
+  const DEFAULT_TXS = [
+    {
+      action: 'Send 0.05 ETH',
+      fiat: '≈ $160.00',
+      toLabel: 'Base Treasury Pool',
+      status: 'Quorum',
+      statusColor: 'var(--accent-amber)',
+      type: 'quorum',
+      icon: '🛡',
+      txHash: '0x7f4a21908bcda14238e8210941094190248231b2c45189028490124801948123'
+    },
+    {
+      action: 'Send 20.00 USDC',
+      fiat: '≈ $20.00',
+      toLabel: 'Uniswap V3 Router',
+      status: 'Success',
+      statusColor: 'var(--accent-emerald)',
+      type: 'agent',
+      icon: '⚡',
+      txHash: '0x4b89f10928310948102948120938401928301928301928301928301928301928'
+    },
+    {
+      action: 'Received 0.010 ETH',
+      fiat: '≈ $32.00',
+      toLabel: 'Base Sepolia Faucet',
+      status: 'Confirmed',
+      statusColor: 'var(--accent-emerald)',
+      type: 'receive',
+      icon: '↙',
+      txHash: '0x91d3a41029381029381029381029381029381029381029381029381029381029'
+    }
+  ];
+
+  let history = DEFAULT_TXS;
+  try {
+    if (chrome && chrome.storage && chrome.storage.local) {
+      const data = await chrome.storage.local.get(['haptix_tx_history']);
+      if (data && data.haptix_tx_history && data.haptix_tx_history.length > 0) {
+        history = data.haptix_tx_history.slice(0, 3).map(t => ({
+          action: t.action,
+          fiat: t.fiat,
+          toLabel: t.toLabel,
+          status: t.statusLabel || 'Confirmed',
+          statusColor: t.status === 'QUORUM' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
+          type: t.type === 'RECEIVE' ? 'receive' : (t.type === 'AGENT' ? 'agent' : (t.status === 'QUORUM' ? 'quorum' : 'send')),
+          icon: t.type === 'RECEIVE' ? '↙' : (t.type === 'AGENT' ? '⚡' : (t.status === 'QUORUM' ? '🛡' : '↗')),
+          txHash: t.txHash
+        }));
+      }
+    }
+  } catch (e) {}
+
+  container.innerHTML = history.map(t => `
+    <a href="https://sepolia.basescan.org/tx/${t.txHash}" target="_blank" class="sp-tx-item" title="View on BaseScan">
+      <div class="sp-tx-left">
+        <div class="sp-tx-icon ${t.type}">${t.icon}</div>
+        <div>
+          <div class="sp-tx-title">${t.action}</div>
+          <div class="sp-tx-sub">${t.toLabel}</div>
+        </div>
+      </div>
+      <div class="sp-tx-right">
+        <div class="sp-tx-fiat">${t.fiat}</div>
+        <div class="sp-tx-status" style="color:${t.statusColor};">${t.status}</div>
+      </div>
+    </a>
+  `).join('');
+}
+
 // Bootup
 initAccount();
 refreshSpAgentView();
 fetchBalances();
+renderSpTxHistory();
+

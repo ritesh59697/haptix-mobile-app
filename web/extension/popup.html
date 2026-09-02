@@ -544,27 +544,270 @@
       background: rgba(244, 63, 94, 0.22);
     }
 
-    /* Activity Timeline Item */
-    .timeline-item {
+    /* Activity / Transaction History Bar */
+    .activity-top-bar {
       display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 10px 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .activity-header-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .activity-title {
+      font-family: var(--font-heading);
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    .activity-counter {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #93C5FD;
+      background: rgba(0, 82, 255, 0.15);
+      border: 1px solid rgba(0, 82, 255, 0.3);
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+    }
+    .activity-explorer-btn {
+      font-size: 11px;
+      font-weight: 700;
+      color: #60A5FA;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      transition: all 0.15s ease;
+    }
+    .activity-explorer-btn:hover {
+      background: var(--bg-subtle-hover);
+      color: #93C5FD;
+      border-color: var(--border-medium);
+    }
+
+    /* Filter Chips */
+    .tx-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .tx-filter-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .tx-filter-chip:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+    .tx-filter-chip.active {
+      background: rgba(0, 82, 255, 0.2);
+      border-color: var(--base-blue);
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+
+    /* Transaction History List */
+    .tx-history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .tx-item {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
+      padding: 10px 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
-    .timeline-icon-box {
-      width: 28px;
-      height: 28px;
+    .tx-item:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-medium);
+      transform: translateY(-1px);
+    }
+    .tx-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .tx-icon-box.send {
+      background: rgba(0, 82, 255, 0.15);
+      border: 1px solid rgba(0, 82, 255, 0.3);
+      color: #60A5FA;
+    }
+    .tx-icon-box.receive {
+      background: var(--accent-emerald-light);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--accent-emerald);
+    }
+    .tx-icon-box.agent {
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: var(--accent-purple);
+    }
+    .tx-icon-box.quorum {
+      background: var(--accent-amber-light);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--accent-amber);
+    }
+    .tx-icon-box.deploy {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent-cyan);
+    }
+
+    .tx-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .tx-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .tx-action-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .tx-status-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+    }
+    .tx-status-pill.success {
+      color: var(--accent-emerald);
+      background: var(--accent-emerald-light);
+    }
+    .tx-status-pill.quorum {
+      color: var(--accent-amber);
+      background: var(--accent-amber-light);
+    }
+    .tx-status-pill.pending {
+      color: #60A5FA;
+      background: rgba(0, 82, 255, 0.15);
+    }
+
+    .tx-row-mid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .tx-row-bot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 2px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+    .tx-auth-tag {
+      color: #93C5FD;
+    }
+    .tx-hash-link {
+      color: var(--text-dark);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      transition: color 0.15s ease;
+    }
+    .tx-hash-link:hover {
+      color: #60A5FA;
+    }
+
+    /* Detail Sheet Hero */
+    .tx-detail-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 18px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+    }
+    .tx-detail-icon {
+      width: 44px;
+      height: 44px;
       border-radius: var(--radius-full);
       background: var(--bg-elevated);
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
+      font-size: 20px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border-medium);
+    }
+    .tx-detail-amount {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 800;
       color: var(--text-primary);
     }
+    .tx-detail-fiat {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .tx-detail-status-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--accent-emerald);
+      background: var(--accent-emerald-light);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+    }
+    .btn-inline-copy {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+    }
+    .btn-inline-copy:hover { color: #FFF; }
 
     /* Modal / Drawer Overlay Sheets (Send, Receive, Settings) */
     .sheet-overlay {
@@ -1026,32 +1269,31 @@
         </div>
       </div>
 
-      <!-- Tab 4: Activity -->
+      <!-- Tab 4: Transaction History & Activity -->
       <div class="tab-pane" id="tab-activity">
-        <div class="timeline-item">
-          <div class="timeline-icon-box" style="color:var(--accent-emerald);">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <div class="activity-top-bar">
+          <div class="activity-header-left">
+            <span class="activity-title">Transaction History</span>
+            <span class="activity-counter" id="txHistoryCount">5</span>
           </div>
-          <div style="flex:1;display:flex;flex-direction:column;">
-            <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:#FFF;">
-              <span>Send 20.00 USDC</span>
-              <span style="color:var(--accent-emerald);font-size:11px;">Success</span>
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);">Autonomous Agent (0x01) · 0.4s</div>
-          </div>
+          <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="activity-explorer-btn" id="linkBaseScanHistory">
+            <span>BaseScan</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
         </div>
 
-        <div class="timeline-item">
-          <div class="timeline-icon-box" style="color:var(--accent-amber);">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/></svg>
-          </div>
-          <div style="flex:1;display:flex;flex-direction:column;">
-            <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:#FFF;">
-              <span>Send 0.05 ETH</span>
-              <span style="color:var(--accent-amber);font-size:11px;">2-Sig Quorum</span>
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);">Touch ID + Backup Key Verified</div>
-          </div>
+        <!-- Filter Chips -->
+        <div class="tx-filter-bar">
+          <button class="tx-filter-chip active" data-filter="ALL">All</button>
+          <button class="tx-filter-chip" data-filter="SEND">Sent</button>
+          <button class="tx-filter-chip" data-filter="RECEIVE">Received</button>
+          <button class="tx-filter-chip" data-filter="AGENT">AI Agent</button>
+          <button class="tx-filter-chip" data-filter="QUORUM">Quorum</button>
+        </div>
+
+        <!-- Transaction List Container -->
+        <div class="tx-history-list" id="txHistoryContainer">
+          <!-- Populated dynamically by popup.js -->
         </div>
       </div>
     </div>
@@ -1268,6 +1510,62 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- TRANSACTION DETAILS SHEET -->
+  <div class="sheet-overlay" id="sheetTxDetails">
+    <div class="sheet-header">
+      <div class="sheet-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        Transaction Details
+      </div>
+      <button class="btn-close-sheet" id="btnCloseTxDetails">✕</button>
+    </div>
+
+    <div class="tx-detail-hero">
+      <div class="tx-detail-icon" id="dtTxIcon">↗</div>
+      <div class="tx-detail-amount" id="dtTxAmount">0.05 ETH</div>
+      <div class="tx-detail-fiat" id="dtTxFiat">≈ $160.00 USD</div>
+      <div class="tx-detail-status-pill" id="dtTxStatus">Confirmed</div>
+    </div>
+
+    <div class="key-spec-card" style="margin-top:12px;">
+      <div class="key-spec-row">
+        <span style="color:var(--text-muted);">Network:</span>
+        <strong style="color:#FFF;">Base Sepolia (84532)</strong>
+      </div>
+      <div class="key-spec-row">
+        <span style="color:var(--text-muted);">Timestamp:</span>
+        <strong style="color:var(--text-secondary);" id="dtTxTime">Sep 2, 2026 · 10:18 PM</strong>
+      </div>
+      <div class="key-spec-row">
+        <span style="color:var(--text-muted);">Security Policy:</span>
+        <strong style="color:#60A5FA;" id="dtTxAuth">2-of-2 Quorum</strong>
+      </div>
+      <div class="key-spec-row">
+        <span style="color:var(--text-muted);">Destination / Target:</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-family:var(--font-mono);font-size:11px;color:#93C5FD;" id="dtTxTo">0x22db...913D</span>
+          <button class="btn-inline-copy" id="dtCopyRecipient" title="Copy address">📋</button>
+        </div>
+      </div>
+      <div class="key-spec-row">
+        <span style="color:var(--text-muted);">Gas Execution:</span>
+        <strong style="color:var(--accent-emerald);" id="dtTxGas">&lt; 100k gas (RIP-7212)</strong>
+      </div>
+      <div class="key-spec-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        <span style="color:var(--text-muted);">UserOp / Transaction Hash:</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;background:rgba(0,0,0,0.3);padding:6px 8px;border-radius:6px;">
+          <span style="font-family:var(--font-mono);font-size:10.5px;color:#93C5FD;word-break:break-all;" id="dtTxHash">0x7f4a21...31b2</span>
+          <button class="btn-inline-copy" id="dtCopyHash" title="Copy Hash">📋</button>
+        </div>
+      </div>
+    </div>
+
+    <a href="#" target="_blank" class="btn-action-primary" id="dtBtnViewBaseScan" style="margin-top:14px;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <span>View on BaseScan Explorer</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
   </div>
 
   <!-- Bottom Bar -->

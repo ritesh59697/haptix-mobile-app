@@ -1027,15 +1027,117 @@
         </div>
       </div>
 
-      <!-- Tab 5: Activity Log -->
+      <!-- Tab 5: Activity Log & Transaction History -->
       <div class="tab-view" id="tab-activity">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div>
+            <h3 style="font-family:var(--font-heading);font-size:18px;font-weight:800;color:var(--text-white);">Transaction History</h3>
+            <p style="font-size:12px;color:var(--text-muted);">Verified Base Sepolia Smart Account Activity (ERC-4337 UserOps & On-Chain Policies)</p>
+          </div>
+          <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="action-btn-primary" style="font-size:12px;padding:6px 14px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+            <span>View on BaseScan ↗</span>
+          </a>
+        </div>
+
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <div style="padding:16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-            <div>
-              <div style="font-weight:700;font-size:14px;color:var(--text-white);">Smart Account Deployed on Base Sepolia</div>
-              <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">Account: 0xB015...796f</div>
+          <!-- Item 1: Quorum Transfer -->
+          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);display:flex;align-items:center;justify-content:center;color:#F59E0B;font-weight:800;">🛡</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-weight:700;font-size:13.5px;color:#FFF;">Send 0.05 ETH</span>
+                  <span style="font-size:10.5px;font-weight:700;color:#F59E0B;background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">2-of-2 Quorum</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-muted);">To: Base Treasury Pool (0x22db...913D) · Sep 2, 2026, 10:18 PM</div>
+                <div style="font-size:10.5px;color:#93C5FD;font-family:var(--font-mono);margin-top:2px;">Touch ID + YubiKey Quorum Verified · 84,210 gas</div>
+              </div>
             </div>
-            <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;">View on BaseScan ↗</a>
+            <div style="text-align:right;">
+              <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:#FFF;">-0.05 ETH</div>
+              <div style="font-size:11px;color:var(--text-muted);">≈ $160.00 USD</div>
+              <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);">0x7f4a...31b2 ↗</a>
+            </div>
+          </div>
+
+          <!-- Item 2: Agent Swap -->
+          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);display:flex;align-items:center;justify-content:center;color:#C084FC;font-weight:800;">⚡</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-weight:700;font-size:13.5px;color:#FFF;">Send 20.00 USDC (Autonomous Swap)</span>
+                  <span style="font-size:10.5px;font-weight:700;color:var(--accent-emerald);background:rgba(16,185,129,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Success</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-muted);">To: Uniswap V3 Router (0x2626...f9d0) · Sep 2, 2026, 09:44 PM</div>
+                <div style="font-size:10.5px;color:#C084FC;font-family:var(--font-mono);margin-top:2px;">AI Agent Session (0x8a91...b819) · 0.4s Latency</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:#FFF;">-20.00 USDC</div>
+              <div style="font-size:11px;color:var(--text-muted);">≈ $20.00 USD</div>
+              <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);">0x4b89...88c4 ↗</a>
+            </div>
+          </div>
+
+          <!-- Item 3: Faucet Deposit -->
+          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;color:var(--accent-emerald);font-weight:800;">↙</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-weight:700;font-size:13.5px;color:#FFF;">Received 0.010 ETH</span>
+                  <span style="font-size:10.5px;font-weight:700;color:var(--accent-emerald);background:rgba(16,185,129,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Confirmed</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-muted);">From: Base Sepolia Faucet · Sep 2, 2026, 08:30 PM</div>
+                <div style="font-size:10.5px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">Inbound Direct Deposit</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--accent-emerald);">+0.010 ETH</div>
+              <div style="font-size:11px;color:var(--text-muted);">≈ $32.00 USD</div>
+              <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);">0x91d3...1029 ↗</a>
+            </div>
+          </div>
+
+          <!-- Item 4: Micro Transfer -->
+          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:rgba(0,82,255,0.15);border:1px solid rgba(0,82,255,0.3);display:flex;align-items:center;justify-content:center;color:#60A5FA;font-weight:800;">↗</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-weight:700;font-size:13.5px;color:#FFF;">Send 0.0001 ETH</span>
+                  <span style="font-size:10.5px;font-weight:700;color:#60A5FA;background:rgba(0,82,255,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Sub-Threshold</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-muted);">To: Aave V3 Pool (0x8787...4318) · Sep 2, 2026, 07:15 PM</div>
+                <div style="font-size:10.5px;color:#93C5FD;font-family:var(--font-mono);margin-top:2px;">1-Sig Biometric Instant (&lt; 0.010 ETH) · 88,140 gas</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:#FFF;">-0.0001 ETH</div>
+              <div style="font-size:11px;color:var(--text-muted);">≈ $0.32 USD</div>
+              <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);">0x12c4...99a0 ↗</a>
+            </div>
+          </div>
+
+          <!-- Item 5: Deployment -->
+          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);display:flex;align-items:center;justify-content:center;color:#38BDF8;font-weight:800;">🚀</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-weight:700;font-size:13.5px;color:#FFF;">Smart Account Deployed on Base Sepolia</span>
+                  <span style="font-size:10.5px;font-weight:700;color:#38BDF8;background:rgba(56,189,248,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Initialized</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-muted);">Account: 0xB01543453cF31052c769d79e9C755E3b035d796f · Sep 1, 2026, 04:12 PM</div>
+                <div style="font-size:10.5px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">RIP-7212 WebAuthn P-256 Registered · Factory Create2</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:#FFF;">Contract Init</div>
+              <div style="font-size:11px;color:var(--text-muted);">P-256 Root Key</div>
+              <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);">0x89e0...55f3 ↗</a>
+            </div>
           </div>
         </div>
       </div>

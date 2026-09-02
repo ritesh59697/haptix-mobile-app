@@ -395,6 +395,79 @@
       color: var(--text-muted);
     }
 
+    /* Side Panel Transaction List */
+    .sp-tx-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .sp-tx-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-sm);
+      font-size: 11.5px;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+    .sp-tx-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border-focus);
+      transform: translateX(2px);
+    }
+    .sp-tx-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sp-tx-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .sp-tx-icon.send { background: rgba(0, 82, 255, 0.15); color: #60A5FA; border: 1px solid rgba(0, 82, 255, 0.3); }
+    .sp-tx-icon.receive { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .sp-tx-icon.agent { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); }
+    .sp-tx-icon.quorum { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .sp-tx-icon.deploy { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
+
+    .sp-tx-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-white);
+      line-height: 1.2;
+    }
+    .sp-tx-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .sp-tx-right {
+      text-align: right;
+    }
+    .sp-tx-fiat {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-white);
+      line-height: 1.2;
+    }
+    .sp-tx-status {
+      font-size: 9.5px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
     /* Policy Firewall Card */
     .sp-policy-header {
       display: flex;
@@ -763,6 +836,24 @@
           <div class="sp-token-fiat" id="spUsdcFiat">≈ $0.00 USD</div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity / Transaction History Card -->
+  <div class="sp-card" id="spActivitySection">
+    <div class="sp-section-head">
+      <span class="sp-section-title">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 8 12 12 14 14"/><circle cx="12" cy="12" r="10"/></svg>
+        Transaction History
+      </span>
+      <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:3px;" id="spViewBaseScanLink">
+        <span>BaseScan</span>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+    </div>
+
+    <div class="sp-tx-list" id="spTxList">
+      <!-- Populated dynamically by sidepanel.js -->
     </div>
   </div>
 
