@@ -152,9 +152,17 @@ async function runPhase3C() {
     '0xa9059cbb00000000000000000000000022db962929afe98d0269de0baa6c442a3aa6913d0000000000000000000000000000000000000000000000000000000001312d00'
   );
 
+  const currentNonce = await client.readContract({
+    address: ENTRYPOINT,
+    abi: parseAbi(['function getNonce(address,uint192) view returns (uint256)']),
+    functionName: 'getNonce',
+    args: [ACCOUNT, 0n]
+  });
+  console.log(`   Account Nonce on EntryPoint v0.7: ${currentNonce}`);
+
   const userOpA = buildPackedUserOp({
     sender: ACCOUNT,
-    nonce: 0n,
+    nonce: currentNonce,
     callData: transferCallData,
     gasParams: {
       verificationGasLimit: 200000n,

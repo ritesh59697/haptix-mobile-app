@@ -5,13 +5,15 @@ export const CONFIG = {
   chainName: 'Base Sepolia',
   rpcUrl: 'https://sepolia.base.org',
   entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+  factoryAddress: '0x1bB7cCf96cB211045982fC8a0069D9C0d718B83b',
+  implementationAddress: '0x9B553dF98bbC1c7152698c4739A93281F0FBB110',
   defaultAccount: '0xB01543453cF31052c769d79e9C755E3b035d796f',
   bundlerUrl: 'https://api.pimlico.io/v2/84532/rpc?apikey=pim_hkKhRbcJfLUYSzezx8ofPd',
   
   gas: {
     verificationGasLimit: 200000n,
     callGasLimit: 60000n,
-    preVerificationGas: 60000n,
+    preVerificationGas: 100000n,
     maxPriorityFeePerGas: 50000000n, // 0.05 gwei
     maxFeePerGas: 200000000n        // 0.20 gwei
   },

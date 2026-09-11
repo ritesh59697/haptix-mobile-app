@@ -14,6 +14,7 @@ Production TypeScript SDK for **Haptix** — the on-chain authorization and dele
   - `sigType 0x02`: Escalated operations ($>$ per-tx limit $\le$ human approval ceiling) with 2-of-N WebAuthn passkey quorum.
 - **Off-Chain Slippage Guard**: Quoting and integer-based `calculateAmountOutMinimum` to prevent MEV sandwiching.
 - **Offline Pre-Flight Validator**: Fail-closed client validation for allowed protocols, selectors, tokens, rolling limits, and blocked approval calls.
+- **Guardian Social Recovery**: Helpers for encoding timelocked guardian proposals, completions, fast-path single-sig emergency cancellations, and querying on-chain status.
 - **Browser Passkey Client**: WebAuthn P-256 assertion parser and DER low-s normalizer.
 
 ---

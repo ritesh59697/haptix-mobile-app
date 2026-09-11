@@ -12,40 +12,59 @@ An ERC-4337 smart account architecture that enforces **autonomous spending polic
 | Parameter | Value |
 |---|---|
 | **Live Smart Account** | [`0xB01543453cF31052c769d79e9C755E3b035d796f`](https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f) |
+| **PasskeyAccountFactory** | [`0x1bB7cCf96cB211045982fC8a0069D9C0d718B83b`](https://sepolia.basescan.org/address/0x1bB7cCf96cB211045982fC8a0069D9C0d718B83b) |
+| **PasskeyAccount Implementation** | [`0x9B553dF98bbC1c7152698c4739A93281F0FBB110`](https://sepolia.basescan.org/address/0x9B553dF98bbC1c7152698c4739A93281F0FBB110) |
 | **Canonical EntryPoint** | [`0x0000000071727De22E5E9d8BAf0edAc6f37da032`](https://sepolia.basescan.org/address/0x0000000071727De22E5E9d8BAf0edAc6f37da032) (ERC-4337 v0.7) |
 | **RIP-7212 Precompile** | `0x0000000000000000000000000000000000000100` (P-256 Curve Verification) |
-| **Enrolled Hardware Signers** | 2 Hardware Passkeys (Touch ID Apple Secure Enclave & Chrome Profile / iCloud Keychain) |
-| **Verified Tx 1 (Direct WebApp)** | [`0x5c4c413d…404d`](https://sepolia.basescan.org/tx/0x5c4c413d486754cf8098d4ca4dd2f82a17a72aabc9680174a0bc583bffeb404d) — Live Touch ID Biometric UserOp |
-| **Verified Tx 2 (Extension dApp)** | [`0x428fe58b…1d11`](https://sepolia.basescan.org/tx/0x428fe58b08360238c33bfc6a92264e977283aab0b05965d3abe0f034b5d21d11) — EIP-1193 dApp Simulator via Enclave Signer |
-| **Autonomous Agent Delegation** | `0x01` scoped ECDSA session key with on-chain firewall ($50 limit, $200 ceiling) |
+| **Enrolled Hardware Signers** | 2 Hardware Passkeys (Touch ID Apple Secure Enclave & iCloud Keychain / Chrome Profile) |
+| **Verified Tx 1 (Session Grant 2-of-2 Passkeys)** | [`0x1aa7d520…2ccb`](https://sepolia.basescan.org/tx/0x1aa7d520a4f74e5ec84f4c51cd00402b898e33f3c1bf04277bbaebc824dd2ccb) (Block 46457789) — Live 2-of-2 Passkey Quorum Session Delegation |
+| **Verified Tx 2 (Autonomous AI Agent UserOp)** | [`0x4ca3ea90…5840`](https://sepolia.basescan.org/tx/0x4ca3ea90dfa75ceef593c381a75b6cab9e36188fc03db26ccf064e2ca9785840) (Block 46457806) — Live Execution with **Zero Passkey Prompts** |
+| **Verified Tx 3 (Autonomous Demo Run)** | [`0xa5130be0…055d`](https://sepolia.basescan.org/tx/0xa5130be0e01acb26176cf87f6776c52877360ecc06872df8b67042517b49055d) — Verified Clean Autonomous Agent UserOp |
+| **Verified Tx 4 (Direct WebApp Biometric)** | [`0x5c4c413d…404d`](https://sepolia.basescan.org/tx/0x5c4c413d486754cf8098d4ca4dd2f82a17a72aabc9680174a0bc583bffeb404d) — Live Touch ID Biometric UserOp |
+| **Verified Tx 5 (Extension dApp Simulator)** | [`0x428fe58b…1d11`](https://sepolia.basescan.org/tx/0x428fe58b08360238c33bfc6a92264e977283aab0b05965d3abe0f034b5d21d11) — EIP-1193 dApp Simulator via Enclave Signer |
+| **Live Policy Enforcement Proof** | 0.005 ETH over-limit transfer rejected on-chain: `SIG_VALIDATION_FAILED (1)` & EntryPoint `AA24` |
+| **Active Session Key Address** | [`0x093F8575a87cdb2919E5B3f1677eD8d7815c9461`](https://sepolia.basescan.org/address/0x093F8575a87cdb2919E5B3f1677eD8d7815c9461) (0.001 ETH limit, active on-chain) |
 | **Base Sepolia USDC** | [`0x036CbD53842c5426634e7929541eC2318f3dCF7e`](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) (6 decimals) |
-| **On-Chain Policy Engine** | 0.01 ETH / 25 USDC per-op threshold · 24h rolling budget · Emergency Panic Freeze |
+| **On-Chain Policy Engine** | 0.001 ETH per-op session limit · 24h rolling budget · Emergency Panic Freeze · Timelocked Guardian Recovery |
 
 ---
 
-## Quick Start
+## Quick Start & Demo Flow
 
-### 1. Clone & Run Smart Contract Tests
+### Run the Live Demo (3 Commands)
+
+Demonstrate the complete live security lifecycle on Base Sepolia directly from the terminal:
+
 ```bash
-git clone --recurse-submodules https://github.com/ritesh59697/haptix.git
-cd haptix
+# 1. Run the unified end-to-end security demo flow
+npm run demo
+
+# 2. Run standalone autonomous AI agent execution (Zero Passkey Prompts)
+npm run demo:agent
+
+# 3. Test on-chain policy enforcement (Over-limit rejection proof)
+npm run demo:reject
+```
+
+### Run Full Test Suites
+
+```bash
+# Smart contract test suite (Osaka RIP-7212 precompile vectors)
 forge test -vv
-```
-*(All 220 Foundry tests pass using real WebCrypto P-256 vectors against the Osaka RIP-7212 precompile).*
 
-### 2. Run the TypeScript SDK Tests
-```bash
-cd sdk
-npm install
-npm test
+# TypeScript SDK test suite
+npm run test:sdk
 ```
-*(All 40 SDK tests pass across 8 test suites).*
+*(All 243 Foundry tests and 50 TypeScript SDK tests pass with 100% success rate).*
 
-### 3. Launch the Local Web Dashboard
+### Interactive Web UI
+
 ```bash
 npx serve web -l 5199
 ```
-Open [http://localhost:5199](http://localhost:5199) in Chrome to access the biometric passkey dashboard and AI delegation simulator.
+Open [http://localhost:5199/grant-session.html](http://localhost:5199/grant-session.html) in your browser:
+- **Phase 1 & 2**: Authorize an on-chain session with an interactive 2-of-2 hardware passkey quorum (Touch ID $\to$ iCloud Keychain).
+- **Phase 3 Console**: 1-click **Run Autonomous Spend** (proves zero passkey prompts) & **Test Policy Firewall** (proves on-chain rejection).
 
 ### 4. Load the Chrome Extension
 1. Open Chrome and navigate to `chrome://extensions`.
@@ -165,10 +184,20 @@ The on-chain policy engine inspects calldata directly during ERC-4337 validation
 | Token Approvals (`approve`, `increaseAllowance`, `setApprovalForAll`) | **2 Passkeys Always** |
 | Gasless Permits (`permit`, `permit2`) | **2 Passkeys Always** |
 | Uniswap V3 Swaps (Autonomous Agent) | 1 Agent Key (Under $50) |
-| Uniswap V3 Swaps (Escalated Agent) | 1 Agent Key + 2 Passkeys ($50 - $200) |
 | Configuration Changes (`setWindow`, `addSigner`, `revokeAgent`) | **2 Passkeys via `onlySelf`** |
-| Emergency Freeze (`setEmergencyFreeze`) | 1 Enrolled Signer (Fast-path panic) |
-| Unfreeze (`setEmergencyFreeze(false)`) | **2 Passkeys (Quorum)** |
+| Configure Guardian (`setGuardian`) | **2 Passkeys via `onlySelf`** |
+| Initiate Recovery (`initiateRecovery`) | **Guardian** (Enforces min 2 signers & timelock) |
+| Emergency Cancel Recovery (`cancelRecovery`) | **1 Passkey (Fast-path)** or Guardian |
+| Complete Recovery (`completeRecovery`) | Anyone after timelock expires |
+| Emergency Freeze (`freeze`) | 1 Enrolled Signer (Fast-path panic) |
+| Unfreeze (`unfreeze`) | **2 Passkeys (Quorum)** |
+
+### Timelocked Guardian Social Recovery
+To eliminate the single-point-of-failure risk where a user loses physical hardware devices, `PasskeyAccount` features an on-chain **Guardian Recovery** mechanism:
+- **Designation**: The owner configures a `guardian` address (cold wallet, trusted delegate, or multisig) and a security timelock (minimum 24h, default 48h) via a 2-of-2 passkey quorum.
+- **Proposal**: If passkeys are lost, the guardian calls `initiateRecovery(PublicKey[] newSigners)`. The replacement set must strictly contain at least 2 distinct, valid P-256 keys.
+- **Timelock Delay**: An on-chain timelock begins (`executeAfter = block.timestamp + timelock`). After expiry, `completeRecovery()` wipes old signers and installs the replacement set.
+- **Fast-Path Dispute**: If an unauthorized recovery is initiated by a compromised guardian, the account owner can abort it immediately with a **single passkey signature UserOp** (`cancelRecovery`) or trigger emergency `freeze()`.
 
 ### Per-Asset Rolling Spend Windows (`SpendWindow.sol`)
 To prevent "slow-drain" attacks (e.g. 20 consecutive $40 transfers), `SpendWindow` enforces cumulative spending caps over rolling 24-hour periods.
@@ -262,41 +291,50 @@ A Rabby-grade Web3 wallet extension providing biometric passkey authorization di
 
 ```
 ├── src/
-│   ├── PasskeyAccount.sol         Smart Account, validation logic & agent session execution
+│   ├── PasskeyAccount.sol         Smart Account, validation logic, agent sessions & guardian recovery
 │   ├── PasskeyAccountFactory.sol  Deterministic CREATE2 counterfactual factory
 │   ├── SpendPolicy.sol            Calldata parser & DeFi swap policy classifier
 │   ├── SpendWindow.sol            ERC-7562 compliant 24h rolling budget accounting
 │   └── WebAuthn.sol               P-256 WebAuthn verification via RIP-7212 (0x100)
 ├── sdk/                           @haptix/sdk TypeScript library
-│   ├── src/                       Account, passkey, session, policy & bundler modules
-│   └── test/                      Vitest test suites (40 tests passing)
+│   ├── src/                       Account, passkey, session, policy, recovery & bundler modules
+│   └── test/                      Vitest test suites (50 tests passing)
 ├── extension/                     Production Manifest V3 Chrome Extension
 │   ├── icons/                     Official high-res icons (16px, 48px, 128px, 512px)
 │   ├── popup.html / popup.js      Main wallet UI & interactive drawers
 │   ├── sidepanel.html             Chrome side panel interface
 │   └── background.js              Service worker & RPC request broker
-├── test/                          Foundry test suites (220 tests passing)
+├── test/                          Foundry test suites (243 tests passing)
 │   ├── AgentIntegration.t.sol     End-to-end agent session execution & lifecycle
 │   ├── AgentSecurity.t.sol        Security invariant checks & escalation thresholds
 │   ├── AgentRedTeamAudit.t.sol    Adversarial attacks (reentrancy, calldata fuzzing)
+│   ├── Recovery.t.sol             Timelocked Guardian Social Recovery unit & adversarial tests
 │   ├── RealPasskey.t.sol          Live Touch ID & WebAuthn hardware signatures
 │   └── BatchPolicy.t.sol          Batch execution pricing & bypass prevention
+├── scripts/
+│   ├── demo-flow.mjs              Unified end-to-end demo flow runner (`npm run demo`)
+│   ├── execute-autonomous-agent.mjs Standalone autonomous agent execution (`npm run demo:agent`)
+│   ├── test-policy-violation.mjs  On-chain policy firewall rejection audit (`npm run demo:reject`)
+│   └── package-extension.mjs      Chrome Web Store release packager (`npm run package:extension`)
 ├── examples/
 │   └── agent-runner.ts            Headless AI agent daemon runner
 ├── script/
 │   └── Deploy.s.sol               Base Sepolia on-chain broadcast script
+├── GRANT_PROPOSAL.md              Submission-ready proposal for Base & Optimism grants
+├── PITCH_DECK.md                  13-Slide presentation deck for grants & investors
+├── PRIVACY_POLICY.md              Chrome Web Store compliant privacy policy
 └── web/                           Interactive web dashboard & delegation simulator
 ```
 
 ---
 
-## Comprehensive Test Matrix (260 Total Tests)
+## Comprehensive Test Matrix (293 Total Tests)
 
 ```
-Ran 15 Foundry test suites: 220 tests passed, 0 failed, 0 skipped
-Ran 8 Vitest SDK suites:     40 tests passed, 0 failed, 0 skipped
+Ran 17 Foundry test suites: 243 tests passed, 0 failed, 0 skipped
+Ran 10 Vitest SDK suites:    50 tests passed, 0 failed, 0 skipped
 ================================================================
-TOTAL:                       260 tests passed, 0 failed (100%)
+TOTAL:                       293 tests passed, 0 failed (100%)
 ```
 
 - **Cryptographic Ground Truth**: Every signature test exercises real secp256r1 and secp256k1 curves.

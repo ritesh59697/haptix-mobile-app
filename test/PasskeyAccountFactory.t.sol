@@ -7,12 +7,14 @@ import {PasskeyAccount} from "../src/PasskeyAccount.sol";
 import {Vectors} from "./Vectors.sol";
 
 contract PasskeyAccountFactoryTest is Test, Vectors {
+    PasskeyAccount implementation;
     PasskeyAccountFactory factory;
     address constant ENTRYPOINT = address(0xE);
     uint256 constant THRESHOLD = 1 ether;
 
     function setUp() public {
-        factory = new PasskeyAccountFactory(ENTRYPOINT);
+        implementation = new PasskeyAccount(ENTRYPOINT, _signers2(K0_X, K0_Y, K1_X, K1_Y), THRESHOLD);
+        factory = new PasskeyAccountFactory(address(implementation));
     }
 
     function test_GetAddress_MatchesDeployed() public {
@@ -43,7 +45,7 @@ contract PasskeyAccountFactoryTest is Test, Vectors {
         assertEq(address(second), predicted);
     }
 
-    function test_DifferentSalts_DifferentAddresses() public {
+    function test_DifferentSalts_DifferentAddresses() public view {
         PasskeyAccount.PublicKey[] memory signers = _signers2(K0_X, K0_Y, K1_X, K1_Y);
         bytes32 salt1 = bytes32(uint256(1));
         bytes32 salt2 = bytes32(uint256(2));
@@ -54,7 +56,7 @@ contract PasskeyAccountFactoryTest is Test, Vectors {
         assertTrue(addr1 != addr2);
     }
 
-    function test_DifferentSigners_DifferentAddresses() public {
+    function test_DifferentSigners_DifferentAddresses() public view {
         PasskeyAccount.PublicKey[] memory s1 = _signers2(K0_X, K0_Y, K1_X, K1_Y);
         PasskeyAccount.PublicKey[] memory s2 = _signers2(K0_X, K0_Y, 0x1234, 0x5678);
         bytes32 salt = bytes32(uint256(100));
@@ -83,6 +85,21 @@ contract PasskeyAccountFactoryTest is Test, Vectors {
 
         vm.expectRevert(PasskeyAccount.MinSignersRequired.selector);
         factory.createAccount(signers, THRESHOLD, salt);
+    }
+
+    function test_ImplementationCannotBeReinitialized() public {
+        PasskeyAccount.PublicKey[] memory signers = _signers2(K0_X, K0_Y, K1_X, K1_Y);
+        vm.expectRevert(PasskeyAccount.AlreadyInitialized.selector);
+        implementation.initialize(signers, THRESHOLD);
+    }
+
+    function test_CloneCannotBeReinitialized() public {
+        PasskeyAccount.PublicKey[] memory signers = _signers2(K0_X, K0_Y, K1_X, K1_Y);
+        bytes32 salt = bytes32(uint256(555));
+        PasskeyAccount deployed = factory.createAccount(signers, THRESHOLD, salt);
+
+        vm.expectRevert(PasskeyAccount.AlreadyInitialized.selector);
+        deployed.initialize(signers, THRESHOLD);
     }
 
     function test_InitCode_Execution_Matches_PackedUserOp() public {

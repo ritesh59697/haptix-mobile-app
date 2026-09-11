@@ -100,6 +100,9 @@ contract PasskeyAccount {
     /// @notice Whitelisted recipient addresses for safe 1-sig transfers.
     mapping(address => bool) public isAllowedRecipient;
 
+    /// @dev Initializer guard for ERC-1167 minimal proxy clones.
+    bool private _initialized;
+
     // -----------------------------------------------------------------------
     // Agent Delegation & Session State
     // -----------------------------------------------------------------------
@@ -151,6 +154,28 @@ contract PasskeyAccount {
     /// @notice Agent address => Asset => Rolling spend accounting.
     mapping(address => mapping(address => SpendWindow.Window)) public agentWindow;
 
+    // -----------------------------------------------------------------------
+    // Guardian & Social Recovery State
+    // -----------------------------------------------------------------------
+
+    struct RecoveryRequest {
+        uint48 executeAfter;
+        bool active;
+        bytes32 signersHash;
+    }
+
+    /// @notice Designated guardian address authorized to initiate emergency recovery.
+    address public guardian;
+
+    /// @notice Timelock in seconds that must elapse before a recovery proposal can be completed.
+    uint48 public recoveryTimelock;
+
+    /// @notice Minimum allowed recovery timelock (24 hours) to prevent flash takeover.
+    uint48 public constant MIN_RECOVERY_TIMELOCK = 1 days;
+
+    /// @notice Currently active recovery proposal.
+    RecoveryRequest public pendingRecovery;
+
     event SignerAdded(uint256 indexed id, uint256 x, uint256 y);
     event SignerRemoved(uint256 indexed id);
     event SignerReplaced(uint256 indexed id, uint256 oldX, uint256 oldY, uint256 newX, uint256 newY);
@@ -162,6 +187,10 @@ contract PasskeyAccount {
     event AccountUnfrozen();
     event AllowlistToggled(bool enabled);
     event RecipientAllowlistUpdated(address indexed recipient, bool allowed);
+    event GuardianSet(address indexed guardian, uint48 timelock);
+    event RecoveryInitiated(address indexed guardian, uint48 executeAfter, bytes32 signersHash, uint256 newSignerCount);
+    event RecoveryCompleted(bytes32 signersHash, uint256 newSignerCount);
+    event RecoveryCancelled();
 
     event AgentSessionGranted(
         address indexed agentKey,
@@ -191,6 +220,14 @@ contract PasskeyAccount {
     error AgentRevoked();
     error InvalidAgentKey();
     error InvalidSessionDuration();
+    error NotGuardian();
+    error RecoveryPending();
+    error NoActiveRecovery();
+    error TimelockNotExpired();
+    error InvalidTimelock();
+    error SignersHashMismatch();
+    error AccountIsFrozen();
+    error AlreadyInitialized();
 
     modifier onlyEntryPoint() {
         if (msg.sender != entryPoint) revert NotEntryPoint();
@@ -207,37 +244,64 @@ contract PasskeyAccount {
     }
 
     /// @param initialSigners Passkey public keys to enrol at construction.
-    ///
-    /// @dev Enrolling every signer up front matters more than it looks. Config
-    ///      calls (`addSigner`, `setWindow`, `setThreshold`) are `onlySelf` and
-    ///      are not `execute` calls, so `_requiredSignatures` gives them the
-    ///      full 2-signature quorum. An account deployed with ONE signer can
-    ///      therefore never be configured -- not even to add the second signer
-    ///      it would need to configure anything. It can only spend below its
-    ///      per-op threshold, forever.
-    ///
-    ///      Deploying with one signer is still permitted (it is a valid, if
-    ///      limited, configuration) but callers should know what they are
-    ///      choosing.
     constructor(
         address _entryPoint,
         PublicKey[] memory initialSigners,
         uint256 _threshold
     ) {
         if (initialSigners.length < 2) revert MinSignersRequired();
-
         entryPoint = _entryPoint;
-        for (uint256 i = 0; i < initialSigners.length; i++) {
-            if (initialSigners[i].x == 0 || initialSigners[i].y == 0) revert InvalidPublicKey();
+        _initialized = true;
+        _setupAccount(initialSigners, _threshold);
+    }
+
+    /// @notice Initializes an ERC-1167 clone instance with initial signers and threshold.
+    /// @dev Protected by the _initialized guard; can only be called once.
+    function initialize(
+        PublicKey[] calldata initialSigners,
+        uint256 _threshold
+    ) external {
+        if (_initialized) revert AlreadyInitialized();
+        _initialized = true;
+        _setupAccount(_toMemSigners(initialSigners), _threshold);
+    }
+
+    function _toMemSigners(PublicKey[] calldata keys) internal pure returns (PublicKey[] memory mem) {
+        mem = new PublicKey[](keys.length);
+        for (uint256 i = 0; i < keys.length; i++) {
+            mem[i] = keys[i];
+        }
+    }
+
+    function _validateKeys(PublicKey[] memory keys) internal pure {
+        if (keys.length < 2) revert MinSignersRequired();
+        for (uint256 i = 0; i < keys.length; i++) {
+            if (keys[i].x == 0 || keys[i].y == 0) revert InvalidPublicKey();
             for (uint256 j = 0; j < i; j++) {
-                if (initialSigners[j].x == initialSigners[i].x && initialSigners[j].y == initialSigners[i].y) {
+                if (keys[j].x == keys[i].x && keys[j].y == keys[i].y) {
                     revert DuplicateSigner();
                 }
             }
-            signers[i] = initialSigners[i];
-            emit SignerAdded(i, initialSigners[i].x, initialSigners[i].y);
         }
-        signerCount = initialSigners.length;
+    }
+
+    function _setSigners(PublicKey[] memory newSigners) internal {
+        for (uint256 i = 0; i < signerCount; i++) {
+            delete signers[i];
+        }
+        signerCount = newSigners.length;
+        for (uint256 i = 0; i < newSigners.length; i++) {
+            signers[i] = newSigners[i];
+            emit SignerAdded(i, newSigners[i].x, newSigners[i].y);
+        }
+    }
+
+    function _setupAccount(
+        PublicKey[] memory initialSigners,
+        uint256 _threshold
+    ) internal {
+        _validateKeys(initialSigners);
+        _setSigners(initialSigners);
         threshold = _threshold;
         emit ThresholdChanged(_threshold);
     }
@@ -331,6 +395,24 @@ contract PasskeyAccount {
     // Agent Validation Logic
     // -----------------------------------------------------------------------
 
+    function _checkPaymaster(bytes calldata paymasterAndData) internal view returns (bool) {
+        if (paymasterAndData.length > 0) {
+            if (paymasterAndData.length < 20) return false;
+            if (trustedPaymaster != address(0)) {
+                if (address(bytes20(paymasterAndData[0:20])) != trustedPaymaster) return false;
+            }
+        }
+        return true;
+    }
+
+    function _validateSignerIds(uint256[] memory ids) internal view returns (bool) {
+        for (uint256 i = 0; i < ids.length; i++) {
+            if (i > 0 && ids[i] <= ids[i - 1]) return false;
+            if (ids[i] >= signerCount) return false;
+        }
+        return true;
+    }
+
     function _validateAgentUserOp(
         PackedUserOperation calldata userOp,
         bytes32 userOpHash
@@ -339,13 +421,7 @@ contract PasskeyAccount {
         if (userOp.signature.length < 2) return SIG_VALIDATION_FAILED;
 
         // Validate paymaster if present
-        if (userOp.paymasterAndData.length > 0) {
-            if (userOp.paymasterAndData.length < 20) return SIG_VALIDATION_FAILED;
-            if (trustedPaymaster != address(0)) {
-                address pm = address(bytes20(userOp.paymasterAndData[0:20]));
-                if (pm != trustedPaymaster) return SIG_VALIDATION_FAILED;
-            }
-        }
+        if (!_checkPaymaster(userOp.paymasterAndData)) return SIG_VALIDATION_FAILED;
 
         uint8 sigType = uint8(userOp.signature[0]);
 
@@ -421,11 +497,7 @@ contract PasskeyAccount {
         uint256 minRequired
     ) internal view returns (bool) {
         if (ids.length != sigs.length || ids.length < minRequired) return false;
-
-        for (uint256 i = 0; i < ids.length; i++) {
-            if (i > 0 && ids[i] <= ids[i - 1]) return false;
-            if (ids[i] >= signerCount) return false;
-        }
+        if (!_validateSignerIds(ids)) return false;
 
         for (uint256 i = 0; i < ids.length; i++) {
             PublicKey memory pk = signers[ids[i]];
@@ -454,7 +526,7 @@ contract PasskeyAccount {
         if (dest == address(this)) return (false, sp);
 
         uint256 value = uint256(bytes32(callData[68:100]));
-        (bytes calldata func, bool decoded) = _extractFuncFromAgentCall(callData);
+        (bytes calldata func, bool decoded) = _extractCalldataSlice(callData, 100, 128);
         if (!decoded) return (false, sp);
 
         return _classifyAgentCall(agentKey, dest, value, func, isEscalated);
@@ -488,19 +560,9 @@ contract PasskeyAccount {
 
         if (!isEscalated) {
             SpendWindow.Check memory c = _checkAgentWindows(agentKey, sp);
+            c = SpendWindow.merge(c, SpendWindow.Check(false, session.validUntil, session.validAfter));
             if (c.exceeds) return SIG_VALIDATION_FAILED;
-
-            uint48 validAfter = c.validAfter > session.validAfter ? c.validAfter : session.validAfter;
-            uint48 validUntil = session.validUntil;
-            if (c.validUntil != 0) {
-                validUntil = (validUntil == 0 || c.validUntil < validUntil) ? c.validUntil : validUntil;
-            }
-
-            if (validUntil != 0 && validAfter > validUntil) {
-                return SIG_VALIDATION_FAILED;
-            }
-
-            return SpendWindow.packValidationData(SIG_VALIDATION_SUCCESS, validUntil, validAfter);
+            return SpendWindow.packValidationData(SIG_VALIDATION_SUCCESS, c.validUntil, c.validAfter);
         }
 
         return SpendWindow.packValidationData(SIG_VALIDATION_SUCCESS, session.validUntil, session.validAfter);
@@ -526,6 +588,18 @@ contract PasskeyAccount {
         return (true, sp);
     }
 
+    function _checkAgentLimit(
+        AgentSession storage session,
+        uint256 amt,
+        uint256 perTxLimit,
+        bool isEscalated
+    ) internal view returns (bool) {
+        if (!isEscalated) {
+            return (amt > 0 && amt <= perTxLimit);
+        }
+        return (session.humanApprovalThreshold == 0 || amt <= session.humanApprovalThreshold);
+    }
+
     function _inspectAgentCall(
         address agentKey,
         address dest,
@@ -537,18 +611,14 @@ contract PasskeyAccount {
 
         // 1. Plain ETH transfer
         if (func.length == 0) {
-            if (!agentAllowedTokens[agentKey][ETH]) return (false, address(0), 0, 0);
-            if (!agentAllowedProtocols[agentKey][dest] && !isAllowedRecipient[dest]) {
-                return (false, address(0), 0, 0);
+            if (
+                agentAllowedTokens[agentKey][ETH] &&
+                (agentAllowedProtocols[agentKey][dest] || isAllowedRecipient[dest]) &&
+                _checkAgentLimit(session, value, session.perTxLimitEth, isEscalated)
+            ) {
+                return (true, address(0), 0, value);
             }
-            if (!isEscalated) {
-                if (value == 0 || value > session.perTxLimitEth) return (false, address(0), 0, 0);
-            } else {
-                if (session.humanApprovalThreshold > 0 && value > session.humanApprovalThreshold) {
-                    return (false, address(0), 0, 0);
-                }
-            }
-            return (true, address(0), 0, value);
+            return (false, address(0), 0, 0);
         }
 
         if (func.length < 4) return (false, address(0), 0, 0);
@@ -556,70 +626,52 @@ contract PasskeyAccount {
 
         // 2. ERC-20 transfer
         if (innerSel == SpendPolicy.TRANSFER) {
-            if (value > 0) return (false, address(0), 0, 0);
-            if (func.length < 68) return (false, address(0), 0, 0);
-            if (!agentAllowedTokens[agentKey][dest]) return (false, address(0), 0, 0);
-            address recipient = address(uint160(uint256(bytes32(func[4:36]))));
-            if (!agentAllowedProtocols[agentKey][recipient] && !isAllowedRecipient[recipient]) {
-                return (false, address(0), 0, 0);
-            }
-            uint256 amt = uint256(bytes32(func[36:68]));
-            if (!isEscalated) {
-                if (amt == 0 || amt > session.perTxLimitToken) return (false, address(0), 0, 0);
-            } else {
-                if (session.humanApprovalThreshold > 0 && amt > session.humanApprovalThreshold) {
-                    return (false, address(0), 0, 0);
+            if (
+                value == 0 &&
+                func.length >= 68 &&
+                agentAllowedTokens[agentKey][dest]
+            ) {
+                address recipient = address(uint160(uint256(bytes32(func[4:36]))));
+                if (agentAllowedProtocols[agentKey][recipient] || isAllowedRecipient[recipient]) {
+                    uint256 amt = uint256(bytes32(func[36:68]));
+                    if (_checkAgentLimit(session, amt, session.perTxLimitToken, isEscalated)) {
+                        return (true, dest, amt, 0);
+                    }
                 }
             }
-            return (true, dest, amt, 0);
+            return (false, address(0), 0, 0);
         }
 
         // 3. Uniswap V3 Swaps
         if (innerSel == SpendPolicy.UNISWAP_V3_EXACT_INPUT_SINGLE || innerSel == SpendPolicy.UNISWAP_V3_EXACT_INPUT_SINGLE_ROUTER1) {
-            if (value > 0) return (false, address(0), 0, 0);
-            if (!agentAllowedProtocols[agentKey][dest]) return (false, address(0), 0, 0);
-            if (!agentAllowedSelectors[agentKey][dest][innerSel]) return (false, address(0), 0, 0);
-
-            SpendPolicy.SwapParams memory swapParams = SpendPolicy.decodeUniswapV3ExactInputSingle(func);
-            if (!swapParams.isValid) return (false, address(0), 0, 0);
-            if (!agentAllowedTokens[agentKey][swapParams.tokenIn]) return (false, address(0), 0, 0);
-            if (!agentAllowedTokens[agentKey][swapParams.tokenOut]) return (false, address(0), 0, 0);
-
-            // RECIPIENT LOCK: Swap proceeds MUST remain in this account!
-            if (swapParams.recipient != address(this)) return (false, address(0), 0, 0);
-
-            if (!isEscalated) {
-                if (swapParams.amountIn == 0 || swapParams.amountIn > session.perTxLimitToken) return (false, address(0), 0, 0);
-                // Disallow zero slippage protection for autonomous ops (prevents MEV sandwiching)
-                if (swapParams.amountOutMinimum == 0) return (false, address(0), 0, 0);
-            } else {
-                if (session.humanApprovalThreshold > 0 && swapParams.amountIn > session.humanApprovalThreshold) {
-                    return (false, address(0), 0, 0);
+            if (
+                value == 0 &&
+                agentAllowedProtocols[agentKey][dest] &&
+                agentAllowedSelectors[agentKey][dest][innerSel]
+            ) {
+                SpendPolicy.SwapParams memory swapParams = SpendPolicy.decodeUniswapV3ExactInputSingle(func);
+                if (
+                    swapParams.isValid &&
+                    agentAllowedTokens[agentKey][swapParams.tokenIn] &&
+                    agentAllowedTokens[agentKey][swapParams.tokenOut] &&
+                    swapParams.recipient == address(this) &&
+                    (isEscalated || swapParams.amountOutMinimum > 0) &&
+                    _checkAgentLimit(session, swapParams.amountIn, session.perTxLimitToken, isEscalated)
+                ) {
+                    return (true, swapParams.tokenIn, swapParams.amountIn, 0);
                 }
             }
-            return (true, swapParams.tokenIn, swapParams.amountIn, 0);
+            return (false, address(0), 0, 0);
         }
 
         // 4. Approvals and permits are strictly disallowed for autonomous agent ops
-        if (
-            innerSel == SpendPolicy.APPROVE ||
-            innerSel == SpendPolicy.INCREASE_ALLOWANCE ||
-            innerSel == SpendPolicy.DECREASE_ALLOWANCE ||
-            innerSel == SpendPolicy.SET_APPROVAL_ALL ||
-            innerSel == SpendPolicy.PERMIT ||
-            innerSel == SpendPolicy.PERMIT_DAI ||
-            innerSel == SpendPolicy.PERMIT2_PERMIT ||
-            innerSel == SpendPolicy.PERMIT2_PERMIT_BATCH ||
-            innerSel == SpendPolicy.PERMIT2_TRANSFER_FROM
-        ) {
+        if (SpendPolicy.isRestrictedApprovalOrPermit(innerSel)) {
             return (false, address(0), 0, 0);
         }
 
         // 5. Generic whitelisted protocol call (only if escalated)
-        if (agentAllowedProtocols[agentKey][dest] && agentAllowedSelectors[agentKey][dest][innerSel]) {
-            if (isEscalated) {
-                return (true, address(0), 0, 0);
-            }
+        if (isEscalated && agentAllowedProtocols[agentKey][dest] && agentAllowedSelectors[agentKey][dest][innerSel]) {
+            return (true, address(0), 0, 0);
         }
 
         return (false, address(0), 0, 0);
@@ -632,15 +684,38 @@ contract PasskeyAccount {
         uint256 fBase;
     }
 
-    function _agentBatchOffsets(bytes calldata callData)
+    function _addAsset(
+        SpendWindow.Spend memory sp,
+        address tok,
+        uint256 amt
+    ) private pure returns (bool) {
+        if (tok == address(0) || amt == 0) return true;
+        uint256 j = 0;
+        for (; j < sp.nTokens; j++) {
+            if (sp.tokens[j] == tok) break;
+        }
+        if (j == sp.nTokens) {
+            if (sp.nTokens == MAX_PRICED_ASSETS) return false;
+            sp.tokens[j] = tok;
+            sp.nTokens++;
+        }
+        unchecked {
+            uint256 newAmt = sp.amounts[j] + amt;
+            if (newAmt < sp.amounts[j]) return false;
+            sp.amounts[j] = newAmt;
+        }
+        return true;
+    }
+
+    function _parseBatchOffsets(bytes calldata callData, uint256 headStart, uint256 minOff)
         private
         pure
         returns (BatchOffsets memory off, bool ok)
     {
-        if (callData.length < 132) return (off, false);
-        (uint256 dOff, bool d1) = _arrayStart(callData, 36, 128);
-        (uint256 vOff, bool d2) = _arrayStart(callData, 68, 128);
-        (uint256 fOff, bool d3) = _arrayStart(callData, 100, 128);
+        if (callData.length < headStart + 96) return (off, false);
+        (uint256 dOff, bool d1) = _arrayStart(callData, headStart, minOff);
+        (uint256 vOff, bool d2) = _arrayStart(callData, headStart + 32, minOff);
+        (uint256 fOff, bool d3) = _arrayStart(callData, headStart + 64, minOff);
         if (!d1 || !d2 || !d3) return (off, false);
 
         off.n = uint256(bytes32(callData[dOff:dOff + 32]));
@@ -692,22 +767,7 @@ contract PasskeyAccount {
                 sp.ethAmount = newEth;
             }
 
-            if (elTok != address(0)) {
-                uint256 j = 0;
-                for (; j < sp.nTokens; j++) {
-                    if (sp.tokens[j] == elTok) break;
-                }
-                if (j == sp.nTokens) {
-                    if (sp.nTokens == MAX_PRICED_ASSETS) return (false, sp);
-                    sp.tokens[j] = elTok;
-                    sp.nTokens++;
-                }
-                unchecked {
-                    uint256 newAmt = sp.amounts[j] + elAmt;
-                    if (newAmt < sp.amounts[j]) return (false, sp);
-                    sp.amounts[j] = newAmt;
-                }
-            }
+            if (!_addAsset(sp, elTok, elAmt)) return (false, sp);
         }
         sp.ok = true;
         return (true, sp);
@@ -722,27 +782,19 @@ contract PasskeyAccount {
         address cdAgent = address(uint160(uint256(bytes32(callData[4:36]))));
         if (cdAgent != agentKey) return (false, sp);
 
-        (BatchOffsets memory off, bool bOk) = _agentBatchOffsets(callData);
+        (BatchOffsets memory off, bool bOk) = _parseBatchOffsets(callData, 36, 128);
         if (!bOk) return (false, sp);
 
         (ok, sp) = _accumulateAgentBatch(agentKey, callData, off, isEscalated);
         if (!ok) return (false, sp);
 
         AgentSession storage session = agentSessions[agentKey];
-        if (!isEscalated) {
-            if (sp.ethAmount > session.perTxLimitEth) return (false, sp);
-
+        uint256 maxEth = isEscalated ? session.humanApprovalThreshold : session.perTxLimitEth;
+        uint256 maxToken = isEscalated ? session.humanApprovalThreshold : session.perTxLimitToken;
+        if ((maxEth > 0 || !isEscalated) && sp.ethAmount > maxEth) return (false, sp);
+        if (maxToken > 0 || !isEscalated) {
             for (uint256 j = 0; j < sp.nTokens; j++) {
-                if (sp.amounts[j] > session.perTxLimitToken) return (false, sp);
-            }
-        } else {
-            if (session.humanApprovalThreshold > 0 && sp.ethAmount > session.humanApprovalThreshold) {
-                return (false, sp);
-            }
-            for (uint256 j = 0; j < sp.nTokens; j++) {
-                if (session.humanApprovalThreshold > 0 && sp.amounts[j] > session.humanApprovalThreshold) {
-                    return (false, sp);
-                }
+                if (sp.amounts[j] > maxToken) return (false, sp);
             }
         }
 
@@ -776,15 +828,19 @@ contract PasskeyAccount {
         return c;
     }
 
-    function _recordAgentCall(address agentKey, address dest, uint256 value, bytes calldata func)
-        private
-    {
-        AgentSession storage session = agentSessions[agentKey];
-        uint256 dur = session.windowSeconds;
+    function _recordCallSpend(SpendPolicy.Spend memory s, uint256 value) private {
+        if (windowSeconds == 0) return;
+        if (value > 0 && windowCap[ETH] != 0) {
+            window[ETH].record(value, windowSeconds);
+        }
+        if (s.token != address(0) && s.tokenAmount > 0 && windowCap[s.token] != 0) {
+            window[s.token].record(s.tokenAmount, windowSeconds);
+        }
+    }
+
+    function _recordAgentCallSpend(address agentKey, SpendPolicy.Spend memory s, uint256 value) private {
+        uint256 dur = agentSessions[agentKey].windowSeconds;
         if (dur == 0) return;
-
-        SpendPolicy.Spend memory s = SpendPolicy.classify(dest, value, func);
-
         if (value > 0 && agentWindowCap[agentKey][ETH] != 0) {
             agentWindow[agentKey][ETH].record(value, dur);
         }
@@ -793,15 +849,14 @@ contract PasskeyAccount {
         }
     }
 
-    function _extractFuncFromAgentCall(bytes calldata callData)
+    function _extractCalldataSlice(bytes calldata callData, uint256 offPos, uint256 minOff)
         private
         pure
-        returns (bytes calldata func, bool decoded)
+        returns (bytes calldata slice, bool ok)
     {
-        if (callData.length < 132) return (callData[0:0], false);
-
-        uint256 off = uint256(bytes32(callData[100:132]));
-        if (off < 128 || off > type(uint64).max) return (callData[0:0], false);
+        if (callData.length < offPos + 32) return (callData[0:0], false);
+        uint256 off = uint256(bytes32(callData[offPos:offPos + 32]));
+        if (off < minOff || off > type(uint64).max) return (callData[0:0], false);
         uint256 lenPos = 4 + off;
         if (lenPos + 32 > callData.length) return (callData[0:0], false);
 
@@ -832,16 +887,8 @@ contract PasskeyAccount {
         if (ethCap != 0) {
             c = window[ETH].check(sp.ethAmount, ethCap);
             if (c.exceeds) return c;
-        } else if (sp.ethAmount > 0 && _anyWindowConfigured()) {
-            // ETH window not configured: unconstrained, matching the
-            // "zero means disabled" rule. Nothing to merge.
         }
 
-        // Each distinct token costs an SLOAD plus a check. Measured at ~28k
-        // gas per token in a batch of distinct tokens (test/BatchGas.t.sol),
-        // so an unbounded count would blow past a bundler's
-        // verificationGasLimit and make the op unusable rather than merely
-        // expensive. Beyond the limit, escalate to a full quorum instead.
         if (sp.nTokens > MAX_PRICED_ASSETS) {
             c.exceeds = true;
             return c;
@@ -860,12 +907,6 @@ contract PasskeyAccount {
         return c;
     }
 
-    /// @dev Cheap probe so the ETH branch above reads clearly; windowSeconds is
-    ///      only nonzero once setWindow has been called at least once.
-    function _anyWindowConfigured() private view returns (bool) {
-        return windowSeconds != 0;
-    }
-
     /// @dev Per-asset breakdown of what a callData spends.
     function _spendOf(bytes calldata callData)
         internal
@@ -878,16 +919,19 @@ contract PasskeyAccount {
         if (sel == this.execute.selector) {
             if (callData.length < 68) return sp;
             address dest = address(uint160(uint256(bytes32(callData[4:36]))));
-            uint256 value = uint256(bytes32(callData[36:68]));
-            (bytes calldata func, bool decoded) = _extractFunc(callData);
+            (bytes calldata func, bool decoded) = _extractCalldataSlice(callData, 68, 96);
             if (!decoded) return sp;
 
-            // Emergency freeze is a 0-value self-call that moves no assets
-            if (dest == address(this) && func.length >= 4 && bytes4(func[0:4]) == this.freeze.selector) {
+            // Emergency freeze / cancelRecovery are 0-value self-calls that move no assets
+            if (
+                dest == address(this) && func.length >= 4 &&
+                (bytes4(func[0:4]) == this.freeze.selector || bytes4(func[0:4]) == this.cancelRecovery.selector)
+            ) {
                 sp.ok = true;
                 return sp;
             }
 
+            uint256 value = uint256(bytes32(callData[36:68]));
             SpendPolicy.Spend memory s = SpendPolicy.classify(dest, value, func);
             if (s.alwaysTwoSigs) return sp; // unpriceable -> reject
 
@@ -902,14 +946,7 @@ contract PasskeyAccount {
         }
 
         if (sel == this.executeBatch.selector) {
-            BatchTotals memory t = _sumBatch(callData);
-            if (!t.ok) return sp;
-            sp.ethAmount = t.ethTotal;
-            sp.tokens = t.tokens;
-            sp.amounts = t.amounts;
-            sp.nTokens = t.nTokens;
-            sp.ok = true;
-            return sp;
+            return _sumBatch(callData);
         }
 
         // Config calls require a full quorum via _requiredSignatures, so they
@@ -922,58 +959,15 @@ contract PasskeyAccount {
         PackedUserOperation calldata userOp,
         bytes32 userOpHash
     ) internal view returns (bool) {
-        if (userOp.signature.length < 64) return false;
-
-        // Fast calldata check of signer IDs before allocating memory or decoding structs.
-        // Rejects duplicate, unordered, or out-of-range IDs in < 2k gas.
-        uint256 idsOffset = uint256(bytes32(userOp.signature[0:32]));
-        if (idsOffset + 32 <= userOp.signature.length) {
-            uint256 len = uint256(bytes32(userOp.signature[idsOffset:idsOffset + 32]));
-            if (idsOffset + 32 + len * 32 <= userOp.signature.length) {
-                uint256 lastId = 0;
-                for (uint256 i = 0; i < len; i++) {
-                    uint256 id = uint256(bytes32(userOp.signature[idsOffset + 32 + i * 32:idsOffset + 64 + i * 32]));
-                    if (i > 0 && id <= lastId) return false;
-                    if (id >= signerCount) return false;
-                    lastId = id;
-                }
-            }
+        if (userOp.signature.length < 64 || !_checkPaymaster(userOp.paymasterAndData)) {
+            return false;
         }
 
         (uint256[] memory ids, WebAuthn.Signature[] memory sigs) =
             abi.decode(userOp.signature, (uint256[], WebAuthn.Signature[]));
 
-        if (ids.length != sigs.length || ids.length == 0) return false;
-
         uint256 required = _requiredSignatures(userOp.callData);
-        if (ids.length < required) return false;
-
-        // Validate paymaster if present:
-        if (userOp.paymasterAndData.length > 0) {
-            if (userOp.paymasterAndData.length < 20) return false;
-            if (trustedPaymaster != address(0)) {
-                address pm = address(bytes20(userOp.paymasterAndData[0:20]));
-                if (pm != trustedPaymaster) return false;
-            }
-        }
-
-        for (uint256 i = 0; i < ids.length; i++) {
-            if (i > 0 && ids[i] <= ids[i - 1]) return false;
-            if (ids[i] >= signerCount) return false;
-        }
-
-        for (uint256 i = 0; i < ids.length; i++) {
-            PublicKey memory pk = signers[ids[i]];
-            bool ok = WebAuthn.verify(
-                abi.encodePacked(userOpHash),
-                true, // require user verification (biometric), not mere presence
-                sigs[i],
-                pk.x,
-                pk.y
-            );
-            if (!ok) return false;
-        }
-        return true;
+        return _verifyPasskeys(ids, sigs, userOpHash, required);
     }
 
     /// @dev Decide how many signatures this call needs.
@@ -991,43 +985,25 @@ contract PasskeyAccount {
         if (callData.length < 4) return 2;
         bytes4 sel = bytes4(callData[0:4]);
 
-        // Emergency freeze trigger: allow 1 signature to freeze the account instantly
-        if (sel == this.execute.selector && callData.length >= 68) {
-            address target = address(uint160(uint256(bytes32(callData[4:36]))));
-            (bytes calldata innerFunc, bool decodedInner) = _extractFunc(callData);
-            if (target == address(this) && decodedInner && innerFunc.length >= 4 && bytes4(innerFunc[0:4]) == this.freeze.selector) {
-                return 1;
-            }
-        }
-
-        // If frozen, all other operations strictly require full 2-of-2 quorum
-        if (isFrozen) return 2;
-
-        // Length guard: a truncated execute() call must fall through to the
-        // 2-signature default, not revert on an out-of-bounds slice. Reverting
-        // inside validateUserOp is worse than rejecting -- it fails the whole
-        // op at the EntryPoint rather than returning a clean validation error.
         if (sel == this.executeBatch.selector) {
-            return _requiredSignaturesBatch(callData);
+            return isFrozen ? 2 : _requiredSignaturesBatch(callData);
         }
 
         if (sel != this.execute.selector || callData.length < 68) return 2;
 
-        // execute(address dest, uint256 value, bytes func)
         address dest = address(uint160(uint256(bytes32(callData[4:36]))));
-        uint256 value = uint256(bytes32(callData[36:68]));
-
-        // Decode the dynamic `func` argument. Its offset lives at callData[68:100]
-        // and is relative to the start of the argument block (callData + 4).
-        (bytes calldata func, bool decoded) = _extractFunc(callData);
-
-        // A decode failure is NOT the same as "no calldata". Malformed ABI
-        // encoding means we cannot see what this call does, so it gets the
-        // full quorum. Conflating the two let garbage calldata masquerade as a
-        // harmless zero-value ETH send and clear with a single signature.
+        (bytes calldata func, bool decoded) = _extractCalldataSlice(callData, 68, 96);
         if (!decoded) return 2;
 
-        // Recipient Allowlist Check: transfers to non-allowlisted addresses escalate to Quorum
+        if (dest == address(this) && func.length >= 4) {
+            bytes4 innerSel = bytes4(func[0:4]);
+            if (innerSel == this.freeze.selector || innerSel == this.cancelRecovery.selector) {
+                return 1;
+            }
+        }
+
+        if (isFrozen) return 2;
+
         if (allowlistEnabled) {
             address recipient = SpendPolicy.extractRecipient(dest, func);
             if (recipient == address(0) || !isAllowedRecipient[recipient]) {
@@ -1035,9 +1011,14 @@ contract PasskeyAccount {
             }
         }
 
-        return SpendPolicy.required(
-            dest, value, func, threshold, tokenThreshold[dest]
-        );
+        uint256 value = uint256(bytes32(callData[36:68]));
+        SpendPolicy.Spend memory s = SpendPolicy.classify(dest, value, func);
+        if (s.alwaysTwoSigs || s.ethAmount >= threshold) return 2;
+        if (s.token != address(0)) {
+            uint256 tThresh = tokenThreshold[s.token];
+            if (tThresh == 0 || s.tokenAmount >= tThresh) return 2;
+        }
+        return 1;
     }
 
     /// @dev Maximum batch entries the policy will attempt to price. A batch
@@ -1062,15 +1043,6 @@ contract PasskeyAccount {
     ///      defaults -- so cap the priced set and escalate beyond it.
     uint256 internal constant MAX_PRICED_ASSETS = 4;
 
-    /// @dev Per-asset running totals for a batch.
-    struct BatchTotals {
-        uint256 ethTotal;
-        address[MAX_PRICED_BATCH] tokens;
-        uint256[MAX_PRICED_BATCH] amounts;
-        uint256 nTokens;
-        bool ok;
-    }
-
     /// @dev Sum a batch per-asset, then apply the thresholds ONCE to the totals.
     ///
     ///      This is the whole point of batch support. Pricing each entry
@@ -1086,19 +1058,15 @@ contract PasskeyAccount {
         view
         returns (uint256)
     {
-        BatchTotals memory t = _sumBatch(callData);
+        SpendWindow.Spend memory sp = _sumBatch(callData);
 
         // Any decode failure, over-length batch, opaque call, or arithmetic
         // overflow escalates the entire batch.
-        if (!t.ok) return 2;
+        if (!sp.ok || sp.ethAmount >= threshold) return 2;
 
-        if (t.ethTotal >= threshold) return 2;
-
-        for (uint256 i = 0; i < t.nTokens; i++) {
-            if (
-                SpendPolicy._checkToken(t.amounts[i], tokenThreshold[t.tokens[i]])
-                    == 2
-            ) {
+        for (uint256 i = 0; i < sp.nTokens; i++) {
+            uint256 tThresh = tokenThreshold[sp.tokens[i]];
+            if (tThresh == 0 || sp.amounts[i] >= tThresh) {
                 return 2;
             }
         }
@@ -1110,60 +1078,39 @@ contract PasskeyAccount {
     function _sumBatch(bytes calldata callData)
         private
         view
-        returns (BatchTotals memory t)
+        returns (SpendWindow.Spend memory sp)
     {
         // executeBatch(address[] dests, uint256[] values, bytes[] funcs)
         // Three dynamic arrays; head is 3 offsets at 4, 36, 68.
-        if (callData.length < 100) return t;
+        if (callData.length < 100) return sp;
 
-        (uint256 dOff, bool d1) = _arrayStart(callData, 4, 96);
-        (uint256 vOff, bool d2) = _arrayStart(callData, 36, 96);
-        (uint256 fOff, bool d3) = _arrayStart(callData, 68, 96);
-        if (!d1 || !d2 || !d3) return t;
+        (BatchOffsets memory off, bool bOk) = _parseBatchOffsets(callData, 4, 96);
+        if (!bOk) return sp;
 
-        uint256 n = uint256(bytes32(callData[dOff:dOff + 32]));
-        {
-            uint256 nv = uint256(bytes32(callData[vOff:vOff + 32]));
-            uint256 nf = uint256(bytes32(callData[fOff:fOff + 32]));
-            // Mismatched lengths revert in executeBatch anyway; refuse to price.
-            if (n != nv || n != nf) return t;
-        }
-        if (n > MAX_PRICED_BATCH) return t;
-
-        // Element regions start right after each length word.
-        uint256 dBase = dOff + 32;
-        uint256 vBase = vOff + 32;
-        uint256 fBase = fOff + 32;
-        if (dBase + n * 32 > callData.length) return t;
-        if (vBase + n * 32 > callData.length) return t;
-        if (fBase + n * 32 > callData.length) return t;
-
-        for (uint256 i = 0; i < n; i++) {
-            if (!_accumulate(callData, t, dBase, vBase, fBase, i)) return t;
+        for (uint256 i = 0; i < off.n; i++) {
+            if (!_accumulate(callData, sp, off, i)) return sp;
         }
 
-        t.ok = true;
-        return t;
+        sp.ok = true;
+        return sp;
     }
 
     /// @dev Classify batch entry `i` and fold it into the running totals.
     ///      Split out from _sumBatch purely to stay under the stack limit.
     function _accumulate(
         bytes calldata callData,
-        BatchTotals memory t,
-        uint256 dBase,
-        uint256 vBase,
-        uint256 fBase,
+        SpendWindow.Spend memory sp,
+        BatchOffsets memory off,
         uint256 i
     ) private view returns (bool) {
         address dest = address(uint160(uint256(
-            bytes32(callData[dBase + i * 32:dBase + i * 32 + 32])
+            bytes32(callData[off.dBase + i * 32:off.dBase + i * 32 + 32])
         )));
         uint256 value = uint256(
-            bytes32(callData[vBase + i * 32:vBase + i * 32 + 32])
+            bytes32(callData[off.vBase + i * 32:off.vBase + i * 32 + 32])
         );
 
-        (bytes calldata func, bool fok) = _batchElement(callData, fBase, i);
+        (bytes calldata func, bool fok) = _batchElement(callData, off.fBase, i);
         if (!fok) return false;
 
         SpendPolicy.Spend memory s = SpendPolicy.classify(dest, value, func);
@@ -1182,32 +1129,12 @@ contract PasskeyAccount {
         // overflow, and a revert inside validateUserOp is worse than a clean
         // rejection, so check explicitly under `unchecked`.
         unchecked {
-            uint256 newEth = t.ethTotal + s.ethAmount;
-            if (newEth < t.ethTotal) return false;
-            t.ethTotal = newEth;
+            uint256 newEth = sp.ethAmount + s.ethAmount;
+            if (newEth < sp.ethAmount) return false;
+            sp.ethAmount = newEth;
         }
 
-        if (s.token != address(0)) {
-            uint256 j = 0;
-            for (; j < t.nTokens; j++) {
-                if (t.tokens[j] == s.token) break;
-            }
-            if (j == t.nTokens) {
-                // Stop as soon as the op touches more distinct assets than we
-                // will price. Bailing out HERE rather than after the loop is
-                // what actually saves the gas -- otherwise the expensive
-                // dedup scan has already run by the time anyone checks.
-                if (t.nTokens == MAX_PRICED_ASSETS) return false;
-                t.tokens[j] = s.token;
-                t.nTokens++;
-            }
-            unchecked {
-                uint256 newAmt = t.amounts[j] + s.tokenAmount;
-                if (newAmt < t.amounts[j]) return false;
-                t.amounts[j] = newAmt;
-            }
-        }
-        return true;
+        return _addAsset(sp, s.token, s.tokenAmount);
     }
 
     /// @dev Read a dynamic array's offset word at `headPos` and return the
@@ -1251,30 +1178,6 @@ contract PasskeyAccount {
     }
 
     /// @dev Safely slice out the `func` argument of execute().
-    /// @return func the inner calldata (empty slice when decoding failed)
-    /// @return decoded false if the ABI encoding is malformed -- callers MUST
-    ///         treat this as "unknown call", never as "empty call".
-    function _extractFunc(bytes calldata callData)
-        private
-        pure
-        returns (bytes calldata func, bool decoded)
-    {
-        if (callData.length < 100) return (callData[0:0], false);
-
-        uint256 off = uint256(bytes32(callData[68:100]));
-        // execute() has a 3-word (96 byte) static head; offsets < 96 are malformed.
-        // Guard against overflow and out-of-range offsets.
-        if (off < 96 || off > type(uint64).max) return (callData[0:0], false);
-        uint256 lenPos = 4 + off;
-        if (lenPos + 32 > callData.length) return (callData[0:0], false);
-
-        uint256 len = uint256(bytes32(callData[lenPos:lenPos + 32]));
-        if (len > type(uint64).max) return (callData[0:0], false);
-        uint256 start = lenPos + 32;
-        if (start + len > callData.length) return (callData[0:0], false);
-
-        return (callData[start:start + len], true);
-    }
 
     // -----------------------------------------------------------------------
     // Execution
@@ -1284,7 +1187,7 @@ contract PasskeyAccount {
         external
         onlyEntryPoint
     {
-        _recordCall(dest, value, func);
+        _recordCallSpend(SpendPolicy.classify(dest, value, func), value);
         _call(dest, value, func);
     }
 
@@ -1296,8 +1199,9 @@ contract PasskeyAccount {
         uint256 value,
         bytes calldata func
     ) external onlyEntryPoint {
-        _recordAgentCall(agentKey, dest, value, func);
-        _recordCall(dest, value, func);
+        SpendPolicy.Spend memory s = SpendPolicy.classify(dest, value, func);
+        _recordAgentCallSpend(agentKey, s, value);
+        _recordCallSpend(s, value);
         bytes4 sel = func.length >= 4 ? bytes4(func[0:4]) : bytes4(0);
         emit AgentActionExecuted(agentKey, dest, sel, value);
         _call(dest, value, func);
@@ -1318,10 +1222,7 @@ contract PasskeyAccount {
         }
 
         for (uint256 i = 0; i < dests.length; i++) {
-            _recordCall(dests[i], values[i], funcs[i]);
-        }
-
-        for (uint256 i = 0; i < dests.length; i++) {
+            _recordCallSpend(SpendPolicy.classify(dests[i], values[i], funcs[i]), values[i]);
             _call(dests[i], values[i], funcs[i]);
         }
     }
@@ -1339,34 +1240,12 @@ contract PasskeyAccount {
         }
 
         for (uint256 i = 0; i < dests.length; i++) {
-            _recordAgentCall(agentKey, dests[i], values[i], funcs[i]);
-            _recordCall(dests[i], values[i], funcs[i]);
-        }
-
-        for (uint256 i = 0; i < dests.length; i++) {
+            SpendPolicy.Spend memory s = SpendPolicy.classify(dests[i], values[i], funcs[i]);
+            _recordAgentCallSpend(agentKey, s, values[i]);
+            _recordCallSpend(s, values[i]);
             bytes4 sel = funcs[i].length >= 4 ? bytes4(funcs[i][0:4]) : bytes4(0);
             emit AgentActionExecuted(agentKey, dests[i], sel, values[i]);
             _call(dests[i], values[i], funcs[i]);
-        }
-    }
-
-    /// @dev Advance the rolling windows for one call. Called ONLY from
-    ///      execution paths -- it reads block.timestamp, which ERC-7562 bans
-    ///      during validation. This asymmetry (validation reads, execution
-    ///      writes) is the core of the design, not an accident of structure.
-    function _recordCall(address dest, uint256 value, bytes calldata func)
-        private
-    {
-        if (windowSeconds == 0) return; // windowing disabled entirely
-
-        SpendPolicy.Spend memory s = SpendPolicy.classify(dest, value, func);
-
-        if (value > 0 && windowCap[ETH] != 0) {
-            window[ETH].record(value, windowSeconds);
-        }
-        if (s.token != address(0) && s.tokenAmount > 0
-            && windowCap[s.token] != 0) {
-            window[s.token].record(s.tokenAmount, windowSeconds);
         }
     }
 
@@ -1386,12 +1265,15 @@ contract PasskeyAccount {
     /// @notice Grants a bounded session to an autonomous agent key.
     /// @dev strictly onlySelf, so it requires a 2-of-N hardware passkey quorum.
     function grantAgentSession(SessionConfig calldata config) external onlySelf {
-        if (config.agentKey == address(0)) revert InvalidAgentKey();
+        address aKey = config.agentKey;
+        if (aKey == address(0)) revert InvalidAgentKey();
         if (config.validUntil <= config.validAfter) revert InvalidSessionDuration();
-        if (config.allowedTokens.length != config.tokenWindowCaps.length) revert LengthMismatch();
-        if (config.allowedProtocols.length != config.allowedSelectors.length) revert LengthMismatch();
+        if (config.allowedTokens.length != config.tokenWindowCaps.length ||
+            config.allowedProtocols.length != config.allowedSelectors.length) {
+            revert LengthMismatch();
+        }
 
-        AgentSession storage session = agentSessions[config.agentKey];
+        AgentSession storage session = agentSessions[aKey];
         session.validAfter = config.validAfter;
         session.validUntil = config.validUntil;
         session.isRegistered = true;
@@ -1402,20 +1284,24 @@ contract PasskeyAccount {
         session.windowSeconds = config.windowDuration;
 
         for (uint256 i = 0; i < config.allowedProtocols.length; i++) {
-            agentAllowedProtocols[config.agentKey][config.allowedProtocols[i]] = true;
-            emit AgentProtocolUpdated(config.agentKey, config.allowedProtocols[i], true);
-            agentAllowedSelectors[config.agentKey][config.allowedProtocols[i]][config.allowedSelectors[i]] = true;
-            emit AgentSelectorUpdated(config.agentKey, config.allowedProtocols[i], config.allowedSelectors[i], true);
+            address proto = config.allowedProtocols[i];
+            bytes4 sel = config.allowedSelectors[i];
+            agentAllowedProtocols[aKey][proto] = true;
+            emit AgentProtocolUpdated(aKey, proto, true);
+            agentAllowedSelectors[aKey][proto][sel] = true;
+            emit AgentSelectorUpdated(aKey, proto, sel, true);
         }
 
         for (uint256 i = 0; i < config.allowedTokens.length; i++) {
-            agentAllowedTokens[config.agentKey][config.allowedTokens[i]] = true;
-            agentWindowCap[config.agentKey][config.allowedTokens[i]] = config.tokenWindowCaps[i];
-            emit AgentTokenUpdated(config.agentKey, config.allowedTokens[i], true, config.tokenWindowCaps[i]);
+            address tok = config.allowedTokens[i];
+            uint256 cap = config.tokenWindowCaps[i];
+            agentAllowedTokens[aKey][tok] = true;
+            agentWindowCap[aKey][tok] = cap;
+            emit AgentTokenUpdated(aKey, tok, true, cap);
         }
 
         emit AgentSessionGranted(
-            config.agentKey,
+            aKey,
             config.validAfter,
             config.validUntil,
             config.perTxLimitEth,
@@ -1424,31 +1310,35 @@ contract PasskeyAccount {
         );
     }
 
+    function _checkAgentRegistered(address agentKey) internal view {
+        if (!agentSessions[agentKey].isRegistered) revert AgentNotRegistered();
+    }
+
     /// @notice Revokes an agent session immediately.
     /// @dev onlySelf, requiring 2-of-N passkey quorum.
     function revokeAgentSession(address agentKey) external onlySelf {
-        if (!agentSessions[agentKey].isRegistered) revert AgentNotRegistered();
+        _checkAgentRegistered(agentKey);
         agentSessions[agentKey].revoked = true;
         emit AgentSessionRevoked(agentKey);
     }
 
     /// @notice Whitelists or removes a protocol for an agent.
     function setAgentProtocol(address agentKey, address protocol, bool allowed) external onlySelf {
-        if (!agentSessions[agentKey].isRegistered) revert AgentNotRegistered();
+        _checkAgentRegistered(agentKey);
         agentAllowedProtocols[agentKey][protocol] = allowed;
         emit AgentProtocolUpdated(agentKey, protocol, allowed);
     }
 
     /// @notice Whitelists or removes a function selector for an agent on a protocol.
     function setAgentSelector(address agentKey, address protocol, bytes4 selector, bool allowed) external onlySelf {
-        if (!agentSessions[agentKey].isRegistered) revert AgentNotRegistered();
+        _checkAgentRegistered(agentKey);
         agentAllowedSelectors[agentKey][protocol][selector] = allowed;
         emit AgentSelectorUpdated(agentKey, protocol, selector, allowed);
     }
 
     /// @notice Whitelists or configures rolling limit for an asset for an agent.
     function setAgentToken(address agentKey, address token, bool allowed, uint256 cap) external onlySelf {
-        if (!agentSessions[agentKey].isRegistered) revert AgentNotRegistered();
+        _checkAgentRegistered(agentKey);
         agentAllowedTokens[agentKey][token] = allowed;
         agentWindowCap[agentKey][token] = cap;
         emit AgentTokenUpdated(agentKey, token, allowed, cap);
@@ -1470,11 +1360,15 @@ contract PasskeyAccount {
         return false;
     }
 
+    function _validateKey(uint256 x, uint256 y) internal view {
+        if (x == 0 || y == 0) revert InvalidPublicKey();
+        if (_isSigner(x, y)) revert DuplicateSigner();
+    }
+
     /// @notice Enrolls a new P-256 passkey.
     /// @dev onlySelf, so it requires a 2-of-2 hardware quorum.
     function addSigner(uint256 x, uint256 y) external onlySelf {
-        if (x == 0 || y == 0) revert InvalidPublicKey();
-        if (_isSigner(x, y)) revert DuplicateSigner();
+        _validateKey(x, y);
         uint256 id = signerCount++;
         signers[id] = PublicKey(x, y);
         emit SignerAdded(id, x, y);
@@ -1498,8 +1392,7 @@ contract PasskeyAccount {
     /// @notice Replaces an existing passkey with a new one atomically.
     function replaceSigner(uint256 id, uint256 newX, uint256 newY) external onlySelf {
         if (id >= signerCount) revert BadSignerIndex();
-        if (newX == 0 || newY == 0) revert InvalidPublicKey();
-        if (_isSigner(newX, newY)) revert DuplicateSigner();
+        _validateKey(newX, newY);
 
         PublicKey memory old = signers[id];
         signers[id] = PublicKey(newX, newY);
@@ -1574,19 +1467,94 @@ contract PasskeyAccount {
         emit AllowlistToggled(enabled);
     }
 
-    /// @notice Adds or removes an address from the trusted recipient allowlist.
-    function setAllowedRecipient(address recipient, bool allowed) external onlySelf {
+    function _setAllowedRecipient(address recipient, bool allowed) internal {
         isAllowedRecipient[recipient] = allowed;
         emit RecipientAllowlistUpdated(recipient, allowed);
+    }
+
+    /// @notice Adds or removes an address from the trusted recipient allowlist.
+    function setAllowedRecipient(address recipient, bool allowed) external onlySelf {
+        _setAllowedRecipient(recipient, allowed);
     }
 
     /// @notice Batch updates trusted recipient allowlist.
     function setAllowedRecipients(address[] calldata recipients, bool[] calldata alloweds) external onlySelf {
         if (recipients.length != alloweds.length) revert LengthMismatch();
         for (uint256 i = 0; i < recipients.length; i++) {
-            isAllowedRecipient[recipients[i]] = alloweds[i];
-            emit RecipientAllowlistUpdated(recipients[i], alloweds[i]);
+            _setAllowedRecipient(recipients[i], alloweds[i]);
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Guardian & Social Recovery Functions
+    // -----------------------------------------------------------------------
+
+    function _cancelRecovery() internal {
+        delete pendingRecovery;
+        emit RecoveryCancelled();
+    }
+
+    /// @notice Configures or updates the account guardian and recovery timelock.
+    /// @dev Requires 2-of-2 hardware passkey quorum via onlySelf.
+    /// @param newGuardian The address of the new guardian (or address(0) to disable).
+    /// @param timelock Timelock in seconds (must be >= MIN_RECOVERY_TIMELOCK unless disabling).
+    function setGuardian(address newGuardian, uint48 timelock) external onlySelf {
+        if (newGuardian != address(0) && timelock < MIN_RECOVERY_TIMELOCK) {
+            revert InvalidTimelock();
+        }
+        if (pendingRecovery.active) {
+            _cancelRecovery();
+        }
+        guardian = newGuardian;
+        recoveryTimelock = timelock;
+        emit GuardianSet(newGuardian, timelock);
+    }
+
+    /// @notice Initiates account recovery to install new passkey signers.
+    /// @dev Called by the guardian when the user loses access to hardware passkeys.
+    /// @param newSigners The replacement set of P-256 passkey public keys (minimum 2).
+    function initiateRecovery(PublicKey[] calldata newSigners) external {
+        if (msg.sender != guardian || guardian == address(0)) revert NotGuardian();
+        if (pendingRecovery.active) revert RecoveryPending();
+
+        _validateKeys(_toMemSigners(newSigners));
+
+        uint48 executeAfter = uint48(block.timestamp + recoveryTimelock);
+        bytes32 signersHash = keccak256(abi.encode(newSigners));
+        pendingRecovery = RecoveryRequest({
+            executeAfter: executeAfter,
+            active: true,
+            signersHash: signersHash
+        });
+
+        emit RecoveryInitiated(msg.sender, executeAfter, signersHash, newSigners.length);
+    }
+
+    /// @notice Completes the recovery process and installs the new signers once timelock has elapsed.
+    /// @param newSigners The exact new signers matching the proposed signersHash.
+    function completeRecovery(PublicKey[] calldata newSigners) external {
+        if (isFrozen) revert AccountIsFrozen();
+        if (!pendingRecovery.active) revert NoActiveRecovery();
+        if (block.timestamp < pendingRecovery.executeAfter) revert TimelockNotExpired();
+        if (keccak256(abi.encode(newSigners)) != pendingRecovery.signersHash) {
+            revert SignersHashMismatch();
+        }
+
+        _setSigners(_toMemSigners(newSigners));
+
+        bytes32 sHash = pendingRecovery.signersHash;
+        delete pendingRecovery;
+        emit RecoveryCompleted(sHash, newSigners.length);
+    }
+
+    /// @notice Cancels an active recovery proposal.
+    /// @dev Can be called via onlySelf (e.g. 1-sig UserOp from user), guardian, or entryPoint.
+    function cancelRecovery() external {
+        if (msg.sender != address(this) && msg.sender != guardian && msg.sender != entryPoint) {
+            revert NotSelf();
+        }
+        if (!pendingRecovery.active) revert NoActiveRecovery();
+        _cancelRecovery();
     }
 
     // -----------------------------------------------------------------------
@@ -1598,6 +1566,8 @@ contract PasskeyAccount {
 
     bytes32 private constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 private constant NAME_HASH = keccak256("PasskeyAccount");
+    bytes32 private constant VERSION_HASH = keccak256("1");
     bytes32 private constant MSG_TYPEHASH =
         keccak256("PasskeyAccountMessage(bytes32 messageHash)");
 
@@ -1606,8 +1576,8 @@ contract PasskeyAccount {
         return keccak256(
             abi.encode(
                 DOMAIN_TYPEHASH,
-                keccak256(bytes("PasskeyAccount")),
-                keccak256(bytes("1")),
+                NAME_HASH,
+                VERSION_HASH,
                 block.chainid,
                 address(this)
             )

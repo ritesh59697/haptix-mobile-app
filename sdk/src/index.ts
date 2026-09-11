@@ -15,3 +15,4 @@ export * from './bundler.js';
 export * from './passkey.js';
 export * from './account.js';
 export * from './factory.js';
+export * from './recovery.js';

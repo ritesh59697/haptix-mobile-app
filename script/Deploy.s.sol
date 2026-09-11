@@ -69,7 +69,11 @@ contract ComputeCounterfactualAddress is Script {
     address constant ENTRYPOINT = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
 
     function run() external {
-        PasskeyAccountFactory factory = new PasskeyAccountFactory(ENTRYPOINT);
+        PasskeyAccount.PublicKey[] memory dummy = new PasskeyAccount.PublicKey[](2);
+        dummy[0] = PasskeyAccount.PublicKey(1, 2);
+        dummy[1] = PasskeyAccount.PublicKey(3, 4);
+        PasskeyAccount implementation = new PasskeyAccount(ENTRYPOINT, dummy, type(uint256).max);
+        PasskeyAccountFactory factory = new PasskeyAccountFactory(address(implementation));
         PasskeyAccount.PublicKey memory p0 = PasskeyAccount.PublicKey(
             0xa3b99c51ae83035154e9aaf7b23b4bb2dcd37721dfb8a1dc10ab204d4b3a6801,
             0x9afd5a1669db77182bb11bf8f08456643914de2451a3bf79de98fcafb0cabc3d
@@ -125,5 +129,33 @@ contract ConfigureCalldata is Script {
                 USDC, uint256(500e6), uint256(1 days), uint8(6)
             )
         );
+    }
+}
+
+/// @notice Deploys PasskeyAccount implementation and PasskeyAccountFactory to Base Sepolia
+contract DeployFactory is Script {
+    address constant ENTRYPOINT = 0x0000000071727De22E5E9d8BAf0edAc6f37da032;
+
+    function run() external returns (PasskeyAccount implementation, PasskeyAccountFactory factory) {
+        require(block.chainid == 84532, "not Base Sepolia");
+
+        // The implementation storage is locked permanently by _initialized = true in its constructor.
+        // It requires >= 2 signers in the constructor. We provide dummy signers and max threshold.
+        PasskeyAccount.PublicKey[] memory dummySigners = new PasskeyAccount.PublicKey[](2);
+        dummySigners[0] = PasskeyAccount.PublicKey(1, 2);
+        dummySigners[1] = PasskeyAccount.PublicKey(3, 4);
+
+        vm.startBroadcast();
+        implementation = new PasskeyAccount(ENTRYPOINT, dummySigners, type(uint256).max);
+        factory = new PasskeyAccountFactory(address(implementation));
+        vm.stopBroadcast();
+
+        console.log("");
+        console.log("=== PasskeyAccountFactory deployed ===");
+        console.log("Implementation address: ", address(implementation));
+        console.log("Factory address:        ", address(factory));
+        console.log("EntryPoint:             ", factory.entryPoint());
+        console.log("Explorer Implementation: https://sepolia.basescan.org/address/%s", address(implementation));
+        console.log("Explorer Factory:        https://sepolia.basescan.org/address/%s", address(factory));
     }
 }

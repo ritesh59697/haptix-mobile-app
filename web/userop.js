@@ -458,3 +458,180 @@ export async function identifySignerId(sig, signers) {
   }
   return 0;
 }
+
+/**
+ * Encodes grantAgentSession(SessionConfig config) matching PasskeyAccount.sol
+ */
+export function encodeGrantAgentSession(config) {
+  const sel = '5c433885'; // grantAgentSession selector
+  const offTuple = pad64(32);
+
+  // Tuple fields (11 fields = 11 words = 352 bytes):
+  // 0: agentKey (address)
+  // 1: validAfter (uint48)
+  // 2: validUntil (uint48)
+  // 3: humanApprovalThreshold (uint256)
+  // 4: perTxLimitEth (uint256)
+  // 5: perTxLimitToken (uint256)
+  // 6: windowDuration (uint256)
+  // 7: offset to allowedProtocols (relative to start of tuple = 11 * 32 = 352 = 0x160)
+  // 8: offset to allowedSelectors
+  // 9: offset to allowedTokens
+  // 10: offset to tokenWindowCaps
+  const agentKeyWord = padBytes32(config.agentKey);
+  const validAfterWord = pad64(config.validAfter);
+  const validUntilWord = pad64(config.validUntil);
+  const humanThresholdWord = pad64(config.humanApprovalThreshold || 0n);
+  const perTxEthWord = pad64(config.perTxLimitEth || 0n);
+  const perTxTokenWord = pad64(config.perTxLimitToken || 0n);
+  const windowDurationWord = pad64(config.windowDuration || 86400n);
+
+  let currentArrayOffset = 11 * 32; // 352
+
+  const offProtocols = currentArrayOffset;
+  const protocolsData = pad64(config.allowedProtocols.length) +
+    config.allowedProtocols.map(p => padBytes32(p)).join('');
+  currentArrayOffset += (1 + config.allowedProtocols.length) * 32;
+
+  const offSelectors = currentArrayOffset;
+  const selectorsData = pad64(config.allowedSelectors.length) +
+    config.allowedSelectors.map(s => {
+      const clean = (s.startsWith('0x') ? s.slice(2) : s).padEnd(8, '0');
+      return clean.padEnd(64, '0');
+    }).join('');
+  currentArrayOffset += (1 + config.allowedSelectors.length) * 32;
+
+  const offTokens = currentArrayOffset;
+  const tokensData = pad64(config.allowedTokens.length) +
+    config.allowedTokens.map(t => padBytes32(t)).join('');
+  currentArrayOffset += (1 + config.allowedTokens.length) * 32;
+
+  const offCaps = currentArrayOffset;
+  const capsData = pad64(config.tokenWindowCaps.length) +
+    config.tokenWindowCaps.map(c => pad64(c)).join('');
+
+  const tupleBody = agentKeyWord +
+    validAfterWord +
+    validUntilWord +
+    humanThresholdWord +
+    perTxEthWord +
+    perTxTokenWord +
+    windowDurationWord +
+    pad64(offProtocols) +
+    pad64(offSelectors) +
+    pad64(offTokens) +
+    pad64(offCaps) +
+    protocolsData +
+    selectorsData +
+    tokensData +
+    capsData;
+
+  return '0x' + sel + offTuple + tupleBody;
+}
+
+/**
+ * Encodes account.execute(dest, value, func)
+ */
+export function encodeExecute(dest, valueWei, funcHex) {
+  const cleanFunc = (funcHex || '0x').replace(/^0x/, '');
+  const funcByteLen = cleanFunc.length / 2;
+  const funcPadded = cleanFunc.padEnd(Math.ceil(cleanFunc.length / 64) * 64, '0');
+
+  return '0xb61d27f6' +
+    dest.replace(/^0x/, '').padStart(64, '0') +
+    (typeof valueWei === 'bigint' ? valueWei.toString(16) : BigInt(valueWei).toString(16)).padStart(64, '0') +
+    pad64(96) +
+    pad64(funcByteLen) +
+    funcPadded;
+}
+
+/**
+ * Encodes account.executeByAgent(agentKey, dest, value, func)
+ */
+export function encodeExecuteByAgent(agentKey, dest, valueWei, funcHex) {
+  const cleanFunc = (funcHex || '0x').replace(/^0x/, '');
+  const funcByteLen = cleanFunc.length / 2;
+  const funcPadded = cleanFunc.padEnd(Math.ceil(cleanFunc.length / 64) * 64, '0');
+
+  return '0xaea6adc6' +
+    agentKey.replace(/^0x/, '').padStart(64, '0').toLowerCase() +
+    dest.replace(/^0x/, '').padStart(64, '0').toLowerCase() +
+    (typeof valueWei === 'bigint' ? valueWei.toString(16) : BigInt(valueWei).toString(16)).padStart(64, '0') +
+    pad64(128) +
+    pad64(funcByteLen) +
+    funcPadded;
+}
+
+/**
+ * Packs an autonomous agent signature (sigType 0x01).
+ * Layout: 0x01 || abi.encode(address agentKey, bytes agentSig)
+ */
+export function encodeAutonomousAgentSignature(agentAddress, ecdsaSigHex) {
+  const cleanAddr = agentAddress.replace(/^0x/, '').padStart(64, '0').toLowerCase();
+  const cleanSig = ecdsaSigHex.replace(/^0x/, '');
+  const sigLen = cleanSig.length / 2;
+  const paddedSig = cleanSig.padEnd(Math.ceil(sigLen / 32) * 64, '0');
+
+  const encoded = cleanAddr +
+    pad64(64) +
+    pad64(sigLen) +
+    paddedSig;
+
+  return '0x01' + encoded;
+}
+
+/**
+ * Encodes account.validateUserOp(PackedUserOperation, bytes32, uint256)
+ * Selector: 0x19822f7c
+ */
+export function encodeValidateUserOp(packedOp, userOpHash, missingFunds = 0n) {
+  const sender = padBytes32(packedOp.sender);
+  const nonce = pad64(packedOp.nonce);
+  const initCodeBytes = fromHex(packedOp.initCode || '0x');
+  const callDataBytes = fromHex(packedOp.callData || '0x');
+  const accountGasLimits = padBytes32(packedOp.accountGasLimits);
+  const preVerificationGas = pad64(packedOp.preVerificationGas);
+  const gasFees = padBytes32(packedOp.gasFees);
+  const paymasterAndDataBytes = fromHex(packedOp.paymasterAndData || '0x');
+  const signatureBytes = fromHex(packedOp.signature || '0x');
+
+  const headSize = 9 * 32;
+  let dynamicOffset = headSize;
+  const offInitCode = dynamicOffset;
+  const initPadded = Math.ceil(initCodeBytes.length / 32) * 32;
+  dynamicOffset += 32 + initPadded;
+
+  const offCallData = dynamicOffset;
+  const callPadded = Math.ceil(callDataBytes.length / 32) * 32;
+  dynamicOffset += 32 + callPadded;
+
+  const offPaymaster = dynamicOffset;
+  const paymasterPadded = Math.ceil(paymasterAndDataBytes.length / 32) * 32;
+  dynamicOffset += 32 + paymasterPadded;
+
+  const offSig = dynamicOffset;
+  const sigPadded = Math.ceil(signatureBytes.length / 32) * 32;
+
+  const tupleHead = sender +
+               nonce +
+               pad64(offInitCode) +
+               pad64(offCallData) +
+               accountGasLimits +
+               preVerificationGas +
+               gasFees +
+               pad64(offPaymaster) +
+               pad64(offSig);
+
+  const initData = pad64(initCodeBytes.length) + hex(initCodeBytes).padEnd(initPadded * 2, '0');
+  const callData = pad64(callDataBytes.length) + hex(callDataBytes).padEnd(callPadded * 2, '0');
+  const paymasterData = pad64(paymasterAndDataBytes.length) + hex(paymasterAndDataBytes).padEnd(paymasterPadded * 2, '0');
+  const sigData = pad64(signatureBytes.length) + hex(signatureBytes).padEnd(sigPadded * 2, '0');
+
+  const tupleBody = tupleHead + initData + callData + paymasterData + sigData;
+  const offTuple = pad64(96);
+  const userOpHashWord = padBytes32(userOpHash);
+  const missingFundsWord = pad64(missingFunds);
+
+  return '0x19822f7c' + offTuple + userOpHashWord + missingFundsWord + tupleBody;
+}
+

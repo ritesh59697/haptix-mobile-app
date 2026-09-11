@@ -42,8 +42,17 @@ export function validateEntryPoint(entryPoint: Address, chainId?: number): void 
       `Invalid EntryPoint address ${entryPoint}. Haptix requires canonical ERC-4337 v0.7 (${CANONICAL_ENTRYPOINT_V07})`
     );
   }
-  if (chainId !== undefined && chainId !== 84532 && chainId !== 8453 && chainId !== 31337) {
-    throw new Error(`Unsupported chainId: ${chainId}. Expected Base (8453) or Base Sepolia (84532).`);
+  if (
+    chainId !== undefined &&
+    chainId !== 84532 &&
+    chainId !== 8453 &&
+    chainId !== 10 &&
+    chainId !== 42161 &&
+    chainId !== 31337
+  ) {
+    throw new Error(
+      `Unsupported chainId: ${chainId}. Expected Base (8453), Base Sepolia (84532), Optimism (10), or Arbitrum (42161).`
+    );
   }
 }
 
@@ -132,6 +141,23 @@ export async function checkPreflightBalance(
     entryPointDepositWei,
     totalAvailableWei
   };
+}
+
+/**
+ * Fetches the current nonce for a sender account from the EntryPoint.
+ */
+export async function getAccountNonce(
+  client: PublicClient,
+  sender: Address,
+  key: bigint = 0n,
+  entryPoint: Address = CANONICAL_ENTRYPOINT_V07
+): Promise<bigint> {
+  return client.readContract({
+    address: entryPoint,
+    abi: parseAbi(['function getNonce(address,uint192) view returns (uint256)']),
+    functionName: 'getNonce',
+    args: [sender, key]
+  });
 }
 
 export class BundlerClient {
@@ -237,6 +263,13 @@ export class BundlerClient {
     }
 
     return rpcOp;
+  }
+
+  /**
+   * Fetches current account nonce directly from the EntryPoint using a viem PublicClient.
+   */
+  async getNonce(client: PublicClient, sender: Address, key: bigint = 0n): Promise<bigint> {
+    return getAccountNonce(client, sender, key, this.entryPoint);
   }
 
   /**

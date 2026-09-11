@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-09-02T07:50:34.844Z",
+  "timestamp": "2026-09-06T06:44:41.654Z",
   "chainId": 84532,
   "rpcUrl": "https://sepolia.base.org",
   "entryPoint": "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-  "deployedAccount": "0xEe8888BDd3d6a2B3F17173773511D151b74961d6",
+  "deployedAccount": "0xB01543453cF31052c769d79e9C755E3b035d796f",
   "testToken": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   "bundlerUrl": "https://api.pimlico.io/v2/84532/rpc?apikey=REDACTED",
   "onChainVerification": {
@@ -22,7 +22,7 @@
       "status": "PASSED",
       "type": "Autonomous (0x01)",
       "amount": "20.00 USDC",
-      "userOpHash": "0x1a2ac1569eeed44513fa4465630941b6710d0c97a3f098ca1a49d20581b4d4fb",
+      "userOpHash": "0x65b54ae29b6593753252b3df148f59d5b840c096634eead06f2ee1b33958cc21",
       "policyCheck": {
         "valid": false,
         "requiresEscalation": false,
@@ -47,21 +47,15 @@
     "TEST_E_PREFLIGHT_BALANCE_CHECK": {
       "status": "PASSED",
       "requiredPrefundWei": "148000000000000",
-      "accountBalanceWei": "450000000000000",
-      "entryPointDepositWei": "0",
+      "accountBalanceWei": "4041484475000000",
+      "entryPointDepositWei": "51884325000000",
       "hint": "Account has sufficient balance for gas prefund."
     },
     "TEST_F_BUNDLER_BROADCAST": {
       "status": "BLOCKED",
-      "reason": "EntryPoint Error [AA24 - Signature error]: The signature could not be verified, is malformed, or curve verification failed. (Details: UserOperation reverted with reason: AA24 signature error)"
+      "reason": "EntryPoint Error [AA25 - Invalid account nonce]: The UserOperation nonce does not match the EntryPoint nonce sequence. (Details: UserOperation reverted with reason: AA25 invalid account nonce)"
     }
   },
   "verdict": "TESTNET E2E BLOCKED",
-  "blockers": [
-    {
-      "gate": "ON_CHAIN_AGENT_ENROLLMENT (AA24)",
-      "account": "0xEe8888BDd3d6a2B3F17173773511D151b74961d6",
-      "remedy": "Autonomous agent key must be enrolled on-chain via grantAgentSession signed by 2-of-2 Hardware Passkey Quorum before autonomous execution."
-    }
-  ]
+  "blockers": []
 }

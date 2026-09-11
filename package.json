@@ -7,6 +7,12 @@
     "dev": "npm run dev --prefix extension-app",
     "build": "npm run build --prefix extension-app",
     "type-check": "npm run type-check --prefix extension-app",
-    "preview": "npm run preview --prefix extension-app"
+    "preview": "npm run preview --prefix extension-app",
+    "package:extension": "node scripts/package-extension.mjs",
+    "test:sdk": "npm test --prefix sdk",
+    "test:contracts": "forge test",
+    "demo": "node scripts/demo-flow.mjs",
+    "demo:agent": "node scripts/execute-autonomous-agent.mjs",
+    "demo:reject": "node scripts/test-policy-violation.mjs"
   }
 }

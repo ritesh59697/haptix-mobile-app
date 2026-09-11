@@ -58,6 +58,21 @@ library SpendPolicy {
         bool isValid;
     }
 
+    /// @notice Returns true if the selector represents an unbounded allowance or permit operation.
+    function isRestrictedApprovalOrPermit(bytes4 sel) internal pure returns (bool) {
+        return (
+            sel == APPROVE ||
+            sel == INCREASE_ALLOWANCE ||
+            sel == DECREASE_ALLOWANCE ||
+            sel == SET_APPROVAL_ALL ||
+            sel == PERMIT ||
+            sel == PERMIT_DAI ||
+            sel == PERMIT2_PERMIT ||
+            sel == PERMIT2_PERMIT_BATCH ||
+            sel == PERMIT2_TRANSFER_FROM
+        );
+    }
+
     /// @notice Safely decodes parameters of a Uniswap V3 exactInputSingle call.
     function decodeUniswapV3ExactInputSingle(bytes calldata func)
         internal
@@ -66,24 +81,15 @@ library SpendPolicy {
     {
         if (func.length < 4) return p;
         bytes4 sel = bytes4(func[0:4]);
-        if (sel == UNISWAP_V3_EXACT_INPUT_SINGLE) {
-            if (func.length < 228) return p;
+        if (sel == UNISWAP_V3_EXACT_INPUT_SINGLE || sel == UNISWAP_V3_EXACT_INPUT_SINGLE_ROUTER1) {
+            bool isV2Router = (sel == UNISWAP_V3_EXACT_INPUT_SINGLE);
+            if (func.length < (isV2Router ? 228 : 260)) return p;
             p.tokenIn = address(uint160(uint256(bytes32(func[4:36]))));
             p.tokenOut = address(uint160(uint256(bytes32(func[36:68]))));
             p.recipient = address(uint160(uint256(bytes32(func[100:132]))));
-            p.amountIn = uint256(bytes32(func[132:164]));
-            p.amountOutMinimum = uint256(bytes32(func[164:196]));
-            if (p.tokenIn == address(0) || p.tokenOut == address(0) || p.tokenIn == p.tokenOut) return p;
-            p.isValid = true;
-            return p;
-        }
-        if (sel == UNISWAP_V3_EXACT_INPUT_SINGLE_ROUTER1) {
-            if (func.length < 260) return p;
-            p.tokenIn = address(uint160(uint256(bytes32(func[4:36]))));
-            p.tokenOut = address(uint160(uint256(bytes32(func[36:68]))));
-            p.recipient = address(uint160(uint256(bytes32(func[100:132]))));
-            p.amountIn = uint256(bytes32(func[164:196]));
-            p.amountOutMinimum = uint256(bytes32(func[196:228]));
+            uint256 inOff = isV2Router ? 132 : 164;
+            p.amountIn = uint256(bytes32(func[inOff:inOff + 32]));
+            p.amountOutMinimum = uint256(bytes32(func[inOff + 32:inOff + 64]));
             if (p.tokenIn == address(0) || p.tokenOut == address(0) || p.tokenIn == p.tokenOut) return p;
             p.isValid = true;
             return p;
@@ -116,17 +122,7 @@ library SpendPolicy {
         // Approvals, allowance changes, and permits are unbounded, persistent delegations of
         // spending authority -- strictly more dangerous than a one-off transfer.
         // No threshold arithmetic applies; they always escalate.
-        if (
-            sel == APPROVE ||
-            sel == INCREASE_ALLOWANCE ||
-            sel == DECREASE_ALLOWANCE ||
-            sel == SET_APPROVAL_ALL ||
-            sel == PERMIT ||
-            sel == PERMIT_DAI ||
-            sel == PERMIT2_PERMIT ||
-            sel == PERMIT2_PERMIT_BATCH ||
-            sel == PERMIT2_TRANSFER_FROM
-        ) {
+        if (isRestrictedApprovalOrPermit(sel)) {
             s.alwaysTwoSigs = true;
             return s;
         }
@@ -164,34 +160,6 @@ library SpendPolicy {
         return s;
     }
 
-    /// @notice Signature requirement for a SINGLE call.
-    function required(
-        address dest,
-        uint256 value,
-        bytes calldata func,
-        uint256 ethThreshold,
-        uint256 tokenThreshold
-    ) internal pure returns (uint256) {
-        Spend memory s = classify(dest, value, func);
-        if (s.alwaysTwoSigs) return TWO_SIGS;
-        if (s.ethAmount >= ethThreshold) return TWO_SIGS;
-        if (s.token != address(0)) {
-            return _checkToken(s.tokenAmount, tokenThreshold);
-        }
-        return ONE_SIG;
-    }
-
-    function _checkToken(uint256 amount, uint256 threshold)
-        internal
-        pure
-        returns (uint256)
-    {
-        // An unconfigured token (threshold 0) is not "unlimited" -- it is
-        // "unknown". Unknown tokens always require the full quorum. Treating
-        // 0 as unlimited would recreate the exact bypass we are closing.
-        if (threshold == 0) return TWO_SIGS;
-        return amount >= threshold ? TWO_SIGS : ONE_SIG;
-    }
 
     /// @notice Extracts the end recipient of a transfer or swap.
     /// @return recipient The destination address receiving the asset, or address(0) if opaque/unknown.
