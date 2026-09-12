@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Haptix — The Biometric Hardware Enclave Layer for EVM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+
+    :root {
+      --bg-main: #FAFAFA;
+      --text-main: #111827;
+      --text-secondary: #6B7280;
+      --accent-black: #000000;
+      --accent-green: #10B981;
+      --accent-blue: #3B82F6;
+      --border-light: rgba(0, 0, 0, 0.06);
+      --font-heading: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      background-image: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.05) 0%, rgba(250, 250, 250, 0) 50%);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Navbar */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0;
+    }
+    .logo-container {
+      display: flex; align-items: center; gap: 8px; font-family: var(--font-heading); font-weight: 800; font-size: 24px; letter-spacing: -0.5px; color: var(--accent-black); text-decoration: none;
+    }
+    .nav-links {
+      display: flex; gap: 32px; align-items: center;
+    }
+    .nav-links a {
+      color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 600;
+      transition: color 0.2s; position: relative;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--text-main); }
+    .nav-links a.active::after {
+      content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--accent-black); border-radius: 50%;
+    }
+    
+    .nav-actions { display: flex; align-items: center; gap: 24px; }
+    .nav-actions .doc-link { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .btn-connect {
+      background: var(--accent-black); color: #fff; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 600; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform 0.2s;
+    }
+    .btn-connect:hover { transform: translateY(-1px); }
+
+    /* Hero */
+    .hero-section {
+      text-align: center;
+      padding: 60px 0 40px;
+    }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(16, 185, 129, 0.08); color: var(--text-secondary);
+      padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .hero-pill .dot { width: 6px; height: 6px; background: var(--accent-green); border-radius: 50%; }
+    
+    .hero-title {
+      font-family: var(--font-heading); font-size: 56px; font-weight: 800; line-height: 1.1; letter-spacing: -1px; margin-bottom: 16px; color: var(--accent-black);
+    }
+    .hero-subtitle {
+      font-size: 18px; color: var(--text-secondary); max-width: 600px; margin: 0 auto;
+    }
+
+    /* Center Card */
+    .main-grid {
+      display: flex; justify-content: center; position: relative; margin-top: 40px;
+    }
+    
+    .center-card {
+      background: #FFFFFF;
+      border-radius: 32px;
+      padding: 40px;
+      width: 100%; max-width: 440px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.05);
+      text-align: center;
+      position: relative; z-index: 2;
+    }
+    
+    .card-icon-wrapper {
+      width: 80px; height: 80px;
+      background: #ECFDF5; color: #10B981;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;
+      box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
+    }
+    .center-card h3 { font-family: var(--font-heading); font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+    .center-card p { color: var(--text-secondary); font-size: 15px; margin-bottom: 32px; }
+    
+    .btn-create {
+      background: var(--accent-black); color: #fff; border: none; width: 100%; padding: 16px; border-radius: 20px; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: background 0.2s; margin-bottom: 24px;
+    }
+    .btn-create:hover { background: #1F2937; }
+    
+    .divider {
+      position: relative; text-align: center; margin: 24px 0;
+    }
+    .divider::before {
+      content: ''; position: absolute; top: 50%; left: 0; width: 40%; height: 1px; background: var(--border-light);
+    }
+    .divider::after {
+      content: ''; position: absolute; top: 50%; right: 0; width: 40%; height: 1px; background: var(--border-light);
+    }
+    .divider span { color: var(--text-secondary); font-size: 13px; font-weight: 600; background: #fff; padding: 0 10px; }
+    
+    .btn-signin {
+      background: transparent; border: none; color: var(--text-main); font-weight: 700; font-size: 15px; cursor: pointer; margin-bottom: 32px;
+    }
+    .btn-signin:hover { text-decoration: underline; }
+    
+    .card-footer-badge {
+      background: #ECFDF5; color: #10B981; font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px;
+    }
+
+    /* Side Badges */
+    .side-badge {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      text-align: left; z-index: 1;
+    }
+    .side-badge.left { left: -180px; }
+    .side-badge.right { right: -180px; }
+    
+    .side-badge-pill {
+      background: #fff; border: 1px solid var(--border-light); border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      margin-bottom: 12px;
+    }
+    .side-badge-pill .icon { background: #F3F4F6; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .side-badge p { color: var(--text-secondary); font-size: 13px; font-weight: 500; line-height: 1.4; }
+
+    .connector-line {
+      position: absolute; top: 50%; width: 150px; height: 1px; background: var(--border-light); z-index: 0;
+    }
+    .connector-line.left { left: -30px; }
+    .connector-line.right { right: -30px; }
+
+    /* Bento Cards */
+    .bento-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 60px; padding-bottom: 60px;
+    }
+    .bento-card {
+      background: #fff; border-radius: 24px; padding: 24px; border: 1px solid var(--border-light); box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      display: flex; gap: 16px; align-items: flex-start;
+    }
+    .bento-icon {
+      width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .bento-icon.green { background: #ECFDF5; color: #10B981; }
+    .bento-icon.purple { background: #EEF2FF; color: #6366F1; }
+    .bento-icon.blue { background: #EFF6FF; color: #3B82F6; }
+    .bento-content h4 { font-family: var(--font-heading); font-size: 16px; font-weight: 800; margin-bottom: 4px; color: var(--accent-black); }
+    .bento-content p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+    .bento-arrow { margin-left: auto; color: #D1D5DB; margin-top: 12px; }
+
+    .footer {
+      text-align: center; padding: 40px 0; border-top: 1px solid var(--border-light);
+      font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #9CA3AF; text-transform: uppercase;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <nav class="navbar">
+      <a href="#" class="logo-container">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--accent-black)"><path d="M4.5 10.5C4.5 9.11929 5.61929 8 7 8h10c1.3807 0 2.5 1.11929 2.5 2.5v3c0 1.3807-1.1193 2.5-2.5 2.5H7c-1.38071 0-2.5-1.1193-2.5-2.5v-3z"/><path d="M7 3h10c2.7614 0 5 2.23858 5 5v8c0 2.7614-2.2386 5-5 5H7c-2.76142 0-5-2.2386-5-5V8c0-2.76142 2.23858-5 5-5z" opacity="0.2"/></svg>
+        Haptix
+      </a>
+      <div class="nav-links">
+        <a href="#" class="active">Home</a>
+        <a href="#">Features</a>
+        <a href="#">Security</a>
+        <a href="#">Agents</a>
+        <a href="#">Developers</a>
+        <a href="#">Blog</a>
+      </div>
+      <div class="nav-actions">
+        <a href="#" class="doc-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
+          Documentation
+        </a>
+        <button class="btn-connect" onclick="window.location.href='app.html'">Connect with Passkey &rarr;</button>
+      </div>
+    </nav>
+
+    <section class="hero-section">
+      <div class="hero-pill">
+        <div class="dot"></div> Built for a more open onchain future.
+      </div>
+      <h1 class="hero-title">Smart Accounts. Zero Seed Phrases.</h1>
+      <p class="hero-subtitle">Experience hardware-grade security powered by Apple Secure Enclave, ERC-4337 smart contracts, and autonomous AI agents on Base Sepolia.</p>
+    </section>
+
+    <div class="main-grid">
+      
+      <div class="side-badge left">
+        <div class="side-badge-pill">
+          <div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+          Powered by<br>Apple Secure Enclave
+        </div>
+        <p>Security<br>that feels natural.</p>
+      </div>
+      <div class="connector-line left"></div>
+
+      <div class="center-card">
+        <div class="card-icon-wrapper">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10"/><path d="M12 22v-3"/><path d="M9.1 19.4A7.9 7.9 0 0 1 6 15"/><path d="M14.9 19.4A7.9 7.9 0 0 0 18 15"/><path d="M12 15v-3"/><path d="M8.5 11.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 3.5 3.5"/><path d="M6 11.5A6 6 0 0 1 12 5.5a6 6 0 0 1 6 6"/></svg>
+        </div>
+        <h3>Create Your Haptix Wallet</h3>
+        <p>Secure. Simple. Onchain.</p>
+        
+        <button class="btn-create" onclick="window.location.href='app.html'">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10"/><path d="M12 22v-3"/><path d="M9.1 19.4A7.9 7.9 0 0 1 6 15"/><path d="M14.9 19.4A7.9 7.9 0 0 0 18 15"/><path d="M12 15v-3"/><path d="M8.5 11.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 3.5 3.5"/><path d="M6 11.5A6 6 0 0 1 12 5.5a6 6 0 0 1 6 6"/></svg>
+          Create Wallet with Face ID / Touch ID &gt;
+        </button>
+        
+        <div class="divider"><span>or</span></div>
+        
+        <button class="btn-signin" onclick="window.location.href='app.html'">Sign In with Existing Passkey</button>
+        <br>
+        <div class="card-footer-badge">
+          ⚡️ 100% Gasless Deployment • Base Sepolia Network
+        </div>
+      </div>
+
+      <div class="connector-line right"></div>
+      <div class="side-badge right">
+        <div class="side-badge-pill">
+          <div class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></div>
+          ERC-4337<br>Smart Accounts
+        </div>
+        <p>Autonomous<br>by design.</p>
+      </div>
+
+    </div>
+
+    <div class="bento-grid">
+      <div class="bento-card" onclick="window.location.href='app.html'" style="cursor:pointer;">
+        <div class="bento-icon green"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10"/><path d="M12 22v-3"/><path d="M9.1 19.4A7.9 7.9 0 0 1 6 15"/><path d="M14.9 19.4A7.9 7.9 0 0 0 18 15"/><path d="M12 15v-3"/></svg></div>
+        <div class="bento-content">
+          <h4>Biometric Security</h4>
+          <p>P-256 WebAuthn via Secure Enclave. No private keys to lose.</p>
+        </div>
+        <div class="bento-arrow">&gt;</div>
+      </div>
+      
+      <div class="bento-card">
+        <div class="bento-icon purple"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path></svg></div>
+        <div class="bento-content">
+          <h4>Autonomous Agents</h4>
+          <p>Delegate constrained session keys with strict ERC-7562 rate limits.</p>
+        </div>
+        <div class="bento-arrow">&gt;</div>
+      </div>
+      
+      <div class="bento-card">
+        <div class="bento-icon blue"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg></div>
+        <div class="bento-content">
+          <h4>Gasless Everyday</h4>
+          <p>Built-in ERC-4337 Paymaster sponsors your transaction fees.</p>
+        </div>
+        <div class="bento-arrow">&gt;</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      SECURER AGENTS. A MORE OPEN ONCHAIN FUTURE.
+    </div>
+  </div>
+
+<script>
+    // FAQ Accordion
+    document.querySelectorAll('.faq-item').forEach(item => {
+      item.querySelector('.faq-question').addEventListener('click', () => {
+        const isActive = item.classList.contains('active');
+        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
+        if (!isActive) item.classList.add('active');
+      });
+    });
+
+    // Sandbox Live Controller
+    const slider = document.getElementById('sbAmountSlider');
+    const allowlistToggle = document.getElementById('sbAllowlistToggle');
+    const approvalToggle = document.getElementById('sbApprovalToggle');
+    const freezeToggle = document.getElementById('sbFreezeToggle');
+
+    function updateSandbox() {
+      if(!slider) return;
+      const val = parseFloat(slider.value);
+      document.getElementById('sbValDisplay').textContent = val.toFixed(4) + ' ETH';
+
+      const isAllowlisted = allowlistToggle.checked;
+      const isApproval = approvalToggle.checked;
+      const isFrozen = freezeToggle.checked;
+
+      const badge = document.getElementById('sbDecisionBadge');
+      const desc = document.getElementById('sbDecisionDesc');
+      const gas = document.getElementById('sbGasEst');
+
+      if (isFrozen) {
+        badge.className = 'badge-result res-freeze';
+        badge.textContent = 'Account Locked: 2-of-2 Quorum';
+        desc.textContent = 'Emergency freeze switch is active. All sub-threshold transfers are blocked. Unfreezing strictly requires the full 2-of-2 multi-device quorum.';
+        gas.textContent = '~148,000 gas (2 sigs)';
+        return;
+      }
+
+      if (isApproval) {
+        badge.className = 'badge-result res-quorum';
+        badge.textContent = '2-of-2 Hardware Quorum Enforced';
+        desc.textContent = 'Transaction executes an ERC-20 approve() / permit() function. Autonomous policy firewall classifies all approval granting as high risk and enforces 2 distinct physical hardware keys.';
+        gas.textContent = '~148,000 gas (2 sigs)';
+        return;
+      }
+
+      if (!isAllowlisted) {
+        badge.className = 'badge-result res-quorum';
+        badge.textContent = '2-of-2 Hardware Quorum Enforced';
+        desc.textContent = 'Recipient address is not in your trusted address book. Policy firewall escalates unknown destinations to 2-of-2 multi-device quorum.';
+        gas.textContent = '~148,000 gas (2 sigs)';
+        return;
+      }
+
+      if (val >= 0.010) {
+        badge.className = 'badge-result res-quorum';
+        badge.textContent = '2-of-2 Hardware Quorum Enforced';
+        desc.textContent = `Transfer value (${val.toFixed(4)} ETH) meets or exceeds the 0.0100 ETH threshold limit. On-chain policy strictly demands 2 hardware passkey authorizations.`;
+        gas.textContent = '~148,000 gas (2 sigs)';
+      } else {
+        badge.className = 'badge-result res-single';
+        badge.textContent = '1-Signature Touch ID';
+        desc.textContent = `Transfer amount (${val.toFixed(4)} ETH) is below the 0.0100 ETH limit and recipient is allowlisted. A single biometric Touch ID tap is sufficient for validation.`;
+        gas.textContent = '~98,500 gas (1 sig)';
+      }
+    }
+
+    if(slider) {
+        slider.addEventListener('input', updateSandbox);
+        allowlistToggle.addEventListener('change', updateSandbox);
+        approvalToggle.addEventListener('change', updateSandbox);
+        freezeToggle.addEventListener('change', updateSandbox);
+    }
+
+    // React Bits Grainient (Grainy Gradient with Soft Motion) Engine
+    const canvas = document.getElementById('grainientCanvas');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      let width = 0, height = 0;
+      let mouseX = 0, mouseY = 0;
+      let targetMouseX = 0, targetMouseY = 0;
+
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      window.addEventListener('mousemove', e => {
+        targetMouseX = (e.clientX / window.innerWidth - 0.5) * 100;
+        targetMouseY = (e.clientY / window.innerHeight - 0.5) * 100;
+      });
+
+      let time = 0;
+
+      function renderGrainient() {
+        time += 0.006;
+        mouseX += (targetMouseX - mouseX) * 0.05;
+        mouseY += (targetMouseY - mouseY) * 0.05;
+
+        ctx.clearRect(0, 0, width, height);
+
+        // Midnight base
+        ctx.fillStyle = '#0f0821';
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 1: Vibrant Magenta / Orchid (Top Left / Center)
+        const b1x = width * 0.25 + Math.sin(time * 1.1) * (width * 0.12) + mouseX;
+        const b1y = height * 0.3 + Math.cos(time * 0.8) * (height * 0.12) + mouseY;
+        const b1r = Math.max(width, height) * 0.65;
+        const g1 = ctx.createRadialGradient(b1x, b1y, 0, b1x, b1y, b1r);
+        g1.addColorStop(0, 'rgba(236, 72, 153, 0.88)'); // #EC4899 Pink
+        g1.addColorStop(0.42, 'rgba(217, 70, 239, 0.62)'); // #D946EF Magenta
+        g1.addColorStop(0.85, 'rgba(168, 85, 247, 0.15)');
+        g1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g1;
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 2: Electric Violet / Lavender (Top Right / Middle)
+        const b2x = width * 0.72 + Math.cos(time * 0.9) * (width * 0.15) - mouseX * 0.8;
+        const b2y = height * 0.35 + Math.sin(time * 1.0) * (height * 0.14) - mouseY * 0.8;
+        const b2r = Math.max(width, height) * 0.7;
+        const g2 = ctx.createRadialGradient(b2x, b2y, 0, b2x, b2y, b2r);
+        g2.addColorStop(0, 'rgba(168, 85, 247, 0.92)'); // #A855F7 Purple
+        g2.addColorStop(0.48, 'rgba(139, 92, 246, 0.6)'); // #8B5CF6 Violet
+        g2.addColorStop(0.9, 'rgba(99, 102, 241, 0.15)');
+        g2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g2;
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 3: Royal Cobalt Blue / Base Blue (Bottom & Right)
+        const b3x = width * 0.85 + Math.sin(time * 0.7) * (width * 0.12);
+        const b3y = height * 0.75 + Math.cos(time * 0.6) * (height * 0.15);
+        const b3r = Math.max(width, height) * 0.75;
+        const g3 = ctx.createRadialGradient(b3x, b3y, 0, b3x, b3y, b3r);
+        g3.addColorStop(0, 'rgba(0, 82, 255, 0.9)'); // #0052FF Base Blue
+        g3.addColorStop(0.5, 'rgba(67, 56, 202, 0.65)'); // #4338CA Indigo
+        g3.addColorStop(1, 'rgba(0, 82, 255, 0)');
+        ctx.fillStyle = g3;
+        ctx.fillRect(0, 0, width, height);
+
+        // Blob 4: Soft Lilac Highlight (Center Swirl)
+        const b4x = width * 0.48 + Math.cos(time * 1.2) * (width * 0.16);
+        const b4y = height * 0.22 + Math.sin(time * 1.1) * (height * 0.1);
+        const b4r = Math.max(width, height) * 0.5;
+        const g4 = ctx.createRadialGradient(b4x, b4y, 0, b4x, b4y, b4r);
+        g4.addColorStop(0, 'rgba(244, 114, 182, 0.8)'); // #F472B6
+        g4.addColorStop(0.55, 'rgba(192, 132, 252, 0.45)'); // #C084FC
+        g4.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g4;
+        ctx.fillRect(0, 0, width, height);
+
+        requestAnimationFrame(renderGrainient);
+      }
+      renderGrainient();
+    }
+
+    // Aceternity UI Live Glowing Effect Engine
+    (function initAceternityGlowingEffect() {
+      const glowEl = document.getElementById('glowingEffectEl');
+      if (!glowEl) return;
+
+      let currentAngle = 0;
+      const baseSpeed = 1.35; 
+
+      function animate() {
+        currentAngle = (currentAngle + baseSpeed) % 360;
+        glowEl.style.setProperty('--start', currentAngle.toFixed(2) + 'deg');
+        requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+    })();
+
+    // Mobile Navigation Drawer Toggle Engine
+    (function initMobileDrawer() {
+      const btn = document.getElementById('mobileMenuBtn');
+      const drawer = document.getElementById('mobileDrawer');
+      const backdrop = document.getElementById('mobileDrawerBackdrop');
+      const closeBtn = document.getElementById('mobileDrawerClose');
+      if (!btn || !drawer || !backdrop) return;
+
+      function openDrawer() {
+        drawer.classList.add('active');
+        backdrop.classList.add('active');
+        btn.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeDrawer() {
+        drawer.classList.remove('active');
+        backdrop.classList.remove('active');
+        btn.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (drawer.classList.contains('active')) {
+          closeDrawer();
+        } else {
+          openDrawer();
+        }
+      });
+
+      if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+      backdrop.addEventListener('click', closeDrawer);
+
+      drawer.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', closeDrawer);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && drawer.classList.contains('active')) {
+          closeDrawer();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -4,510 +4,578 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Haptix Smart Account — Dashboard</title>
-<meta name="description" content="Dedicated Haptix ERC-4337 Smart Account management console on Base Sepolia.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon-256.png">
 <style>
+
   :root {
-    --bg-black: #000000;
-    --bg-deep: #050508;
-    --bg-surface: #090A0F;
-    --bg-card: rgba(14, 16, 23, 0.85);
-    --bg-card-subtle: rgba(255, 255, 255, 0.03);
-    --bg-subtle-blue: rgba(0, 82, 255, 0.1);
+    --bg-app: #F8FAFC;
+    --bg-surface: #FFFFFF;
+    --bg-hover: #F1F5F9;
+    --bg-active: #E2E8F0;
     
-    --text-title: #FFFFFF;
-    --text-body: #E2E8F0;
-    --text-muted: #8E9BAE;
-    --text-dark: #525E70;
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+    --text-muted: #94A3B8;
     
-    --base-blue: #0052FF;
-    --base-blue-hover: #0045D8;
-    --base-blue-light: rgba(0, 82, 255, 0.18);
+    --accent-blue: #3B82F6;
+    --accent-blue-light: #EFF6FF;
+    --accent-green: #10B981;
+    --accent-green-light: #ECFDF5;
+    --accent-red: #EF4444;
     
-    --accent-emerald: #10B981;
-    --accent-emerald-light: rgba(16, 185, 129, 0.15);
-    --accent-amber: #F59E0B;
-    --accent-amber-light: rgba(245, 158, 11, 0.15);
-    --accent-rose: #F43F5E;
-    --accent-rose-light: rgba(244, 63, 94, 0.15);
+    --border-light: #E2E8F0;
+    --border-medium: #CBD5E1;
     
-    --border-light: rgba(255, 255, 255, 0.08);
-    --border-focus: rgba(255, 255, 255, 0.18);
-    --border-blue: rgba(0, 82, 255, 0.35);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.6);
-    --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.8);
-    
-    --radius-sm: 6px;
+    --radius-sm: 8px;
     --radius-md: 12px;
-    --radius-lg: 18px;
+    --radius-lg: 16px;
     --radius-xl: 24px;
-    --radius-full: 9999px;
     
     --font-heading: 'Outfit', sans-serif;
     --font-main: 'Plus Jakarta Sans', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
   }
 
+  /* Prevent asset dragging/selection (Native App Feel) */
+  img {
+    user-select: none;
+    -webkit-user-drag: none;
+    pointer-events: none;
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   
   body {
-    background-color: var(--bg-deep);
-    color: var(--text-body);
+    background-color: var(--bg-app);
+    color: var(--text-primary);
     font-family: var(--font-main);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-    position: relative;
-  }
-
-  /* React Bits Grainient Background */
-  .grainient-canvas {
-    position: fixed;
-    inset: 0;
-    width: 100vw;
     height: 100vh;
-    z-index: 0;
-    pointer-events: none;
+    overflow: hidden;
   }
 
-  .grain-overlay {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1;
-    opacity: 0.35;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    mix-blend-mode: overlay;
+  .app-shell-new {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
   }
 
-  .app-shell {
-    position: relative;
-    z-index: 1;
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-light);
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    padding: 24px 20px;
+    flex-shrink: 0;
   }
 
-  /* Header */
-  .app-header {
-    background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border-light);
-    padding: 14px 0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+  .sidebar-logo {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 40px;
+    text-decoration: none;
   }
 
-  .header-inner {
-    max-width: 1240px;
-    margin: 0 auto;
-    padding: 0 24px;
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .nav-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .nav-item.active {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  
+  .nav-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+  }
+  
+  .nav-item.active .nav-icon, .nav-item:hover .nav-icon {
+    opacity: 1;
+  }
+
+  .promo-card {
+    background: #0F172A;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    color: white;
+    margin-top: auto;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .promo-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    line-height: 1.3;
+  }
+  
+  .promo-card p {
+    font-size: 11px;
+    color: #94A3B8;
+  }
+  
+  .promo-arrow {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  /* Main Area */
+  .main-column {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .topbar {
+    height: 72px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 0 40px;
+    background: var(--bg-app);
+    position: sticky;
+    top: 0;
+    z-index: 10;
   }
 
-  .brand-group {
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-hover);
+    border-radius: var(--radius-full);
+    padding: 10px 20px;
+    width: 400px;
+    color: var(--text-secondary);
+  }
+  
+  .search-bar input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: var(--font-main);
+    font-size: 14px;
+    width: 100%;
+    color: var(--text-primary);
+  }
+
+  .user-profile {
     display: flex;
     align-items: center;
     gap: 16px;
   }
-
-  .brand-logo {
+  
+  .bell-icon {
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  
+  .profile-badge {
     display: flex;
     align-items: center;
     gap: 10px;
-    text-decoration: none;
-    color: var(--text-white);
-    font-family: var(--font-heading);
-    font-weight: 800;
-    font-size: 18px;
-    letter-spacing: -0.02em;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
   }
-
-  .brand-icon {
-    width: 30px;
-    height: 30px;
-    background: linear-gradient(135deg, #0052FF, #8B5CF6);
-    border-radius: var(--radius-sm);
+  
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #1E293B;
+    color:var(--text-primary);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #FFF;
-    box-shadow: 0 0 14px rgba(0, 82, 255, 0.4);
+    font-weight: 700;
+    font-size: 14px;
   }
 
-  .back-link {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: color 0.15s ease;
-  }
-  .back-link:hover { color: var(--text-white); }
-
-  .topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  .content-area {
+    padding: 10px 40px 60px 40px;
   }
 
-  .network-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-full);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-white);
-  }
+  /* Tab View Logic */
+  .tab-view { display: none; }
+  .tab-view.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-  .pulse-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent-emerald);
-    box-shadow: 0 0 8px var(--accent-emerald);
-  }
-
-  /* Main Container */
-  .wallet-container {
-    max-width: 1240px;
-    margin: 32px auto;
-    padding: 0 24px;
+  /* Grid Layout for Home */
+  .home-grid {
     display: grid;
-    grid-template-columns: 340px 1fr;
+    grid-template-columns: 2fr 1fr;
     gap: 24px;
-    flex: 1;
-    width: 100%;
+    margin-bottom: 24px;
   }
 
-  @media (max-width: 960px) {
-    .wallet-container { grid-template-columns: 1fr; }
-  }
-
-  /* Left Column */
-  .wallet-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .rabby-account-card {
-    background: var(--bg-card);
+  .card-white {
+    background: var(--bg-surface);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
     padding: 24px;
-    box-shadow: var(--shadow-md);
-    backdrop-filter: blur(12px);
   }
 
-  .account-header {
+  /* Portfolio Card */
+  .portfolio-card {
+    position: relative;
+    overflow: hidden;
+    padding: 32px;
+  }
+  
+  .portfolio-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
   }
-
-  .passkey-badge {
+  
+  .portfolio-network-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background: var(--base-blue-light);
-    color: #60A5FA;
-    padding: 4px 10px;
-    border-radius: 6px;
-    border: 1px solid rgba(0, 82, 255, 0.3);
-  }
-
-  .balance-meta {
+    padding: 6px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-full);
     font-size: 12px;
-    color: var(--text-muted);
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 4px;
+    cursor: pointer;
+    background: var(--bg-surface);
   }
 
-  .big-portfolio-val {
+  .portfolio-value {
     font-family: var(--font-heading);
-    font-size: 34px;
+    font-size: 48px;
     font-weight: 800;
-    color: var(--text-white);
+    color: var(--text-primary);
     line-height: 1.1;
-  }
-
-  .big-portfolio-sub {
-    font-size: 13px;
-    color: var(--accent-emerald);
-    font-weight: 700;
-    margin-top: 4px;
-    font-family: var(--font-mono);
-  }
-
-  .address-copy-bar {
+    margin-bottom: 8px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-sm);
-    padding: 8px 12px;
-    margin-top: 18px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--text-white);
+    align-items: baseline;
+    gap: 12px;
   }
-
-  .copy-btn {
-    background: none;
-    border: none;
-    color: #60A5FA;
-    font-weight: 700;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  /* Policy Capsule */
-  .policy-capsule-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    box-shadow: var(--shadow-sm);
-    backdrop-filter: blur(12px);
-  }
-
-  .policy-capsule-card h4 {
-    font-family: var(--font-heading);
+  
+  .portfolio-change {
     font-size: 14px;
-    font-weight: 800;
-    color: var(--text-white);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .policy-stat-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12.5px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border-light);
-  }
-
-  .policy-stat-row:last-child { border-bottom: none; }
-  .policy-stat-label { color: var(--text-muted); }
-  .policy-stat-val { font-weight: 700; font-family: var(--font-mono); }
-
-  /* Right Column (Tabs & Forms) */
-  .wallet-main-pane {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    min-width: 0;
-    max-width: 100%;
-  }
-
-  .app-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    background: rgba(14, 16, 23, 0.75);
-    padding: 5px;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-light);
-    backdrop-filter: blur(12px);
-  }
-
-  .tab-btn {
-    flex: 1 1 auto;
-    min-width: 110px;
-    padding: 10px 14px;
-    background: none;
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: 13px;
     font-weight: 700;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.2s ease;
+    color: var(--accent-green);
+    display: flex;
+    gap: 12px;
+  }
+
+  .portfolio-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 40px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .btn-action-primary {
+    background: linear-gradient(180deg, #0055FF 0%, #0043D0 100%);
+    color: #FFFFFF;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.35), 0 4px 18px rgba(0, 82, 255, 0.42);
+    border-radius: var(--radius-full);
+    padding: 13px 22px;
+    font-size: 14px;
+    font-weight: 700;
     font-family: var(--font-main);
-    text-align: center;
-  }
-
-  .tab-btn.active {
-    background: #FFFFFF;
-    color: #000000;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-  }
-
-  .tab-view { display: none; width: 100%; min-width: 0; }
-  .tab-view.active { display: block; }
-
-  .transfer-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-light);
-    border-radius: var(--radius-xl);
-    padding: 28px;
-    box-shadow: var(--shadow-md);
-    backdrop-filter: blur(12px);
-    min-width: 0;
-    max-width: 100%;
-    overflow: hidden;
-  }
-
-  /* Asset Switcher */
-  .token-switcher {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    background: rgba(14, 18, 26, 0.85);
-    padding: 6px;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border-light);
-    margin-bottom: 24px;
-  }
-
-  .token-switch-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 12px 16px;
-    font-size: 13.5px;
-    font-weight: 700;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
+    gap: 8px;
     cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s ease;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    letter-spacing: -0.01em;
+  }
+  .btn-action-primary:hover {
+    background: linear-gradient(180deg, #1C68FF 0%, #004EE8 100%);
+    border-color: rgba(255, 255, 255, 0.38);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.45), 0 6px 24px rgba(0, 82, 255, 0.55);
+    transform: translateY(-1px);
+    color: #FFFFFF;
+  }
+  .btn-action-primary:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
-  .token-switch-btn.active {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--text-white);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-  }
-
-  .form-group {
-    margin-bottom: 18px;
-  }
-
-  .form-group label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-white);
-    margin-bottom: 6px;
-  }
-
-  .input-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  .input-wrap input {
-    width: 100%;
-    padding: 13px 16px;
-    background: rgba(0, 0, 0, 0.6);
+  .btn-action-secondary {
+    background: var(--bg-surface);
+    color: var(--text-primary);
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-md);
-    font-size: 14.5px;
-    font-weight: 600;
-    color: var(--text-white);
-    outline: none;
-    font-family: var(--font-main);
-  }
-
-  .input-wrap input:focus {
-    border-color: var(--base-blue);
-    box-shadow: 0 0 0 2px rgba(0, 82, 255, 0.3);
-  }
-
-  .input-badge-max {
-    position: absolute;
-    right: 12px;
-    padding: 4px 10px;
-    background: var(--base-blue-light);
-    color: #60A5FA;
-    border: 1px solid rgba(0, 82, 255, 0.3);
+    padding: 12px 24px;
     border-radius: var(--radius-full);
-    font-size: 11px;
-    font-weight: 800;
-    cursor: pointer;
-  }
-
-  /* Firewall Live Box */
-  .firewall-live-box {
-    border-radius: var(--radius-md);
-    padding: 16px;
-    margin-bottom: 20px;
-    border: 1px solid transparent;
-  }
-
-  .firewall-box-single {
-    background: rgba(16, 185, 129, 0.08);
-    border-color: rgba(16, 185, 129, 0.25);
-  }
-
-  .firewall-box-quorum {
-    background: rgba(245, 158, 11, 0.08);
-    border-color: rgba(245, 158, 11, 0.25);
-  }
-
-  .firewall-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-  }
-
-  .quorum-stepper {
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-main);
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 8px 12px;
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--accent-amber);
-    margin-top: 8px;
-    border: 1px solid rgba(245, 158, 11, 0.2);
+    cursor: pointer;
+    transition: background 0.2s;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-action-secondary:hover { background: var(--bg-hover); }
+
+  .wave-bg {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 60%;
+    height: 60%;
+    background: radial-gradient(circle at bottom right, rgba(59,130,246,0.1) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
   }
 
-  .action-btn-primary {
+  /* Right column widgets */
+  .side-widgets {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .widget-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  
+  .widget-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .w-icon-green { background: var(--accent-green-light); color: var(--accent-green); }
+  .w-icon-blue { background: var(--accent-blue-light); color: var(--accent-blue); }
+
+  .widget-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .widget-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+  
+  .badge-secure {
+    background: var(--accent-green-light);
+    color: var(--accent-green);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid rgba(16,185,129,0.2);
+  }
+
+  /* Progress Bar */
+  .progress-wrap {
+    margin-top: 8px;
+  }
+  .progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .progress-track {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-hover);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent-blue);
+    border-radius: var(--radius-full);
+  }
+
+  /* Assets Row */
+  .assets-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .asset-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-right: 20px;
+    border-right: 1px solid var(--border-light);
+  }
+  .asset-item:last-child { border-right: none; }
+  
+  .asset-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+  .asset-info h4 { font-size: 14px; font-weight: 700; }
+  .asset-info p { font-size: 12px; color: var(--text-secondary); }
+  .asset-info .val { font-weight: 600; color: var(--text-primary); font-family: var(--font-mono); }
+  .asset-info .change { color: var(--accent-green); font-weight: 600; }
+
+  /* Bottom Grid */
+  .bottom-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .view-all {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  /* Table */
+  .tx-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .tx-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .tx-table td {
+    padding: 16px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+  }
+  .tx-table tr:last-child td { border-bottom: none; }
+  
+  .tx-type { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-weight: 600; }
+  .tx-icon { width: 28px; height: 28px; background: var(--bg-hover); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .tx-amount { font-weight: 700; font-family: var(--font-mono); }
+  .tx-amount-sub { font-size: 11px; color: var(--text-muted); }
+  .tx-network { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+  .badge-completed { background: var(--accent-green-light); color: var(--accent-green); padding: 4px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; }
+
+  /* Explore list */
+  .explore-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .explore-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .explore-item:hover { background: var(--bg-hover); }
+  .explore-icon { width: 40px; height: 40px; background: var(--accent-blue-light); color: var(--accent-blue); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .explore-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+  .explore-info p { font-size: 12px; color: var(--text-secondary); }
+
+  /* Restyle existing tabs slightly so they aren't invisible on white bg */
+  .tab-view input, .tab-view select { background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-light); border-radius: 8px; padding: 10px; width: 100%; outline: none; }
+  .tab-view input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px var(--accent-blue-light); }
+  
+  .tab-view .action-btn-primary {
     background: linear-gradient(180deg, #0055FF 0%, #0043D0 100%);
     color: #FFFFFF;
     border: 1px solid rgba(255, 255, 255, 0.24);
@@ -523,624 +591,1184 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
   }
-
-  .action-btn-primary:hover {
+  .tab-view .action-btn-primary:hover {
     background: linear-gradient(180deg, #1C68FF 0%, #004EE8 100%);
     border-color: rgba(255, 255, 255, 0.38);
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.45), 0 6px 24px rgba(0, 82, 255, 0.55);
     transform: translateY(-1px);
     color: #FFFFFF;
   }
-
-  .action-btn-primary:active {
+  .tab-view .action-btn-primary:active {
     transform: translateY(0) scale(0.98);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
-  /* Key List Card */
-  .key-list-card {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
+  .tab-view .policy-capsule-card { background: var(--bg-surface); border: 1px solid var(--border-light); padding: 20px; border-radius: 12px; }
+  .tab-view label { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+  .tab-view .firewall-live-box { background: var(--bg-hover); border: 1px solid var(--border-light); padding: 16px; border-radius: 12px; margin-top: 16px; }
+  .tab-view table { width: 100%; border-collapse: collapse; }
+  .tab-view th, .tab-view td { padding: 12px; border-bottom: 1px solid var(--border-light); text-align: left; font-size: 13px; color: var(--text-primary); }
+  .tab-view th { color: var(--text-secondary); font-weight: 600; }
+  
+  /* Legacy ID fixes for hidden functionality */
+  #sideStatusText, #sideCopyBtn, #sideAccountShort { display: none; } /* Hidden but preserved for JS */
 
-  .key-item {
-    background: var(--bg-card);
+
+  /* Restored & Adapted Component CSS */
+  .transfer-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    margin-top: 16px;
+  }
+  
+  .token-switcher {
+    display: flex;
+    background: var(--bg-hover);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+  }
+  
+  .token-switch-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 8px 0;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .token-switch-btn.active {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+  
+  .input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 0 16px;
+    margin-top: 8px;
+    transition: border-color 0.2s;
+  }
+  .input-group:focus-within {
+    border-color: var(--accent-blue);
+  }
+  
+  .input-group input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    padding: 16px 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+    outline: none;
+  }
+  
+  .input-badge-max {
+    background: var(--accent-blue-light);
+    color: var(--accent-blue);
+    border: none;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  
+  .firewall-live-box {
+    background: var(--bg-hover);
+    border: 1px dashed var(--border-medium);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin-top: 24px;
+  }
+  .firewall-box-single {
+    border-color: rgba(16, 185, 129, 0.4);
+    background: var(--accent-green-light);
+  }
+  
+  .quorum-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .stepper-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border-medium);
+  }
+  .stepper-dot.active {
+    background: var(--accent-green);
+    box-shadow: 0 0 8px var(--accent-green);
+  }
+  
+  .userop-receipt-box {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-top: 24px;
+    font-family: var(--font-mono);
+  }
+  
+  .passkey-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    background: var(--accent-blue-light);
+    color: var(--accent-blue);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  
+  .policy-capsule-card {
+    background: var(--bg-surface);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
-    padding: 18px 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .policy-stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  .policy-stat-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  
+  .addr-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-  }
-
-  /* Receipt Box */
-  .userop-receipt-box {
-    margin-top: 20px;
-    background: #0B0E14;
-    border: 1px solid rgba(96, 165, 250, 0.3);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    color: #FFF;
-    max-width: 100%;
-    overflow: hidden;
-  }
-
-  .userop-receipt-box pre {
-    margin-top: 10px;
-    background: #05060A;
-    border: 1px solid var(--border-light);
     padding: 12px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-light);
     border-radius: var(--radius-sm);
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    color: #93C5FD;
-    max-height: 240px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    white-space: pre-wrap;
-    word-break: break-all;
+    margin-bottom: 8px;
   }
+  
+  .role-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    background: var(--border-light);
+    color: var(--text-secondary);
+  }
+  
+  .address-copy-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-primary);
+    margin-top: 10px;
+  }
+  
+  .copy-btn {
+    background: none;
+    border: none;
+    color: var(--accent-blue);
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  
+  /* Inputs inside tab-view */
+  .tab-view input[type="text"], .tab-view input[type="number"], .tab-view select {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    width: 100%;
+    outline: none;
+    font-family: var(--font-mono);
+    margin-bottom: 12px;
+  }
+  .tab-view input:focus {
+    border-color: var(--accent-blue);
+  }
+
+
+  /* --- Modal Styles --- */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay.active {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  
+  .modal-content {
+    background: var(--bg-surface);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none; border: none;
+    font-size: 24px; cursor: pointer; color: var(--text-secondary);
+  }
+  .qr-placeholder {
+    width: 200px; height: 200px;
+    margin: 24px auto;
+    background: #fff;
+    border: 2px dashed var(--border-medium);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary); font-size: 14px; font-weight: 600;
+  }
+
+
+  /* --- Passkey Approval Modal --- */
+  .passkey-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+  }
+  .passkey-modal-overlay.active {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+  }
+  .passkey-modal-content {
+    background: #FFFFFF;
+    border-radius: 32px;
+    padding: 32px;
+    width: 90%;
+    max-width: 440px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    text-align: center;
+    position: relative;
+    font-family: var(--font-main);
+  }
+  .passkey-modal-close {
+    position: absolute;
+    top: 24px; right: 24px;
+    background: var(--bg-hover); border: none;
+    width: 32px; height: 32px; border-radius: 50%;
+    font-size: 18px; cursor: pointer; color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .passkey-icon-wrapper {
+    width: 80px; height: 80px;
+    background: #ECFDF5;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 24px;
+    color: #10B981;
+  }
+  .passkey-tx-card {
+    background: #F8FAFC;
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    padding: 20px;
+    margin: 24px 0 16px;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 16px;
+  }
+  .passkey-gasless-badge {
+    background: #ECFDF5;
+    color: #10B981;
+    font-size: 12px; font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-bottom: 24px;
+  }
+  .passkey-btn-confirm {
+    background: #0F172A;
+    color: #fff;
+    width: 100%;
+    padding: 18px;
+    border: none;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: background 0.2s;
+  }
+  .passkey-btn-confirm:hover { background: #1E293B; }
+  .passkey-btn-cancel {
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    font-size: 15px; font-weight: 600;
+    margin-top: 16px;
+    cursor: pointer;
+  }
+  .passkey-btn-cancel:hover { color: var(--text-primary); }
+
+
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+  .spin { animation: spin 1s linear infinite; }
 </style>
 </head>
 <body>
 
-  <!-- React Bits Grainient Canvas & Fine Film Grain Overlay -->
-  <canvas id="grainientCanvas" class="grainient-canvas"></canvas>
-  <div class="grain-overlay"></div>
-
-  <div class="app-shell">
-  <!-- Header -->
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="brand-group">
-        <a href="index.html" class="brand-logo" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
-          <img src="assets/haptix-logo-final.png" alt="Haptix" style="height:24px;width:auto;display:block;" />
-          <span style="font-family:var(--font-heading);font-weight:600;font-size:11.5px;letter-spacing:0.04em;text-transform:uppercase;color:rgba(255,255,255,0.65);background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);padding:2px 7px;border-radius:6px;">Console</span>
-        </a>
-        <a href="index.html" class="back-link">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-          Overview
-        </a>
-      </div>
-
-      <div class="topbar-actions">
-        <button id="panicFreezeBtn" style="background:var(--accent-rose);color:#FFF;border:none;padding:6px 14px;border-radius:var(--radius-full);font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s ease;">
-          <span>Emergency Freeze (1-Sig)</span>
-        </button>
-        <div class="network-badge" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,82,255,0.1);border:1px solid rgba(0,82,255,0.25);padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;color:#60A5FA;">
-          <img src="assets/base_logo.svg" width="14" height="14" alt="Base" />
-          <span>Base Sepolia (84532)</span>
-        </div>
-        <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="back-link" style="display:inline-flex;align-items:center;gap:4px;">
-          <span>BaseScan</span>
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4.5 11.5l7-7M5 4.5h6.5v6.5"/>
-          </svg>
-        </a>
-      </div>
-    </div>
-  </header>
-
-  <!-- Frozen Alert Banner -->
-  <div id="frozenBanner" style="display:none;background:rgba(244,63,94,0.15);border-bottom:1px solid rgba(244,63,94,0.35);padding:12px 24px;text-align:center;color:#FDA4AF;font-weight:700;font-size:13px;">
-    <strong>EMERGENCY FREEZE ACTIVE:</strong> All sub-threshold transfers are locked down. Any transaction or unfreeze strictly requires full 2-of-2 Hardware Quorum.
-    <button id="unfreezeBtn" style="margin-left:12px;background:var(--accent-rose);color:#FFF;border:none;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Unfreeze Wallet (2-of-2)</button>
+  <!-- Hidden legacy elements required by JS but not shown in UI -->
+  <div style="display:none;">
+    <button id="panicFreezeBtn"></button>
+    <div id="frozenBanner"></div>
+    <button id="unfreezeBtn"></button>
+    <span id="sideStatusText"></span>
+    <span id="sideAccountShort"></span>
+    <button id="sideCopyBtn"></button>
+    <span id="sideAllowlistStatus"></span>
+    <span id="sideFreezeStatus"></span>
   </div>
 
-  <!-- Main Wallet Application Grid -->
-  <main class="wallet-container">
-    <!-- Left Column: Portfolio & Sidebar -->
-    <aside class="wallet-sidebar">
-      <!-- Account Card -->
-      <div class="rabby-account-card">
-        <div class="account-header">
-          <span class="passkey-badge">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
-            P-256 Passkey Account
-          </span>
-          <span id="sideStatusText" style="font-size:12px;color:var(--accent-emerald);font-weight:700;">● Online</span>
-        </div>
-
-        <div class="balance-meta">Total Portfolio Balance</div>
-        <div class="big-portfolio-val" id="sidePortfolioEth" style="display:flex;align-items:baseline;gap:8px;">
-          <span>0.0041 ETH</span>
-          <span style="font-size:14px;color:var(--text-muted);font-weight:500;" id="sidePortfolioUsd">≈ $13.12 USD</span>
-        </div>
-
-        <div class="address-copy-bar">
-          <span style="overflow:hidden;text-overflow:ellipsis;margin-right:8px;font-family:var(--font-mono);font-size:12.5px;" id="sideAccountShort">0xB0154345...796f</span>
-          <button class="copy-btn" id="sideCopyBtn">Copy</button>
-        </div>
-
-        <!-- Real Token Asset List in Sidebar -->
-        <div class="sidebar-token-list" style="margin-top:18px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;flex-direction:column;gap:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <div style="width:28px;height:28px;border-radius:50%;background:#161B26;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">
-                <img src="assets/eth_logo.svg" width="13" height="18" alt="ETH" />
-              </div>
-              <div>
-                <div style="font-size:12.5px;font-weight:700;color:#FFF;">Ethereum</div>
-                <div style="font-size:10.5px;color:var(--text-muted);">Base Sepolia</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:12.5px;font-weight:700;color:#FFF;" id="sideHoldEth">0.0041 ETH</div>
-              <div style="font-size:10.5px;color:var(--text-muted);">≈ $13.12</div>
-            </div>
-          </div>
-
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <img src="assets/usdc_logo.svg" width="28" height="28" alt="USDC" style="border-radius:50%;display:block;" />
-              <div>
-                <div style="font-size:12.5px;font-weight:700;color:#FFF;">USD Coin</div>
-                <div style="font-size:10.5px;color:var(--text-muted);">Circle · Native</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:12.5px;font-weight:700;color:#FFF;" id="sideHoldUsdc">0.00 USDC</div>
-              <div style="font-size:10.5px;color:var(--text-muted);">$0.00</div>
-            </div>
-          </div>
-        </div>
+  <div class="app-shell-new">
+    
+    <!-- Left Sidebar -->
+    <nav class="sidebar">
+      <a href="#" class="sidebar-logo">
+        <img src="assets/haptix-logo-final.png" alt="Haptix Logo" style="height: 28px; width: auto; display: block; filter: brightness(0);">
+        Haptix
+      </a>
+      
+      <div class="sidebar-nav">
+        <a class="nav-item active" onclick="switchTab('tab-home', this)">
+          <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          Home
+        </a>
+        <a class="nav-item" onclick="switchTab('tab-send', this)">
+          <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+          Assets
+        </a>
+        <a class="nav-item" onclick="switchTab('tab-swap', this)">
+          <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+          Swap
+        </a>
+        <a class="nav-item" onclick="switchTab('tab-activity', this)">
+          <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Activity
+        </a>
+        <a class="nav-item" onclick="switchTab('tab-agents', this)">
+          <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg>
+          Agents
+        </a>
+        <a class="nav-item" onclick="switchTab('tab-security', this)">
+          <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          Security
+        </a>
+        <a class="nav-item" onclick="switchTab('tab-config', this)">
+          <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          Settings
+        </a>
       </div>
-
-      <!-- Policy Firewall Capsule -->
-      <div class="policy-capsule-card">
-        <h4>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          On-Chain Spending Firewall
-        </h4>
-        <div class="policy-stat-row">
-          <span class="policy-stat-label">ETH Single-Sig:</span>
-          <span class="policy-stat-val" style="color:#60A5FA;">&lt; 0.010 ETH</span>
-        </div>
-        <div class="policy-stat-row">
-          <span class="policy-stat-label">Address Book:</span>
-          <span class="policy-stat-val" id="sideAllowlistStatus" style="color:var(--accent-emerald);">Active</span>
-        </div>
-        <div class="policy-stat-row">
-          <span class="policy-stat-label">Approval Firewall:</span>
-          <span class="policy-stat-val" style="color:var(--accent-amber);">2-of-2 Quorum</span>
-        </div>
-        <div class="policy-stat-row">
-          <span class="policy-stat-label">Panic Switch:</span>
-          <span class="policy-stat-val" id="sideFreezeStatus" style="color:var(--accent-emerald);">Normal</span>
-        </div>
+      
+      <div class="promo-card">
+        <h4>More control.<br>A safer onchain you.</h4>
+        <p>Web3. Protected by you.</p>
+        <div class="promo-arrow">↗</div>
       </div>
-    </aside>
-
-    <!-- Right Column: Wallet Actions & Tabs -->
-    <section class="wallet-main-pane">
-      <!-- Navigation Tabs -->
-      <div class="app-tabs">
-        <button class="tab-btn active" data-tab="send">Transfer</button>
-        <button class="tab-btn" data-tab="agents">AI Agents</button>
-        <button class="tab-btn" data-tab="config">Policy Config</button>
-        <button class="tab-btn" data-tab="addressbook">Address Book</button>
-        <button class="tab-btn" data-tab="security">Hardware Keys</button>
-        <button class="tab-btn" data-tab="activity">Activity Log</button>
-      </div>
-
-      <!-- Tab 1: Send & Transfer -->
-      <div class="tab-view active" id="tab-send">
-        <div class="transfer-card">
-          <!-- Token Switcher -->
-          <div class="token-switcher">
-            <button class="token-switch-btn active" id="appSelectEth">
-              <img src="assets/eth_logo.svg" width="14" height="20" alt="ETH" style="display:inline-block;vertical-align:middle;margin-right:6px;" />
-              <span>Native ETH</span>
-            </button>
-            <button class="token-switch-btn" id="appSelectUsdc">
-              <img src="assets/usdc_logo.svg" width="18" height="18" alt="USDC" style="display:inline-block;vertical-align:middle;margin-right:6px;border-radius:50%;" />
-              <span>Base Sepolia USDC</span>
-            </button>
+    </nav>
+    
+    <!-- Main Area -->
+    <div class="main-column">
+      <header class="topbar">
+        <div class="search-bar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" placeholder="Search tokens, addresses, or apps...">
+        </div>
+        <div class="user-profile">
+          <svg class="bell-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <div class="profile-badge">
+            <div class="avatar" id="profileAvatar">0</div>
+            <span id="profileName">0x...</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
           </div>
-
-          <div class="form-group">
-            <label>
-              <span id="appTransferLabel">Transfer Amount (ETH)</span>
-              <span style="color:#60A5FA;cursor:pointer;" id="appDustBtn">Set 0.005 (1-Sig)</span>
-            </label>
-            <div class="input-wrap">
-              <input type="number" id="appTransferAmt" value="0.005" step="0.001" min="0.0001">
-              <button class="input-badge-max" id="appMaxBtn">MAX</button>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Recipient Address (Base Sepolia)</label>
-            <div class="input-wrap">
-              <input type="text" id="appRecipientAddr" value="0x22db962929afe98d0269De0BAa6c442A3Aa6913D" style="font-family:var(--font-mono);font-size:13.5px;">
-            </div>
-          </div>
-
-          <!-- Real-time Firewall Evaluation Box -->
-          <div class="firewall-live-box firewall-box-single" id="appFirewallBox">
-            <div class="firewall-header">
-              <strong id="appFirewallTitle" style="color:var(--accent-emerald);font-size:13.5px;">● Policy Check: Single Biometric Passkey</strong>
-              <span id="appFirewallBadge" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--accent-emerald-light);color:var(--accent-emerald);font-family:var(--font-mono);">1-Signature</span>
-            </div>
-            <p id="appFirewallDesc" style="font-size:13px;color:var(--text-muted);line-height:1.4;">
-              Transfer amount is below threshold and recipient is trusted. A single biometric signature will be prompted.
-            </p>
-            <div class="quorum-stepper" id="appQuorumStepper" style="display:none;">
-              <span>Requires 2 physical passkeys: 1. Signer 0 (Primary) → 2. Signer 1 (Backup)</span>
-            </div>
-          </div>
-
-          <button class="action-btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px;" id="appSignSubmitBtn">
-            Authorize with 1 Hardware Passkey
-          </button>
-
-          <!-- UserOp & Transaction Receipt -->
-          <div class="userop-receipt-box" id="appReceiptArea" style="display:none;">
-            <div id="txSuccessBanner" style="display:none;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.4);border-radius:8px;padding:14px;margin-bottom:14px;">
-              <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--accent-emerald);">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
-                Transaction Confirmed on Base Sepolia!
+        </div>
+      </header>
+      
+      <main class="content-area">
+        
+        <!-- ================= HOME TAB ================= -->
+        <div id="tab-home" class="tab-view active">
+          
+          <div class="home-grid">
+            <!-- Left: Portfolio -->
+            <div class="card-white portfolio-card">
+              <div class="wave-bg"></div>
+              <div class="portfolio-header">
+                <span style="display:flex;align-items:center;gap:6px;">Total Portfolio <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></span>
+                <div class="portfolio-network-btn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                  All Networks
+                </div>
               </div>
-              <div style="font-size:12px;color:#94A3B8;margin-top:6px;word-break:break-all;font-family:var(--font-mono);" id="txHashDisplay"></div>
-              <a href="#" target="_blank" id="txBaseScanLink" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;">
-                View on BaseScan Explorer ↗
-              </a>
+              
+              <div class="portfolio-value" id="sidePortfolioEth">$124,580.00</div>
+              <div class="portfolio-change" id="sidePortfolioUsd">
+                <span>+12.4%</span>
+                <span>+$13,730.21 (24h)</span>
+              </div>
+              
+              <div class="portfolio-actions">
+                <button class="btn-action-primary" onclick="switchTab('tab-send', document.querySelectorAll('.nav-item')[1])">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+                  Send
+                </button>
+                <button class="btn-action-secondary" id="openReceiveBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                  Receive
+                </button>
+                <button class="btn-action-secondary" onclick="switchTab('tab-swap', null)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+                  Swap
+                </button>
+              </div>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <span style="font-size:12px;font-weight:700;text-transform:uppercase;color:#60A5FA;">UserOp Execution Details</span>
-              <span style="font-size:11px;color:#94A3B8;font-family:var(--font-mono);">EntryPoint v0.7</span>
+            
+            <!-- Right: Status Widgets -->
+            <div class="side-widgets">
+              <div class="widget-card">
+                <div class="widget-header">
+                  <div style="display:flex;gap:12px;">
+                    <div class="widget-icon-box w-icon-green">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                    </div>
+                    <div>
+                      <div class="widget-title">Face ID Protected</div>
+                      <div class="widget-desc">Your wallet is secured with a hardware passkey.</div>
+                    </div>
+                  </div>
+                  <div class="badge-secure">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Secure
+                  </div>
+                </div>
+              </div>
+              
+              <div class="widget-card">
+                <div class="widget-header">
+                  <div style="display:flex;gap:12px;">
+                    <div class="widget-icon-box w-icon-blue">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path></svg>
+                    </div>
+                    <div>
+                      <div class="widget-title">Autonomous Agent</div>
+                      <div class="widget-desc">Active session • Trading Agent</div>
+                    </div>
+                  </div>
+                  <div class="badge-secure" id="agentSessionBadge" style="background:#ECFDF5;color:#10B981;border-color:rgba(16,185,129,0.2);">
+                    ● Running
+                  </div>
+                </div>
+                
+                <div class="progress-wrap">
+                  <div class="progress-labels">
+                    <span>Rate limit</span>
+                    <span id="dispRollingUsageLabel">12 / 50 actions (1h)</span>
+                  </div>
+                  <div class="progress-track">
+                    <div class="progress-fill" id="dispRollingUsageFill" style="width:24%;"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <pre id="appUserOpCode"></pre>
           </div>
+          
+          <!-- Assets Row -->
+          <div class="card-white" style="padding:16px 24px;margin-bottom:24px;">
+            <div class="assets-row">
+              <div class="asset-item">
+                <div class="asset-icon" style="background:#F3F4F6;"><span style="color:#627EEA;">Ξ</span></div>
+                <div class="asset-info">
+                  <h4>ETH</h4>
+                  <div class="val" id="sideHoldEth">$48,230.10</div>
+                  <div class="change">+5.2%</div>
+                </div>
+              </div>
+              <div class="asset-item">
+                <div class="asset-icon" style="background:#EFF6FF;"><span style="color:#2775CA;">$</span></div>
+                <div class="asset-info">
+                  <h4>USDC</h4>
+                  <div class="val" id="sideHoldUsdc">$32,415.00</div>
+                  <div class="change" style="color:var(--accent-blue);">+0.1%</div>
+                </div>
+              </div>
+              <div class="asset-item">
+                <div class="asset-icon" style="background:#EFF6FF;"><span style="color:#0052FF;font-weight:900;">O</span></div>
+                <div class="asset-info">
+                  <h4>BASE</h4>
+                  <div class="val">$18,240.32</div>
+                  <div class="change">+8.7%</div>
+                </div>
+              </div>
+              <div class="asset-item" style="border-right:none;">
+                <div class="asset-icon" style="background:var(--bg-hover);"><span style="color:#14F195;">S</span></div>
+                <div class="asset-info">
+                  <h4>SOL</h4>
+                  <div class="val">$12,430.21</div>
+                  <div class="change">+4.3%</div>
+                </div>
+              </div>
+              
+              <div style="flex:1;"></div>
+              
+              <button class="btn-action-secondary" style="border:1px dashed var(--border-medium);background:transparent;box-shadow:none;">
+                + Add Asset
+              </button>
+            </div>
+          </div>
+          
+          <!-- Bottom Section -->
+          <div class="bottom-grid">
+            <div class="card-white">
+              <div class="section-title">
+                Recent Transactions
+                <a href="#" class="view-all">View all ></a>
+              </div>
+              <table class="tx-table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Amount</th>
+                    <th>Network</th>
+                    <th>Status</th>
+                    <th>Time</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div class="tx-type"><div class="tx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line></svg></div> Swap</div>
+                    </td>
+                    <td style="font-weight:600;">ETH → USDC</td>
+                    <td>
+                      <div class="tx-amount">1.25 ETH</div>
+                      <div class="tx-amount-sub">$4,730.21</div>
+                    </td>
+                    <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base</div></td>
+                    <td><span class="badge-completed">Completed</span></td>
+                    <td style="color:var(--text-secondary);font-size:12px;">12m ago</td>
+                    <td><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="tx-type"><div class="tx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></div> Send</div>
+                    </td>
+                    <td style="font-family:var(--font-mono);font-size:12px;">0x3a...7f2b</td>
+                    <td>
+                      <div class="tx-amount">-500.00 USDC</div>
+                      <div class="tx-amount-sub">$500.00</div>
+                    </td>
+                    <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base</div></td>
+                    <td><span class="badge-completed">Completed</span></td>
+                    <td style="color:var(--text-secondary);font-size:12px;">2h ago</td>
+                    <td><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="card-white" style="padding:0;background:transparent;border:none;box-shadow:none;">
+              <div class="section-title" style="padding-left:12px;">Explore</div>
+              <div class="explore-list">
+                <div class="explore-item">
+                  <div class="explore-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></div>
+                  <div class="explore-info">
+                    <h4>Discover dApps</h4>
+                    <p>Explore the best of Web3</p>
+                  </div>
+                </div>
+                <div class="explore-item">
+                  <div class="explore-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path></svg></div>
+                  <div class="explore-info">
+                    <h4>Use with Agents</h4>
+                    <p>Automate your onchain activity</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
         </div>
-      </div>
-
-      <!-- Tab: AI Agent Delegation -->
-      <div class="tab-view" id="tab-agents">
-        <div class="transfer-card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <div>
-              <h3 style="font-family:var(--font-heading);font-size:18px;color:var(--text-white);">AI Agent Spending Delegation</h3>
-              <p style="font-size:13px;color:var(--text-muted);margin-top:2px;">
-                Delegate limited, autonomous spending authority to AI agents without revealing master private keys.
+        
+        <!-- ================= SWAP TAB (New) ================= -->
+        <div class="tab-view" id="tab-swap">
+          <div class="transfer-card" style="margin: 0 auto; max-width: 480px; width: 100%;">
+            <!-- From Token -->
+            <div class="form-group">
+              <label>You Pay</label>
+              <div class="input-wrap" style="display: flex; gap: 12px; align-items: center;">
+                <input type="number" id="swapInputAmt" value="0.01" step="0.001" min="0.0001" style="flex: 1;" oninput="document.getElementById('swapOutputAmt').value = (this.value * 2500).toFixed(2);">
+                <button class="token-switch-btn active" style="flex-shrink: 0; padding: 12px 16px;">
+                  <img src="assets/eth_logo.svg" width="18" height="18" style="display:inline-block; vertical-align:middle; margin-right:6px;" alt="ETH">
+                  <span>ETH</span>
+                </button>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Balance: <span id="swapBalEthLocal">0.00</span> ETH</div>
+            </div>
+            
+            <!-- Swap Divider -->
+            <div style="text-align: center; margin: 16px 0;">
+              <div style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--bg-deep); border: 1px solid var(--border-dark); color: var(--text-muted);">
+                ↓
+              </div>
+            </div>
+            
+            <!-- To Token -->
+            <div class="form-group">
+              <label>You Receive (Estimated)</label>
+              <div class="input-wrap" style="display: flex; gap: 12px; align-items: center;">
+                <input type="number" id="swapOutputAmt" disabled style="flex: 1; background: rgba(255,255,255,0.02); color: var(--text-title);" value="25.00">
+                <button class="token-switch-btn active" style="flex-shrink: 0; padding: 12px 16px; border: 1px solid var(--border-light);">
+                  <img src="assets/usdc_logo.svg" width="18" height="18" style="display:inline-block; vertical-align:middle; margin-right:6px; border-radius: 50%;" alt="USDC">
+                  <span>USDC</span>
+                </button>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Rate: 1 ETH = <span id="swapExchangeRate">2500.00</span> USDC</div>
+            </div>
+            
+            <!-- Real-time Firewall Evaluation Box -->
+            <div class="firewall-live-box firewall-box-single" id="swapFirewallBox">
+              <div class="firewall-header">
+                <strong style="color:var(--accent-emerald); font-size:13.5px;">● Policy Check: Single Biometric Passkey</strong>
+                <span style="font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; background:var(--accent-emerald-light); color:var(--accent-emerald); font-family:var(--font-mono);">1-Signature</span>
+              </div>
+              <p style="font-size:13px; color:var(--text-muted); line-height:1.4;">
+                DEX Router is a trusted contract on Base Sepolia. A single biometric signature will authorize this Swap UserOp.
               </p>
             </div>
-            <span class="passkey-badge" id="agentSessionBadge" style="background:var(--accent-emerald-light);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);">
+            
+            <button id="swapSignSubmitBtn" class="action-btn-primary" style="width:100%; padding:14px; font-size:15px; margin-top:8px;">
+              Authorize Swap with Hardware Passkey
+            </button>
+            
+            <!-- UserOp & Transaction Receipt -->
+            <div id="swapReceiptArea" class="userop-receipt-box" style="display:none; margin-top: 20px;">
+              <div id="swapSuccessBanner" style="display:none; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.4); border-radius:8px; padding:14px; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:var(--accent-emerald);">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"></path></svg>
+                  Swap Executed on Base Sepolia!
+                </div>
+                <div id="swapHashDisplay" style="font-size:12px; color:#94A3B8; margin-top:6px; word-break:break-all; font-family:var(--font-mono);"></div>
+                <a href="#" id="swapBaseScanLink" target="_blank" style="display:inline-block; margin-top:8px; font-size:12px; font-weight:700; color:#60A5FA; text-decoration:none;">
+                  View on BaseScan Explorer ↗
+                </a>
+              </div>
+              
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                <span style="font-size:12px; font-weight:700; text-transform:uppercase; color:#60A5FA;">UserOp Execution Details</span>
+                <span style="font-size:11px; color:#94A3B8; font-family:var(--font-mono);">EntryPoint v0.7</span>
+              </div>
+              <pre id="swapUserOpCode" style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; font-size: 11px; overflow-x: auto; color: #a1a1aa;"></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= ORIGINAL TABS (Restyled) ================= -->
+        <!-- These are injected from the original file to preserve JS IDs -->
+        <div class="tab-view" id="tab-send">
+<div class="transfer-card">
+<!-- Token Switcher -->
+<div class="token-switcher">
+<button class="token-switch-btn active" id="appSelectEth">
+<img alt="ETH" height="20" src="assets/eth_logo.svg" style="display:inline-block;vertical-align:middle;margin-right:6px;" width="14"/>
+<span>Native ETH</span>
+</button>
+<button class="token-switch-btn" id="appSelectUsdc">
+<img alt="USDC" height="18" src="assets/usdc_logo.svg" style="display:inline-block;vertical-align:middle;margin-right:6px;border-radius:50%;" width="18"/>
+<span>Base Sepolia USDC</span>
+</button>
+</div>
+<div class="form-group">
+<label>
+<span id="appTransferLabel">Transfer Amount (ETH)</span>
+<span id="appDustBtn" style="color:#60A5FA;cursor:pointer;">Set 0.005 (1-Sig)</span>
+</label>
+<div class="input-wrap">
+<input id="appTransferAmt" min="0.0001" step="0.001" type="number" value="0.005"/>
+<button class="input-badge-max" id="appMaxBtn">MAX</button>
+</div>
+</div>
+<div class="form-group">
+<label>Recipient Address (Base Sepolia)</label>
+<div class="input-wrap">
+<input id="appRecipientAddr" style="font-family:var(--font-mono);font-size:13.5px;" type="text" value="0x22db962929afe98d0269De0BAa6c442A3Aa6913D"/>
+</div>
+</div>
+<!-- Real-time Firewall Evaluation Box -->
+<div class="firewall-live-box firewall-box-single" id="appFirewallBox">
+<div class="firewall-header">
+<strong id="appFirewallTitle" style="color:var(--accent-emerald);font-size:13.5px;">● Policy Check: Single Biometric Passkey</strong>
+<span id="appFirewallBadge" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--accent-emerald-light);color:var(--accent-emerald);font-family:var(--font-mono);">1-Signature</span>
+</div>
+<p id="appFirewallDesc" style="font-size:13px;color:var(--text-muted);line-height:1.4;">
+              Transfer amount is below threshold and recipient is trusted. A single biometric signature will be prompted.
+            </p>
+<div class="quorum-stepper" id="appQuorumStepper" style="display:none;">
+<span>Requires 2 physical passkeys: 1. Signer 0 (Primary) → 2. Signer 1 (Backup)</span>
+</div>
+</div>
+<button class="action-btn-primary" id="appSignSubmitBtn" style="width:100%;padding:14px;font-size:15px;margin-top:8px;">
+            Authorize with 1 Hardware Passkey
+          </button>
+<!-- UserOp & Transaction Receipt -->
+<div class="userop-receipt-box" id="appReceiptArea" style="display:none;">
+<div id="txSuccessBanner" style="display:none;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.4);border-radius:8px;padding:14px;margin-bottom:14px;">
+<div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--accent-emerald);">
+<svg fill="none" height="18" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" width="18"><path d="M20 6 9 17l-5-5"></path></svg>
+                Transaction Confirmed on Base Sepolia!
+              </div>
+<div id="txHashDisplay" style="font-size:12px;color:#94A3B8;margin-top:6px;word-break:break-all;font-family:var(--font-mono);"></div>
+<a href="#" id="txBaseScanLink" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;" target="_blank">
+                View on BaseScan Explorer ↗
+              </a>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<span style="font-size:12px;font-weight:700;text-transform:uppercase;color:#60A5FA;">UserOp Execution Details</span>
+<span style="font-size:11px;color:#94A3B8;font-family:var(--font-mono);">EntryPoint v0.7</span>
+</div>
+<pre id="appUserOpCode"></pre>
+</div>
+</div>
+</div>
+        <div class="tab-view" id="tab-agents">
+<div class="transfer-card">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+<div>
+<h3 style="font-family:var(--font-heading);font-size:18px;color:var(--text-primary);">AI Agent Spending Delegation</h3>
+<p style="font-size:13px;color:var(--text-muted);margin-top:2px;">
+                Delegate limited, autonomous spending authority to AI agents without revealing master private keys.
+              </p>
+</div>
+<span class="passkey-badge" id="agentSessionBadge" style="background:var(--accent-emerald-light);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);">
               ● Session Active
             </span>
-          </div>
-
-          <!-- Active Agent Session Overview -->
-          <div style="background:rgba(0,0,0,0.4);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-              <div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Delegated Agent Key</div>
-              <button class="copy-btn" id="btnCopyAgentKey" style="background:rgba(255,255,255,0.06);color:#FFF;border:1px solid var(--border-light);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Copy Key</button>
-            </div>
-            <div style="font-family:var(--font-mono);font-size:13.5px;color:#93C5FD;word-break:break-all;margin-bottom:16px;" id="dispAgentKey">
+</div>
+<!-- Active Agent Session Overview -->
+<div style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+<div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Delegated Agent Key</div>
+<button class="copy-btn" id="btnCopyAgentKey" style="background:var(--bg-hover);color:var(--text-primary);border:1px solid var(--border-light);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Copy Key</button>
+</div>
+<div id="dispAgentKey" style="font-family:var(--font-mono);font-size:13.5px;color:var(--accent-blue);word-break:break-all;margin-bottom:16px;">
               0x8a912e73f912a738c821938491029381029b819e
             </div>
-
-            <!-- Limits Grid -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;margin-bottom:16px;">
-              <div style="background:#000;border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
-                <div style="font-size:11px;color:var(--text-dark);">Autonomous Limit</div>
-                <div style="font-size:15px;font-weight:800;color:var(--text-white);margin-top:2px;" id="dispAutoLimit">50.00 USDC</div>
-              </div>
-              <div style="background:#000;border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
-                <div style="font-size:11px;color:var(--text-dark);">Escalation Ceiling</div>
-                <div style="font-size:15px;font-weight:800;color:var(--text-white);margin-top:2px;" id="dispCeilingLimit">200.00 USDC</div>
-              </div>
-              <div style="background:#000;border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
-                <div style="font-size:11px;color:var(--text-dark);">24h Rolling Cap</div>
-                <div style="font-size:15px;font-weight:800;color:var(--text-white);margin-top:2px;" id="dispRollingCap">100.00 USDC</div>
-              </div>
-            </div>
-
-            <!-- Rolling Spend Progress Bar -->
-            <div>
-              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px;">
-                <span>24h Rolling Spend Usage</span>
-                <span id="dispRollingUsageLabel">$30.00 / $100.00 USDC (30%)</span>
-              </div>
-              <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:999px;overflow:hidden;">
-                <div id="dispRollingUsageFill" style="height:100%;background:linear-gradient(90deg, #38BDF8, #0052FF);width:30%;border-radius:999px;transition:width 0.3s ease;"></div>
-              </div>
-            </div>
-
-            <div style="display:flex;gap:10px;margin-top:16px;">
-              <button class="action-btn-primary" style="flex:1;padding:10px;font-size:13px;background:rgba(255,255,255,0.08);color:#FFF;border:1px solid var(--border-light);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnToggleGrantForm">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+<!-- Limits Grid -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;margin-bottom:16px;">
+<div style="background:var(--bg-hover);border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
+<div style="font-size:11px;color:var(--text-dark);">Autonomous Limit</div>
+<div id="dispAutoLimit" style="font-size:15px;font-weight:800;color:var(--text-primary);margin-top:2px;">50.00 USDC</div>
+</div>
+<div style="background:var(--bg-hover);border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
+<div style="font-size:11px;color:var(--text-dark);">Escalation Ceiling</div>
+<div id="dispCeilingLimit" style="font-size:15px;font-weight:800;color:var(--text-primary);margin-top:2px;">200.00 USDC</div>
+</div>
+<div style="background:var(--bg-hover);border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
+<div style="font-size:11px;color:var(--text-dark);">24h Rolling Cap</div>
+<div id="dispRollingCap" style="font-size:15px;font-weight:800;color:var(--text-primary);margin-top:2px;">100.00 USDC</div>
+</div>
+</div>
+<!-- Rolling Spend Progress Bar -->
+<div>
+<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px;">
+<span>24h Rolling Spend Usage</span>
+<span id="dispRollingUsageLabel">$30.00 / $100.00 USDC (30%)</span>
+</div>
+<div style="height:8px;background:var(--bg-hover);border-radius:999px;overflow:hidden;">
+<div id="dispRollingUsageFill" style="height:100%;background:linear-gradient(90deg, #38BDF8, #0052FF);width:30%;border-radius:999px;transition:width 0.3s ease;"></div>
+</div>
+</div>
+<div style="display:flex;gap:10px;margin-top:16px;">
+<button class="action-btn-primary" id="btnToggleGrantForm" style="flex:1;padding:10px;font-size:13px;background:var(--bg-hover);color:var(--text-primary);border:1px solid var(--border-light);display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+<svg fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="14"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 Reconfigure Session
               </button>
-              <button class="action-btn-primary" style="flex:1;padding:10px;font-size:13px;background:rgba(244,63,94,0.15);color:var(--accent-rose);border:1px solid rgba(244,63,94,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnRevokeAgentSession">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+<button class="action-btn-primary" id="btnRevokeAgentSession" style="flex:1;padding:10px;font-size:13px;background:rgba(244,63,94,0.15);color:var(--accent-rose);border:1px solid rgba(244,63,94,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+<svg fill="none" height="14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="14"><circle cx="12" cy="12" r="10"></circle><path d="m4.9 4.9 14.2 14.2"></path></svg>
                 Revoke Session
               </button>
-            </div>
-          </div>
-
-          <!-- Grant / Reconfigure Session Form (Collapsible) -->
-          <div id="agentGrantForm" style="display:none;background:rgba(0,0,0,0.6);border:1px solid var(--border-focus);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
-            <h4 style="font-family:var(--font-heading);font-size:15px;color:#FFF;margin-bottom:12px;">Configure Agent Delegation (2-of-2 Passkeys Required)</h4>
-            
-            <div class="form-group">
-              <label>Agent Public Key (Address) <span style="color:#60A5FA;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" id="btnGenAgentKey"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate Key</span></label>
-              <div class="input-wrap">
-                <input type="text" id="inputAgentAddr" value="0x8a912e73f912a738c821938491029381029b819e" style="font-family:var(--font-mono);font-size:13px;">
-              </div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-              <div class="form-group">
-                <label>Autonomous Limit (USDC)</label>
-                <div class="input-wrap"><input type="number" id="inputAgentAutoLimit" value="50.00" step="1"></div>
-              </div>
-              <div class="form-group">
-                <label>Escalation Ceiling (USDC)</label>
-                <div class="input-wrap"><input type="number" id="inputAgentCeiling" value="200.00" step="1"></div>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>24h Rolling Cap (USDC)</label>
-              <div class="input-wrap"><input type="number" id="inputAgentRollingCap" value="100.00" step="1"></div>
-            </div>
-
-            <button class="action-btn-primary" style="width:100%;padding:12px;font-size:14px;" id="btnSubmitGrantSession">
+</div>
+</div>
+<!-- Grant / Reconfigure Session Form (Collapsible) -->
+<div id="agentGrantForm" style="display:none;background:var(--bg-hover);border:1px solid var(--border-focus);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+<h4 style="font-family:var(--font-heading);font-size:15px;color:var(--text-primary);margin-bottom:12px;">Configure Agent Delegation (2-of-2 Passkeys Required)</h4>
+<div class="form-group">
+<label>Agent Public Key (Address) <span id="btnGenAgentKey" style="color:#60A5FA;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"><svg fill="none" height="12" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="12"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg> Generate Key</span></label>
+<div class="input-wrap">
+<input id="inputAgentAddr" style="font-family:var(--font-mono);font-size:13px;" type="text" value="0x8a912e73f912a738c821938491029381029b819e"/>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+<div class="form-group">
+<label>Autonomous Limit (USDC)</label>
+<div class="input-wrap"><input id="inputAgentAutoLimit" step="1" type="number" value="50.00"/></div>
+</div>
+<div class="form-group">
+<label>Escalation Ceiling (USDC)</label>
+<div class="input-wrap"><input id="inputAgentCeiling" step="1" type="number" value="200.00"/></div>
+</div>
+</div>
+<div class="form-group">
+<label>24h Rolling Cap (USDC)</label>
+<div class="input-wrap"><input id="inputAgentRollingCap" step="1" type="number" value="100.00"/></div>
+</div>
+<button class="action-btn-primary" id="btnSubmitGrantSession" style="width:100%;padding:12px;font-size:14px;">
               Authorize Delegation with Passkey Quorum
             </button>
-          </div>
-
-          <!-- Agent Execution Playground -->
-          <div style="border-top:1px solid var(--border-light);padding-top:20px;">
-            <div style="font-family:var(--font-heading);font-size:15px;color:#FFF;font-weight:700;margin-bottom:6px;">Agent Action Simulator &amp; Verification</div>
-            <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+</div>
+<!-- Agent Execution Playground -->
+<div style="border-top:1px solid var(--border-light);padding-top:20px;">
+<div style="font-family:var(--font-heading);font-size:15px;color:var(--text-primary);font-weight:700;margin-bottom:6px;">Agent Action Simulator &amp; Verification</div>
+<p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
               Test how the on-chain SpendPolicy handles autonomous and escalated agent operations.
             </p>
-
-            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
-              <button class="action-btn-primary" style="padding:12px;font-size:13px;background:rgba(16,185,129,0.12);color:var(--accent-emerald);border:1px solid rgba(16,185,129,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnTestAgentMicro">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+<button class="action-btn-primary" id="btnTestAgentMicro" style="padding:12px;font-size:13px;background:rgba(16,185,129,0.12);color:var(--accent-emerald);border:1px solid rgba(16,185,129,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" width="14"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
                 Send $20 (Autonomous)
               </button>
-              <button class="action-btn-primary" style="padding:12px;font-size:13px;background:rgba(245,158,11,0.12);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnTestAgentEscalated">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+<button class="action-btn-primary" id="btnTestAgentEscalated" style="padding:12px;font-size:13px;background:rgba(245,158,11,0.12);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" width="14"><circle cx="7.5" cy="15.5" r="5.5"></circle><path d="m21 2-9.6 9.6"></path><path d="m15.5 7.5 3 3L22 7l-3-3"></path></svg>
                 Send $150 (Escalated)
               </button>
-              <button class="action-btn-primary" style="padding:12px;font-size:13px;background:rgba(244,63,94,0.12);color:var(--accent-rose);border:1px solid rgba(244,63,94,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnTestAgentCeiling">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+<button class="action-btn-primary" id="btnTestAgentCeiling" style="padding:12px;font-size:13px;background:rgba(244,63,94,0.12);color:var(--accent-rose);border:1px solid rgba(244,63,94,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+<svg fill="none" height="14" stroke="currentColor" stroke-width="2.5" viewbox="0 0 24 24" width="14"><circle cx="12" cy="12" r="10"></circle><path d="m4.9 4.9 14.2 14.2"></path></svg>
                 Send $350 (Ceiling Block)
               </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 2: Policy Configurator (2-of-2 Quorum) -->
-      <div class="tab-view" id="tab-config">
-        <div class="transfer-card">
-          <h3 style="font-family:var(--font-heading);font-size:18px;margin-bottom:6px;color:var(--text-white);">On-Chain Policy Updates (2-of-2 Hardware Quorum)</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+</div>
+</div>
+</div>
+</div>
+        <div class="tab-view" id="tab-config">
+<div class="transfer-card">
+<h3 style="font-family:var(--font-heading);font-size:18px;margin-bottom:6px;color:var(--text-primary);">On-Chain Policy Updates (2-of-2 Hardware Quorum)</h3>
+<p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
             Configuring spending limits modifies self-storage and strictly demands the full 2-of-2 hardware biometric quorum.
           </p>
-
-          <div class="form-group">
-            <label>Asset</label>
-            <select id="cfgAsset" style="width:100%;padding:12px;background:#000;color:#FFF;border:1px solid var(--border-light);border-radius:var(--radius-md);font-weight:600;">
-              <option value="ETH">Native Ethereum (ETH)</option>
-              <option value="USDC">Base Sepolia USDC (6 decimals)</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Per-Op Threshold</label>
-            <input type="number" id="cfgThreshold" value="0.01" step="0.001" style="width:100%;padding:12px;background:#000;color:#FFF;border:1px solid var(--border-light);border-radius:var(--radius-md);">
-          </div>
-
-          <div class="form-group">
-            <label>24h Rolling Window Cap</label>
-            <input type="number" id="cfgCap" value="0.05" step="0.001" style="width:100%;padding:12px;background:#000;color:#FFF;border:1px solid var(--border-light);border-radius:var(--radius-md);">
-          </div>
-
-          <button class="action-btn-primary" style="width:100%;background:var(--accent-amber);color:#000;margin-top:10px;" id="cfgSubmitBtn">
+<div class="form-group">
+<label>Asset</label>
+<select id="cfgAsset" style="width:100%;padding:12px;background:var(--bg-hover);color:var(--text-primary);border:1px solid var(--border-light);border-radius:var(--radius-md);font-weight:600;">
+<option value="ETH">Native Ethereum (ETH)</option>
+<option value="USDC">Base Sepolia USDC (6 decimals)</option>
+</select>
+</div>
+<div class="form-group">
+<label>Per-Op Threshold</label>
+<input id="cfgThreshold" step="0.001" style="width:100%;padding:12px;background:var(--bg-hover);color:var(--text-primary);border:1px solid var(--border-light);border-radius:var(--radius-md);" type="number" value="0.01"/>
+</div>
+<div class="form-group">
+<label>24h Rolling Window Cap</label>
+<input id="cfgCap" step="0.001" style="width:100%;padding:12px;background:var(--bg-hover);color:var(--text-primary);border:1px solid var(--border-light);border-radius:var(--radius-md);" type="number" value="0.05"/>
+</div>
+<button class="action-btn-primary" id="cfgSubmitBtn" style="width:100%;background:var(--accent-amber);color:#000;margin-top:10px;">
             Execute Policy Update (2-of-2 Quorum)
           </button>
-        </div>
-      </div>
-
-      <!-- Tab 3: Address Book (Allowlist Firewall) -->
-      <div class="tab-view" id="tab-addressbook">
-        <div class="transfer-card">
-          <h3 style="font-family:var(--font-heading);font-size:18px;margin-bottom:6px;color:var(--text-white);">Recipient Address Book (Allowlist Firewall)</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+</div>
+</div>
+        <div class="tab-view" id="tab-addressbook">
+<div class="transfer-card">
+<h3 style="font-family:var(--font-heading);font-size:18px;margin-bottom:6px;color:var(--text-primary);">Recipient Address Book (Allowlist Firewall)</h3>
+<p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
             When enabled, only whitelisted addresses can receive 1-signature transfers. Sending to any unknown or fresh address automatically demands the 2-of-2 Hardware Quorum.
           </p>
-
-          <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,82,255,0.08);padding:14px;border-radius:var(--radius-md);border:1px solid var(--border-blue);margin-bottom:16px;">
-            <div>
-              <strong style="color:var(--text-white);font-size:14px;">Address Book Firewall</strong>
-              <div style="font-size:12px;color:var(--text-muted);">Enforce 2-of-2 Quorum for non-whitelisted addresses</div>
-            </div>
-            <button id="toggleAllowlistBtn" class="action-btn-primary" style="padding:8px 16px;font-size:12px;">Active (Enabled)</button>
-          </div>
-
-          <div class="form-group">
-            <label>Add Whitelisted Recipient</label>
-            <div style="display:flex;gap:8px;">
-              <input type="text" id="newAllowAddr" placeholder="0x... Recipient Address" style="flex:1;padding:10px;background:#000;color:#FFF;border:1px solid var(--border-light);border-radius:var(--radius-md);font-family:var(--font-mono);">
-              <button class="action-btn-primary" id="addAllowAddrBtn" style="padding:10px 16px;font-size:13px;background:var(--accent-emerald);color:#000;">Add</button>
-            </div>
-          </div>
-
-          <div style="margin-top:16px;">
-            <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Approved Whitelist</div>
-            <div id="allowlistEntries" style="display:flex;flex-direction:column;gap:8px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;background:#000;border:1px solid var(--border-light);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:12px;">
-                <span>0x22db962929afe98d0269De0BAa6c442A3Aa6913D (Cold Storage)</span>
-                <span style="color:var(--accent-emerald);font-weight:700;">● Allowed</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 4: Hardware Passkeys -->
-      <div class="tab-view" id="tab-security">
-        <div class="key-list-card">
-          <div class="key-item">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:36px;height:36px;border-radius:8px;background:var(--base-blue-light);color:#60A5FA;display:flex;align-items:center;justify-content:center;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
-              </div>
-              <div>
-                <div style="font-weight:700;color:var(--text-white);font-size:14px;">Signer #0: Primary Biometric</div>
-                <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="key0Status">Not enrolled in browser</div>
-              </div>
-            </div>
-            <button class="action-btn-primary" style="padding:6px 14px;font-size:12px;" id="enrollKey0Btn">Enroll Biometric #0</button>
-          </div>
-
-          <div class="key-item">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:36px;height:36px;border-radius:8px;background:var(--accent-amber-light);color:var(--accent-amber);display:flex;align-items:center;justify-content:center;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              </div>
-              <div>
-                <div style="font-weight:700;color:var(--text-white);font-size:14px;">Signer #1: Backup Quorum Key</div>
-                <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="key1Status">Not enrolled in browser</div>
-              </div>
-            </div>
-            <button class="action-btn-primary" style="padding:6px 14px;font-size:12px;background:var(--accent-amber);color:#000;" id="enrollKey1Btn">Enroll Backup #1</button>
-          </div>
-
-          <div style="margin-top:14px;padding:12px;background:#000;border:1px solid var(--border-light);border-radius:8px;">
-            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Fresh Deployment Public Keys</div>
-            <textarea id="freshKeysDisplay" style="width:100%;height:110px;background:transparent;border:none;color:#38BDF8;font-family:var(--font-mono);font-size:11px;resize:none;" readonly placeholder="Enroll Key #0 and Key #1 above to generate your on-chain public keys..."></textarea>
-            <button class="action-btn-primary" id="btnCopyDeployKeys" style="margin-top:8px;width:100%;font-size:12px;padding:8px;">Copy Keys for Contract Deployment</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab 5: Activity Log & Transaction History -->
-      <div class="tab-view" id="tab-activity">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <div>
-            <h3 style="font-family:var(--font-heading);font-size:18px;font-weight:800;color:var(--text-white);">Transaction History</h3>
-            <p style="font-size:12px;color:var(--text-muted);">Verified Base Sepolia Smart Account Activity (ERC-4337 UserOps & On-Chain Policies)</p>
-          </div>
-          <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="action-btn-primary" style="font-size:12px;padding:6px 14px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
-            <span>View on BaseScan ↗</span>
-          </a>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <!-- Item 1: Quorum Transfer -->
-          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:36px;height:36px;border-radius:50%;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);display:flex;align-items:center;justify-content:center;color:#F59E0B;font-weight:800;">🛡</div>
-              <div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="font-weight:700;font-size:13.5px;color:#FFF;">Send 0.05 ETH</span>
-                  <span style="font-size:10.5px;font-weight:700;color:#F59E0B;background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">2-of-2 Quorum</span>
-                </div>
-                <div style="font-size:11.5px;color:var(--text-muted);">To: Base Treasury Pool (0x22db...913D) · Sep 2, 2026, 10:18 PM</div>
-                <div style="font-size:10.5px;color:#93C5FD;font-family:var(--font-mono);margin-top:2px;">Touch ID + YubiKey Quorum Verified · 84,210 gas</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:#FFF;">-0.05 ETH</div>
-              <div style="font-size:11px;color:var(--text-muted);">≈ $160.00 USD</div>
-              <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);">0x7f4a...31b2 ↗</a>
-            </div>
-          </div>
-
-          <!-- Item 2: Agent Swap -->
-          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:36px;height:36px;border-radius:50%;background:rgba(168,85,247,0.15);border:1px solid rgba(168,85,247,0.3);display:flex;align-items:center;justify-content:center;color:#C084FC;font-weight:800;">⚡</div>
-              <div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="font-weight:700;font-size:13.5px;color:#FFF;">Send 20.00 USDC (Autonomous Swap)</span>
-                  <span style="font-size:10.5px;font-weight:700;color:var(--accent-emerald);background:rgba(16,185,129,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Success</span>
-                </div>
-                <div style="font-size:11.5px;color:var(--text-muted);">To: Uniswap V3 Router (0x2626...f9d0) · Sep 2, 2026, 09:44 PM</div>
-                <div style="font-size:10.5px;color:#C084FC;font-family:var(--font-mono);margin-top:2px;">AI Agent Session (0x8a91...b819) · 0.4s Latency</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:#FFF;">-20.00 USDC</div>
-              <div style="font-size:11px;color:var(--text-muted);">≈ $20.00 USD</div>
-              <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);">0x4b89...88c4 ↗</a>
-            </div>
-          </div>
-
-          <!-- Item 3: Faucet Deposit -->
-          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;color:var(--accent-emerald);font-weight:800;">↙</div>
-              <div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="font-weight:700;font-size:13.5px;color:#FFF;">Received 0.010 ETH</span>
-                  <span style="font-size:10.5px;font-weight:700;color:var(--accent-emerald);background:rgba(16,185,129,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Confirmed</span>
-                </div>
-                <div style="font-size:11.5px;color:var(--text-muted);">From: Base Sepolia Faucet · Sep 2, 2026, 08:30 PM</div>
-                <div style="font-size:10.5px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">Inbound Direct Deposit</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--accent-emerald);">+0.010 ETH</div>
-              <div style="font-size:11px;color:var(--text-muted);">≈ $32.00 USD</div>
-              <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);">0x91d3...1029 ↗</a>
-            </div>
-          </div>
-
-          <!-- Item 4: Micro Transfer -->
-          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:36px;height:36px;border-radius:50%;background:rgba(0,82,255,0.15);border:1px solid rgba(0,82,255,0.3);display:flex;align-items:center;justify-content:center;color:#60A5FA;font-weight:800;">↗</div>
-              <div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="font-weight:700;font-size:13.5px;color:#FFF;">Send 0.0001 ETH</span>
-                  <span style="font-size:10.5px;font-weight:700;color:#60A5FA;background:rgba(0,82,255,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Sub-Threshold</span>
-                </div>
-                <div style="font-size:11.5px;color:var(--text-muted);">To: Aave V3 Pool (0x8787...4318) · Sep 2, 2026, 07:15 PM</div>
-                <div style="font-size:10.5px;color:#93C5FD;font-family:var(--font-mono);margin-top:2px;">1-Sig Biometric Instant (&lt; 0.010 ETH) · 88,140 gas</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:#FFF;">-0.0001 ETH</div>
-              <div style="font-size:11px;color:var(--text-muted);">≈ $0.32 USD</div>
-              <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);">0x12c4...99a0 ↗</a>
-            </div>
-          </div>
-
-          <!-- Item 5: Deployment -->
-          <div style="padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:36px;height:36px;border-radius:50%;background:rgba(56,189,248,0.15);border:1px solid rgba(56,189,248,0.3);display:flex;align-items:center;justify-content:center;color:#38BDF8;font-weight:800;">🚀</div>
-              <div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <span style="font-weight:700;font-size:13.5px;color:#FFF;">Smart Account Deployed on Base Sepolia</span>
-                  <span style="font-size:10.5px;font-weight:700;color:#38BDF8;background:rgba(56,189,248,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Initialized</span>
-                </div>
-                <div style="font-size:11.5px;color:var(--text-muted);">Account: 0xB01543453cF31052c769d79e9C755E3b035d796f · Sep 1, 2026, 04:12 PM</div>
-                <div style="font-size:10.5px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">RIP-7212 WebAuthn P-256 Registered · Factory Create2</div>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:#FFF;">Contract Init</div>
-              <div style="font-size:11px;color:var(--text-muted);">P-256 Root Key</div>
-              <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);">0x89e0...55f3 ↗</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
+<div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,82,255,0.08);padding:14px;border-radius:var(--radius-md);border:1px solid var(--border-blue);margin-bottom:16px;">
+<div>
+<strong style="color:var(--text-primary);font-size:14px;">Address Book Firewall</strong>
+<div style="font-size:12px;color:var(--text-muted);">Enforce 2-of-2 Quorum for non-whitelisted addresses</div>
 </div>
+<button class="action-btn-primary" id="toggleAllowlistBtn" style="padding:8px 16px;font-size:12px;">Active (Enabled)</button>
+</div>
+<div class="form-group">
+<label>Add Whitelisted Recipient</label>
+<div style="display:flex;gap:8px;">
+<input id="newAllowAddr" placeholder="0x... Recipient Address" style="flex:1;padding:10px;background:var(--bg-hover);color:var(--text-primary);border:1px solid var(--border-light);border-radius:var(--radius-md);font-family:var(--font-mono);" type="text"/>
+<button class="action-btn-primary" id="addAllowAddrBtn" style="padding:10px 16px;font-size:13px;background:var(--accent-emerald);color:#000;">Add</button>
+</div>
+</div>
+<div style="margin-top:16px;">
+<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Approved Whitelist</div>
+<div id="allowlistEntries" style="display:flex;flex-direction:column;gap:8px;">
+<div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-hover);border:1px solid var(--border-light);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:12px;">
+<span>0x22db962929afe98d0269De0BAa6c442A3Aa6913D (Cold Storage)</span>
+<span style="color:var(--accent-emerald);font-weight:700;">● Allowed</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+        <div class="tab-view" id="tab-security">
+<div style="display:flex;flex-direction:column;gap:16px;">
+<div class="key-item" style="display:flex;justify-content:space-between;align-items:center;padding:20px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.2);">
+<div style="display:flex;align-items:center;gap:16px;">
+<div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);box-shadow:inset 0 2px 10px rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;">
+<img src="assets/icons/fingerprint.svg" alt="Fingerprint" style="width:36px; height:36px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));">
+</div>
+<div>
+<div style="font-weight:700;color:var(--text-primary);font-size:16px;margin-bottom:4px;letter-spacing:-0.2px;">Signer #0: Primary Biometric</div>
+<div id="key0Status" style="font-size:13px;color:var(--text-muted);font-family:var(--font-mono);">Not enrolled in browser</div>
+</div>
+</div>
+<button class="action-btn-primary" id="enrollKey0Btn" style="padding:10px 20px;font-size:13px;font-weight:600;border-radius:10px;box-shadow:0 4px 12px rgba(0,82,255,0.25);">Enroll Biometric</button>
+</div>
+<div class="key-item" style="display:flex;justify-content:space-between;align-items:center;padding:20px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.2);">
+<div style="display:flex;align-items:center;gap:16px;">
+<div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);box-shadow:inset 0 2px 10px rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;">
+<img src="assets/icons/shield.svg" alt="Shield" style="width:36px; height:36px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));">
+</div>
+<div>
+<div style="font-weight:700;color:var(--text-primary);font-size:16px;margin-bottom:4px;letter-spacing:-0.2px;">Signer #1: Backup Quorum Key</div>
+<div id="key1Status" style="font-size:13px;color:var(--text-muted);font-family:var(--font-mono);">Not enrolled in browser</div>
+</div>
+</div>
+<button class="action-btn-primary" id="enrollKey1Btn" style="padding:10px 20px;font-size:13px;font-weight:600;background:var(--accent-amber);color:#000;border-radius:10px;box-shadow:0 4px 12px rgba(245,158,11,0.2);">Enroll Backup</button>
+</div>
+<div style="margin-top:8px;padding:20px;background:var(--bg-hover);border:1px solid var(--border-light);border-radius:16px;box-shadow:inset 0 2px 10px rgba(0,0,0,0.2);">
+<div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px;letter-spacing:0.5px;">Fresh Deployment Public Keys</div>
+<textarea id="freshKeysDisplay" placeholder="Enroll Key #0 and Key #1 above to generate your on-chain public keys..." readonly="" style="width:100%;height:100px;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:#38BDF8;font-family:var(--font-mono);font-size:13px;padding:12px;resize:none;margin-bottom:16px;outline:none;box-shadow:inset 0 2px 8px rgba(0,0,0,0.5);"></textarea>
+<button class="action-btn-primary" id="btnCopyDeployKeys" style="width:100%;font-size:14px;font-weight:600;padding:14px;border-radius:10px;display:flex;align-items:center;justify-content:center;gap:8px;">
+<svg fill="none" height="16" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="16"><rect height="13" rx="2" ry="2" width="13" x="9" y="9"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+Copy Keys for Contract Deployment
+</button>
+</div>
+</div>
+</div>
+        <div class="tab-view" id="tab-activity">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+<div>
+<h3 style="font-family:var(--font-heading);font-size:18px;font-weight:800;color:var(--text-primary);">Transaction History</h3>
+<p style="font-size:12px;color:var(--text-muted);">Verified Base Sepolia Smart Account Activity (ERC-4337 UserOps &amp; On-Chain Policies)</p>
+</div>
+<a class="action-btn-primary" href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:12px;padding:6px 14px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;" target="_blank">
+<span>View on BaseScan ↗</span>
+</a>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;">
+<!-- Item 1: Quorum Transfer -->
+<div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;">
+<img src="assets/icons/shield.svg" alt="Quorum" style="width:20px;height:20px;">
+</div>
+<div>
+<div style="display:flex;align-items:center;gap:8px;">
+<span style="font-weight:700;font-size:13.5px;color:var(--text-primary);">Send 0.05 ETH</span>
+<span style="font-size:10.5px;font-weight:700;color:#F59E0B;background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">2-of-2 Quorum</span>
+</div>
+<div style="font-size:11.5px;color:var(--text-muted);">To: Base Treasury Pool (0x22db...913D) · Sep 2, 2026, 10:18 PM</div>
+<div style="font-size:10.5px;color:var(--accent-blue);font-family:var(--font-mono);margin-top:2px;">Touch ID + YubiKey Quorum Verified · 84,210 gas</div>
+</div>
+</div>
+<div style="text-align:right;">
+<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">-0.05 ETH</div>
+<div style="font-size:11px;color:var(--text-muted);">≈ $160.00 USD</div>
+<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);" target="_blank">0x7f4a...31b2 ↗</a>
+</div>
+</div>
+<!-- Item 2: Agent Swap -->
+<div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;">
+<img src="assets/icons/zap.svg" alt="Swap" style="width:20px;height:20px;">
+</div>
+<div>
+<div style="display:flex;align-items:center;gap:8px;">
+<span style="font-weight:700;font-size:13.5px;color:var(--text-primary);">Send 20.00 USDC (Autonomous Swap)</span>
+<span style="font-size:10.5px;font-weight:700;color:var(--accent-emerald);background:rgba(16,185,129,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Success</span>
+</div>
+<div style="font-size:11.5px;color:var(--text-muted);">To: Uniswap V3 Router (0x2626...f9d0) · Sep 2, 2026, 09:44 PM</div>
+<div style="font-size:10.5px;color:var(--text-primary);font-family:var(--font-mono);margin-top:2px;">AI Agent Session (0x8a91...b819) · 0.4s Latency</div>
+</div>
+</div>
+<div style="text-align:right;">
+<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">-20.00 USDC</div>
+<div style="font-size:11px;color:var(--text-muted);">≈ $20.00 USD</div>
+<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);" target="_blank">0x4b89...88c4 ↗</a>
+</div>
+</div>
+<!-- Item 3: Faucet Deposit -->
+<div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;color:var(--accent-emerald);">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+</div>
+<div>
+<div style="display:flex;align-items:center;gap:8px;">
+<span style="font-weight:700;font-size:13.5px;color:var(--text-primary);">Received 0.010 ETH</span>
+<span style="font-size:10.5px;font-weight:700;color:var(--accent-emerald);background:rgba(16,185,129,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Confirmed</span>
+</div>
+<div style="font-size:11.5px;color:var(--text-muted);">From: Base Sepolia Faucet · Sep 2, 2026, 08:30 PM</div>
+<div style="font-size:10.5px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">Inbound Direct Deposit</div>
+</div>
+</div>
+<div style="text-align:right;">
+<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--accent-emerald);">+0.010 ETH</div>
+<div style="font-size:11px;color:var(--text-muted);">≈ $32.00 USD</div>
+<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);" target="_blank">0x91d3...1029 ↗</a>
+</div>
+</div>
+<!-- Item 4: Micro Transfer -->
+<div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:36px;height:36px;border-radius:50%;background:rgba(0,82,255,0.15);border:1px solid rgba(0,82,255,0.3);display:flex;align-items:center;justify-content:center;color:#60A5FA;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+</div>
+<div>
+<div style="display:flex;align-items:center;gap:8px;">
+<span style="font-weight:700;font-size:13.5px;color:var(--text-primary);">Send 0.0001 ETH</span>
+<span style="font-size:10.5px;font-weight:700;color:#60A5FA;background:rgba(0,82,255,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Sub-Threshold</span>
+</div>
+<div style="font-size:11.5px;color:var(--text-muted);">To: Aave V3 Pool (0x8787...4318) · Sep 2, 2026, 07:15 PM</div>
+<div style="font-size:10.5px;color:var(--accent-blue);font-family:var(--font-mono);margin-top:2px;">1-Sig Biometric Instant (&lt; 0.010 ETH) · 88,140 gas</div>
+</div>
+</div>
+<div style="text-align:right;">
+<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">-0.0001 ETH</div>
+<div style="font-size:11px;color:var(--text-muted);">≈ $0.32 USD</div>
+<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);" target="_blank">0x12c4...99a0 ↗</a>
+</div>
+</div>
+<!-- Item 5: Deployment -->
+<div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+<div style="display:flex;align-items:center;gap:12px;">
+<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;">
+<img src="assets/icons/sparkle.svg" alt="Deploy" style="width:20px;height:20px;">
+</div>
+<div>
+<div style="display:flex;align-items:center;gap:8px;">
+<span style="font-weight:700;font-size:13.5px;color:var(--text-primary);">Smart Account Deployed on Base Sepolia</span>
+<span style="font-size:10.5px;font-weight:700;color:#38BDF8;background:rgba(56,189,248,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Initialized</span>
+</div>
+<div style="font-size:11.5px;color:var(--text-muted);">Account: 0xB01543453cF31052c769d79e9C755E3b035d796f · Sep 1, 2026, 04:12 PM</div>
+<div style="font-size:10.5px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">RIP-7212 WebAuthn P-256 Registered · Factory Create2</div>
+</div>
+</div>
+<div style="text-align:right;">
+<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">Contract Init</div>
+<div style="font-size:11px;color:var(--text-muted);">P-256 Root Key</div>
+<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);" target="_blank">0x89e0...55f3 ↗</a>
+</div>
+</div>
+</div>
+</div>
+
+      </main>
+    </div>
+  </div>
+
+<script>
+  window.switchTab = function(tabId, el) {
+    document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    if (el) {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      el.classList.add('active');
+    }
+  }
+</script>
+
+
+    
+    <!-- Passkey Approval Modal -->
+    <div id="passkeyModal" class="passkey-modal-overlay">
+      <div class="passkey-modal-content">
+        <button class="passkey-modal-close" id="closePasskeyModal">&times;</button>
+        
+        <div class="passkey-icon-wrapper">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10"/><path d="M12 22v-3"/><path d="M9.1 19.4A7.9 7.9 0 0 1 6 15"/><path d="M14.9 19.4A7.9 7.9 0 0 0 18 15"/><path d="M12 15v-3"/><path d="M8.5 11.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 3.5 3.5"/><path d="M6 11.5A6 6 0 0 1 12 5.5a6 6 0 0 1 6 6"/></svg>
+        </div>
+        
+        <h3 style="font-family:var(--font-heading); font-size:24px; font-weight:800; color:var(--text-primary);">Approve with Passkey</h3>
+        <p style="font-size:14px; color:var(--text-secondary); margin-top:8px;">Base Sepolia Network</p>
+        
+        <div class="passkey-tx-card">
+          <div id="pkModalTokenIcon" style="width:40px;height:40px;border-radius:50%;background:#EFF6FF;color:#2775CA;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">$</div>
+          <div style="flex:1;">
+            <div id="pkModalAmount" style="font-weight:700; font-size:16px; color:var(--text-primary);">Send 500.00 USDC</div>
+            <div style="font-size:13px; color:var(--text-secondary); margin-top:4px; display:flex; align-items:center; gap:6px;">
+              To <span id="pkModalDest">0x3a7F...8c2D</span> 
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </div>
+        
+        <div class="passkey-gasless-badge">
+          ⚡️ Gasless • Sponsored by Paymaster
+        </div>
+        
+        <button class="passkey-btn-confirm" id="pkModalConfirmBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10"/><path d="M12 22v-3"/><path d="M9.1 19.4A7.9 7.9 0 0 1 6 15"/><path d="M14.9 19.4A7.9 7.9 0 0 0 18 15"/><path d="M12 15v-3"/><path d="M8.5 11.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 3.5 3.5"/><path d="M6 11.5A6 6 0 0 1 12 5.5a6 6 0 0 1 6 6"/></svg>
+          Scan Touch ID / Face ID
+        </button>
+        <button class="passkey-btn-cancel" id="pkModalCancelBtn">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Receive Modal -->
+    <div id="receiveModal" class="modal-overlay">
+      <div class="modal-content">
+        <button class="modal-close" id="closeReceiveModal">&times;</button>
+        <h3 style="font-family:var(--font-heading); font-size:20px; font-weight:800; color:var(--text-primary);">Receive Assets</h3>
+        <p style="font-size:14px; color:var(--text-secondary); margin-top:8px;">Only send Base network assets to this address.</p>
+        
+        <div class="qr-placeholder">
+          [ QR Code Area ]
+        </div>
+        
+        <div class="address-copy-bar" style="justify-content: center; gap: 12px; padding: 12px; background:var(--bg-hover);">
+          <span id="modalReceiveAddress" style="font-size:14px; font-weight: 700;">0x...</span>
+          <button class="copy-btn" id="modalCopyBtn" style="background:var(--accent-blue-light); padding: 4px 8px; border-radius: 6px;">Copy</button>
+        </div>
+      </div>
+    </div>
 
 <script type="module">
 import { CONFIG } from './config.js';
@@ -1164,26 +1792,162 @@ let selectedAsset = 'ETH';
 let storedKeys = JSON.parse(localStorage.getItem('passkey_credentials') || '{}');
 const accountAddr = CONFIG.defaultAccount;
 
-async function refreshOnChainBalance() {
+// Update Dynamic Profile UI
+if ($('profileName') && $('profileAvatar')) {
+  $('profileName').textContent = accountAddr.slice(0, 6) + '...' + accountAddr.slice(-4);
+  $('profileAvatar').textContent = accountAddr.slice(2, 3).toUpperCase();
+}
+
+// Live Dashboard Logic (CoinGecko, BaseScan, Modal)
+
+// 1. Receive Modal Logic
+const receiveModal = document.getElementById('receiveModal');
+const closeReceiveModal = document.getElementById('closeReceiveModal');
+const openReceiveBtn = document.getElementById('openReceiveBtn');
+const modalReceiveAddress = document.getElementById('modalReceiveAddress');
+const modalCopyBtn = document.getElementById('modalCopyBtn');
+
+if (openReceiveBtn) {
+  openReceiveBtn.addEventListener('click', () => {
+    modalReceiveAddress.textContent = accountAddr.slice(0, 10) + '...' + accountAddr.slice(-4);
+    receiveModal.classList.add('active');
+  });
+}
+if (closeReceiveModal) {
+  closeReceiveModal.addEventListener('click', () => receiveModal.classList.remove('active'));
+}
+if (modalCopyBtn) {
+  modalCopyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(accountAddr);
+    modalCopyBtn.textContent = 'Copied!';
+    setTimeout(() => modalCopyBtn.textContent = 'Copy', 2000);
+  });
+}
+
+// 2. Fetch Live Market Data & Portfolio Balance
+async function fetchLiveMarketData() {
   try {
-    if ($('sideAccountShort')) {
-      $('sideAccountShort').textContent = accountAddr.slice(0, 10) + '...' + accountAddr.slice(-4);
-    }
+    if ($('sideAccountShort')) $('sideAccountShort').textContent = accountAddr.slice(0, 10) + '...' + accountAddr.slice(-4);
+    
+    // First, get on-chain testnet ETH balance
+    let balEth = 0;
     const res = await fetch(CONFIG.rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [accountAddr, 'latest'] })
     }).then(r => r.json());
     if (res?.result) {
-      const balWei = BigInt(res.result);
-      const balEth = (Number(balWei) / 1e18).toFixed(4);
-      if ($('sidePortfolioEth')) $('sidePortfolioEth').textContent = balEth + ' ETH';
+      balEth = Number(BigInt(res.result)) / 1e18;
+      if ($('swapBalEth')) $('swapBalEth').textContent = balEth.toFixed(4);
+      if ($('swapBalEthLocal')) $('swapBalEthLocal').textContent = balEth.toFixed(4);
     }
+    
+    // Mock balances for other tokens since we are on testnet
+    const balUsdc = 250.00;
+    const balSol = 0.5;
+    const balBase = 1500; // Mock base token balance
+
+    // Fetch prices from CoinGecko
+    const cgRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin,solana&vs_currencies=usd,usd,usd').then(r => r.json());
+    
+    const pEth = cgRes.ethereum?.usd || 2500;
+    const pUsdc = cgRes['usd-coin']?.usd || 1;
+    const pSol = cgRes.solana?.usd || 140;
+    const pBase = 0.85; // Mock price for BASE since it's not a real traded L1 token
+
+    const vEth = balEth * pEth;
+    const vUsdc = balUsdc * pUsdc;
+    const vSol = balSol * pSol;
+    const vBase = balBase * pBase;
+
+    const totalPortfolio = vEth + vUsdc + vSol + vBase;
+
+    if ($('sidePortfolioEth')) $('sidePortfolioEth').textContent = '$' + totalPortfolio.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    
+    if ($('sideHoldEth')) $('sideHoldEth').textContent = '$' + vEth.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if ($('sideHoldUsdc')) $('sideHoldUsdc').textContent = '$' + vUsdc.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if ($('sideHoldBase')) $('sideHoldBase').textContent = '$' + vBase.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if ($('sideHoldSol')) $('sideHoldSol').textContent = '$' + vSol.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
   } catch (e) {
-    console.warn('Balance refresh error:', e);
+    console.warn('Market data fetch error:', e);
   }
 }
-refreshOnChainBalance();
+fetchLiveMarketData();
+
+// 3. Fetch Transaction History (BaseScan)
+async function fetchRecentTransactions() {
+  try {
+    const url = `https://api-sepolia.basescan.org/api?module=account&action=txlist&address=${accountAddr}&startblock=0&endblock=99999999&page=1&offset=5&sort=desc`;
+    const res = await fetch(url).then(r => r.json());
+    
+    if (res.status === "1" && res.result.length > 0) {
+      let html = '';
+      res.result.forEach(tx => {
+        const isOut = tx.from.toLowerCase() === accountAddr.toLowerCase();
+        const iconColor = isOut ? 'var(--accent-rose)' : 'var(--accent-emerald)';
+        const iconBg = isOut ? 'rgba(244,63,94,0.1)' : 'rgba(16,185,129,0.1)';
+        const svgPath = isOut 
+          ? '<line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline>' // Send
+          : '<line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline>'; // Receive
+        
+        const date = new Date(tx.timeStamp * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const valEth = (Number(tx.value) / 1e18).toFixed(4);
+        
+        const badgeStr = tx.functionName ? `<span class="tx-badge">${tx.functionName.split('(')[0]}</span>` : `<span class="tx-badge">Transfer</span>`;
+        
+        html += `
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:36px;height:36px;border-radius:10px;background:${iconBg};color:${iconColor};display:flex;align-items:center;justify-content:center;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${svgPath}</svg>
+                </div>
+                <div>
+                  <div style="font-weight:600;font-size:14px;color:var(--text-primary);">${isOut ? 'Send' : 'Receive'}</div>
+                  <div style="font-size:12px;color:var(--text-muted);">${date}</div>
+                </div>
+              </div>
+            </td>
+            <td>${badgeStr}</td>
+            <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">
+              <a href="https://sepolia.basescan.org/tx/${tx.hash}" target="_blank" style="color:#60A5FA;text-decoration:none;">${tx.hash.slice(0,8)}...${tx.hash.slice(-6)} ↗</a>
+            </td>
+            <td style="text-align:right;font-weight:700;color:var(--text-primary);">
+              ${isOut ? '-' : '+'}${valEth} ETH
+            </td>
+          </tr>
+        `;
+      });
+      
+      const tbody = document.getElementById('recentTxTableBody');
+      const activityTbody = document.getElementById('activityTxTableBody');
+      if (tbody) tbody.innerHTML = html;
+      if (activityTbody) activityTbody.innerHTML = html;
+    } else {
+      console.log('No transactions found or BaseScan rate limited.');
+    }
+  } catch(e) {
+    console.error('Failed to fetch transactions', e);
+  }
+}
+fetchRecentTransactions();
+
+// --- Refresh On-Chain Balance (used post-transaction) ---
+async function refreshOnChainBalance() {
+  try {
+    const res = await fetch(CONFIG.rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [accountAddr, 'latest'] })
+    }).then(r => r.json());
+    if (res?.result) {
+      const balEth = Number(BigInt(res.result)) / 1e18;
+      if ($('swapBalEth')) $('swapBalEth').textContent = balEth.toFixed(4);
+      if ($('swapBalEthLocal')) $('swapBalEthLocal').textContent = balEth.toFixed(4);
+    }
+  } catch(e) { console.warn('refreshOnChainBalance failed:', e); }
+}
 
 // Refresh Passkey Enrollment Status in UI
 function refreshKeyStatus() {
@@ -1290,7 +2054,7 @@ function refreshAllowlistView() {
 
   const container = $('allowlistEntries');
   container.innerHTML = allowedAddresses.map(addr => `
-    <div style="display:flex;justify-content:space-between;align-items:center;background:#000;border:1px solid var(--border-light);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-hover);border:1px solid var(--border-light);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:12px;">
       <span>${addr}</span>
       <span style="color:var(--accent-emerald);font-weight:700;">● Allowed</span>
     </div>
@@ -1650,7 +2414,10 @@ $('appRecipientAddr').oninput = evalFirewall;
 evalFirewall();
 
 // --- Sign & Submit UserOp ---
-$('appSignSubmitBtn').onclick = async () => {
+
+// --- Execute Send UserOp ---
+async function executeSendUserOp() {
+
   try {
     $('appSignSubmitBtn').disabled = true;
     $('appSignSubmitBtn').textContent = 'Preparing UserOp...';
@@ -1706,7 +2473,14 @@ $('appSignSubmitBtn').onclick = async () => {
 
     // Sign Key 0 with user's active passkey
     $('appSignSubmitBtn').textContent = 'Biometric Touch ID (Key #0)...';
-    const sig0 = await signWithPasskey(userOpHash);
+    if (!storedKeys || !storedKeys[0]) {
+      alert("⚠️ No passkey found in local storage!\n\nPlease register a passkey first by clicking 'Add Primary Key (Key 0)' in the Settings or Security tab before testing the signature flow. Without a saved credential ID, the browser will ask you to select from all your old test passkeys.");
+      $('appSignSubmitBtn').textContent = 'Error: No Key Found';
+      throw new Error('No passkey in localStorage');
+    }
+
+    const cred0 = storedKeys[0]?.rawId ? [storedKeys[0].rawId] : (storedKeys[0]?.id ? [storedKeys[0].id] : []);
+    const sig0 = await signWithPasskey(userOpHash, cred0);
     const signerIds = [0];
     const sigs = [sig0];
 
@@ -1776,6 +2550,43 @@ $('appSignSubmitBtn').onclick = async () => {
     $('appSignSubmitBtn').disabled = false;
     evalFirewall();
   }
+
+}
+
+// --- Intercept Send Click for Passkey Modal ---
+$('appSignSubmitBtn').onclick = () => {
+  const amt = parseFloat($('appTransferAmt').value) || 0;
+  const recipient = $('appRecipientAddr').value.trim();
+  
+  if (!recipient || amt <= 0) {
+    alert("Please enter a valid amount and recipient address.");
+    return;
+  }
+
+  // Populate Modal
+  document.getElementById('pkModalAmount').textContent = `Send ${amt.toFixed(2)} ${selectedAsset}`;
+  document.getElementById('pkModalDest').textContent = recipient.slice(0, 6) + '...' + recipient.slice(-4);
+  document.getElementById('pkModalTokenIcon').textContent = selectedAsset === 'ETH' ? 'Ξ' : '$';
+  document.getElementById('pkModalTokenIcon').style.color = selectedAsset === 'ETH' ? '#627EEA' : '#2775CA';
+  
+  document.getElementById('passkeyModal').classList.add('active');
+};
+
+// --- Passkey Modal Button Bindings ---
+document.getElementById('closePasskeyModal').onclick = () => document.getElementById('passkeyModal').classList.remove('active');
+document.getElementById('pkModalCancelBtn').onclick = () => document.getElementById('passkeyModal').classList.remove('active');
+
+document.getElementById('pkModalConfirmBtn').onclick = async () => {
+  const confirmBtn = document.getElementById('pkModalConfirmBtn');
+  const originalText = confirmBtn.innerHTML;
+  
+  // Loading state in modal
+  confirmBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning Touch ID...`;
+  
+  await executeSendUserOp();
+  
+  confirmBtn.innerHTML = originalText;
+  document.getElementById('passkeyModal').classList.remove('active');
 };
 
 // React Bits Grainient (Grainy Gradient with Soft Motion) Engine
@@ -1861,6 +2672,184 @@ if (canvas) {
   }
   renderGrainient();
 }
+
+// ==========================================
+// SWAP TAB LOGIC (Mock DEX Router)
+// ==========================================
+
+const swapInputAmt = $('swapInputAmt');
+const swapOutputAmt = $('swapOutputAmt');
+const swapExchangeRate = $('swapExchangeRate');
+const swapSignSubmitBtn = $('swapSignSubmitBtn');
+const swapReceiptArea = $('swapReceiptArea');
+const swapSuccessBanner = $('swapSuccessBanner');
+const swapHashDisplay = $('swapHashDisplay');
+const swapBaseScanLink = $('swapBaseScanLink');
+const swapUserOpCode = $('swapUserOpCode');
+
+if (swapInputAmt) {
+  swapInputAmt.addEventListener('input', () => {
+    // Mock 1 ETH = 2500 USDC rate
+    const amt = parseFloat(swapInputAmt.value) || 0;
+    swapOutputAmt.value = (amt * 2500).toFixed(2);
+  });
+}
+
+if (swapSignSubmitBtn) {
+  swapSignSubmitBtn.onclick = async () => {
+    try {
+      swapSignSubmitBtn.disabled = true;
+      swapSignSubmitBtn.textContent = 'Biometric Touch ID (Signing Swap)...';
+      
+      const key0Id = storedKeys[0]?.id;
+      if (!key0Id) throw new Error('No passkey found. Please enroll in Security tab first.');
+      
+      // Build a random 32-byte challenge
+      const challenge = new Uint8Array(32);
+      crypto.getRandomValues(challenge);
+      const sig1 = await signWithPasskey(challenge, [key0Id]);
+      
+      swapSignSubmitBtn.textContent = 'Executing Swap via Paymaster...';
+      await new Promise(r => setTimeout(r, 1500));
+      
+      const fakeTxHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      
+      swapSignSubmitBtn.textContent = 'Authorize Swap with Hardware Passkey';
+      swapSignSubmitBtn.disabled = false;
+      
+      swapReceiptArea.style.display = 'block';
+      swapSuccessBanner.style.display = 'block';
+      swapHashDisplay.textContent = fakeTxHash;
+      swapBaseScanLink.href = `https://sepolia.basescan.org/tx/${fakeTxHash}`;
+      
+      const mockOp = {
+        sender: accountAddr,
+        nonce: '0x4',
+        callData: '0x... (ETH→USDC via 0x DEX Router)',
+        paymasterAndData: '0x... (Gasless Sponsored)',
+        signature: '0x' + (sig1.r?.toString(16) || 'demo') + (sig1.s?.toString(16) || 'demo')
+      };
+      swapUserOpCode.textContent = JSON.stringify(mockOp, null, 2);
+      
+      // Refresh balance after swap
+      await refreshOnChainBalance();
+      
+    } catch (err) {
+      console.error('Swap error:', err);
+      swapSignSubmitBtn.textContent = 'Error: ' + err.message;
+      setTimeout(() => {
+        swapSignSubmitBtn.textContent = 'Authorize Swap with Hardware Passkey';
+        swapSignSubmitBtn.disabled = false;
+      }, 3500);
+    }
+  };
+}
+
+// ==========================================
+// MISC UI HANDLERS (previously non-functional)
+// ==========================================
+
+// --- Notification Bell ---
+const bellIcon = document.querySelector('.bell-icon');
+if (bellIcon) {
+  bellIcon.style.cursor = 'pointer';
+  bellIcon.parentElement.style.cursor = 'pointer';
+  bellIcon.parentElement.addEventListener('click', () => {
+    showToast('🔔 No new notifications', 'info');
+  });
+}
+
+// --- Profile Badge (copy address on click) ---
+const profileBadge = document.querySelector('.profile-badge');
+if (profileBadge) {
+  profileBadge.style.cursor = 'pointer';
+  profileBadge.addEventListener('click', () => {
+    navigator.clipboard.writeText(accountAddr);
+    showToast('📋 Address copied to clipboard!', 'success');
+  });
+}
+
+// --- "View all" links on Home tab ---
+document.querySelectorAll('.view-all').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    switchTab('tab-activity', document.querySelectorAll('.nav-item')[3]);
+  });
+});
+
+// --- "Add Asset" button ---
+document.querySelectorAll('.assets-row button').forEach(btn => {
+  if (btn.textContent.trim().includes('Add Asset')) {
+    btn.addEventListener('click', () => showToast('🔜 Multi-asset support coming soon!', 'info'));
+  }
+});
+
+// --- Explore items (clickable) ---
+document.querySelectorAll('.explore-item').forEach((item, i) => {
+  item.style.cursor = 'pointer';
+  item.addEventListener('click', () => {
+    if (i === 0) showToast('🌐 dApp browser coming soon!', 'info');
+    else switchTab('tab-agents', document.querySelectorAll('.nav-item')[4]);
+  });
+});
+
+// --- Search bar functionality ---
+const searchInput = document.querySelector('.search-bar input');
+if (searchInput) {
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') showToast(`🔍 Searching for "${searchInput.value}"...`, 'info');
+  });
+}
+
+// --- Toast notification system ---
+function showToast(message, type = 'info') {
+  // Remove existing toasts
+  document.querySelectorAll('.haptix-toast').forEach(t => t.remove());
+  
+  const toast = document.createElement('div');
+  toast.className = 'haptix-toast';
+  toast.textContent = message;
+  
+  const colors = { success: '#10B981', info: '#60A5FA', error: '#F43F5E' };
+  Object.assign(toast.style, {
+    position: 'fixed',
+    bottom: '24px',
+    right: '24px',
+    background: 'rgba(15, 8, 33, 0.95)',
+    border: `1px solid ${colors[type] || colors.info}`,
+    color: '#fff',
+    padding: '12px 20px',
+    borderRadius: '12px',
+    fontSize: '14px',
+    fontWeight: '600',
+    zIndex: '9999',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+    transform: 'translateY(100px)',
+    opacity: '0',
+    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+    cursor: 'pointer'
+  });
+  
+  document.body.appendChild(toast);
+  // Animate in
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      toast.style.transform = 'translateY(0)';
+      toast.style.opacity = '1';
+    });
+  });
+  // Auto dismiss
+  setTimeout(() => {
+    toast.style.transform = 'translateY(100px)';
+    toast.style.opacity = '0';
+    setTimeout(() => toast.remove(), 350);
+  }, 3000);
+  
+  toast.addEventListener('click', () => toast.remove());
+}
+
+// Make showToast global for use in onclick attributes
+window.showToast = showToast;
 
 </script>
 </body>

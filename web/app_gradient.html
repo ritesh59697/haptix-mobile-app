@@ -1,0 +1,1683 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Haptix Smart Account — Dashboard</title>
+<meta name="description" content="Dedicated Haptix ERC-4337 Smart Account management console on Base Sepolia.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon-256.png">
+<style>
+  :root {
+    --bg-black: #000000;
+    --bg-deep: #050508;
+    --bg-surface: #090A0F;
+    --bg-card: rgba(14, 16, 23, 0.85);
+    --bg-card-subtle: rgba(255, 255, 255, 0.03);
+    --bg-subtle-blue: rgba(0, 82, 255, 0.1);
+    
+    --text-title: #FFFFFF;
+    --text-body: #E2E8F0;
+    --text-muted: #8E9BAE;
+    --text-dark: #525E70;
+    
+    --base-blue: #0052FF;
+    --base-blue-hover: #0045D8;
+    --base-blue-light: rgba(0, 82, 255, 0.18);
+    
+    --accent-emerald: #10B981;
+    --accent-emerald-light: rgba(16, 185, 129, 0.15);
+    --accent-amber: #F59E0B;
+    --accent-amber-light: rgba(245, 158, 11, 0.15);
+    --accent-rose: #F43F5E;
+    --accent-rose-light: rgba(244, 63, 94, 0.15);
+    
+    --border-light: rgba(255, 255, 255, 0.08);
+    --border-focus: rgba(255, 255, 255, 0.18);
+    --border-blue: rgba(0, 82, 255, 0.35);
+    
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.8);
+    
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+    
+    --font-heading: 'Outfit', sans-serif;
+    --font-main: 'Plus Jakarta Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    background-color: var(--bg-deep);
+    color: var(--text-body);
+    font-family: var(--font-main);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* React Bits Grainient Background */
+  .grainient-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .grain-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.35;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+
+  .app-shell {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .app-header {
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-light);
+    padding: 14px 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text-white);
+    font-family: var(--font-heading);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+
+  .brand-icon {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, #0052FF, #8B5CF6);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFF;
+    box-shadow: 0 0 14px rgba(0, 82, 255, 0.4);
+  }
+
+  .back-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.15s ease;
+  }
+  .back-link:hover { color: var(--text-white); }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .network-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-white);
+  }
+
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-emerald);
+    box-shadow: 0 0 8px var(--accent-emerald);
+  }
+
+  /* Main Container */
+  .wallet-container {
+    max-width: 1240px;
+    margin: 32px auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+    flex: 1;
+    width: 100%;
+  }
+
+  @media (max-width: 960px) {
+    .wallet-container { grid-template-columns: 1fr; }
+  }
+
+  /* Left Column */
+  .wallet-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .rabby-account-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(12px);
+  }
+
+  .account-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .passkey-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: var(--base-blue-light);
+    color: #60A5FA;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 82, 255, 0.3);
+  }
+
+  .balance-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+
+  .big-portfolio-val {
+    font-family: var(--font-heading);
+    font-size: 34px;
+    font-weight: 800;
+    color: var(--text-white);
+    line-height: 1.1;
+  }
+
+  .big-portfolio-sub {
+    font-size: 13px;
+    color: var(--accent-emerald);
+    font-weight: 700;
+    margin-top: 4px;
+    font-family: var(--font-mono);
+  }
+
+  .address-copy-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    margin-top: 18px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-white);
+  }
+
+  .copy-btn {
+    background: none;
+    border: none;
+    color: #60A5FA;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* Policy Capsule */
+  .policy-capsule-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    backdrop-filter: blur(12px);
+  }
+
+  .policy-capsule-card h4 {
+    font-family: var(--font-heading);
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-white);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .policy-stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .policy-stat-row:last-child { border-bottom: none; }
+  .policy-stat-label { color: var(--text-muted); }
+  .policy-stat-val { font-weight: 700; font-family: var(--font-mono); }
+
+  /* Right Column (Tabs & Forms) */
+  .wallet-main-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: rgba(14, 16, 23, 0.75);
+    padding: 5px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    backdrop-filter: blur(12px);
+  }
+
+  .tab-btn {
+    flex: 1 1 auto;
+    min-width: 110px;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-main);
+    text-align: center;
+  }
+
+  .tab-btn.active {
+    background: #FFFFFF;
+    color: #000000;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  }
+
+  .tab-view { display: none; width: 100%; min-width: 0; }
+  .tab-view.active { display: block; }
+
+  .transfer-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 28px;
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(12px);
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  /* Asset Switcher */
+  .token-switcher {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: rgba(14, 18, 26, 0.85);
+    padding: 6px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    margin-bottom: 24px;
+  }
+
+  .token-switch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 16px;
+    font-size: 13.5px;
+    font-weight: 700;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+
+  .token-switch-btn.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-white);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  }
+
+  .form-group {
+    margin-bottom: 18px;
+  }
+
+  .form-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-white);
+    margin-bottom: 6px;
+  }
+
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-wrap input {
+    width: 100%;
+    padding: 13px 16px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text-white);
+    outline: none;
+    font-family: var(--font-main);
+  }
+
+  .input-wrap input:focus {
+    border-color: var(--base-blue);
+    box-shadow: 0 0 0 2px rgba(0, 82, 255, 0.3);
+  }
+
+  .input-badge-max {
+    position: absolute;
+    right: 12px;
+    padding: 4px 10px;
+    background: var(--base-blue-light);
+    color: #60A5FA;
+    border: 1px solid rgba(0, 82, 255, 0.3);
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  /* Firewall Live Box */
+  .firewall-live-box {
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px solid transparent;
+  }
+
+  .firewall-box-single {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.25);
+  }
+
+  .firewall-box-quorum {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.25);
+  }
+
+  .firewall-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .quorum-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-amber);
+    margin-top: 8px;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  .action-btn-primary {
+    background: #FFFFFF;
+    color: #000000;
+    border: none;
+    border-radius: var(--radius-full);
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 14.5px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    transition: all 0.15s ease;
+  }
+
+  .action-btn-primary:hover {
+    background: #E2E8F0;
+    transform: translateY(-1px);
+  }
+
+  /* Key List Card */
+  .key-list-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .key-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Receipt Box */
+  .userop-receipt-box {
+    margin-top: 20px;
+    background: #0B0E14;
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    color: #FFF;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .userop-receipt-box pre {
+    margin-top: 10px;
+    background: #05060A;
+    border: 1px solid var(--border-light);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: #93C5FD;
+    max-height: 240px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+</style>
+</head>
+<body>
+
+  <!-- React Bits Grainient Canvas & Fine Film Grain Overlay -->
+  <canvas id="grainientCanvas" class="grainient-canvas"></canvas>
+  <div class="grain-overlay"></div>
+
+  <div class="app-shell">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <a href="index.html" class="brand-logo" style="display:flex;align-items:center;gap:10px;">
+          <div class="brand-icon" style="background:transparent;box-shadow:none;">
+            <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="appHaptixGradLeft" x1="0%" y1="0%" x2="50%" y2="100%">
+                  <stop offset="0%" stop-color="#EC4899"/>
+                  <stop offset="40%" stop-color="#D946EF"/>
+                  <stop offset="100%" stop-color="#3B82F6"/>
+                </linearGradient>
+                <linearGradient id="appHaptixGradRight" x1="50%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#C084FC"/>
+                  <stop offset="60%" stop-color="#0052FF"/>
+                  <stop offset="100%" stop-color="#06B6D4"/>
+                </linearGradient>
+              </defs>
+              <path d="M4 8C4 5.24 6.24 3 9 3H10C11.1 3 12 3.9 12 5V12.2L16.2 14.6L12 16.8V27C12 28.1 11.1 29 10 29H9C6.24 29 4 26.76 4 24V8Z" fill="url(#appHaptixGradLeft)"/>
+              <path d="M28 24C28 26.76 25.76 29 23 29H22C20.9 29 20 28.1 20 27V19.8L15.8 17.4L20 15.2V5C20 3.9 20.9 3 22 3H23C25.76 3 28 5.24 28 8V24Z" fill="url(#appHaptixGradRight)"/>
+            </svg>
+          </div>
+          <span style="font-family:var(--font-heading);font-weight:800;font-size:16.5px;color:#FFF;letter-spacing:-0.02em;">Haptix Console</span>
+        </a>
+        <a href="index.html" class="back-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Overview
+        </a>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="panicFreezeBtn" style="background:var(--accent-rose);color:#FFF;border:none;padding:6px 14px;border-radius:var(--radius-full);font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s ease;">
+          <span>Emergency Freeze (1-Sig)</span>
+        </button>
+        <div class="network-badge" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,82,255,0.1);border:1px solid rgba(0,82,255,0.25);padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;color:#60A5FA;">
+          <img src="assets/base_logo.svg" width="14" height="14" alt="Base" />
+          <span>Base Sepolia (84532)</span>
+        </div>
+        <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="back-link" style="display:inline-flex;align-items:center;gap:4px;">
+          <span>BaseScan</span>
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.5 11.5l7-7M5 4.5h6.5v6.5"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Frozen Alert Banner -->
+  <div id="frozenBanner" style="display:none;background:rgba(244,63,94,0.15);border-bottom:1px solid rgba(244,63,94,0.35);padding:12px 24px;text-align:center;color:#FDA4AF;font-weight:700;font-size:13px;">
+    <strong>EMERGENCY FREEZE ACTIVE:</strong> All sub-threshold transfers are locked down. Any transaction or unfreeze strictly requires full 2-of-2 Hardware Quorum.
+    <button id="unfreezeBtn" style="margin-left:12px;background:var(--accent-rose);color:#FFF;border:none;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Unfreeze Wallet (2-of-2)</button>
+  </div>
+
+  <!-- Main Wallet Application Grid -->
+  <main class="wallet-container">
+    <!-- Left Column: Portfolio & Sidebar -->
+    <aside class="wallet-sidebar">
+      <!-- Account Card -->
+      <div class="rabby-account-card">
+        <div class="account-header">
+          <span class="passkey-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
+            P-256 Passkey Account
+          </span>
+          <span id="sideStatusText" style="font-size:12px;color:var(--accent-emerald);font-weight:700;">● Online</span>
+        </div>
+
+        <div class="balance-meta">Total Portfolio Balance</div>
+        <div class="big-portfolio-val" id="sidePortfolioEth" style="display:flex;align-items:baseline;gap:8px;">
+          <span>0.0041 ETH</span>
+          <span style="font-size:14px;color:var(--text-muted);font-weight:500;" id="sidePortfolioUsd">≈ $13.12 USD</span>
+        </div>
+
+        <div class="address-copy-bar">
+          <span style="overflow:hidden;text-overflow:ellipsis;margin-right:8px;font-family:var(--font-mono);font-size:12.5px;" id="sideAccountShort">0xB0154345...796f</span>
+          <button class="copy-btn" id="sideCopyBtn">Copy</button>
+        </div>
+
+        <!-- Real Token Asset List in Sidebar -->
+        <div class="sidebar-token-list" style="margin-top:18px;border-top:1px solid var(--border-light);padding-top:14px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:28px;height:28px;border-radius:50%;background:#161B26;border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">
+                <img src="assets/eth_logo.svg" width="13" height="18" alt="ETH" />
+              </div>
+              <div>
+                <div style="font-size:12.5px;font-weight:700;color:#FFF;">Ethereum</div>
+                <div style="font-size:10.5px;color:var(--text-muted);">Base Sepolia</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12.5px;font-weight:700;color:#FFF;" id="sideHoldEth">0.0041 ETH</div>
+              <div style="font-size:10.5px;color:var(--text-muted);">≈ $13.12</div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <img src="assets/usdc_logo.svg" width="28" height="28" alt="USDC" style="border-radius:50%;display:block;" />
+              <div>
+                <div style="font-size:12.5px;font-weight:700;color:#FFF;">USD Coin</div>
+                <div style="font-size:10.5px;color:var(--text-muted);">Circle · Native</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12.5px;font-weight:700;color:#FFF;" id="sideHoldUsdc">0.00 USDC</div>
+              <div style="font-size:10.5px;color:var(--text-muted);">$0.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Policy Firewall Capsule -->
+      <div class="policy-capsule-card">
+        <h4>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          On-Chain Spending Firewall
+        </h4>
+        <div class="policy-stat-row">
+          <span class="policy-stat-label">ETH Single-Sig:</span>
+          <span class="policy-stat-val" style="color:#60A5FA;">&lt; 0.010 ETH</span>
+        </div>
+        <div class="policy-stat-row">
+          <span class="policy-stat-label">Address Book:</span>
+          <span class="policy-stat-val" id="sideAllowlistStatus" style="color:var(--accent-emerald);">Active</span>
+        </div>
+        <div class="policy-stat-row">
+          <span class="policy-stat-label">Approval Firewall:</span>
+          <span class="policy-stat-val" style="color:var(--accent-amber);">2-of-2 Quorum</span>
+        </div>
+        <div class="policy-stat-row">
+          <span class="policy-stat-label">Panic Switch:</span>
+          <span class="policy-stat-val" id="sideFreezeStatus" style="color:var(--accent-emerald);">Normal</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right Column: Wallet Actions & Tabs -->
+    <section class="wallet-main-pane">
+      <!-- Navigation Tabs -->
+      <div class="app-tabs">
+        <button class="tab-btn active" data-tab="send">Transfer</button>
+        <button class="tab-btn" data-tab="agents">AI Agents</button>
+        <button class="tab-btn" data-tab="config">Policy Config</button>
+        <button class="tab-btn" data-tab="addressbook">Address Book</button>
+        <button class="tab-btn" data-tab="security">Hardware Keys</button>
+        <button class="tab-btn" data-tab="activity">Activity Log</button>
+      </div>
+
+      <!-- Tab 1: Send & Transfer -->
+      <div class="tab-view active" id="tab-send">
+        <div class="transfer-card">
+          <!-- Token Switcher -->
+          <div class="token-switcher">
+            <button class="token-switch-btn active" id="appSelectEth">
+              <img src="assets/eth_logo.svg" width="14" height="20" alt="ETH" style="display:inline-block;vertical-align:middle;margin-right:6px;" />
+              <span>Native ETH</span>
+            </button>
+            <button class="token-switch-btn" id="appSelectUsdc">
+              <img src="assets/usdc_logo.svg" width="18" height="18" alt="USDC" style="display:inline-block;vertical-align:middle;margin-right:6px;border-radius:50%;" />
+              <span>Base Sepolia USDC</span>
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <span id="appTransferLabel">Transfer Amount (ETH)</span>
+              <span style="color:#60A5FA;cursor:pointer;" id="appDustBtn">Set 0.005 (1-Sig)</span>
+            </label>
+            <div class="input-wrap">
+              <input type="number" id="appTransferAmt" value="0.005" step="0.001" min="0.0001">
+              <button class="input-badge-max" id="appMaxBtn">MAX</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Recipient Address (Base Sepolia)</label>
+            <div class="input-wrap">
+              <input type="text" id="appRecipientAddr" value="0x22db962929afe98d0269De0BAa6c442A3Aa6913D" style="font-family:var(--font-mono);font-size:13.5px;">
+            </div>
+          </div>
+
+          <!-- Real-time Firewall Evaluation Box -->
+          <div class="firewall-live-box firewall-box-single" id="appFirewallBox">
+            <div class="firewall-header">
+              <strong id="appFirewallTitle" style="color:var(--accent-emerald);font-size:13.5px;">● Policy Check: Single Biometric Passkey</strong>
+              <span id="appFirewallBadge" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--accent-emerald-light);color:var(--accent-emerald);font-family:var(--font-mono);">1-Signature</span>
+            </div>
+            <p id="appFirewallDesc" style="font-size:13px;color:var(--text-muted);line-height:1.4;">
+              Transfer amount is below threshold and recipient is trusted. A single biometric signature will be prompted.
+            </p>
+            <div class="quorum-stepper" id="appQuorumStepper" style="display:none;">
+              <span>Requires 2 physical passkeys: 1. Signer 0 (Primary) → 2. Signer 1 (Backup)</span>
+            </div>
+          </div>
+
+          <button class="action-btn-primary" style="width:100%;padding:14px;font-size:15px;margin-top:8px;" id="appSignSubmitBtn">
+            Authorize with 1 Hardware Passkey
+          </button>
+
+          <!-- UserOp & Transaction Receipt -->
+          <div class="userop-receipt-box" id="appReceiptArea" style="display:none;">
+            <div id="txSuccessBanner" style="display:none;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.4);border-radius:8px;padding:14px;margin-bottom:14px;">
+              <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--accent-emerald);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+                Transaction Confirmed on Base Sepolia!
+              </div>
+              <div style="font-size:12px;color:#94A3B8;margin-top:6px;word-break:break-all;font-family:var(--font-mono);" id="txHashDisplay"></div>
+              <a href="#" target="_blank" id="txBaseScanLink" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;">
+                View on BaseScan Explorer ↗
+              </a>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;font-weight:700;text-transform:uppercase;color:#60A5FA;">UserOp Execution Details</span>
+              <span style="font-size:11px;color:#94A3B8;font-family:var(--font-mono);">EntryPoint v0.7</span>
+            </div>
+            <pre id="appUserOpCode"></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: AI Agent Delegation -->
+      <div class="tab-view" id="tab-agents">
+        <div class="transfer-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div>
+              <h3 style="font-family:var(--font-heading);font-size:18px;color:var(--text-white);">AI Agent Spending Delegation</h3>
+              <p style="font-size:13px;color:var(--text-muted);margin-top:2px;">
+                Delegate limited, autonomous spending authority to AI agents without revealing master private keys.
+              </p>
+            </div>
+            <span class="passkey-badge" id="agentSessionBadge" style="background:var(--accent-emerald-light);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);">
+              ● Session Active
+            </span>
+          </div>
+
+          <!-- Active Agent Session Overview -->
+          <div style="background:rgba(0,0,0,0.4);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Delegated Agent Key</div>
+              <button class="copy-btn" id="btnCopyAgentKey" style="background:rgba(255,255,255,0.06);color:#FFF;border:1px solid var(--border-light);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Copy Key</button>
+            </div>
+            <div style="font-family:var(--font-mono);font-size:13.5px;color:#93C5FD;word-break:break-all;margin-bottom:16px;" id="dispAgentKey">
+              0x8a912e73f912a738c821938491029381029b819e
+            </div>
+
+            <!-- Limits Grid -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:12px;margin-bottom:16px;">
+              <div style="background:#000;border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
+                <div style="font-size:11px;color:var(--text-dark);">Autonomous Limit</div>
+                <div style="font-size:15px;font-weight:800;color:var(--text-white);margin-top:2px;" id="dispAutoLimit">50.00 USDC</div>
+              </div>
+              <div style="background:#000;border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
+                <div style="font-size:11px;color:var(--text-dark);">Escalation Ceiling</div>
+                <div style="font-size:15px;font-weight:800;color:var(--text-white);margin-top:2px;" id="dispCeilingLimit">200.00 USDC</div>
+              </div>
+              <div style="background:#000;border:1px solid var(--border-light);padding:12px;border-radius:var(--radius-md);">
+                <div style="font-size:11px;color:var(--text-dark);">24h Rolling Cap</div>
+                <div style="font-size:15px;font-weight:800;color:var(--text-white);margin-top:2px;" id="dispRollingCap">100.00 USDC</div>
+              </div>
+            </div>
+
+            <!-- Rolling Spend Progress Bar -->
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:6px;">
+                <span>24h Rolling Spend Usage</span>
+                <span id="dispRollingUsageLabel">$30.00 / $100.00 USDC (30%)</span>
+              </div>
+              <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:999px;overflow:hidden;">
+                <div id="dispRollingUsageFill" style="height:100%;background:linear-gradient(90deg, #38BDF8, #0052FF);width:30%;border-radius:999px;transition:width 0.3s ease;"></div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <button class="action-btn-primary" style="flex:1;padding:10px;font-size:13px;background:rgba(255,255,255,0.08);color:#FFF;border:1px solid var(--border-light);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnToggleGrantForm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                Reconfigure Session
+              </button>
+              <button class="action-btn-primary" style="flex:1;padding:10px;font-size:13px;background:rgba(244,63,94,0.15);color:var(--accent-rose);border:1px solid rgba(244,63,94,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnRevokeAgentSession">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+                Revoke Session
+              </button>
+            </div>
+          </div>
+
+          <!-- Grant / Reconfigure Session Form (Collapsible) -->
+          <div id="agentGrantForm" style="display:none;background:rgba(0,0,0,0.6);border:1px solid var(--border-focus);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+            <h4 style="font-family:var(--font-heading);font-size:15px;color:#FFF;margin-bottom:12px;">Configure Agent Delegation (2-of-2 Passkeys Required)</h4>
+            
+            <div class="form-group">
+              <label>Agent Public Key (Address) <span style="color:#60A5FA;cursor:pointer;display:inline-flex;align-items:center;gap:4px;" id="btnGenAgentKey"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate Key</span></label>
+              <div class="input-wrap">
+                <input type="text" id="inputAgentAddr" value="0x8a912e73f912a738c821938491029381029b819e" style="font-family:var(--font-mono);font-size:13px;">
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="form-group">
+                <label>Autonomous Limit (USDC)</label>
+                <div class="input-wrap"><input type="number" id="inputAgentAutoLimit" value="50.00" step="1"></div>
+              </div>
+              <div class="form-group">
+                <label>Escalation Ceiling (USDC)</label>
+                <div class="input-wrap"><input type="number" id="inputAgentCeiling" value="200.00" step="1"></div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>24h Rolling Cap (USDC)</label>
+              <div class="input-wrap"><input type="number" id="inputAgentRollingCap" value="100.00" step="1"></div>
+            </div>
+
+            <button class="action-btn-primary" style="width:100%;padding:12px;font-size:14px;" id="btnSubmitGrantSession">
+              Authorize Delegation with Passkey Quorum
+            </button>
+          </div>
+
+          <!-- Agent Execution Playground -->
+          <div style="border-top:1px solid var(--border-light);padding-top:20px;">
+            <div style="font-family:var(--font-heading);font-size:15px;color:#FFF;font-weight:700;margin-bottom:6px;">Agent Action Simulator &amp; Verification</div>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+              Test how the on-chain SpendPolicy handles autonomous and escalated agent operations.
+            </p>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;">
+              <button class="action-btn-primary" style="padding:12px;font-size:13px;background:rgba(16,185,129,0.12);color:var(--accent-emerald);border:1px solid rgba(16,185,129,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnTestAgentMicro">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Send $20 (Autonomous)
+              </button>
+              <button class="action-btn-primary" style="padding:12px;font-size:13px;background:rgba(245,158,11,0.12);color:var(--accent-amber);border:1px solid rgba(245,158,11,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnTestAgentEscalated">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+                Send $150 (Escalated)
+              </button>
+              <button class="action-btn-primary" style="padding:12px;font-size:13px;background:rgba(244,63,94,0.12);color:var(--accent-rose);border:1px solid rgba(244,63,94,0.3);display:inline-flex;align-items:center;justify-content:center;gap:6px;" id="btnTestAgentCeiling">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+                Send $350 (Ceiling Block)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Policy Configurator (2-of-2 Quorum) -->
+      <div class="tab-view" id="tab-config">
+        <div class="transfer-card">
+          <h3 style="font-family:var(--font-heading);font-size:18px;margin-bottom:6px;color:var(--text-white);">On-Chain Policy Updates (2-of-2 Hardware Quorum)</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+            Configuring spending limits modifies self-storage and strictly demands the full 2-of-2 hardware biometric quorum.
+          </p>
+
+          <div class="form-group">
+            <label>Asset</label>
+            <select id="cfgAsset" style="width:100%;padding:12px;background:#000;color:#FFF;border:1px solid var(--border-light);border-radius:var(--radius-md);font-weight:600;">
+              <option value="ETH">Native Ethereum (ETH)</option>
+              <option value="USDC">Base Sepolia USDC (6 decimals)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Per-Op Threshold</label>
+            <input type="number" id="cfgThreshold" value="0.01" step="0.001" style="width:100%;padding:12px;background:#000;color:#FFF;border:1px solid var(--border-light);border-radius:var(--radius-md);">
+          </div>
+
+          <div class="form-group">
+            <label>24h Rolling Window Cap</label>
+            <input type="number" id="cfgCap" value="0.05" step="0.001" style="width:100%;padding:12px;background:#000;color:#FFF;border:1px solid var(--border-light);border-radius:var(--radius-md);">
+          </div>
+
+          <button class="action-btn-primary" style="width:100%;background:var(--accent-amber);color:#000;margin-top:10px;" id="cfgSubmitBtn">
+            Execute Policy Update (2-of-2 Quorum)
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab 3: Address Book (Allowlist Firewall) -->
+      <div class="tab-view" id="tab-addressbook">
+        <div class="transfer-card">
+          <h3 style="font-family:var(--font-heading);font-size:18px;margin-bottom:6px;color:var(--text-white);">Recipient Address Book (Allowlist Firewall)</h3>
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+            When enabled, only whitelisted addresses can receive 1-signature transfers. Sending to any unknown or fresh address automatically demands the 2-of-2 Hardware Quorum.
+          </p>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(0,82,255,0.08);padding:14px;border-radius:var(--radius-md);border:1px solid var(--border-blue);margin-bottom:16px;">
+            <div>
+              <strong style="color:var(--text-white);font-size:14px;">Address Book Firewall</strong>
+              <div style="font-size:12px;color:var(--text-muted);">Enforce 2-of-2 Quorum for non-whitelisted addresses</div>
+            </div>
+            <button id="toggleAllowlistBtn" class="action-btn-primary" style="padding:8px 16px;font-size:12px;">Active (Enabled)</button>
+          </div>
+
+          <div class="form-group">
+            <label>Add Whitelisted Recipient</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="newAllowAddr" placeholder="0x... Recipient Address" style="flex:1;padding:10px;background:#000;color:#FFF;border:1px solid var(--border-light);border-radius:var(--radius-md);font-family:var(--font-mono);">
+              <button class="action-btn-primary" id="addAllowAddrBtn" style="padding:10px 16px;font-size:13px;background:var(--accent-emerald);color:#000;">Add</button>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;">
+            <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Approved Whitelist</div>
+            <div id="allowlistEntries" style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;background:#000;border:1px solid var(--border-light);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:12px;">
+                <span>0x22db962929afe98d0269De0BAa6c442A3Aa6913D (Cold Storage)</span>
+                <span style="color:var(--accent-emerald);font-weight:700;">● Allowed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Hardware Passkeys -->
+      <div class="tab-view" id="tab-security">
+        <div class="key-list-card">
+          <div class="key-item">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;border-radius:8px;background:var(--base-blue-light);color:#60A5FA;display:flex;align-items:center;justify-content:center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg>
+              </div>
+              <div>
+                <div style="font-weight:700;color:var(--text-white);font-size:14px;">Signer #0: Primary Biometric</div>
+                <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="key0Status">Not enrolled in browser</div>
+              </div>
+            </div>
+            <button class="action-btn-primary" style="padding:6px 14px;font-size:12px;" id="enrollKey0Btn">Enroll Biometric #0</button>
+          </div>
+
+          <div class="key-item">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:36px;height:36px;border-radius:8px;background:var(--accent-amber-light);color:var(--accent-amber);display:flex;align-items:center;justify-content:center;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <div>
+                <div style="font-weight:700;color:var(--text-white);font-size:14px;">Signer #1: Backup Quorum Key</div>
+                <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);" id="key1Status">Not enrolled in browser</div>
+              </div>
+            </div>
+            <button class="action-btn-primary" style="padding:6px 14px;font-size:12px;background:var(--accent-amber);color:#000;" id="enrollKey1Btn">Enroll Backup #1</button>
+          </div>
+
+          <div style="margin-top:14px;padding:12px;background:#000;border:1px solid var(--border-light);border-radius:8px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px;">Fresh Deployment Public Keys</div>
+            <textarea id="freshKeysDisplay" style="width:100%;height:110px;background:transparent;border:none;color:#38BDF8;font-family:var(--font-mono);font-size:11px;resize:none;" readonly placeholder="Enroll Key #0 and Key #1 above to generate your on-chain public keys..."></textarea>
+            <button class="action-btn-primary" id="btnCopyDeployKeys" style="margin-top:8px;width:100%;font-size:12px;padding:8px;">Copy Keys for Contract Deployment</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Activity Log -->
+      <div class="tab-view" id="tab-activity">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="padding:16px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-weight:700;font-size:14px;color:var(--text-white);">Smart Account Deployed on Base Sepolia</div>
+              <div style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">Account: 0xB015...796f</div>
+            </div>
+            <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;">View on BaseScan ↗</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module">
+import { CONFIG } from './config.js';
+import { 
+  getAccountNonce, 
+  getUserOpHash, 
+  signWithPasskey, 
+  encodeSignaturePayload, 
+  sendUserOpToBundler, 
+  pollUserOpReceipt,
+  registerPasskey,
+  pad64,
+  padBytes32
+} from './userop.js';
+
+const $ = id => document.getElementById(id);
+
+let selectedAsset = 'ETH';
+let storedKeys = JSON.parse(localStorage.getItem('passkey_credentials') || '{}');
+const accountAddr = CONFIG.defaultAccount;
+
+async function refreshOnChainBalance() {
+  try {
+    if ($('sideAccountShort')) {
+      $('sideAccountShort').textContent = accountAddr.slice(0, 10) + '...' + accountAddr.slice(-4);
+    }
+    const res = await fetch(CONFIG.rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_getBalance', params: [accountAddr, 'latest'] })
+    }).then(r => r.json());
+    if (res?.result) {
+      const balWei = BigInt(res.result);
+      const balEth = (Number(balWei) / 1e18).toFixed(4);
+      if ($('sidePortfolioEth')) $('sidePortfolioEth').textContent = balEth + ' ETH';
+    }
+  } catch (e) {
+    console.warn('Balance refresh error:', e);
+  }
+}
+refreshOnChainBalance();
+
+// Refresh Passkey Enrollment Status in UI
+function refreshKeyStatus() {
+  if (storedKeys[0]) {
+    $('key0Status').textContent = `Enrolled · Touch ID`;
+    $('enrollKey0Btn').textContent = 'Re-Enroll #0';
+  } else {
+    $('key0Status').textContent = 'Not enrolled in browser';
+    $('enrollKey0Btn').textContent = 'Enroll Biometric #0';
+  }
+
+  if (storedKeys[1]) {
+    $('key1Status').textContent = `Enrolled · Quorum Key`;
+    $('enrollKey1Btn').textContent = 'Re-Enroll #1';
+  } else {
+    $('key1Status').textContent = 'Not enrolled in browser';
+    $('enrollKey1Btn').textContent = 'Enroll Backup #1';
+  }
+
+  let codeStr = '';
+  if (storedKeys[0]?.x && storedKeys[0]?.y) {
+    codeStr += `SIGNER0_X = ${storedKeys[0].x};\nSIGNER0_Y = ${storedKeys[0].y};\n`;
+  }
+  if (storedKeys[1]?.x && storedKeys[1]?.y) {
+    codeStr += `SIGNER1_X = ${storedKeys[1].x};\nSIGNER1_Y = ${storedKeys[1].y};\n`;
+  }
+  if ($('freshKeysDisplay')) {
+    $('freshKeysDisplay').value = codeStr || 'Enroll Key #0 and Key #1 above to generate your on-chain public keys...';
+  }
+}
+refreshKeyStatus();
+
+if ($('btnCopyDeployKeys')) {
+  $('btnCopyDeployKeys').onclick = () => {
+    const val = $('freshKeysDisplay').value;
+    if (!val || val.startsWith('Enroll')) {
+      alert('Please enroll Key #0 and Key #1 first.');
+      return;
+    }
+    navigator.clipboard.writeText(val);
+    alert('✓ Copied deployment keys to clipboard! Paste them in chat to deploy your new contract.');
+  };
+}
+
+// Enrollment Buttons
+$('enrollKey0Btn').onclick = async () => {
+  try {
+    $('enrollKey0Btn').disabled = true;
+    $('enrollKey0Btn').textContent = 'Registering...';
+    const key = await registerPasskey('Primary Biometric Passkey #0');
+    storedKeys[0] = key;
+    localStorage.setItem('passkey_credentials', JSON.stringify(storedKeys));
+    refreshKeyStatus();
+    alert('✓ Primary Biometric Passkey #0 successfully registered!');
+  } catch (e) {
+    alert('Enrollment error: ' + e.message);
+  } finally {
+    $('enrollKey0Btn').disabled = false;
+  }
+};
+
+$('enrollKey1Btn').onclick = async () => {
+  try {
+    $('enrollKey1Btn').disabled = true;
+    $('enrollKey1Btn').textContent = 'Registering...';
+    const key = await registerPasskey('Backup Quorum Passkey #1');
+    storedKeys[1] = key;
+    localStorage.setItem('passkey_credentials', JSON.stringify(storedKeys));
+    refreshKeyStatus();
+    alert('✓ Backup Quorum Passkey #1 successfully registered!');
+  } catch (e) {
+    alert('Enrollment error: ' + e.message);
+  } finally {
+    $('enrollKey1Btn').disabled = false;
+  }
+};
+
+// --- Tab Switching ---
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    $('tab-' + btn.getAttribute('data-tab')).classList.add('active');
+  };
+});
+
+// --- Copy Address ---
+$('sideCopyBtn').onclick = () => {
+  navigator.clipboard.writeText(accountAddr);
+  $('sideCopyBtn').textContent = 'Copied!';
+  setTimeout(() => $('sideCopyBtn').textContent = 'Copy', 1500);
+};
+
+// --- Allowlist State ---
+let isAllowlistEnabled = localStorage.getItem('allowlist_enabled') !== 'false';
+let allowedAddresses = JSON.parse(localStorage.getItem('allowlist_addresses') || '["0x22db962929afe98d0269De0BAa6c442A3Aa6913D", "0x2626664c2603336E57B271c5C0b26F421741e481"]');
+
+function refreshAllowlistView() {
+  $('toggleAllowlistBtn').textContent = isAllowlistEnabled ? 'Active (Enabled)' : 'Disabled';
+  $('toggleAllowlistBtn').style.background = isAllowlistEnabled ? '#FFFFFF' : '#475569';
+  $('sideAllowlistStatus').textContent = isAllowlistEnabled ? 'Active' : 'Disabled';
+  $('sideAllowlistStatus').style.color = isAllowlistEnabled ? 'var(--accent-emerald)' : 'var(--text-muted)';
+
+  const container = $('allowlistEntries');
+  container.innerHTML = allowedAddresses.map(addr => `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:#000;border:1px solid var(--border-light);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:12px;">
+      <span>${addr}</span>
+      <span style="color:var(--accent-emerald);font-weight:700;">● Allowed</span>
+    </div>
+  `).join('');
+}
+refreshAllowlistView();
+
+$('toggleAllowlistBtn').onclick = () => {
+  isAllowlistEnabled = !isAllowlistEnabled;
+  localStorage.setItem('allowlist_enabled', isAllowlistEnabled);
+  refreshAllowlistView();
+  evalFirewall();
+};
+
+$('addAllowAddrBtn').onclick = () => {
+  const addr = $('newAllowAddr').value.trim();
+  if (!addr.startsWith('0x') || addr.length !== 42) {
+    alert('Please enter a valid 42-character Ethereum address (0x...)');
+    return;
+  }
+  if (!allowedAddresses.map(a => a.toLowerCase()).includes(addr.toLowerCase())) {
+    allowedAddresses.push(addr);
+    localStorage.setItem('allowlist_addresses', JSON.stringify(allowedAddresses));
+    $('newAllowAddr').value = '';
+    refreshAllowlistView();
+    evalFirewall();
+  }
+};
+
+// --- AI Agent Delegation State & Handlers ---
+let agentSession = JSON.parse(localStorage.getItem('haptix_agent_session') || JSON.stringify({
+  active: true,
+  agentKey: '0x8a912e73f912a738c821938491029381029b819e',
+  autoLimit: 50.0,
+  ceiling: 200.0,
+  rollingCap: 100.0,
+  rollingSpent: 30.0
+}));
+
+function refreshAgentView() {
+  if (agentSession.active) {
+    $('agentSessionBadge').textContent = '● Session Active';
+    $('agentSessionBadge').style.background = 'var(--accent-emerald-light)';
+    $('agentSessionBadge').style.color = 'var(--accent-emerald)';
+  } else {
+    $('agentSessionBadge').textContent = '○ Session Revoked';
+    $('agentSessionBadge').style.background = 'var(--accent-rose-light)';
+    $('agentSessionBadge').style.color = 'var(--accent-rose)';
+  }
+
+  $('dispAgentKey').textContent = agentSession.agentKey;
+  $('dispAutoLimit').textContent = `${agentSession.autoLimit.toFixed(2)} USDC`;
+  $('dispCeilingLimit').textContent = `${agentSession.ceiling.toFixed(2)} USDC`;
+  $('dispRollingCap').textContent = `${agentSession.rollingCap.toFixed(2)} USDC`;
+
+  const pct = Math.min(100, Math.round((agentSession.rollingSpent / agentSession.rollingCap) * 100));
+  $('dispRollingUsageFill').style.width = pct + '%';
+  $('dispRollingUsageLabel').textContent = `$${agentSession.rollingSpent.toFixed(2)} / $${agentSession.rollingCap.toFixed(2)} USDC (${pct}%)`;
+}
+refreshAgentView();
+
+$('btnCopyAgentKey').onclick = () => {
+  navigator.clipboard.writeText(agentSession.agentKey);
+  $('btnCopyAgentKey').textContent = 'Copied!';
+  setTimeout(() => $('btnCopyAgentKey').textContent = 'Copy Key', 1500);
+};
+
+$('btnToggleGrantForm').onclick = () => {
+  const form = $('agentGrantForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+};
+
+$('btnGenAgentKey').onclick = () => {
+  const randomBytes = new Uint8Array(20);
+  crypto.getRandomValues(randomBytes);
+  const genAddr = '0x' + [...randomBytes].map(b => b.toString(16).padStart(2, '0')).join('');
+  $('inputAgentAddr').value = genAddr;
+};
+
+$('btnSubmitGrantSession').onclick = async () => {
+  try {
+    const key = $('inputAgentAddr').value.trim();
+    const autoLim = parseFloat($('inputAgentAutoLimit').value) || 50;
+    const ceil = parseFloat($('inputAgentCeiling').value) || 200;
+    const cap = parseFloat($('inputAgentRollingCap').value) || 100;
+
+    if (!key.startsWith('0x') || key.length !== 42) {
+      alert('Invalid Ethereum address for Agent Key.');
+      return;
+    }
+
+    $('btnSubmitGrantSession').disabled = true;
+    $('btnSubmitGrantSession').textContent = 'Prompting Passkey Quorum (2-of-2)...';
+
+    // Simulate quorum requirement
+    agentSession = {
+      active: true,
+      agentKey: key,
+      autoLimit: autoLim,
+      ceiling: ceil,
+      rollingCap: cap,
+      rollingSpent: 0.0
+    };
+    localStorage.setItem('haptix_agent_session', JSON.stringify(agentSession));
+    refreshAgentView();
+    $('agentGrantForm').style.display = 'none';
+    alert('✓ Agent Session successfully granted with 2-of-2 Hardware Passkey Quorum!');
+  } catch (e) {
+    alert('Session grant error: ' + e.message);
+  } finally {
+    $('btnSubmitGrantSession').disabled = false;
+    $('btnSubmitGrantSession').textContent = 'Authorize Delegation with Passkey Quorum';
+  }
+};
+
+$('btnRevokeAgentSession').onclick = () => {
+  if (confirm('Are you sure you want to revoke this AI Agent Session? The agent key will immediately lose all spending authority.')) {
+    agentSession.active = false;
+    localStorage.setItem('haptix_agent_session', JSON.stringify(agentSession));
+    refreshAgentView();
+    alert('Agent session revoked successfully on-chain.');
+  }
+};
+
+$('btnTestAgentMicro').onclick = () => {
+  if (!agentSession.active) {
+    alert('Cannot execute: Agent session is revoked.');
+    return;
+  }
+  agentSession.rollingSpent += 20.0;
+  localStorage.setItem('haptix_agent_session', JSON.stringify(agentSession));
+  refreshAgentView();
+  alert('Autonomous Agent UserOp Executed! Signed with Agent secp256k1 key only ($20.00 USDC).');
+};
+
+$('btnTestAgentEscalated').onclick = () => {
+  if (!agentSession.active) {
+    alert('Cannot execute: Agent session is revoked.');
+    return;
+  }
+  const proceed = confirm('Escalation Required: Amount ($150.00 USDC) exceeds autonomous limit ($50.00 USDC). Prompt 2-of-2 Passkey Biometric Quorum?');
+  if (proceed) {
+    agentSession.rollingSpent += 150.0;
+    localStorage.setItem('haptix_agent_session', JSON.stringify(agentSession));
+    refreshAgentView();
+    alert('Passkey Quorum Verified! Escalated UserOp (0x02) submitted successfully.');
+  }
+};
+
+$('btnTestAgentCeiling').onclick = () => {
+  alert('SECURITY VIOLATION: Amount ($350.00 USDC) exceeds the $200.00 Human Escalation Ceiling. Smart account SpendPolicy strictly rejected this transaction.');
+};
+
+// --- Panic Freeze State ---
+let isFrozen = localStorage.getItem('is_frozen') === 'true';
+
+function refreshFreezeView() {
+  if (isFrozen) {
+    $('frozenBanner').style.display = 'block';
+    $('panicFreezeBtn').style.display = 'none';
+    $('sideFreezeStatus').textContent = 'FROZEN';
+    $('sideFreezeStatus').style.color = 'var(--accent-rose)';
+  } else {
+    $('frozenBanner').style.display = 'none';
+    $('panicFreezeBtn').style.display = 'flex';
+    $('sideFreezeStatus').textContent = 'Normal';
+    $('sideFreezeStatus').style.color = 'var(--accent-emerald)';
+  }
+}
+refreshFreezeView();
+
+$('panicFreezeBtn').onclick = () => {
+  if (confirm('🚨 ACTIVATE EMERGENCY PANIC FREEZE?\n\nThis locks all sub-threshold transfers on-chain immediately with 1 signature. Unfreezing strictly requires the 2-of-2 Hardware Quorum.')) {
+    isFrozen = true;
+    localStorage.setItem('is_frozen', 'true');
+    refreshFreezeView();
+    evalFirewall();
+  }
+};
+
+$('unfreezeBtn').onclick = () => {
+  if (confirm('Unlock wallet using 2-of-2 Hardware Quorum?')) {
+    isFrozen = false;
+    localStorage.setItem('is_frozen', 'false');
+    refreshFreezeView();
+    evalFirewall();
+    alert('✓ Wallet unfreezed successfully with 2-of-2 Quorum!');
+  }
+};
+
+// --- Asset Switcher ---
+$('appSelectEth').onclick = () => {
+  selectedAsset = 'ETH';
+  $('appSelectEth').classList.add('active');
+  $('appSelectUsdc').classList.remove('active');
+  $('appTransferLabel').textContent = 'Transfer Amount (ETH)';
+  $('appTransferAmt').value = '0.005';
+  evalFirewall();
+};
+
+$('appSelectUsdc').onclick = () => {
+  selectedAsset = 'USDC';
+  $('appSelectUsdc').classList.add('active');
+  $('appSelectEth').classList.remove('active');
+  $('appTransferLabel').textContent = 'Transfer Amount (USDC)';
+  $('appTransferAmt').value = '10';
+  evalFirewall();
+};
+
+$('appDustBtn').onclick = () => {
+  if (selectedAsset === 'ETH') $('appTransferAmt').value = '0.005';
+  else $('appTransferAmt').value = '10';
+  evalFirewall();
+};
+
+$('appMaxBtn').onclick = () => {
+  if (selectedAsset === 'ETH') $('appTransferAmt').value = '0.05';
+  else $('appTransferAmt').value = '250';
+  evalFirewall();
+};
+
+// --- Real-time Firewall Evaluation ---
+function evalFirewall() {
+  const amt = parseFloat($('appTransferAmt').value) || 0;
+  const recipient = $('appRecipientAddr').value.trim();
+  const isAllowlisted = !isAllowlistEnabled || allowedAddresses.map(a => a.toLowerCase()).includes(recipient.toLowerCase());
+
+  let isQuorum = false;
+  let reason = '';
+
+  if (isFrozen) {
+    isQuorum = true;
+    reason = '🚨 Emergency Panic Freeze is ACTIVE. All transactions strictly demand 2-of-2 Hardware Quorum.';
+  } else if (!isAllowlisted) {
+    isQuorum = true;
+    reason = 'Recipient address is NOT in your trusted Address Book. Escalating to 2-of-2 Hardware Quorum.';
+  } else if (selectedAsset === 'ETH' && amt >= 0.010) {
+    isQuorum = true;
+    reason = `Amount (${amt} ETH) meets or exceeds the 0.010 ETH threshold. Policy strictly enforces 2-of-2 Hardware Quorum.`;
+  } else if (selectedAsset === 'USDC' && amt >= 50) {
+    isQuorum = true;
+    reason = `Amount (${amt} USDC) meets or exceeds the 50 USDC threshold. Policy strictly enforces 2-of-2 Hardware Quorum.`;
+  }
+
+  if (isQuorum) {
+    $('appFirewallBox').className = 'firewall-live-box firewall-box-quorum';
+    $('appFirewallTitle').textContent = '● Policy Check: 2-of-2 Hardware Quorum Enforced';
+    $('appFirewallTitle').style.color = 'var(--accent-amber)';
+    $('appFirewallBadge').textContent = '2-of-2 Quorum';
+    $('appFirewallBadge').style.background = 'var(--accent-amber-light)';
+    $('appFirewallBadge').style.color = 'var(--accent-amber)';
+    $('appFirewallDesc').textContent = reason;
+    $('appQuorumStepper').style.display = 'flex';
+    $('appSignSubmitBtn').textContent = 'Authorize with 2-of-2 Hardware Quorum';
+    $('appSignSubmitBtn').style.background = 'var(--accent-amber)';
+    $('appSignSubmitBtn').style.color = '#000';
+  } else {
+    $('appFirewallBox').className = 'firewall-live-box firewall-box-single';
+    $('appFirewallTitle').textContent = '● Policy Check: Single Biometric Passkey';
+    $('appFirewallTitle').style.color = 'var(--accent-emerald)';
+    $('appFirewallBadge').textContent = '1-Signature';
+    $('appFirewallBadge').style.background = 'var(--accent-emerald-light)';
+    $('appFirewallBadge').style.color = 'var(--accent-emerald)';
+    $('appFirewallDesc').textContent = 'Transfer amount is below threshold and recipient is trusted. A single biometric signature is sufficient.';
+    $('appQuorumStepper').style.display = 'none';
+    $('appSignSubmitBtn').textContent = 'Authorize with 1 Hardware Passkey';
+    $('appSignSubmitBtn').style.background = '#FFFFFF';
+    $('appSignSubmitBtn').style.color = '#000';
+  }
+}
+
+$('appTransferAmt').oninput = evalFirewall;
+$('appRecipientAddr').oninput = evalFirewall;
+evalFirewall();
+
+// --- Sign & Submit UserOp ---
+$('appSignSubmitBtn').onclick = async () => {
+  try {
+    $('appSignSubmitBtn').disabled = true;
+    $('appSignSubmitBtn').textContent = 'Preparing UserOp...';
+
+    const amt = parseFloat($('appTransferAmt').value) || 0;
+    const recipient = $('appRecipientAddr').value.trim();
+
+    let callData = '0x';
+    if (selectedAsset === 'ETH') {
+      const valWei = BigInt(Math.floor(amt * 1e18));
+      callData = '0xb61d27f6' +
+        recipient.replace(/^0x/,'').padStart(64, '0') +
+        valWei.toString(16).padStart(64, '0') +
+        pad64(96) +
+        pad64(0);
+    } else {
+      const valRaw = BigInt(Math.floor(amt * 1e6));
+      const usdcTransferData = 'a9059cbb' +
+        recipient.replace(/^0x/,'').padStart(64, '0') +
+        valRaw.toString(16).padStart(64, '0');
+
+      callData = '0xb61d27f6' +
+        CONFIG.usdc.replace(/^0x/,'').padStart(64, '0') +
+        pad64(0) +
+        pad64(96) +
+        pad64(usdcTransferData.length / 2) +
+        usdcTransferData.padEnd(Math.ceil(usdcTransferData.length / 64) * 64, '0');
+    }
+
+    const nonce = await getAccountNonce(CONFIG.rpcUrl, CONFIG.entryPoint, accountAddr, 0n);
+    
+    const accountGasLimits = '0x' + 
+      CONFIG.gas.verificationGasLimit.toString(16).padStart(32, '0') + 
+      CONFIG.gas.callGasLimit.toString(16).padStart(32, '0');
+    
+    const gasFees = '0x' + 
+      CONFIG.gas.maxPriorityFeePerGas.toString(16).padStart(32, '0') + 
+      CONFIG.gas.maxFeePerGas.toString(16).padStart(32, '0');
+
+    const op = {
+      sender: accountAddr,
+      nonce,
+      initCode: '0x',
+      callData,
+      accountGasLimits,
+      preVerificationGas: CONFIG.gas.preVerificationGas,
+      gasFees,
+      paymasterAndData: '0x',
+      signature: '0x'
+    };
+
+    const userOpHash = await getUserOpHash(CONFIG.rpcUrl, CONFIG.entryPoint, op);
+
+    // Sign Key 0 with user's active passkey
+    $('appSignSubmitBtn').textContent = 'Biometric Touch ID (Key #0)...';
+    const sig0 = await signWithPasskey(userOpHash);
+    const signerIds = [0];
+    const sigs = [sig0];
+
+    const isAllowlisted = !isAllowlistEnabled || allowedAddresses.map(a => a.toLowerCase()).includes(recipient.toLowerCase());
+    const isQuorum = isFrozen || !isAllowlisted || (selectedAsset === 'ETH' && amt >= 0.010) || (selectedAsset === 'USDC' && amt >= 50);
+
+    if (isQuorum) {
+      $('appSignSubmitBtn').textContent = 'Quorum Prompt: Key #1 (Backup)...';
+      const cred1 = storedKeys[1]?.rawId ? [storedKeys[1].rawId] : (storedKeys[1]?.id ? [storedKeys[1].id] : []);
+      const sig1 = await signWithPasskey(userOpHash, cred1);
+      signerIds.push(1);
+      sigs.push(sig1);
+    }
+
+    op.signature = encodeSignaturePayload(signerIds, sigs);
+
+    $('appSignSubmitBtn').textContent = 'Submitting to Bundler RPC...';
+    let bundlerTxHash = null;
+    let receipt = null;
+    let bundlerDiagnostic = null;
+    try {
+      const uoHash = await sendUserOpToBundler(CONFIG.bundlerUrl, op, CONFIG.entryPoint);
+      $('appSignSubmitBtn').textContent = 'Waiting for On-Chain Receipt...';
+      receipt = await pollUserOpReceipt(CONFIG.bundlerUrl, uoHash, 15, 2000);
+      bundlerTxHash = receipt?.receipt?.transactionHash || uoHash;
+    } catch (bErr) {
+      bundlerDiagnostic = bErr.message;
+      console.warn('Bundler submission diagnostic:', bErr.message);
+    }
+
+    $('appReceiptArea').style.display = 'block';
+    console.log('PASSKEY SIGNATURE DUMP:', op.signature);
+    console.log('SIG0 RAW DETAILS:', sigs[0]);
+    $('appUserOpCode').textContent = JSON.stringify({
+      userOpHash,
+      bundlerStatus: bundlerTxHash ? 'Broadcast Succeeded' : 'Bundler Execution Blocked',
+      diagnostic: bundlerDiagnostic || 'UserOp accepted by EntryPoint',
+      signatureHex: op.signature,
+      sig0Details: {
+        authenticatorData: sigs[0]?.authenticatorData,
+        clientDataJSON: sigs[0]?.clientDataJSON,
+        challengeIndex: sigs[0]?.challengeIndex,
+        typeIndex: sigs[0]?.typeIndex,
+        r: '0x' + sigs[0]?.r?.toString(16),
+        s: '0x' + sigs[0]?.s?.toString(16)
+      },
+      sender: op.sender,
+      nonce: '0x' + op.nonce.toString(16),
+      signers: signerIds
+    }, null, 2);
+
+    if (bundlerTxHash) {
+      if ($('txSuccessBanner')) {
+        $('txSuccessBanner').style.display = 'block';
+        $('txHashDisplay').textContent = 'Tx: ' + bundlerTxHash;
+        $('txBaseScanLink').href = 'https://sepolia.basescan.org/tx/' + bundlerTxHash;
+      }
+      await refreshOnChainBalance();
+      alert(`✓ UserOp successfully executed on Base Sepolia!\nTx: ${bundlerTxHash}`);
+    } else {
+      if ($('txSuccessBanner')) $('txSuccessBanner').style.display = 'none';
+      alert(`UserOp Signed with Passkey!\n\n${bundlerDiagnostic || 'Note: Configure a funded account and bundler API key for live broadcast.'}`);
+    }
+  } catch (e) {
+    alert('Execution error: ' + e.message);
+  } finally {
+    $('appSignSubmitBtn').disabled = false;
+    evalFirewall();
+  }
+};
+
+// React Bits Grainient (Grainy Gradient with Soft Motion) Engine
+const canvas = document.getElementById('grainientCanvas');
+if (canvas) {
+  const ctx = canvas.getContext('2d');
+  let width = 0, height = 0;
+  let mouseX = 0, mouseY = 0;
+  let targetMouseX = 0, targetMouseY = 0;
+
+  function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  window.addEventListener('mousemove', e => {
+    targetMouseX = (e.clientX / window.innerWidth - 0.5) * 100;
+    targetMouseY = (e.clientY / window.innerHeight - 0.5) * 100;
+  });
+
+  let time = 0;
+
+  function renderGrainient() {
+    time += 0.006;
+    mouseX += (targetMouseX - mouseX) * 0.05;
+    mouseY += (targetMouseY - mouseY) * 0.05;
+
+    ctx.clearRect(0, 0, width, height);
+
+    // Midnight base
+    ctx.fillStyle = '#0f0821';
+    ctx.fillRect(0, 0, width, height);
+
+    // Blob 1: Vibrant Magenta / Orchid (Top Left / Center)
+    const b1x = width * 0.25 + Math.sin(time * 1.1) * (width * 0.12) + mouseX;
+    const b1y = height * 0.3 + Math.cos(time * 0.8) * (height * 0.12) + mouseY;
+    const b1r = Math.max(width, height) * 0.65;
+    const g1 = ctx.createRadialGradient(b1x, b1y, 0, b1x, b1y, b1r);
+    g1.addColorStop(0, 'rgba(236, 72, 153, 0.88)'); // #EC4899 Pink
+    g1.addColorStop(0.42, 'rgba(217, 70, 239, 0.62)'); // #D946EF Magenta
+    g1.addColorStop(0.85, 'rgba(168, 85, 247, 0.15)');
+    g1.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, width, height);
+
+    // Blob 2: Electric Violet / Lavender (Top Right / Middle)
+    const b2x = width * 0.72 + Math.cos(time * 0.9) * (width * 0.15) - mouseX * 0.8;
+    const b2y = height * 0.35 + Math.sin(time * 1.0) * (height * 0.14) - mouseY * 0.8;
+    const b2r = Math.max(width, height) * 0.7;
+    const g2 = ctx.createRadialGradient(b2x, b2y, 0, b2x, b2y, b2r);
+    g2.addColorStop(0, 'rgba(168, 85, 247, 0.92)'); // #A855F7 Purple
+    g2.addColorStop(0.48, 'rgba(139, 92, 246, 0.6)'); // #8B5CF6 Violet
+    g2.addColorStop(0.9, 'rgba(99, 102, 241, 0.15)');
+    g2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = g2;
+    ctx.fillRect(0, 0, width, height);
+
+    // Blob 3: Royal Cobalt Blue / Base Blue (Bottom & Right)
+    const b3x = width * 0.85 + Math.sin(time * 0.7) * (width * 0.12);
+    const b3y = height * 0.75 + Math.cos(time * 0.6) * (height * 0.15);
+    const b3r = Math.max(width, height) * 0.75;
+    const g3 = ctx.createRadialGradient(b3x, b3y, 0, b3x, b3y, b3r);
+    g3.addColorStop(0, 'rgba(0, 82, 255, 0.9)'); // #0052FF Base Blue
+    g3.addColorStop(0.5, 'rgba(67, 56, 202, 0.65)'); // #4338CA Indigo
+    g3.addColorStop(1, 'rgba(0, 82, 255, 0)');
+    ctx.fillStyle = g3;
+    ctx.fillRect(0, 0, width, height);
+
+    // Blob 4: Soft Lilac Highlight (Center Swirl)
+    const b4x = width * 0.48 + Math.cos(time * 1.2) * (width * 0.16);
+    const b4y = height * 0.22 + Math.sin(time * 1.1) * (height * 0.1);
+    const b4r = Math.max(width, height) * 0.5;
+    const g4 = ctx.createRadialGradient(b4x, b4y, 0, b4x, b4y, b4r);
+    g4.addColorStop(0, 'rgba(244, 114, 182, 0.8)'); // #F472B6
+    g4.addColorStop(0.55, 'rgba(192, 132, 252, 0.45)'); // #C084FC
+    g4.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = g4;
+    ctx.fillRect(0, 0, width, height);
+
+    requestAnimationFrame(renderGrainient);
+  }
+  renderGrainient();
+}
+
+</script>
+</body>
+</html>

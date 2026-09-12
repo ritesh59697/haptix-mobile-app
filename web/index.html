@@ -3,3181 +3,680 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Haptix — The Biometric Hardware Enclave Layer for EVM</title>
-  <meta name="description" content="Haptix provides self-custodial WebAuthn biometric smart accounts with autonomous on-chain spending firewalls and RIP-7212 P-256 precompiles on Base.">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico">
-  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon-256.png">
+  <title>Haptix — The Biometric Hardware Enclave Layer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-black: #080414;
-      --bg-deep: #0c081e;
-      --bg-surface: rgba(14, 10, 28, 0.82);
-      --bg-card: rgba(14, 10, 28, 0.85);
-      --bg-card-hover: rgba(28, 20, 52, 0.92);
-      --bg-glass: rgba(255, 255, 255, 0.08);
-      --bg-glass-active: rgba(255, 255, 255, 0.14);
+      /* Light Theme Variables */
+      --bg-main: #fbfbfd;
+      --bg-surface: #ffffff;
+      --text-main: #1d1d1f;
+      --text-secondary: #86868b;
+      --accent-black: #1d1d1f;
+      --accent-blue: #0071e3;
+      --border-light: rgba(0, 0, 0, 0.04);
+      
+      /* Dark Theme Variables */
+      --bg-dark: #09090b;
+      --bg-dark-surface: #18181b;
+      --text-dark-main: #ffffff;
+      --text-dark-secondary: #a1a1aa;
+      --border-dark: rgba(255, 255, 255, 0.08);
+      --text-title: #FFFFFF;
+      --text-body: #E2E8F0;
+      --text-muted: #94A3B8;
 
-      --text-white: #FFFFFF;
-      --text-main: #F8FAFC;
-      --text-muted: #CBD5E1;
-      --text-dark: #94A3B8;
-
-      --accent-blue: #0052FF;
-      --accent-blue-glow: rgba(0, 82, 255, 0.4);
-      --accent-cyan: #38BDF8;
-      --accent-purple: #A855F7;
-      --accent-emerald: #34D399;
-      --accent-amber: #FBBF24;
-      --accent-rose: #FB7185;
-
-      --border-subtle: rgba(255, 255, 255, 0.12);
-      --border-focus: rgba(255, 255, 255, 0.28);
-      --border-blue: rgba(0, 82, 255, 0.45);
-
-      --radius-sm: 6px;
-      --radius-md: 12px;
-      --radius-lg: 18px;
-      --radius-xl: 24px;
-      --radius-full: 9999px;
-
-      --font-heading: 'Outfit', sans-serif;
-      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-main: 'Plus Jakarta Sans', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
+      --font-display: 'Outfit', sans-serif;
+      --font-heading: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Prevent asset dragging/selection (Native App Feel) */
+    img {
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-
+    
     body {
-      background-color: var(--bg-black);
+      background-color: var(--bg-main);
       color: var(--text-main);
       font-family: var(--font-body);
       min-height: 100vh;
       overflow-x: hidden;
-      line-height: 1.6;
+      line-height: 1.47059;
+      font-weight: 400;
+      letter-spacing: -0.022em;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* React Bits Grainient Background */
-    .grainient-canvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .grain-overlay {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1;
-      opacity: 0.35;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-      mix-blend-mode: overlay;
-    }
-
     .container {
-      max-width: 1240px;
+      max-width: 1060px;
       margin: 0 auto;
       padding: 0 24px;
       position: relative;
-      z-index: 1;
+      z-index: 10;
     }
 
-    /* Apple Keynote Full-Width Header Bar */
-    .card-nav-wrapper {
+    /* Section Themes */
+    .section-light {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+    }
+    .section-dark {
+      background-color: var(--bg-dark);
+      color: var(--text-dark-main);
+    }
+
+    /* Navbar */
+    .navbar-wrapper {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      width: 100%;
-      height: 64px;
-      background: rgba(11, 12, 14, 0.88) !important;
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 24px;
-      pointer-events: auto;
+      top: 0; left: 0; right: 0;
+      background: rgba(251, 251, 253, 0.8);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      z-index: 1000;
+      transition: background 0.3s, border-bottom 0.3s;
     }
-
-    .card-nav {
+    
+    .navbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      width: 100%;
-      max-width: 1240px;
-      height: 100%;
-      padding: 0;
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      pointer-events: auto;
+      height: 60px;
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 0 24px;
     }
-
-    .card-nav:hover {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
+    
+    .logo-container {
+      display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 21px; letter-spacing: -0.02em; color: var(--accent-black); text-decoration: none;
     }
+    
+    .nav-links {
+      display: flex; gap: 32px; align-items: center;
+    }
+    .nav-links a {
+      color: var(--text-main); text-decoration: none; font-size: 12px; font-weight: 400; opacity: 0.8; transition: opacity 0.2s;
+    }
+    .nav-links a:hover { opacity: 1; }
+    
+    .nav-actions { display: flex; align-items: center; gap: 20px; }
+    .btn-connect {
+      background: var(--accent-black); color: #fff; border: none; padding: 6px 14px; border-radius: 980px; font-weight: 400; font-size: 12px; cursor: pointer; transition: opacity 0.2s;
+    }
+    .btn-connect:hover { opacity: 0.8; }
 
-    .brand {
+    /* Section 1: Hero */
+    .hero-section {
+      text-align: center;
+      padding: 100px 0 60px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      color: #FFFFFF;
-      flex-shrink: 0;
-      transition: all 0.2s ease;
+    }
+    
+    .hero-pretitle {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 0.004em;
+      margin-bottom: 8px;
+    }
+    
+    .hero-title {
+      font-family: var(--font-heading); 
+      font-size: 80px; 
+      font-weight: 700; 
+      line-height: 1.05; 
+      letter-spacing: -0.04em; 
+      margin-bottom: 24px; 
+      color: var(--accent-black);
+      max-width: 800px;
+    }
+    
+    .hero-subtitle {
+      font-size: 21px; 
+      color: var(--text-secondary); 
+      max-width: 600px; 
+      margin: 0 auto 40px;
+      font-weight: 400;
+      letter-spacing: 0.011em;
+      line-height: 1.381;
     }
 
-    .brand:hover {
-      transform: translateY(-0.5px);
+    .hero-3d-asset {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      height: 500px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: float 6s ease-in-out infinite;
+    }
+    .hero-3d-asset img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 30px 40px rgba(0,0,0,0.1));
     }
 
-    .brand-logo-img {
-      height: 24px;
-      width: auto;
-      display: block;
-      transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+      100% { transform: translateY(0px); }
     }
 
-    .brand:hover .brand-logo-img {
-      opacity: 0.88;
+    /* Section 2: Stats Banner */
+    .stats-banner {
+      padding: 24px 0;
+      border-top: 1px solid var(--border-dark);
+      border-bottom: 1px solid var(--border-dark);
+    }
+    .stats-grid {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      max-width: 1060px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .stat-item {
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+    .stat-lbl {
+      font-size: 12px;
+      color: var(--text-dark-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+    }
+
+    /* Section 3: Bento Grid */
+    .bento-section {
+      padding: 120px 0;
+    }
+    .section-intro {
+      text-align: center;
+      margin-bottom: 60px;
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+    .bento-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;
+    }
+    .bento-card {
+      background: var(--bg-surface); 
+      border-radius: 28px; 
+      padding: 40px; 
+      box-shadow: 0 10px 40px rgba(0,0,0,0.03), 0 2px 10px rgba(0,0,0,0.02);
+      display: flex; flex-direction: column; justify-content: space-between;
+      min-height: 380px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+    .bento-card:hover {
       transform: scale(1.02);
     }
-
-    .brand-title {
-      font-family: var(--font-heading);
-      font-weight: 800;
-      font-size: 17px;
+    .bento-card.large {
+      grid-column: span 2;
+      flex-direction: row;
+      align-items: center;
+    }
+    .bento-card h4 { 
+      font-size: 28px; 
+      font-weight: 700; 
       letter-spacing: -0.02em;
-      color: #FFFFFF;
-      display: inline-flex;
-      align-items: center;
-    }
-
-    .brand-i-box {
-      position: relative;
-      display: inline-block;
-      line-height: 1;
-    }
-
-    .brand-i-dot {
-      position: absolute;
-      top: 0px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 4.2px;
-      height: 4.2px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #E879F9 0%, #0052FF 100%);
-      box-shadow: 0 0 8px rgba(192, 132, 252, 0.95), 0 0 2px rgba(255, 255, 255, 0.8);
-      pointer-events: none;
-    }
-
-    /* Kinetic Arrow Micro-Interactions (Linear / Stripe style) */
-    .arrow-icon {
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      display: inline-block;
-      vertical-align: middle;
-    }
-
-    .btn-primary:hover .arrow-icon,
-    .hero-btn-main:hover .arrow-icon {
-      transform: translateX(4px);
-    }
-
-    .ext-arrow {
-      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-      display: inline-block;
-      vertical-align: middle;
-      margin-left: 2px;
-    }
-
-    a:hover .ext-arrow {
-      transform: translate(2px, -2px);
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-    }
-
-    .nav-link {
-      font-size: 13px;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.75);
-      text-decoration: none;
-      padding: 6px 12px;
-      border-radius: var(--radius-full);
-      transition: all 0.15s ease;
-      white-space: nowrap;
-    }
-
-    .nav-link:hover {
-      color: #FFFFFF;
-      background: rgba(255, 255, 255, 0.09);
-    }
-
-    .nav-cta-btn {
-      height: 38px;
-      padding: 0 18px;
-      background: #FFFFFF;
-      color: #000000;
-      font-family: var(--font-body);
-      font-weight: 800;
-      font-size: 13px;
-      border-radius: var(--radius-full);
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-      flex-shrink: 0;
-      white-space: nowrap;
-    }
-
-    .nav-cta-btn:hover {
-      background: #E2E8F0;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px rgba(255, 255, 255, 0.25);
-    }
-
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* Three-Dot Menu Button in Hero Header */
-    .nav-menu-btn {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      color: #FFFFFF;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      padding: 0;
-      flex-shrink: 0;
-    }
-
-    .nav-menu-btn:hover {
-      background: rgba(255, 255, 255, 0.16);
-      border-color: rgba(255, 255, 255, 0.3);
-      transform: scale(1.05);
-    }
-
-    .nav-menu-btn:active {
-      transform: scale(0.95);
-    }
-
-    /* Mobile Navigation Drawer & Backdrop */
-    .mobile-drawer-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.72);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      z-index: 998;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .mobile-drawer-backdrop.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .mobile-drawer {
-      position: fixed;
-      top: 0;
-      right: -100%;
-      width: min(340px, 86vw);
-      height: 100vh;
-      height: 100dvh;
-      background: rgba(10, 13, 22, 0.97);
-      backdrop-filter: blur(36px);
-      -webkit-backdrop-filter: blur(36px);
-      border-left: 1px solid rgba(255, 255, 255, 0.14);
-      box-shadow: -24px 0 60px rgba(0, 0, 0, 0.85);
-      z-index: 999;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 24px 20px;
-      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .mobile-drawer.active {
-      right: 0;
-    }
-
-    .mobile-drawer-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-bottom: 18px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      margin-bottom: 18px;
-    }
-
-    .mobile-drawer-close {
-      width: 34px;
-      height: 34px;
-      border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      color: #FFFFFF;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .mobile-drawer-close:hover {
-      background: rgba(255, 255, 255, 0.16);
-      transform: scale(1.05);
-    }
-
-    .mobile-drawer-nav {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex: 1;
-    }
-
-    .mobile-nav-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 12px;
-      border-radius: var(--radius-md);
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      text-decoration: none;
-      color: #FFFFFF;
-      transition: all 0.2s ease;
-    }
-    .mobile-nav-item:hover, .mobile-nav-item:active {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.16);
-      transform: translateX(3px);
-    }
-
-    .mobile-nav-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: var(--radius-sm);
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--accent-cyan);
-      flex-shrink: 0;
-    }
-
-    .mobile-nav-text {
-      flex: 1;
-    }
-
-    .mobile-nav-label {
-      font-family: var(--font-heading);
-      font-weight: 700;
-      font-size: 13.5px;
-      color: #FFFFFF;
-      line-height: 1.2;
-    }
-
-    .mobile-nav-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-      line-height: 1.25;
-    }
-
-    .mobile-nav-arr {
-      color: rgba(255, 255, 255, 0.35);
-      transition: transform 0.2s ease;
-      flex-shrink: 0;
-    }
-    .mobile-nav-item:hover .mobile-nav-arr {
-      color: #FFFFFF;
-      transform: translateX(3px);
-    }
-
-    .mobile-drawer-footer {
-      padding-top: 18px;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      margin-top: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    /* True Apple Keynote Hero Architecture */
-    .hero-keynote-section {
-      position: relative;
-      width: 100%;
-      background-color: #000000 !important;
-      background-image: url('assets/hero-stage-bg-new.png');
-      background-repeat: no-repeat;
-      background-position: center right;
-      background-size: cover;
-      padding-top: 105px;
-      padding-bottom: 50px;
-      overflow: hidden;
-      z-index: 10;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .hero-keynote-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.35fr;
-      gap: 30px;
-      align-items: center;
-      min-height: calc(100vh - 130px);
-      max-width: 1480px;
-      margin: 0 auto;
-      padding: 0 40px;
-    }
-
-    .hero-text-col {
-      z-index: 2;
-      padding-right: 20px;
-    }
-
-    .hero-eyebrow {
-      font-family: var(--font-mono);
-      font-size: 11.5px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: #94A3B8;
-      margin-bottom: 22px;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .hero-eyebrow::before {
-      content: "";
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #34D399;
-      box-shadow: 0 0 10px #34D399;
-    }
-
-    .hero-keynote-title {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", sans-serif;
-      font-size: clamp(48px, 5.8vw, 84px);
-      font-weight: 900;
-      line-height: 1.02;
-      letter-spacing: -0.04em;
-      color: #FFFFFF;
-      margin-bottom: 22px;
-    }
-
-    .hero-keynote-sub {
-      font-size: clamp(16px, 1.4vw, 19px);
-      line-height: 1.6;
-      color: #94A3B8;
-      max-width: 520px;
-      margin-bottom: 36px;
-      font-weight: 400;
-    }
-
-    .hero-keynote-ctas {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      margin-bottom: 48px;
-      flex-wrap: wrap;
-    }
-
-    .btn-keynote-primary {
-      background: #FFFFFF;
-      color: #000000;
-      border-radius: 9999px;
-      padding: 14px 32px;
-      font-weight: 700;
-      font-size: 15px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      text-decoration: none;
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
-      box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
-    }
-
-    .btn-keynote-primary:hover {
-      background: #F1F5F9;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(255, 255, 255, 0.3);
-    }
-
-    .btn-keynote-secondary {
-      background: rgba(255, 255, 255, 0.08);
-      color: #FFFFFF;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 9999px;
-      padding: 14px 28px;
-      font-weight: 600;
-      font-size: 15px;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-      backdrop-filter: blur(14px);
-      transition: all 0.2s ease;
-    }
-
-    .btn-keynote-secondary:hover {
-      background: rgba(255, 255, 255, 0.14);
-      border-color: rgba(255, 255, 255, 0.35);
-      transform: translateY(-2px);
-    }
-
-    .hero-trusted-section {
-      margin-top: 10px;
-    }
-
-    .hero-trusted-label {
-      font-family: var(--font-mono);
-      font-size: 10.5px;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: #64748B;
-      margin-bottom: 14px;
-      font-weight: 700;
-    }
-
-    .hero-trusted-pills {
-      display: flex;
-      gap: 28px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .trusted-chain-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #E2E8F0;
-    }
-
-    .hero-stage-col {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-    }
-
-    .hero-stage-img {
-      width: 100%;
-      max-width: 600px; /* Reduced scale to fit pedestal */
-      max-height: 80vh;
-      object-fit: contain;
-      display: block;
-      user-select: none;
-      /* Tweak these to sit on the rock perfectly */
-      margin-top: -60px; /* Moves it a little more up */
-      margin-left: 120px; /* Pushes it right onto the stone */
-      filter: drop-shadow(-15px 40px 45px rgba(0, 0, 0, 0.85));
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 1;
-    }
-
-    .hero-stage-col:hover .hero-stage-img {
-      transform: translateY(-3px);
-    }
-
-
-
-    /* Fixed top navbar always visible */
-    .card-nav-wrapper {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      width: 100%;
-      height: 64px;
-      background: rgba(0, 0, 0, 0.88) !important;
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 28px;
-    }
-
-    /* Clean High-Contrast Light Section (Image 1 Style) */
-    .why-haptix-section {
-      background: #F8F9FA;
-      color: #0F172A;
-      padding: 100px 0 110px 0;
-      position: relative;
-      z-index: 2;
-    }
-
-    .why-header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 30px;
-      margin-bottom: 50px;
-      flex-wrap: wrap;
-    }
-
-    .why-tag {
-      font-family: var(--font-mono);
-      font-size: 11px;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: #64748B;
-      font-weight: 800;
-      margin-bottom: 12px;
-    }
-
-    .why-title {
-      font-family: var(--font-heading);
-      font-size: clamp(34px, 4.4vw, 56px);
-      font-weight: 800;
-      letter-spacing: -0.035em;
-      color: #090A0C;
-      line-height: 1.08;
-    }
-
-    .why-sub {
-      font-size: 17px;
-      color: #475569;
-      max-width: 460px;
-      line-height: 1.6;
-    }
-
-    .why-bento-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-    }
-
-    .why-card {
-      background: #FFFFFF;
-      border: 1px solid rgba(0, 0, 0, 0.06);
-      border-radius: 22px;
-      padding: 34px 26px 26px 26px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 290px;
-      transition: all 0.25s ease;
-    }
-
-    .why-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-      border-color: rgba(0, 82, 255, 0.25);
-    }
-
-    .why-card-icon {
-      width: 50px;
-      height: 50px;
-      border-radius: 14px;
-      background: #F1F5F9;
-      color: #0F172A;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 22px;
-      transition: background 0.2s ease, color 0.2s ease;
-    }
-
-    .why-card:hover .why-card-icon {
-      background: #0052FF;
-      color: #FFFFFF;
-    }
-
-    .why-card-title {
-      font-family: var(--font-heading);
-      font-size: 20px;
-      font-weight: 800;
-      color: #0F172A;
-      margin-bottom: 10px;
-      letter-spacing: -0.02em;
-    }
-
-    .why-card-text {
-      font-size: 14px;
-      color: #64748B;
-      line-height: 1.55;
-      margin-bottom: 20px;
-    }
-
-    .why-card-foot {
-      font-family: var(--font-mono);
-      font-size: 10.5px;
-      font-weight: 800;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #94A3B8;
-      border-top: 1px solid #F1F5F9;
-      padding-top: 16px;
-      margin-top: auto;
-    }
-
-    @media (max-width: 992px) {
-      .hero-keynote-grid,
-      .hero-cinematic-grid {
-        grid-template-columns: 1fr;
-        text-align: center;
-        gap: 40px;
-        padding: 20px 24px 60px 24px;
-      }
-      .hero-text-col {
-        padding-right: 0;
-      }
-      .hero-keynote-sub,
-      .hero-cinematic-sub {
-        margin-left: auto;
-        margin-right: auto;
-      }
-      .hero-keynote-ctas,
-      .hero-cinematic-ctas {
-        justify-content: center;
-      }
-      .hero-trusted-pills {
-        justify-content: center;
-      }
-      .hero-micro-metrics {
-        justify-content: center;
-      }
-      .hero-keynote-section {
-        background-image: url('assets/hero-stage-bg-new.png');
-      }
-      .hero-stage-img {
-        display: block; /* Show the distinct image on mobile for stacking */
-        max-width: 620px;
-        max-height: 50vh;
-        margin-top: 0;
-        margin-left: auto;
-        margin-right: auto;
-      }
-      .why-header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      .why-bento-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 640px) {
-      .why-bento-grid {
-        grid-template-columns: 1fr;
-      }
-      .hero-micro-metrics {
-        gap: 20px;
-      }
-    }
-
-    /* Original styles preserved */
-    .hero-section {
-      position: relative;
-      padding-top: 170px;
-      padding-bottom: 80px;
-      text-align: center;
-      overflow: hidden;
-    }
-
-    .pill-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 5px 16px 5px 6px;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      border-radius: var(--radius-full);
-      font-size: 12.5px;
-      font-weight: 700;
-      color: #FFFFFF;
-      margin-bottom: 26px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    .badge-tag {
-      background: #FFFFFF;
-      color: #000000;
-      padding: 2px 8px;
-      border-radius: var(--radius-full);
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 0.05em;
-    }
-
-    .hero-title {
-      font-family: var(--font-heading);
-      font-size: clamp(42px, 6.8vw, 78px);
-      font-weight: 900;
-      line-height: 1.06;
-      letter-spacing: -0.04em;
-      color: #FFFFFF;
-      max-width: 980px;
-      margin: 0 auto 22px auto;
-      text-shadow: 0 6px 30px rgba(0, 0, 0, 0.45);
-    }
-
-    .hero-sub {
-      font-size: clamp(16px, 1.9vw, 19px);
-      color: #FFFFFF;
-      max-width: 720px;
-      margin: 0 auto 38px auto;
-      font-weight: 500;
-      line-height: 1.6;
-      text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
-    }
-
-    .hero-ctas {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      margin-bottom: 60px;
-    }
-
-    .hero-btn-main {
-      padding: 13px 28px;
-      font-size: 15px;
-      font-weight: 800;
-      background: #FFFFFF;
-      color: #000000;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
-    }
-
-    .hero-btn-sec {
-      padding: 12px 24px;
-      font-size: 15px;
-      font-weight: 700;
-      background: rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      color: #FFFFFF;
-    }
-
-    /* Infinite Marquee Protocol Strip (Tholos pattern) */
-    .marquee-strip {
-      padding: 24px 0 60px 0;
-      overflow: hidden;
-      position: relative;
-      border-bottom: 1px solid var(--border-subtle);
-      border-top: 1px solid var(--border-subtle);
-      background: rgba(255, 255, 255, 0.01);
-    }
-
-    .marquee-track {
-      display: flex;
-      width: max-content;
-      animation: marqueeScroll 35s linear infinite;
-      align-items: center;
-      gap: 56px;
-    }
-
-    @keyframes marqueeScroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-50%); }
-    }
-
-    .marquee-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: var(--font-heading);
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-dark);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      white-space: nowrap;
-    }
-    .marquee-item strong { color: var(--text-muted); }
-
-    /* Tenbin Giant Metrics Counter Grid */
-    .tenbin-metrics-section {
-      padding: 80px 0;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .tenbin-metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 32px;
-    }
-
-    .tenbin-metric-box {
-      border-left: 2px solid var(--border-subtle);
-      padding-left: 20px;
-      transition: border-color 0.2s ease;
-    }
-    .tenbin-metric-box:hover {
-      border-color: var(--accent-blue);
-    }
-
-    .tenbin-metric-val {
-      font-family: var(--font-heading);
-      font-size: clamp(38px, 4vw, 56px);
-      font-weight: 800;
-      color: var(--text-white);
-      line-height: 1;
-      letter-spacing: -0.04em;
-      margin-bottom: 8px;
-    }
-
-    .tenbin-metric-label {
-      font-size: 12.5px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-weight: 600;
-    }
-
-    /* Tenbin Micro-Comparison Table */
-    .micro-comp-section {
-      padding: 90px 0;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .section-header-compact {
-      text-align: center;
-      max-width: 680px;
-      margin: 0 auto 50px auto;
-    }
-
-    .section-tag {
-      font-size: 11.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--accent-cyan);
-      margin-bottom: 10px;
-    }
-
-    .section-title {
-      font-family: var(--font-heading);
-      font-size: clamp(30px, 3.8vw, 44px);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--text-white);
-      line-height: 1.15;
-      margin-bottom: 14px;
-    }
-
-    .section-sub {
-      font-size: 15.5px;
-      color: var(--text-muted);
-    }
-
-    .micro-comp-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-    }
-
-    .comp-row {
-      display: grid;
-      grid-template-columns: 1.4fr 1fr 1fr 1fr;
-      padding: 18px 24px;
-      border-bottom: 1px solid var(--border-subtle);
-      align-items: center;
-      font-size: 13.5px;
-    }
-    .comp-row:last-child { border-bottom: none; }
-    .comp-header {
-      background: rgba(255, 255, 255, 0.04);
-      font-family: var(--font-heading);
-      font-weight: 800;
-      font-size: 14px;
-      color: var(--text-white);
-    }
-
-    .comp-feature { color: var(--text-white); font-weight: 600; }
-    .comp-highlight {
-      color: var(--accent-cyan);
-      font-weight: 800;
-      font-family: var(--font-mono);
-      background: rgba(56, 189, 248, 0.12);
-      padding: 4px 10px;
-      border-radius: var(--radius-sm);
-      display: inline-block;
-      width: fit-content;
-      border: 1px solid rgba(56, 189, 248, 0.25);
-    }
-    .comp-muted { color: var(--text-muted); font-family: var(--font-mono); }
-
-    /* Mobile-Native Comparison Cards */
-    .comp-mobile-cards {
-      display: none;
-      flex-direction: column;
-      gap: 14px;
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-
-    .comp-m-card {
-      background: rgba(11, 14, 22, 0.94);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 18px 16px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .comp-m-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .comp-m-title {
-      font-family: var(--font-heading);
-      font-size: 15.5px;
-      font-weight: 700;
-      color: var(--text-white);
-    }
-
-    .comp-m-tag {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--accent-cyan);
-      background: rgba(56, 189, 248, 0.12);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-    }
-
-    .comp-m-rows {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .comp-m-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      background: rgba(255, 255, 255, 0.02);
-      font-size: 12px;
-    }
-
-    .comp-m-winner {
-      background: rgba(0, 82, 255, 0.09);
-      border: 1px solid rgba(56, 189, 248, 0.28);
-    }
-
-    .comp-m-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .comp-m-winner .comp-m-label {
-      color: #FFFFFF;
-      font-weight: 700;
-    }
-
-    .comp-m-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.25);
-      flex-shrink: 0;
-    }
-
-    .comp-m-dot.active {
-      background: var(--accent-cyan);
-      box-shadow: 0 0 8px var(--accent-cyan);
-    }
-
-    /* Tholos 4-Card Live Data Table Grid (Workflows & Policies) */
-    .tholos-workflows-section {
-      padding: 90px 0;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .workflows-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 28px;
-    }
-
-    .workflow-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 28px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-      transition: all 0.25s ease;
-      min-width: 0;
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-    .workflow-card:hover {
-      border-color: var(--border-focus);
-      background: var(--bg-card-hover);
-      transform: translateY(-2px);
-    }
-
-    .card-top-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 6px;
-    }
-
-    .card-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: var(--radius-sm);
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin-bottom: 12px; 
+      color: var(--accent-black); 
+    }
+    .bento-card p { 
+      font-size: 17px; 
+      color: var(--text-secondary); 
+      line-height: 1.47; 
+      max-width: 400px;
+    }
+    .bento-action {
+      margin-top: 24px;
       color: var(--accent-blue);
-      flex-shrink: 0;
-    }
-
-    .workflow-title {
-      font-family: var(--font-heading);
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text-white);
-    }
-
-    .workflow-sub {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 18px;
-    }
-
-    /* Embedded Data Table inside cards */
-    .embedded-table-wrap {
-      background: var(--bg-black);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      max-width: 100%;
-      min-width: 0;
-      font-size: 12px;
-    }
-
-    .embedded-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .embedded-table th, .embedded-table td {
-      padding: 10px 14px;
-      border-bottom: 1px solid var(--border-subtle);
-      text-align: left;
-    }
-
-    .embedded-table th {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-dark);
-      background: rgba(255, 255, 255, 0.02);
-      font-weight: 700;
-    }
-
-    .embedded-table tr:last-child td { border-bottom: none; }
-
-    .tag-active {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--accent-emerald);
-      background: rgba(16, 185, 129, 0.1);
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-    }
-
-    .tag-quorum {
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--accent-amber);
-      background: rgba(245, 158, 11, 0.1);
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-    }
-
-    /* Developer SDK Terminal Box */
-    .sdk-code-box {
-      background: #020204;
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      font-family: var(--font-mono);
-      font-size: 11.5px;
-    }
-
-    .sdk-top-bar {
+      font-weight: 500;
+      font-size: 15px;
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid var(--border-subtle);
+      gap: 4px;
+    }
+    .bento-action::after {
+      content: '›';
+      font-size: 20px;
+      line-height: 1;
+      margin-top: -2px;
     }
 
-    .sdk-dot { width: 8px; height: 8px; border-radius: 50%; }
-    .sdk-code-inner {
-      padding: 14px;
-      line-height: 1.6;
-      color: #94A3B8;
-      overflow-x: auto;
+    /* Section 4 & 5: Feature Spotlights */
+    .spotlight-section {
+      padding: 140px 0;
+      overflow: hidden;
     }
-    .kw { color: #C084FC; }
-    .fn { color: #FDE68A; }
-    .str { color: #86EFAC; }
-    .num { color: #60A5FA; }
-
-    /* Interactive Live Sandbox Section */
-    .sandbox-section {
-      padding: 90px 0;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .sandbox-box {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-xl);
-      padding: 40px;
+    .spotlight-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 36px;
       align-items: center;
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      gap: 60px;
     }
-
-    .range-slider {
+    .spotlight-text h2 {
+      font-size: 56px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 24px;
+    }
+    .spotlight-text p {
+      font-size: 21px;
+      color: inherit;
+      opacity: 0.7;
+      line-height: 1.4;
+      margin-bottom: 32px;
+    }
+    .spotlight-image {
       width: 100%;
-      height: 6px;
-      border-radius: var(--radius-full);
-      background: rgba(255, 255, 255, 0.1);
-      outline: none;
-      -webkit-appearance: none;
-      cursor: pointer;
-    }
-    .range-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #FFFFFF;
-      cursor: pointer;
-    }
-
-    .toggle-row {
+      height: 500px;
       display: flex;
+      justify-content: center;
       align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm);
-      font-size: 13px;
+    }
+    .spotlight-image img {
+      max-width: 120%;
+      max-height: 120%;
+      object-fit: contain;
+      filter: drop-shadow(0 40px 50px rgba(0,0,0,0.15));
+    }
+    .spotlight-grid.reverse .spotlight-text {
+      order: 2;
+    }
+    .spotlight-grid.reverse .spotlight-image {
+      order: 1;
     }
 
-    .switch {
+    /* Section 6: Global Network */
+    .global-section {
+      padding: 160px 0 100px;
+      text-align: center;
+      background: linear-gradient(to bottom, #fbfbfd 0%, #f0f0f5 100%);
+    }
+    .global-section h2 {
+      font-size: 64px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      margin-bottom: 24px;
+    }
+    .global-section p {
+      font-size: 21px;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 60px;
+    }
+    .globe-asset {
       position: relative;
-      display: inline-block;
-      width: 40px;
-      height: 22px;
+      width: 100%;
+      max-width: 900px;
+      height: 600px;
+      margin: 0 auto;
     }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider-toggle {
-      position: absolute; cursor: pointer; inset: 0;
-      background-color: rgba(255, 255, 255, 0.1);
-      transition: .3s;
-      border-radius: 22px;
-    }
-    .slider-toggle:before {
-      position: absolute; content: "";
-      height: 16px; width: 16px; left: 3px; bottom: 3px;
-      background-color: white;
-      transition: .3s;
-      border-radius: 50%;
-    }
-    input:checked + .slider-toggle { background-color: var(--accent-blue); }
-    input:checked + .slider-toggle:before { transform: translateX(18px); }
-
-    .sandbox-res-card {
-      background: rgba(8, 6, 16, 0.95);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+    .globe-asset img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
-    .badge-result {
-      display: inline-flex;
-      align-items: center;
-      padding: 6px 14px;
-      border-radius: var(--radius-full);
-      font-size: 12px;
-      font-weight: 800;
-      font-family: var(--font-mono);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .res-single { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--accent-emerald); }
-    .res-quorum { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--accent-amber); }
-    .res-freeze { background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.3); color: var(--accent-rose); }
-
-    /* Tenbin Trust & Verification Section */
-    .trust-section {
-      padding: 80px 0;
-      border-bottom: 1px solid var(--border-subtle);
+    /* Section 7: Supported Devices */
+    .devices-section {
+      padding: 80px 0 120px;
       text-align: center;
     }
+    .devices-section h3 {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 40px;
+    }
+    .device-icons {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      flex-wrap: wrap;
+    }
+    .device-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      opacity: 0.6;
+      transition: opacity 0.3s;
+    }
+    .device-icon:hover { opacity: 1; }
+    .device-icon svg {
+      width: 48px; height: 48px;
+    }
+    .device-icon span {
+      font-size: 14px;
+      font-weight: 600;
+    }
 
-    .trust-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+    /* Section 8: CTA Section */
+    .cta-section {
+      text-align: center;
+      padding: 160px 0;
+    }
+    .cta-section h2 {
+      font-size: 64px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      margin-bottom: 32px;
+    }
+    .btn-large-white {
+      background: #ffffff; 
+      color: #000000; 
+      border: none; 
+      padding: 18px 40px; 
+      border-radius: 980px; 
+      font-weight: 600; 
+      font-size: 17px; 
+      cursor: pointer; 
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-large-white:hover { 
+      transform: scale(1.02);
+      box-shadow: 0 10px 30px rgba(255,255,255,0.2);
+    }
+
+    /* Minimal Footer */
+    .footer {
+      padding: 40px 24px;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-dark);
+      font-size: 12px;
+      color: var(--text-dark-secondary);
+    }
+    .footer-links {
+      display: flex;
       gap: 24px;
-      margin-top: 40px;
     }
-
-    .trust-box {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      padding: 24px;
-      text-align: left;
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
-      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
-      transition: all 0.2s ease;
+    .footer-links a {
+      color: inherit;
+      text-decoration: none;
     }
-    .trust-box:hover {
-      border-color: var(--border-focus);
-      transform: translateY(-2px);
-    }
-
-    .trust-tag {
-      font-size: 11px;
-      color: var(--accent-cyan);
-      font-family: var(--font-mono);
-      font-weight: 800;
-      margin-bottom: 6px;
-    }
-
-    .trust-title {
-      font-family: var(--font-heading);
-      font-size: 16.5px;
-      font-weight: 800;
-      color: var(--text-white);
-      margin-bottom: 8px;
-    }
-
-    .trust-desc {
-      font-size: 13.5px;
-      color: var(--text-muted);
-      line-height: 1.55;
+    .footer-links a:hover {
+      color: #fff;
     }
 
     /* FAQ Section */
     .faq-section {
-      padding: 90px 0;
-      max-width: 820px;
-      margin: 0 auto;
+      padding: 120px 0;
+      background: var(--bg-surface);
     }
-
-    .faq-item {
-      background: rgba(14, 18, 26, 0.8);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      margin-bottom: 14px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      overflow: hidden;
-      transition: border-color 0.2s ease, background-color 0.2s ease;
-    }
-
-    .faq-item:hover {
-      border-color: rgba(255, 255, 255, 0.2);
-      background: rgba(20, 25, 36, 0.85);
-    }
-
-    .faq-question {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-family: var(--font-heading);
-      font-size: 16.5px;
+    .faq-section h2 {
+      font-size: 48px;
       font-weight: 700;
-      color: var(--text-white);
-      cursor: pointer;
-      user-select: none;
-      padding: 22px 24px;
-    }
-
-    .faq-answer-wrapper {
-      display: grid;
-      grid-template-rows: 0fr;
-      transition: grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .faq-item.active .faq-answer-wrapper {
-      grid-template-rows: 1fr;
-    }
-
-    .faq-answer-inner {
-      overflow: hidden;
-    }
-
-    .faq-answer {
-      padding: 0 24px 22px 24px;
-      font-size: 14.5px;
-      color: var(--text-muted);
-      line-height: 1.65;
-    }
-
-    .faq-icon {
-      font-size: 20px;
-      font-weight: 300;
-      color: var(--text-dark);
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-    }
-
-    .faq-item.active .faq-icon {
-      transform: rotate(45deg);
-      color: #60A5FA;
-    }
-
-    /* Clean Institutional Footer */
-    .footer-section {
-      border-top: 1px solid var(--border-subtle);
-      padding: 90px 0 40px 0;
-      background: #06080C;
-      position: relative;
-    }
-
-    /* ==========================================================================
-       ACETERNITY UI LIVE GLOWING EFFECT (@aceternity/glowing-effect)
-       Continuous corner-orbiting beam with mouse interaction
-       ========================================================================== */
-    .glowing-card-wrap {
-      position: relative;
-      border-radius: var(--radius-xl);
-      padding: 2.5px;
-      margin-bottom: 70px;
-      isolation: isolate;
-    }
-
-    .glowing-effect-container {
-      --start: 0deg;
-      --blur: 32px;
-      pointer-events: none;
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      z-index: 0;
-    }
-
-    /* Ambient Diffused Glow Aura that travels around the card */
-    .glowing-effect-blur {
-      position: absolute;
-      inset: -8px;
-      border-radius: inherit;
-      filter: blur(var(--blur));
-      opacity: 0.9;
-      z-index: 0;
-      transform: translate3d(0, 0, 0);
-      will-change: transform;
-      background: conic-gradient(
-        from var(--start, 0deg),
-        transparent 0deg,
-        rgba(0, 82, 255, 0.45) 30deg,
-        #0052FF 65deg,
-        #38BDF8 95deg,
-        #A855F7 125deg,
-        #EC4899 155deg,
-        rgba(236, 72, 153, 0.45) 185deg,
-        transparent 215deg,
-        transparent 360deg
-      );
-    }
-
-    /* Crisp live glowing border beam running continuously around the corners */
-    .glowing-effect-glow {
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      padding: 2.5px;
-      background: conic-gradient(
-        from var(--start, 0deg),
-        transparent 0deg,
-        rgba(0, 82, 255, 0.4) 30deg,
-        #0052FF 65deg,
-        #38BDF8 95deg,
-        #A855F7 125deg,
-        #EC4899 155deg,
-        rgba(236, 72, 153, 0.4) 185deg,
-        transparent 215deg,
-        transparent 360deg
-      );
-      -webkit-mask: 
-        linear-gradient(#fff 0 0) content-box, 
-        linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      z-index: 1;
-      pointer-events: none;
-    }
-
-    /* Subtle resting border */
-    .glowing-effect-rest {
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .footer-cta {
-      position: relative;
-      z-index: 2;
-      background: linear-gradient(180deg, rgba(14, 18, 26, 0.95) 0%, rgba(9, 12, 17, 0.98) 100%);
-      border-radius: calc(var(--radius-xl) - 1.5px);
-      padding: 56px 36px;
+      letter-spacing: -0.03em;
       text-align: center;
-      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
-      overflow: hidden;
-    }
-
-    .footer-links-row {
-      display: grid;
-      grid-template-columns: 2.2fr 1fr 1fr 1fr;
-      gap: 40px;
       margin-bottom: 60px;
     }
-
-    .footer-brand-wrap {
+    .faq-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .faq-item {
       display: flex;
       flex-direction: column;
-      gap: 14px;
-    }
-
-    .footer-brand-title {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #FFFFFF;
-      font-family: var(--font-heading);
-      font-weight: 800;
-      font-size: 18px;
-      letter-spacing: -0.02em;
-    }
-
-    .footer-col-title {
-      font-size: 11.5px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #FFFFFF;
-      margin-bottom: 16px;
-    }
-
-    .footer-col-links {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .footer-link {
-      font-size: 13.5px;
-      color: var(--text-muted);
-      text-decoration: none;
-      transition: color 0.15s ease;
-    }
-    .footer-link:hover { color: #FFFFFF; }
-
-    .footer-bottom-bar {
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      padding-top: 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      color: var(--text-dark);
-      flex-wrap: wrap;
       gap: 12px;
     }
-
-    /* ==========================================================================
-       RESPONSIVE DESIGN & MOBILE OPTIMIZATION
-       ========================================================================== */
-    @media (max-width: 1024px) {
-      .container { padding: 0 20px; }
-      .tenbin-metrics-grid { grid-template-columns: repeat(2, 1fr); }
-      .workflows-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
-      .footer-links-row { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 24px; }
+    .faq-item h4 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
     }
-
-    @media (max-width: 820px) {
-      .container {
-        padding: 0 16px !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-      }
-
-      /* Floating Navbar on Tablet/Mobile */
-      .card-nav-wrapper {
-        top: 0;
-        padding: 10px 12px 6px 12px;
-        background: linear-gradient(180deg, rgba(8, 4, 20, 0.98) 0%, rgba(8, 4, 20, 0.82) 65%, transparent 100%) !important;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-      }
-      .card-nav {
-        width: 100%;
-        max-width: 100%;
-        height: 48px;
-        padding: 0 8px 0 14px;
-        gap: 8px;
-        justify-content: space-between;
-      }
-      .nav-links { display: none !important; }
-      .nav-menu-btn { display: inline-flex !important; }
-      .brand-title { font-size: 15.5px; }
-      .nav-cta-btn {
-        height: 34px;
-        padding: 0 14px;
-        font-size: 12.5px;
-      }
-
-      /* Sections & Scroll Clearances - Prevent Fixed Navbar Collisions */
-      html {
-        scroll-padding-top: 80px;
-      }
-      section, 
-      .micro-comp-section, 
-      .tholos-workflows-section, 
-      .sandbox-section, 
-      .trust-section, 
-      .faq-section {
-        scroll-margin-top: 80px !important;
-        padding: 50px 0 !important;
-        position: relative;
-        z-index: 1;
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-      }
-
-      .section-header-compact {
-        margin: 0 auto 28px auto !important;
-        padding: 0 8px;
-      }
-      .section-title {
-        font-size: clamp(24px, 6.5vw, 34px) !important;
-        line-height: 1.18 !important;
-        margin-bottom: 12px !important;
-        word-break: break-word;
-      }
-      .section-sub {
-        font-size: 13.5px !important;
-        line-height: 1.5 !important;
-      }
-
-      /* Hero Section */
-      .hero-section {
-        padding: 110px 16px 50px 16px !important;
-        min-height: auto;
-      }
-      .pill-badge {
-        font-size: 11px;
-        padding: 4px 10px;
-        margin-bottom: 18px;
-        white-space: normal;
-        text-align: center;
-      }
-      .hero-title {
-        font-size: clamp(30px, 8vw, 44px);
-        letter-spacing: -0.03em;
-        line-height: 1.12;
-        margin-bottom: 16px;
-      }
-      .hero-sub {
-        font-size: 14.5px;
-        line-height: 1.55;
-        margin-bottom: 24px;
-        max-width: 100%;
-      }
-      .hero-ctas {
-        flex-direction: column;
-        width: 100%;
-        max-width: 360px;
-        margin: 0 auto;
-        gap: 10px;
-      }
-      .hero-btn-main, .hero-btn-sec {
-        width: 100%;
-        justify-content: center;
-        padding: 12px 20px;
-        font-size: 14px;
-      }
-
-      /* Tenbin Metric Grid */
-      .tenbin-metrics-section {
-        padding: 30px 0 45px 0 !important;
-        margin-bottom: 20px !important;
-        border-bottom: 1px solid var(--border-subtle) !important;
-      }
-      .tenbin-metrics-grid {
-        grid-template-columns: 1fr !important;
-        gap: 12px !important;
-        width: 100% !important;
-        min-width: 0 !important;
-      }
-      .tenbin-metric-card {
-        padding: 18px 16px !important;
-        background: rgba(11, 14, 22, 0.92) !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-      }
-
-      /* Comparison Section (Render Clean Mobile Cards on Mobile) */
-      .micro-comp-section {
-        scroll-margin-top: 85px !important;
-        padding: 45px 0 !important;
-      }
-      .comp-table-container {
-        display: none !important;
-      }
-      .comp-swipe-hint {
-        display: none !important;
-      }
-      .comp-mobile-cards {
-        display: flex !important;
-      }
-
-      /* Workflows & Institutional Cards (100% Full-Width, Never Showing Half) */
-      .workflows-grid {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        gap: 20px !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-      }
-      .workflow-card {
-        padding: 20px 16px !important;
-        background: rgba(11, 14, 22, 0.94) !important;
-        border-radius: var(--radius-lg) !important;
-        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5) !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
-      }
-      .workflow-title {
-        font-size: 16px !important;
-      }
-      .workflow-sub {
-        font-size: 12px !important;
-        margin-bottom: 12px !important;
-      }
-
-      /* Embedded Data Tables (Full Contained Mobile Scroll) */
-      .embedded-table-wrap {
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important;
-        border-radius: var(--radius-md) !important;
-        background: #05070B !important;
-        margin-top: 10px !important;
-        box-sizing: border-box !important;
-      }
-      .embedded-table {
-        min-width: 420px !important;
-        width: 100% !important;
-        border-collapse: collapse !important;
-      }
-      .embedded-table th, .embedded-table td {
-        padding: 8px 10px !important;
-        font-size: 11px !important;
-        white-space: nowrap !important;
-      }
-
-      /* SDK Code Snippet Terminal Box */
-      .sdk-code-box {
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        width: 100% !important;
-        margin-top: 12px !important;
-      }
-      .sdk-code-inner {
-        min-width: 420px !important;
-        padding: 14px !important;
-        font-size: 11px !important;
-        line-height: 1.5 !important;
-      }
-
-      /* Interactive Live Sandbox Section */
-      .sandbox-box {
-        grid-template-columns: 1fr !important;
-        padding: 22px 16px !important;
-        gap: 24px !important;
-        background: rgba(11, 14, 22, 0.94) !important;
-      }
-      .sandbox-res-card {
-        padding: 20px 16px !important;
-        background: rgba(6, 8, 14, 0.96) !important;
-      }
-
-      /* Security Trust Grid */
-      .trust-grid {
-        grid-template-columns: 1fr !important;
-        gap: 16px !important;
-      }
-      .trust-card {
-        padding: 22px 18px !important;
-        background: rgba(11, 14, 22, 0.94) !important;
-      }
-
-      /* Footer CTA & Glowing Card */
-      .glowing-card-wrap {
-        margin-bottom: 45px !important;
-      }
-      .footer-cta {
-        padding: 36px 20px !important;
-      }
-      .footer-cta div {
-        flex-direction: column;
-        width: 100%;
-        gap: 10px;
-      }
-      .footer-cta .btn-primary, .footer-cta .btn-ghost {
-        width: 100%;
-        justify-content: center;
-      }
-      .footer-links-row {
-        grid-template-columns: 1fr 1fr !important;
-        gap: 24px !important;
-      }
-    }
-
-    @media (max-width: 580px) {
-      .footer-links-row {
-        grid-template-columns: 1fr !important;
-        gap: 24px;
-      }
-      .section-header-compact h2 {
-        font-size: clamp(24px, 7vw, 32px);
-      }
-      .faq-question {
-        font-size: 14.5px;
-      }
-      .faq-answer {
-        font-size: 13px;
-      }
+    .faq-item p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.5;
     }
   </style>
 </head>
 <body>
 
-  <!-- React Bits Grainient Canvas & Fine Film Grain Overlay -->
-  <canvas id="grainientCanvas" class="grainient-canvas"></canvas>
-  <div class="grain-overlay"></div>
-
-  <!-- Precision Floating Island Navbar -->
-  <header class="card-nav-wrapper">
-    <nav class="card-nav">
-      <a href="/" class="brand" aria-label="Haptix Home">
-        <img src="assets/haptix-logo-final.png" alt="Haptix" class="brand-logo-img" />
+  <!-- NAVBAR -->
+  <div class="navbar-wrapper">
+    <nav class="navbar">
+      <a href="#" class="logo-container">
+        <img src="assets/haptix-logo-final.png" alt="Haptix Logo" style="height: 28px; width: auto; display: block; filter: brightness(0);">
+        Haptix
       </a>
-
       <div class="nav-links">
-        <a href="#features" class="nav-link">Product</a>
-        <a href="#trust" class="nav-link">Security</a>
-        <a href="#workflows" class="nav-link">Developers</a>
-        <a href="#metrics" class="nav-link">Ecosystem</a>
-        <a href="#comparison" class="nav-link">Pricing</a>
-        <a href="#faq" class="nav-link">Docs</a>
+        <a href="#">Overview</a>
+        <a href="#">Security</a>
+        <a href="#">Developers</a>
+        <a href="#">FAQ</a>
       </div>
-
       <div class="nav-actions">
-        <a href="app.html" class="nav-cta-btn">
-          <span>Launch App</span>
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 8h10M9 4l4 4-4 4"/>
-          </svg>
-        </a>
-        <button class="nav-menu-btn" id="mobileMenuBtn" aria-label="Open mobile navigation menu" aria-expanded="false">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="5" cy="12" r="2.2"/>
-            <circle cx="12" cy="12" r="2.2"/>
-            <circle cx="19" cy="12" r="2.2"/>
-          </svg>
-        </button>
+        <button class="btn-connect" onclick="window.location.href='app.html'">Open App</button>
       </div>
     </nav>
-  </header>
+  </div>
 
-  <!-- Mobile Navigation Drawer Overlay -->
-  <div class="mobile-drawer-backdrop" id="mobileDrawerBackdrop"></div>
-  <aside class="mobile-drawer" id="mobileDrawer" role="dialog" aria-modal="true" aria-label="Navigation Menu">
-    <div class="mobile-drawer-header">
-      <div class="brand">
-        <img src="assets/haptix-logo-final.png" alt="Haptix" class="brand-logo-img" style="height: 22px;" />
-      </div>
-      <button class="mobile-drawer-close" id="mobileDrawerClose" aria-label="Close navigation menu">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    </div>
-
-    <div class="mobile-drawer-nav">
-      <a href="#metrics" class="mobile-nav-item">
-        <span class="mobile-nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-        </span>
-        <div class="mobile-nav-text">
-          <div class="mobile-nav-label">Performance</div>
-          <div class="mobile-nav-sub">0.4s Touch ID &amp; gas benchmarks</div>
-        </div>
-        <svg class="mobile-nav-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-
-      <a href="#comparison" class="mobile-nav-item">
-        <span class="mobile-nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>
-        </span>
-        <div class="mobile-nav-text">
-          <div class="mobile-nav-label">Comparison Matrix</div>
-          <div class="mobile-nav-sub">Passkeys vs. EOA vs. Safe</div>
-        </div>
-        <svg class="mobile-nav-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-
-      <a href="#workflows" class="mobile-nav-item">
-        <span class="mobile-nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </span>
-        <div class="mobile-nav-text">
-          <div class="mobile-nav-label">Workflows &amp; Policies</div>
-          <div class="mobile-nav-sub">Spending firewall &amp; DeFi pre-flight</div>
-        </div>
-        <svg class="mobile-nav-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-
-      <a href="#sandbox" class="mobile-nav-item">
-        <span class="mobile-nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-        </span>
-        <div class="mobile-nav-text">
-          <div class="mobile-nav-label">Interactive Sandbox</div>
-          <div class="mobile-nav-sub">Live threshold &amp; quorum simulator</div>
-        </div>
-        <svg class="mobile-nav-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-
-      <a href="#trust" class="mobile-nav-item">
-        <span class="mobile-nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </span>
-        <div class="mobile-nav-text">
-          <div class="mobile-nav-label">Security Architecture</div>
-          <div class="mobile-nav-sub">RIP-7212 precompile &amp; Foundry invariants</div>
-        </div>
-        <svg class="mobile-nav-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-
-      <a href="#faq" class="mobile-nav-item">
-        <span class="mobile-nav-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        </span>
-        <div class="mobile-nav-text">
-          <div class="mobile-nav-label">FAQ</div>
-          <div class="mobile-nav-sub">Biometrics, hardware keys &amp; recovery</div>
-        </div>
-        <svg class="mobile-nav-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-
-      <a href="/extension/test-dapp.html" class="mobile-nav-item">
-        <span class="mobile-nav-icon" style="color:#60A5FA; background:rgba(96,165,250,0.1);">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        </span>
-        <div class="mobile-nav-text">
-          <div class="mobile-nav-label" style="color:#60A5FA;">Extension Simulator</div>
-          <div class="mobile-nav-sub">EIP-1193 in-page provider test</div>
-        </div>
-        <svg class="mobile-nav-arr" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </a>
-    </div>
-
-    <div class="mobile-drawer-footer">
-      <a href="app.html" class="btn-primary" style="width:100%; justify-content:center; padding:12px; font-size:14.5px; display:inline-flex; align-items:center; gap:8px;">
-        <span>Launch Smart Wallet</span>
-        <svg class="arrow-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 8h10M9 4l4 4-4 4"/>
-        </svg>
-      </a>
-      <a href="test-dapp.html" class="btn-ghost" style="width:100%; justify-content:center; padding:11px; font-size:13.5px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:var(--radius-full); color:#FFF; text-decoration:none; display:inline-flex; align-items:center; gap:6px;">
-        <span>Open dApp Simulator</span>
-        <svg class="ext-arrow" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4.5 11.5l7-7M5 4.5h6.5v6.5"/>
-        </svg>
-      </a>
-      <div style="display:flex; align-items:center; justify-content:center; gap:6px; font-size:11px; color:var(--text-muted); font-family:var(--font-mono); margin-top:4px;">
-        <span style="width:6px; height:6px; border-radius:50%; background:#10B981; box-shadow:0 0 6px #10B981;"></span>
-        <span>Base Sepolia (Chain ID 84532)</span>
-      </div>
-    </div>
-  </aside>
-
-  <!-- True Apple Keynote Hero Section (Real Vector Typography + 3D Stage) -->
-  <section class="hero-keynote-section" id="hero">
-    <div class="container hero-keynote-grid">
-      <div class="hero-text-col">
-        <div class="hero-eyebrow">
-          <span>Biometrics × Onchain × A Safer Tomorrow</span>
-        </div>
-
-        <h1 class="hero-keynote-title">
-          Security<br>
-          for what’s next.
-        </h1>
-
-        <p class="hero-keynote-sub">
-          Haptix combines biometric Secure Enclave hardware with autonomous onchain spending firewalls on Base.
-        </p>
-
-        <div class="hero-keynote-ctas">
-          <a href="app.html" class="btn-keynote-primary">
-            <span>Get Started</span>
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 8h10M9 4l4 4-4 4"/>
-            </svg>
-          </a>
-          <a href="#sandbox" class="btn-keynote-secondary">
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-              <polygon points="4,2 14,8 4,14"/>
-            </svg>
-            <span>Watch Film</span>
-          </a>
-        </div>
-
-        <div class="hero-trusted-section">
-          <div class="hero-trusted-label">Trusted by a more open future</div>
-          <div class="hero-trusted-pills">
-            <div class="trusted-chain-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="#0052FF"/>
-              </svg>
-              <span>Base</span>
-            </div>
-            <div class="trusted-chain-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <polygon points="12 2 4 14 12 18 20 14 12 2"/>
-                <polygon points="12 18 4 14 12 22 20 14 12 18"/>
-              </svg>
-              <span>Ethereum</span>
-            </div>
-            <div class="trusted-chain-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14F195" stroke-width="2">
-                <path d="M4 6h16M4 12h16M4 18h16"/>
-              </svg>
-              <span>Solana</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="hero-stage-col">
-        <img src="assets/hero-3d-models-nobg.png" alt="Haptix Biometric Enclave App on Volcanic Stone Stage" class="hero-stage-img" loading="eager">
-      </div>
-    </div>
-  </section>
-
-  <!-- Clean High-Contrast Light Section (Why Haptix Bento) -->
-  <section class="why-haptix-section" id="features">
+  <!-- SECTION 1: HERO (LIGHT) -->
+  <div class="section-light">
     <div class="container">
-      <div class="why-header">
-        <div>
-          <div class="why-tag">Why Haptix</div>
-          <h2 class="why-title">More than a wallet.<br>A higher standard.</h2>
+      <section class="hero-section">
+        <div class="hero-pretitle">The new standard.</div>
+        <h1 class="hero-title">Hardware security.<br>Zero hardware.</h1>
+        <p class="hero-subtitle">Your fingerprint is your private key. Experience frictionless Web3 powered by Apple Secure Enclave and Base Sepolia.</p>
+        
+        <div class="hero-3d-asset">
+          <img src="assets/3d-img.png" alt="Haptix Biometric 3D Asset">
         </div>
-        <p class="why-sub">
-          Haptix reimagines onchain security with biometric hardware, smart accounts, and autonomous agents &mdash; so you can move faster, without compromise.
-        </p>
-      </div>
-
-      <div class="why-bento-grid">
-        <!-- Card 1: Biometric Enclave -->
-        <div class="why-card">
-          <div class="why-card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2a10 10 0 0 0-7.3 16.8"/>
-              <path d="M12 6a6 6 0 0 0-4.4 10.1"/>
-              <path d="M12 10a2 2 0 0 0-1.5 3.3"/>
-              <path d="M12 14v4"/>
-              <path d="M16 10a6 6 0 0 1 .4 10"/>
-              <path d="M19.3 6a10 10 0 0 1 .7 14"/>
-            </svg>
-          </div>
-          <div>
-            <h3 class="why-card-title">Biometric Enclave</h3>
-            <p class="why-card-text">0.4s Touch ID signing via Apple Secure Enclave &amp; P-256 WebAuthn.</p>
-          </div>
-          <div class="why-card-foot">Fast · Secure · You</div>
-        </div>
-
-        <!-- Card 2: Autonomous Firewall -->
-        <div class="why-card">
-          <div class="why-card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="10" rx="2"/>
-              <circle cx="12" cy="5" r="2"/>
-              <path d="M12 7v4"/>
-              <line x1="8" y1="16" x2="8.01" y2="16"/>
-              <line x1="16" y1="16" x2="16.01" y2="16"/>
-            </svg>
-          </div>
-          <div>
-            <h3 class="why-card-title">Autonomous Firewall</h3>
-            <p class="why-card-text">ERC-7562 AI agent spending limits and hourly op allowances.</p>
-          </div>
-          <div class="why-card-foot">Control Without Friction</div>
-        </div>
-
-        <!-- Card 3: 2-of-2 Hardware Quorum -->
-        <div class="why-card">
-          <div class="why-card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              <polyline points="9 12 11 14 15 10"/>
-            </svg>
-          </div>
-          <div>
-            <h3 class="why-card-title">2-of-2 Hardware Quorum</h3>
-            <p class="why-card-text">Multi-device emergency recovery overrides to prevent lockout.</p>
-          </div>
-          <div class="why-card-foot">Built for Real Life</div>
-        </div>
-
-        <!-- Card 4: Zero Seed Phrases -->
-        <div class="why-card">
-          <div class="why-card-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-              <polyline points="2 17 12 22 22 17"/>
-              <polyline points="2 12 12 17 22 12"/>
-            </svg>
-          </div>
-          <div>
-            <h3 class="why-card-title">Zero Seed Phrases</h3>
-            <p class="why-card-text">Account abstraction on Base Sepolia with 100% sponsored gas fees.</p>
-          </div>
-          <div class="why-card-foot">Simple · Safer · Further</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Infinite Marquee Protocol Strip (Tholos Pattern) -->
-  <div class="marquee-strip">
-    <div class="marquee-track">
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg> <span>Base Network</span></div>
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>RIP-7212 (0x100)</span></div>
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg> <span>ERC-4337 v0.7</span></div>
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83"/></svg> <span>WebAuthn P-256</span></div>
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg> <span>Pimlico Bundler</span></div>
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> <span>Foundry Osaka</span></div>
-      
-      <!-- Duplicate for seamless loop -->
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20M2 12h20"/></svg> <span>Base Network</span></div>
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> <span>RIP-7212 (0x100)</span></div>
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 7h10"/><path d="M7 12h10"/></svg> <span>ERC-4337 v0.7</span></div>
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83"/></svg> <span>WebAuthn P-256</span></div>
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg> <span>Pimlico Bundler</span></div>
-      <div class="marquee-item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> <span>Foundry Osaka</span></div>
+      </section>
     </div>
   </div>
 
-  <!-- Tenbin Giant Metrics Displays -->
-  <section class="container tenbin-metrics-section" id="metrics">
-    <div class="tenbin-metrics-grid">
-      <div class="tenbin-metric-box">
-        <div class="tenbin-metric-val">0.4s</div>
-        <div class="tenbin-metric-label">Biometric Signing Speed</div>
+  <!-- SECTION 2: STATS BANNER (DARK) -->
+  <div class="section-dark stats-banner">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-val">$0</div>
+        <div class="stat-lbl">Gas Fees Paid</div>
       </div>
-      <div class="tenbin-metric-box">
-        <div class="tenbin-metric-val">&lt; 100K</div>
-        <div class="tenbin-metric-label">Validation Gas (RIP-7212)</div>
+      <div class="stat-item">
+        <div class="stat-val">P-256</div>
+        <div class="stat-lbl">WebAuthn Native</div>
       </div>
-      <div class="tenbin-metric-box">
-        <div class="tenbin-metric-val">100%</div>
-        <div class="tenbin-metric-label">Hardware Enclave Isolation</div>
+      <div class="stat-item">
+        <div class="stat-val">< 0.5s</div>
+        <div class="stat-lbl">Signature Latency</div>
       </div>
-      <div class="tenbin-metric-box">
-        <div class="tenbin-metric-val">158 / 158</div>
-        <div class="tenbin-metric-label">Passing Foundry Invariant Tests</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Tenbin Micro-Comparison Table -->
-  <section class="container micro-comp-section" id="comparison">
-    <div class="section-header-compact">
-      <div class="section-tag">Performance &amp; Security Benchmark</div>
-      <h2 class="section-title">Execution in milliseconds, zero exposure</h2>
-      <p class="section-sub">Comparing native P-256 passkey smart accounts with traditional EOAs and multi-signature vaults.</p>
-    </div>
-
-    <div class="comp-table-container">
-      <div class="comp-swipe-hint" style="display:none; text-align:right; font-size:11px; color:var(--accent-cyan); margin-bottom:8px; font-family:var(--font-mono); font-weight:700;">← Swipe to compare all metrics →</div>
-      <div class="micro-comp-card">
-        <div class="comp-row comp-header">
-          <div>Metric / Feature</div>
-          <div>Passkey Smart Account</div>
-          <div>Standard EOA (MetaMask)</div>
-          <div>Multisig (Safe)</div>
-        </div>
-        <div class="comp-row">
-          <div class="comp-feature">Signing Latency</div>
-          <div><span class="comp-highlight">0.4 secs (Touch ID)</span></div>
-          <div class="comp-muted">15.0 secs (Password)</div>
-          <div class="comp-muted">4+ hours (Coordination)</div>
-        </div>
-        <div class="comp-row">
-          <div class="comp-feature">Infostealer Malware Exposure</div>
-          <div><span class="comp-highlight">0% (Hardware Enclave)</span></div>
-          <div class="comp-muted">100% (Exposed in RAM)</div>
-          <div class="comp-muted">Partial (1 EOA breach)</div>
-        </div>
-        <div class="comp-row">
-          <div class="comp-feature">Autonomous Policy Firewall</div>
-          <div><span class="comp-highlight">Native On-Chain (1-Sig/2-Sig)</span></div>
-          <div class="comp-muted">None</div>
-          <div class="comp-muted">Manual Approvals</div>
-        </div>
-        <div class="comp-row">
-          <div class="comp-feature">Emergency Panic Freeze</div>
-          <div><span class="comp-highlight">1-Sig Lock · 2-Sig Unlock</span></div>
-          <div class="comp-muted">None</div>
-          <div class="comp-muted">Requires Full Quorum</div>
-        </div>
-        <div class="comp-row">
-          <div class="comp-feature">Curve Gas Optimization</div>
-          <div><span class="comp-highlight">&lt; 100k gas (0x100 Precompile)</span></div>
-          <div class="comp-muted">21k gas (Unsafe EOA)</div>
-          <div class="comp-muted">350k+ gas (Emulated)</div>
-        </div>
+      <div class="stat-item">
+        <div class="stat-val">ERC-4337</div>
+        <div class="stat-lbl">Smart Accounts</div>
       </div>
     </div>
+  </div>
 
-    <!-- Mobile-Native Comparison Cards (100% Clean Mobile Stack, Zero Overlap) -->
-    <div class="comp-mobile-cards">
-      <!-- Card 1: Signing Latency -->
-      <div class="comp-m-card">
-        <div class="comp-m-header">
-          <div class="comp-m-title">Signing Latency</div>
-          <span class="comp-m-tag">Speed</span>
-        </div>
-        <div class="comp-m-rows">
-          <div class="comp-m-row comp-m-winner">
-            <div class="comp-m-label">
-              <span class="comp-m-dot active"></span>
-              <span>Passkey Smart Account</span>
-            </div>
-            <span class="comp-highlight">0.4s (Touch ID)</span>
-          </div>
-          <div class="comp-m-row">
-            <div class="comp-m-label">
-              <span class="comp-m-dot"></span>
-              <span>Standard EOA (MetaMask)</span>
-            </div>
-            <span class="comp-muted">15.0s (Password)</span>
-          </div>
-          <div class="comp-m-row">
-            <div class="comp-m-label">
-              <span class="comp-m-dot"></span>
-              <span>Multisig (Safe)</span>
-            </div>
-            <span class="comp-muted">4+ hours (Coordination)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 2: Malware Exposure -->
-      <div class="comp-m-card">
-        <div class="comp-m-header">
-          <div class="comp-m-title">Infostealer Malware Exposure</div>
-          <span class="comp-m-tag">Security</span>
-        </div>
-        <div class="comp-m-rows">
-          <div class="comp-m-row comp-m-winner">
-            <div class="comp-m-label">
-              <span class="comp-m-dot active"></span>
-              <span>Passkey Smart Account</span>
-            </div>
-            <span class="comp-highlight">0% (Hardware Enclave)</span>
-          </div>
-          <div class="comp-m-row">
-            <div class="comp-m-label">
-              <span class="comp-m-dot"></span>
-              <span>Standard EOA (MetaMask)</span>
-            </div>
-            <span class="comp-muted">100% (Exposed in RAM)</span>
-          </div>
-          <div class="comp-m-row">
-            <div class="comp-m-label">
-              <span class="comp-m-dot"></span>
-              <span>Multisig (Safe)</span>
-            </div>
-            <span class="comp-muted">Partial (1 EOA breach)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 3: Autonomous Policy Firewall -->
-      <div class="comp-m-card">
-        <div class="comp-m-header">
-          <div class="comp-m-title">Autonomous Policy Firewall</div>
-          <span class="comp-m-tag">Automation</span>
-        </div>
-        <div class="comp-m-rows">
-          <div class="comp-m-row comp-m-winner">
-            <div class="comp-m-label">
-              <span class="comp-m-dot active"></span>
-              <span>Passkey Smart Account</span>
-            </div>
-            <span class="comp-highlight">Native On-Chain (1-Sig/2-Sig)</span>
-          </div>
-          <div class="comp-m-row">
-            <div class="comp-m-label">
-              <span class="comp-m-dot"></span>
-              <span>Standard EOA (MetaMask)</span>
-            </div>
-            <span class="comp-muted">None</span>
-          </div>
-          <div class="comp-m-row">
-            <div class="comp-m-label">
-              <span class="comp-m-dot"></span>
-              <span>Multisig (Safe)</span>
-            </div>
-            <span class="comp-muted">Manual Approvals</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 4: Emergency Panic Freeze -->
-      <div class="comp-m-card">
-        <div class="comp-m-header">
-          <div class="comp-m-title">Emergency Panic Freeze</div>
-          <span class="comp-m-tag">Safety</span>
-        </div>
-        <div class="comp-m-rows">
-          <div class="comp-m-row comp-m-winner">
-            <div class="comp-m-label">
-              <span class="comp-m-dot active"></span>
-              <span>Passkey Smart Account</span>
-            </div>
-            <span class="comp-highlight">1-Sig Lock · 2-Sig Unlock</span>
-          </div>
-          <div class="comp-m-row">
-            <div class="comp-m-label">
-              <span class="comp-m-dot"></span>
-              <span>Standard EOA (MetaMask)</span>
-            </div>
-            <span class="comp-muted">None</span>
-          </div>
-          <div class="comp-m-row">
-            <div class="comp-m-label">
-              <span class="comp-m-dot"></span>
-              <span>Multisig (Safe)</span>
-            </div>
-            <span class="comp-muted">Requires Full Quorum</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 5: Curve Gas Optimization -->
-      <div class="comp-m-card">
-        <div class="comp-m-header">
-          <div class="comp-m-title">Curve Gas Optimization</div>
-          <span class="comp-m-tag">Efficiency</span>
-        </div>
-        <div class="comp-m-rows">
-          <div class="comp-m-row comp-m-winner">
-            <div class="comp-m-label">
-              <span class="comp-m-dot active"></span>
-              <span>Passkey Smart Account</span>
-            </div>
-            <span class="comp-highlight">&lt; 100k gas (RIP-7212)</span>
-          </div>
-          <div class="comp-m-row">
-            <div class="comp-m-label">
-              <span class="comp-m-dot"></span>
-              <span>Standard EOA (MetaMask)</span>
-            </div>
-            <span class="comp-muted">21k gas (Unsafe EOA)</span>
-          </div>
-          <div class="comp-m-row">
-            <div class="comp-m-label">
-              <span class="comp-m-dot"></span>
-              <span>Multisig (Safe)</span>
-            </div>
-            <span class="comp-muted">350k+ gas (Emulated)</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Tholos 4-Card Live Data Tables (Workflows & Use Cases) -->
-  <section class="container tholos-workflows-section" id="workflows">
-    <div class="section-header-compact">
-      <div class="section-tag">Institutional Workflows</div>
-      <h2 class="section-title">One smart account, every operation</h2>
-      <p class="section-sub">Autonomous spending controls, real-time balance tracking, DeFi simulation, and developer automation.</p>
-    </div>
-
-    <div class="workflows-grid">
-      
-      <!-- Card 1: Autonomous Spending Firewall (DAOs & Treasury) -->
-      <div class="workflow-card">
-        <div>
-          <div class="card-top-row">
-            <div class="card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            </div>
-            <div class="workflow-title">Autonomous Spending Firewall</div>
-          </div>
-          <p class="workflow-sub">On-chain policy engine enforcing threshold rules and multi-device quorum.</p>
-        </div>
-
-        <div class="embedded-table-wrap">
-          <table class="embedded-table">
-            <thead>
-              <tr>
-                <th>Operation Type</th>
-                <th>Threshold</th>
-                <th>Requirement</th>
-                <th>State</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Sub-Threshold ETH</strong></td>
-                <td>&lt; 0.010 ETH</td>
-                <td>1-Sig Touch ID</td>
-                <td><span class="tag-active">Active</span></td>
-              </tr>
-              <tr>
-                <td><strong>ERC-20 Approvals</strong></td>
-                <td>Any Amount</td>
-                <td>2-of-2 Quorum</td>
-                <td><span class="tag-quorum">Enforced</span></td>
-              </tr>
-              <tr>
-                <td><strong>Non-Allowlisted Target</strong></td>
-                <td>Any Destination</td>
-                <td>2-of-2 Quorum</td>
-                <td><span class="tag-quorum">Enforced</span></td>
-              </tr>
-              <tr>
-                <td><strong>Panic Freeze Switch</strong></td>
-                <td>Emergency Lock</td>
-                <td>1-Sig Lock</td>
-                <td><span class="tag-active">Ready</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Card 2: Multi-Asset Treasury & Allowlist Book -->
-      <div class="workflow-card">
-        <div>
-          <div class="card-top-row">
-            <div class="card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            </div>
-            <div class="workflow-title">Trusted Recipient Address Book</div>
-          </div>
-          <p class="workflow-sub">Verified address destinations with automated quorum escalation for unknown addresses.</p>
-        </div>
-
-        <div class="embedded-table-wrap">
-          <table class="embedded-table">
-            <thead>
-              <tr>
-                <th>Recipient Label</th>
-                <th>Address</th>
-                <th>Category</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Base Treasury Pool</strong></td>
-                <td><code>0x22db...913D</code></td>
-                <td>Allowlisted</td>
-                <td><span class="tag-active">Verified</span></td>
-              </tr>
-              <tr>
-                <td><strong>Uniswap V3 Router</strong></td>
-                <td><code>0x2626...f9d0</code></td>
-                <td>Protocol</td>
-                <td><span class="tag-active">Verified</span></td>
-              </tr>
-              <tr>
-                <td><strong>Aave V3 Pool</strong></td>
-                <td><code>0x8787...4318</code></td>
-                <td>Lending</td>
-                <td><span class="tag-active">Verified</span></td>
-              </tr>
-              <tr>
-                <td><strong>Unknown Smart Contract</strong></td>
-                <td><code>0x742d...4e9c</code></td>
-                <td>Unverified</td>
-                <td><span class="tag-quorum">Demands 2-Sig</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Card 3: DeFi Simulation & Session Shield -->
-      <div class="workflow-card">
-        <div>
-          <div class="card-top-row">
-            <div class="card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-            </div>
-            <div class="workflow-title">DeFi Pre-Flight Simulation</div>
-          </div>
-          <p class="workflow-sub">Transaction simulation runs before biometric signing to detect malicious allowance drains.</p>
-        </div>
-
-        <div class="embedded-table-wrap">
-          <table class="embedded-table">
-            <thead>
-              <tr>
-                <th>dApp Origin</th>
-                <th>Requested Action</th>
-                <th>Pre-Flight Check</th>
-                <th>Policy Verdict</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>app.uniswap.org</strong></td>
-                <td>Exact ETH Swap</td>
-                <td>Zero Risk Detected</td>
-                <td><span class="tag-active">1-Sig Allowed</span></td>
-              </tr>
-              <tr>
-                <td><strong>aave.com</strong></td>
-                <td>Supply Collateral</td>
-                <td>Zero Drain Detected</td>
-                <td><span class="tag-active">1-Sig Allowed</span></td>
-              </tr>
-              <tr>
-                <td><strong>phishing-claim.xyz</strong></td>
-                <td>approve(MAX_UINT)</td>
-                <td>Drain Vector Blocked</td>
-                <td><span class="tag-quorum">Quorum Block</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Card 4: Developer SDK (Tholos transfer.ts pattern) -->
-      <div class="workflow-card">
-        <div>
-          <div class="card-top-row">
-            <div class="card-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-            </div>
-            <div class="workflow-title">Developer SDK &amp; UserOp API</div>
-          </div>
-          <p class="workflow-sub">Programmatic UserOp construction with sub-second Touch ID signing on Base.</p>
-        </div>
-
-        <div class="sdk-code-box">
-          <div class="sdk-top-bar">
-            <div class="sdk-dot" style="background:#EF4444;"></div>
-            <div class="sdk-dot" style="background:#F59E0B;"></div>
-            <div class="sdk-dot" style="background:#10B981;"></div>
-            <span style="color:#64748B;font-size:11px;margin-left:6px;">transfer.ts</span>
-          </div>
-          <div class="sdk-code-inner">
-            <span class="kw">import</span> { <span class="fn">signWithPasskey</span>, <span class="fn">sendUserOpToBundler</span> } <span class="kw">from</span> <span class="str">"@passkey/sdk"</span>;<br><br>
-            <span style="color:#64748B;">// 1. Build ERC-4337 v0.7 UserOp</span><br>
-            <span class="kw">const</span> op = <span class="kw">await</span> account.<span class="fn">buildUserOp</span>({ to, value });<br><br>
-            <span style="color:#64748B;">// 2. Hardware Enclave Biometric Touch ID</span><br>
-            <span class="kw">const</span> sig = <span class="kw">await</span> <span class="fn">signWithPasskey</span>(op.hash);<br><br>
-            <span style="color:#64748B;">// 3. Dispatch to Base Sepolia Bundler</span><br>
-            <span class="kw">const</span> txHash = <span class="kw">await</span> <span class="fn">sendUserOpToBundler</span>(op, sig);
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- Interactive Policy Firewall Sandbox -->
-  <section class="container sandbox-section" id="sandbox">
-    <div class="section-header-compact">
-      <div class="section-tag">Interactive Simulation</div>
-      <h2 class="section-title">Test the on-chain policy firewall live</h2>
-      <p class="section-sub">Adjust parameters to see how the smart account classifies signatures between 1-Sig speed and 2-of-2 Quorum.</p>
-    </div>
-
-    <div class="sandbox-box">
-      <div style="display:flex;flex-direction:column;gap:18px;">
-        <div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:8px;">
-            <span>Transfer Amount (ETH)</span>
-            <span id="sbValDisplay" style="font-family:var(--font-mono);color:var(--text-white);font-weight:700;">0.0050 ETH</span>
-          </div>
-          <input type="range" class="range-slider" id="sbAmountSlider" min="0.001" max="0.05" step="0.001" value="0.005">
-        </div>
-
-        <div class="toggle-row">
-          <div>
-            <div style="font-weight:600;color:var(--text-white);">Recipient in Trusted Address Book</div>
-            <div style="font-size:11.5px;color:var(--text-muted);">Whitelist check before transfer execution</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="sbAllowlistToggle" checked>
-            <span class="slider-toggle"></span>
-          </label>
-        </div>
-
-        <div class="toggle-row">
-          <div>
-            <div style="font-weight:600;color:var(--text-white);">Transaction is ERC-20 Approve / Permit</div>
-            <div style="font-size:11.5px;color:var(--text-muted);">Allowance granting access to account tokens</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="sbApprovalToggle">
-            <span class="slider-toggle"></span>
-          </label>
-        </div>
-
-        <div class="toggle-row">
-          <div>
-            <div style="font-weight:600;color:var(--text-white);">Emergency Account Freeze Active</div>
-            <div style="font-size:11.5px;color:var(--text-muted);">Lockdown mode triggered by primary key</div>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="sbFreezeToggle">
-            <span class="slider-toggle"></span>
-          </label>
-        </div>
-      </div>
-
-      <div class="sandbox-res-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dark);">On-Chain Policy Decision</span>
-          <span style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);">validateUserOp()</span>
-        </div>
-
-        <div>
-          <div id="sbDecisionBadge" class="badge-result res-single">
-            1-Signature Touch ID
-          </div>
-        </div>
-
-        <p id="sbDecisionDesc" style="font-size:13.5px;color:var(--text-main);line-height:1.5;">
-          Transfer amount (0.0050 ETH) is below the 0.0100 ETH limit and recipient is trusted. A single biometric Touch ID tap is sufficient for validation.
-        </p>
-
-        <div style="border-top:1px solid var(--border-subtle);padding-top:12px;display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);">
-          <span>Gas Overhead: <strong id="sbGasEst" style="color:var(--text-white);font-family:var(--font-mono);">~98,500 gas</strong></span>
-          <span>Precompile: <strong style="color:var(--accent-emerald);font-family:var(--font-mono);">RIP-7212 (0x100)</strong></span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Tenbin Trust & Verification Badges -->
-  <section class="container trust-section" id="trust">
-    <div class="section-tag">Formal Verification</div>
-    <h2 class="section-title">Built for institutional trust</h2>
-    <p class="section-sub">Zero reliance on centralized relayers. Formally verified on-chain architecture.</p>
-
-    <div class="trust-grid">
-      <div class="trust-box">
-        <div class="trust-tag">FOUNDRY TEST SUITE</div>
-        <div class="trust-title">158 Invariant Tests Passing</div>
-        <p class="trust-desc">Rigorous fuzz testing and invariant coverage across reentrancy, quorum escalation, and panic freeze state machines.</p>
-      </div>
-      <div class="trust-box">
-        <div class="trust-tag">STANDARDS COMPLIANCE</div>
-        <div class="trust-title">ERC-4337 v0.7 &amp; RIP-7212</div>
-        <p class="trust-desc">Official EntryPoint v0.7 integration with native P-256 curve verification via the Base Sepolia precompile at address 0x100.</p>
-      </div>
-      <div class="trust-box">
-        <div class="trust-tag">HARDWARE SECURITY</div>
-        <div class="trust-title">Secure Enclave Isolation</div>
-        <p class="trust-desc">Private keys never touch browser memory or disk. Full immunity against info-stealer malware and clipboard hijackers.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- FAQ Section -->
-  <section class="container faq-section" id="faq">
-    <div class="section-header-compact">
-      <div class="section-tag">Knowledge Base</div>
-      <h2 class="section-title">Frequently asked questions</h2>
-    </div>
-
-    <div class="faq-item active">
-      <div class="faq-question">
-        <span>How does RIP-7212 enable P-256 Passkeys on EVM?</span>
-        <span class="faq-icon">+</span>
-      </div>
-      <div class="faq-answer-wrapper">
-        <div class="faq-answer-inner">
-          <div class="faq-answer">
-            RIP-7212 specifies a native precompile at address 0x100 for P-256 (secp256r1) signature verification. Instead of spending 350,000+ gas on Solidity curve emulation, the precompile executes in native C++ on Base Sepolia for under 10,000 gas.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        <span>What happens if an attacker drains with thousands of small $9 transfers?</span>
-        <span class="faq-icon">+</span>
-      </div>
-      <div class="faq-answer-wrapper">
-        <div class="faq-answer-inner">
-          <div class="faq-answer">
-            The smart account enforces a cumulative 24-hour rolling window spend cap in addition to per-operation thresholds. Once the rolling spend meets the daily cap, the wallet automatically locks down all 1-signature transfers and requires the 2-of-2 hardware quorum.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        <span>What happens if I lose my MacBook or primary device?</span>
-        <span class="faq-icon">+</span>
-      </div>
-      <div class="faq-answer-wrapper">
-        <div class="faq-answer-inner">
-          <div class="faq-answer">
-            Your account is configured with a multi-key quorum. Signer #1 (e.g. your hardware YubiKey or secondary phone) combined with your social recovery or backup key can execute a self-call to replace Signer #0 with a new hardware device.
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="faq-item">
-      <div class="faq-question">
-        <span>Is the Chrome Extension compatible with Uniswap, Aave, and OpenSea?</span>
-        <span class="faq-icon">+</span>
-      </div>
-      <div class="faq-answer-wrapper">
-        <div class="faq-answer-inner">
-          <div class="faq-answer">
-            Yes. The extension implements both EIP-1193 (window.ethereum) and EIP-6963 provider announcement. Any dApp can connect, query balances, and request transactions which are then evaluated by our on-chain firewall.
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Clean Institutional Footer -->
-  <footer class="footer-section">
+  <!-- SECTION 3: BENTO GRID (LIGHT) -->
+  <div class="section-light bento-section">
     <div class="container">
-      <div class="glowing-card-wrap" id="glowingCtaCard">
-        <!-- Aceternity Glowing Effect -->
-        <div class="glowing-effect-container" id="glowingEffectEl">
-          <div class="glowing-effect-blur"></div>
-          <div class="glowing-effect-glow"></div>
-        </div>
-        <div class="glowing-effect-rest"></div>
-
-        <div class="footer-cta">
-          <h2 style="font-family:var(--font-heading);font-size:clamp(28px, 4vw, 40px);font-weight:800;color:var(--text-white);margin-bottom:14px;letter-spacing:-0.02em;">
-            Drop the seed phrase. Start building on Base.
-          </h2>
-          <p style="color:var(--text-muted);font-size:15px;max-width:540px;margin:0 auto 28px auto;line-height:1.6;">
-            Experience seamless biometric authentication with enterprise-grade multi-device hardware quorum and autonomous AI agent delegation.
-          </p>
-          <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;">
-            <a href="app.html" class="btn-primary hero-btn-main" style="padding:12px 28px;font-size:14.5px;display:inline-flex;align-items:center;gap:8px;">
-              <span>Launch Smart Wallet</span>
-              <svg class="arrow-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 8h10M9 4l4 4-4 4"/>
-              </svg>
-            </a>
-            <a href="test-dapp.html" class="btn-ghost" style="padding:12px 24px;font-size:14.5px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius-full);color:#FFF;text-decoration:none;">
-              <span>Open dApp Simulator</span>
-              <svg class="ext-arrow" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4.5 11.5l7-7M5 4.5h6.5v6.5"/>
-              </svg>
-            </a>
+      <h2 class="section-intro">A closer look.</h2>
+      <div class="bento-grid">
+        
+        <div class="bento-card large" onclick="window.location.href='app.html'">
+          <div class="bento-content">
+            <h4>Touch ID / Face ID</h4>
+            <p>No seed phrases. No passwords. Your local device enclave signs transactions natively via P-256 WebAuthn.</p>
+            <div class="bento-action">Experience it</div>
+          </div>
+          <div style="flex-shrink:0; padding: 20px;">
+            <img src="assets/icons/fingerprint.svg" alt="Biometrics" style="width: 140px; height: 140px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));">
           </div>
         </div>
+        
+        <div class="bento-card" onclick="alert('Documentation coming soon!')">
+          <div class="bento-content">
+            <img src="assets/icons/zap.svg" alt="Gasless" style="width: 64px; height: 64px; margin-bottom: 16px; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.08));">
+            <h4>Gasless Everyday.</h4>
+            <p>Built-in ERC-4337 Paymaster sponsors your transaction fees transparently.</p>
+            <div class="bento-action">Learn more</div>
+          </div>
+        </div>
+        
+        <div class="bento-card" onclick="alert('Documentation coming soon!')">
+          <div class="bento-content">
+            <img src="assets/icons/sparkle.svg" alt="Agents" style="width: 64px; height: 64px; margin-bottom: 16px; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.08));">
+            <h4>Autonomous Agents.</h4>
+            <p>Delegate constrained session keys to AI agents with strict spending policies.</p>
+            <div class="bento-action">Learn more</div>
+          </div>
+        </div>
+
       </div>
+    </div>
+  </div>
 
-      <div class="footer-links-row">
-        <div class="footer-brand-wrap">
-          <div class="footer-brand-title" style="margin-bottom: 12px;">
-            <a href="/" aria-label="Haptix Protocol" style="display:inline-block;text-decoration:none;">
-              <img src="assets/haptix-logo-final.png" alt="Haptix Protocol" class="brand-logo-img" style="height: 25px;" />
-            </a>
-          </div>
-          <p style="font-size:13px;color:var(--text-muted);max-width:300px;line-height:1.6;">
-            The Biometric Hardware Enclave Layer for EVM. Self-custodial smart accounts with on-chain spending firewalls and autonomous agent session keys on Base.
-          </p>
-          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,82,255,0.1);border:1px solid rgba(0,82,255,0.25);padding:4px 10px;border-radius:999px;font-size:11.5px;color:#60A5FA;width:fit-content;">
-            <img src="assets/base_logo.svg" width="12" height="12" alt="Base" />
-            <span>Base Sepolia Live</span>
-          </div>
+  <!-- SECTION 4: AI AGENTS (DARK) -->
+  <div class="section-dark spotlight-section">
+    <div class="container">
+      <div class="spotlight-grid">
+        <div class="spotlight-text">
+          <h2>Autonomous firewalls. Complete control.</h2>
+          <p>Authorize AI agents to execute trades on your behalf while you sleep. The ERC-7562 onchain firewall enforces strict rate limits, ensuring agents can never exceed their allowed spending allowance.</p>
+          <button class="btn-large-white" style="font-size: 14px; padding: 12px 24px;" onclick="window.location.href='app.html'">View Agent Policies</button>
         </div>
-
-        <div>
-          <div class="footer-col-title">Architecture</div>
-          <div class="footer-col-links">
-            <a href="#metrics" class="footer-link">Performance Metrics</a>
-            <a href="#comparison" class="footer-link">Security Matrix</a>
-            <a href="#workflows" class="footer-link">Hardware Quorum</a>
-            <a href="#trust" class="footer-link">Cryptographic Proof</a>
-          </div>
-        </div>
-
-        <div>
-          <div class="footer-col-title">Applications</div>
-          <div class="footer-col-links">
-            <a href="app.html" class="footer-link">Haptix Web Console</a>
-            <a href="test-dapp.html" class="footer-link">dApp Simulator (EIP-1193)</a>
-            <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="footer-link">BaseScan Contract ↗</a>
-            <a href="https://github.com/ritesh59697/haptix" target="_blank" class="footer-link">GitHub Repository ↗</a>
-          </div>
-        </div>
-
-        <div>
-          <div class="footer-col-title">Standards</div>
-          <div class="footer-col-links">
-            <a href="https://eips.ethereum.org/EIPS/eip-7212" target="_blank" class="footer-link">RIP-7212 (0x100) ↗</a>
-            <a href="https://eips.ethereum.org/EIPS/eip-4337" target="_blank" class="footer-link">ERC-4337 v0.7 ↗</a>
-            <a href="https://eips.ethereum.org/EIPS/eip-6963" target="_blank" class="footer-link">EIP-6963 Discovery ↗</a>
-            <a href="https://eips.ethereum.org/EIPS/eip-1271" target="_blank" class="footer-link">ERC-1271 Signatures ↗</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="footer-bottom-bar">
-        <span>© 2026 Haptix Protocol · Open Source MIT License</span>
-        <div style="display:flex;align-items:center;gap:16px;">
-          <span>Live on Base Sepolia (84532)</span>
-          <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="color:var(--text-muted);text-decoration:none;">Contract 0xB015...796f ↗</a>
+        <div class="spotlight-image">
+          <!-- User's GPT AI Image -->
+          <img src="assets/img2.png" alt="AI Core">
         </div>
       </div>
     </div>
-  </footer>
+  </div>
 
-  <script>
-    // FAQ Accordion
-    document.querySelectorAll('.faq-item').forEach(item => {
-      item.querySelector('.faq-question').addEventListener('click', () => {
-        const isActive = item.classList.contains('active');
-        document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('active'));
-        if (!isActive) item.classList.add('active');
-      });
-    });
+  <!-- SECTION 5: ECOSYSTEM (LIGHT) -->
+  <div class="section-light spotlight-section">
+    <div class="container">
+      <div class="spotlight-grid reverse">
+        <div class="spotlight-text">
+          <h2>Built for Base.<br>Ready for anything.</h2>
+          <p>Haptix is natively integrated with the Base ecosystem, bringing zero-fee USDC transfers and seamless interactions with your favorite decentralized applications.</p>
+        </div>
+        <div class="spotlight-image">
+          <!-- User's GPT Tokens Image -->
+          <img src="assets/img3.png" alt="Floating Crypto Tokens">
+        </div>
+      </div>
+    </div>
+  </div>
 
-    // Sandbox Live Controller
-    const slider = document.getElementById('sbAmountSlider');
-    const allowlistToggle = document.getElementById('sbAllowlistToggle');
-    const approvalToggle = document.getElementById('sbApprovalToggle');
-    const freezeToggle = document.getElementById('sbFreezeToggle');
+  <!-- SECTION 6: GLOBAL NETWORK (LIGHT) -->
+  <div class="section-light global-section">
+    <div class="container">
+      <h2>Your keys. Everywhere.</h2>
+      <p>Passkeys seamlessly sync across all your iCloud or Google accounts. Lose your phone? Simply log in on your new device—your keys are securely restored.</p>
+      
+      <div class="globe-asset">
+        <!-- User's GPT Globe Image -->
+        <img src="assets/img1.png" alt="Global Network Nodes">
+      </div>
+    </div>
+  </div>
 
-    function updateSandbox() {
-      const val = parseFloat(slider.value);
-      document.getElementById('sbValDisplay').textContent = val.toFixed(4) + ' ETH';
+  <!-- SECTION 7: SUPPORTED DEVICES (LIGHT) -->
+  <div class="section-light devices-section">
+    <div class="container">
+      <h3>Native to the hardware you already own.</h3>
+      <div class="device-icons">
+        <div class="device-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="6" width="16" height="12" rx="2" ry="2"></rect><path d="M12 18v3"></path><path d="M8 21h8"></path></svg>
+          <span>MacBook</span>
+        </div>
+        <div class="device-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg>
+          <span>iPhone</span>
+        </div>
+        <div class="device-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg>
+          <span>iPad</span>
+        </div>
+        <div class="device-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg>
+          <span>Android</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      const isAllowlisted = allowlistToggle.checked;
-      const isApproval = approvalToggle.checked;
-      const isFrozen = freezeToggle.checked;
+  <!-- FAQ SECTION (LIGHT) -->
+  <div class="section-light faq-section">
+    <div class="container">
+      <h2>Frequently Asked Questions</h2>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h4>How does it work without a seed phrase?</h4>
+          <p>Haptix uses WebAuthn and your device's Secure Enclave (like FaceID or TouchID) to generate a secure P-256 private key that never leaves your device.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Are there any gas fees?</h4>
+          <p>No. All transactions are sponsored transparently via an ERC-4337 Paymaster natively integrated into the Haptix smart account.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Can I use Haptix on my phone and laptop?</h4>
+          <p>Yes. Passkeys natively sync across your ecosystem using iCloud Keychain or Google Password Manager, allowing you to sign from any device.</p>
+        </div>
+        <div class="faq-item">
+          <h4>What happens if I lose my device?</h4>
+          <p>Because passkeys sync to your cloud account, simply logging into a new device with your iCloud or Google account will instantly restore access to your wallet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      const badge = document.getElementById('sbDecisionBadge');
-      const desc = document.getElementById('sbDecisionDesc');
-      const gas = document.getElementById('sbGasEst');
+  <!-- SECTION 8: CTA & FOOTER (DARK) -->
+  <div class="section-dark">
+    <section class="cta-section container">
+      <h2>Your next discovery starts here.</h2>
+      <button class="btn-large-white" onclick="window.location.href='app.html'">Open Haptix App</button>
+    </section>
 
-      if (isFrozen) {
-        badge.className = 'badge-result res-freeze';
-        badge.textContent = 'Account Locked: 2-of-2 Quorum';
-        desc.textContent = 'Emergency freeze switch is active. All sub-threshold transfers are blocked. Unfreezing strictly requires the full 2-of-2 multi-device quorum.';
-        gas.textContent = '~148,000 gas (2 sigs)';
-        return;
-      }
+    <footer class="footer">
+      <div class="copyright">
+        © 2026 Haptix Labs Inc. All rights reserved.
+      </div>
+      <div class="footer-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Security Audit</a>
+        <a href="#">Contact</a>
+      </div>
+    </footer>
+  </div>
 
-      if (isApproval) {
-        badge.className = 'badge-result res-quorum';
-        badge.textContent = '2-of-2 Hardware Quorum Enforced';
-        desc.textContent = 'Transaction executes an ERC-20 approve() / permit() function. Autonomous policy firewall classifies all approval granting as high risk and enforces 2 distinct physical hardware keys.';
-        gas.textContent = '~148,000 gas (2 sigs)';
-        return;
-      }
-
-      if (!isAllowlisted) {
-        badge.className = 'badge-result res-quorum';
-        badge.textContent = '2-of-2 Hardware Quorum Enforced';
-        desc.textContent = 'Recipient address is not in your trusted address book. Policy firewall escalates unknown destinations to 2-of-2 multi-device quorum.';
-        gas.textContent = '~148,000 gas (2 sigs)';
-        return;
-      }
-
-      if (val >= 0.010) {
-        badge.className = 'badge-result res-quorum';
-        badge.textContent = '2-of-2 Hardware Quorum Enforced';
-        desc.textContent = `Transfer value (${val.toFixed(4)} ETH) meets or exceeds the 0.0100 ETH threshold limit. On-chain policy strictly demands 2 hardware passkey authorizations.`;
-        gas.textContent = '~148,000 gas (2 sigs)';
-      } else {
-        badge.className = 'badge-result res-single';
-        badge.textContent = '1-Signature Touch ID';
-        desc.textContent = `Transfer amount (${val.toFixed(4)} ETH) is below the 0.0100 ETH limit and recipient is allowlisted. A single biometric Touch ID tap is sufficient for validation.`;
-        gas.textContent = '~98,500 gas (1 sig)';
-      }
-    }
-
-    slider.addEventListener('input', updateSandbox);
-    allowlistToggle.addEventListener('change', updateSandbox);
-    approvalToggle.addEventListener('change', updateSandbox);
-    freezeToggle.addEventListener('change', updateSandbox);
-
-    // React Bits Grainient (Grainy Gradient with Soft Motion) Engine
-    const canvas = document.getElementById('grainientCanvas');
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      let width = 0, height = 0;
-      let mouseX = 0, mouseY = 0;
-      let targetMouseX = 0, targetMouseY = 0;
-
-      function resize() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-      }
-      window.addEventListener('resize', resize);
-      resize();
-
-      window.addEventListener('mousemove', e => {
-        targetMouseX = (e.clientX / window.innerWidth - 0.5) * 100;
-        targetMouseY = (e.clientY / window.innerHeight - 0.5) * 100;
-      });
-
-      let time = 0;
-
-      function renderGrainient() {
-        time += 0.006;
-        mouseX += (targetMouseX - mouseX) * 0.05;
-        mouseY += (targetMouseY - mouseY) * 0.05;
-
-        ctx.clearRect(0, 0, width, height);
-
-        // Midnight base
-        ctx.fillStyle = '#0f0821';
-        ctx.fillRect(0, 0, width, height);
-
-        // Blob 1: Vibrant Magenta / Orchid (Top Left / Center)
-        const b1x = width * 0.25 + Math.sin(time * 1.1) * (width * 0.12) + mouseX;
-        const b1y = height * 0.3 + Math.cos(time * 0.8) * (height * 0.12) + mouseY;
-        const b1r = Math.max(width, height) * 0.65;
-        const g1 = ctx.createRadialGradient(b1x, b1y, 0, b1x, b1y, b1r);
-        g1.addColorStop(0, 'rgba(236, 72, 153, 0.88)'); // #EC4899 Pink
-        g1.addColorStop(0.42, 'rgba(217, 70, 239, 0.62)'); // #D946EF Magenta
-        g1.addColorStop(0.85, 'rgba(168, 85, 247, 0.15)');
-        g1.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = g1;
-        ctx.fillRect(0, 0, width, height);
-
-        // Blob 2: Electric Violet / Lavender (Top Right / Middle)
-        const b2x = width * 0.72 + Math.cos(time * 0.9) * (width * 0.15) - mouseX * 0.8;
-        const b2y = height * 0.35 + Math.sin(time * 1.0) * (height * 0.14) - mouseY * 0.8;
-        const b2r = Math.max(width, height) * 0.7;
-        const g2 = ctx.createRadialGradient(b2x, b2y, 0, b2x, b2y, b2r);
-        g2.addColorStop(0, 'rgba(168, 85, 247, 0.92)'); // #A855F7 Purple
-        g2.addColorStop(0.48, 'rgba(139, 92, 246, 0.6)'); // #8B5CF6 Violet
-        g2.addColorStop(0.9, 'rgba(99, 102, 241, 0.15)');
-        g2.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = g2;
-        ctx.fillRect(0, 0, width, height);
-
-        // Blob 3: Royal Cobalt Blue / Base Blue (Bottom & Right)
-        const b3x = width * 0.85 + Math.sin(time * 0.7) * (width * 0.12);
-        const b3y = height * 0.75 + Math.cos(time * 0.6) * (height * 0.15);
-        const b3r = Math.max(width, height) * 0.75;
-        const g3 = ctx.createRadialGradient(b3x, b3y, 0, b3x, b3y, b3r);
-        g3.addColorStop(0, 'rgba(0, 82, 255, 0.9)'); // #0052FF Base Blue
-        g3.addColorStop(0.5, 'rgba(67, 56, 202, 0.65)'); // #4338CA Indigo
-        g3.addColorStop(1, 'rgba(0, 82, 255, 0)');
-        ctx.fillStyle = g3;
-        ctx.fillRect(0, 0, width, height);
-
-        // Blob 4: Soft Lilac Highlight (Center Swirl)
-        const b4x = width * 0.48 + Math.cos(time * 1.2) * (width * 0.16);
-        const b4y = height * 0.22 + Math.sin(time * 1.1) * (height * 0.1);
-        const b4r = Math.max(width, height) * 0.5;
-        const g4 = ctx.createRadialGradient(b4x, b4y, 0, b4x, b4y, b4r);
-        g4.addColorStop(0, 'rgba(244, 114, 182, 0.8)'); // #F472B6
-        g4.addColorStop(0.55, 'rgba(192, 132, 252, 0.45)'); // #C084FC
-        g4.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = g4;
-        ctx.fillRect(0, 0, width, height);
-
-        requestAnimationFrame(renderGrainient);
-      }
-      renderGrainient();
-    }
-
-    // Aceternity UI Live Glowing Effect Engine
-    // Continuously moves around the corners non-stop (independent of mouse/cursor)
-    (function initAceternityGlowingEffect() {
-      const glowEl = document.getElementById('glowingEffectEl');
-      if (!glowEl) return;
-
-      let currentAngle = 0;
-      const baseSpeed = 1.35; // Smooth continuous live orbit around corners
-
-      function animate() {
-        currentAngle = (currentAngle + baseSpeed) % 360;
-        glowEl.style.setProperty('--start', currentAngle.toFixed(2) + 'deg');
-        requestAnimationFrame(animate);
-      }
-
-      requestAnimationFrame(animate);
-    })();
-
-    // Mobile Navigation Drawer Toggle Engine
-    (function initMobileDrawer() {
-      const btn = document.getElementById('mobileMenuBtn');
-      const drawer = document.getElementById('mobileDrawer');
-      const backdrop = document.getElementById('mobileDrawerBackdrop');
-      const closeBtn = document.getElementById('mobileDrawerClose');
-      if (!btn || !drawer || !backdrop) return;
-
-      function openDrawer() {
-        drawer.classList.add('active');
-        backdrop.classList.add('active');
-        btn.setAttribute('aria-expanded', 'true');
-        document.body.style.overflow = 'hidden';
-      }
-
-      function closeDrawer() {
-        drawer.classList.remove('active');
-        backdrop.classList.remove('active');
-        btn.setAttribute('aria-expanded', 'false');
-        document.body.style.overflow = '';
-      }
-
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (drawer.classList.contains('active')) {
-          closeDrawer();
-        } else {
-          openDrawer();
-        }
-      });
-
-      if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
-      backdrop.addEventListener('click', closeDrawer);
-
-      // Auto-close when clicking any link inside drawer
-      drawer.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', closeDrawer);
-      });
-
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && drawer.classList.contains('active')) {
-          closeDrawer();
-        }
-      });
-    })();
-  </script>
 </body>
 </html>

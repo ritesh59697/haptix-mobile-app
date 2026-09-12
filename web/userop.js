@@ -144,7 +144,8 @@ export async function signWithPasskey(challenge32Bytes, allowCredentialIds = [])
       }
       return {
         type: 'public-key',
-        id: buf
+        id: buf,
+        transports: ['internal']
       };
     });
   }
