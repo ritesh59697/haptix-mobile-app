@@ -9,7 +9,7 @@ function injectScript() {
     script.onload = () => script.remove();
     container.insertBefore(script, container.firstChild);
   } catch (e) {
-    console.error('Passkey Smart Wallet: failed to inject inpage provider', e);
+    console.error('Haptix: failed to inject inpage provider', e);
   }
 }
 
@@ -41,6 +41,23 @@ window.addEventListener('message', async event => {
       target: 'passkey-inpage',
       id,
       error: { message: err.message || 'Extension communication error' }
+    }, '*');
+  }
+});
+
+// Forward push notifications from background service worker to inpage provider
+chrome.runtime.onMessage.addListener(msg => {
+  if (msg?.type === 'CHAIN_CHANGED') {
+    window.postMessage({
+      target: 'passkey-inpage-event',
+      event: 'chainChanged',
+      data: { chainId: msg.chainId }
+    }, '*');
+  } else if (msg?.type === 'ACCOUNTS_CHANGED') {
+    window.postMessage({
+      target: 'passkey-inpage-event',
+      event: 'accountsChanged',
+      data: { accounts: msg.accounts }
     }, '*');
   }
 });
