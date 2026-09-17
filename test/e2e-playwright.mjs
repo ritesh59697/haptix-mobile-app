@@ -221,6 +221,24 @@ async function runE2ETests() {
       const popupScreenshotPath = path.join(screenshotsDir, '03_extension_popup_verified.png');
       await popupPage.screenshot({ path: popupScreenshotPath });
       console.log(`  📸 Captured extension popup screenshot: ${popupScreenshotPath}`);
+
+      // Test Extension Sidepanel UI
+      console.log('\n📱 Phase 9: Testing Extension Sidepanel UI & Official Logo Mark...');
+      const sidepanelPage = await browserContext.newPage();
+      await sidepanelPage.setViewportSize({ width: 380, height: 600 });
+      await sidepanelPage.goto(`chrome-extension://${extensionId}/sidepanel.html`, { waitUntil: 'load' });
+      await sidepanelPage.waitForTimeout(500);
+
+      // Verify sidepanel brand logo
+      const brandText = await sidepanelPage.$eval('.sp-brand-text', el => el.innerText.trim());
+      assert(brandText.includes('Haptix'), `Sidepanel brand text contains Haptix (got: "${brandText}")`);
+      const hasBrandSvg = await sidepanelPage.$eval('.sp-brand svg', el => el.getAttribute('viewBox') === '0 0 100 100');
+      assert(hasBrandSvg, 'Sidepanel header renders official new Haptix brand mark SVG (viewBox="0 0 100 100")');
+
+      // Capture Extension Sidepanel screenshot
+      const sidepanelScreenshotPath = path.join(screenshotsDir, '04_extension_sidepanel_verified.png');
+      await sidepanelPage.screenshot({ path: sidepanelScreenshotPath });
+      console.log(`  📸 Captured extension sidepanel screenshot: ${sidepanelScreenshotPath}`);
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
