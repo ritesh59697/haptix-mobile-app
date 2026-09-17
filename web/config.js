@@ -10,7 +10,7 @@ export const CONFIG = {
   defaultAccount: '0xB01543453cF31052c769d79e9C755E3b035d796f',
   
   // Default Bundler endpoint for Base Sepolia
-  bundlerUrl: localStorage.getItem('passkey_bundler_url') || 'https://api.pimlico.io/v2/84532/rpc?apikey=pim_hkKhRbcJfLUYSzezx8ofPd',
+  bundlerUrl: (typeof localStorage !== 'undefined' ? localStorage.getItem('passkey_bundler_url') : null) || 'https://api.pimlico.io/v2/84532/rpc?apikey=pim_hkKhRbcJfLUYSzezx8ofPd',
 
   // Gas limits matching PasskeyAccount benchmarks (P-256 Osaka precompile ~109k gas)
   gas: {
@@ -21,6 +21,16 @@ export const CONFIG = {
     maxFeePerGas: 200000000n        // 0.20 gwei
   },
   
+  // Supported DEX & DeFi Infrastructure (Base Sepolia)
+  uniswapV3Router: '0x94cC0AaC535CCDB3C01d6787D6413C739ae12bc4',
+  uniswapV3Quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27',
+  weth: '0x4200000000000000000000000000000000000006',
+  usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+
+  // Delegated AI Agent Session Keypair for Autonomous Execution
+  agentAddress: '0x093F8575a87cdb2919E5B3f1677eD8d7815c9461',
+  agentPrivateKey: '0x7fc37057650fd55a74b810ae0bac0fffa18185bdc50579f5f34e783834824799',
+
   // Supported Assets & Policies
   tokens: {
     ETH: {
@@ -43,3 +53,4 @@ export const CONFIG = {
     }
   }
 };
+

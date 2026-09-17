@@ -978,3 +978,125 @@ export function encodeValidateUserOp(packedOp, userOpHash, missingFunds = 0n) {
   return '0x19822f7c' + offTuple + userOpHashWord + missingFundsWord + tupleBody;
 }
 
+/**
+ * Encodes Uniswap V3 exactInputSingle for SwapRouter02.
+ * Selector: 0x04e45aaf
+ */
+export function encodeUniswapV3ExactInputSingle({
+  tokenIn,
+  tokenOut,
+  fee = 3000,
+  recipient,
+  amountIn,
+  amountOutMinimum,
+  sqrtPriceLimitX96 = 0n
+}) {
+  const sel = '04e45aaf';
+  const cleanTokenIn = tokenIn.replace(/^0x/, '').padStart(64, '0').toLowerCase();
+  const cleanTokenOut = tokenOut.replace(/^0x/, '').padStart(64, '0').toLowerCase();
+  const feeHex = BigInt(fee).toString(16).padStart(64, '0');
+  const cleanRecipient = recipient.replace(/^0x/, '').padStart(64, '0').toLowerCase();
+  const amtInHex = (typeof amountIn === 'bigint' ? amountIn.toString(16) : BigInt(amountIn).toString(16)).padStart(64, '0');
+  const minOutHex = (typeof amountOutMinimum === 'bigint' ? amountOutMinimum.toString(16) : BigInt(amountOutMinimum).toString(16)).padStart(64, '0');
+  const sqrtPriceHex = (typeof sqrtPriceLimitX96 === 'bigint' ? sqrtPriceLimitX96.toString(16) : BigInt(sqrtPriceLimitX96).toString(16)).padStart(64, '0');
+
+  return '0x' + sel +
+    cleanTokenIn +
+    cleanTokenOut +
+    feeHex +
+    cleanRecipient +
+    amtInHex +
+    minOutHex +
+    sqrtPriceHex;
+}
+
+/**
+ * Encodes account.executeBatch(address[] dests, uint256[] values, bytes[] funcs)
+ * Selector: 0x47e1da2a
+ */
+export function encodeExecuteBatch(dests, values, funcs) {
+  if (dests.length !== values.length || dests.length !== funcs.length) {
+    throw new Error('Array length mismatch in executeBatch');
+  }
+  const sel = '47e1da2a';
+  const count = dests.length;
+
+  const offsetDests = 96; // 0x60
+  const destsSizeBytes = 32 + count * 32;
+  const offsetValues = offsetDests + destsSizeBytes;
+  const valuesSizeBytes = 32 + count * 32;
+  const offsetFuncs = offsetValues + valuesSizeBytes;
+
+  const head = pad64(offsetDests) + pad64(offsetValues) + pad64(offsetFuncs);
+
+  let destsData = pad64(count);
+  for (const d of dests) {
+    destsData += d.replace(/^0x/, '').padStart(64, '0').toLowerCase();
+  }
+
+  let valuesData = pad64(count);
+  for (const v of values) {
+    valuesData += (typeof v === 'bigint' ? v.toString(16) : BigInt(v).toString(16)).padStart(64, '0');
+  }
+
+  let funcsHead = pad64(count);
+  let funcsBody = '';
+  let currentFuncOffset = count * 32;
+
+  const funcItems = funcs.map(f => {
+    const clean = (f || '0x').replace(/^0x/, '');
+    const byteLen = clean.length / 2;
+    const padded = clean.padEnd(Math.ceil(clean.length / 64) * 64, '0');
+    return { byteLen, padded };
+  });
+
+  for (const item of funcItems) {
+    funcsHead += pad64(currentFuncOffset);
+    funcsBody += pad64(item.byteLen) + item.padded;
+    currentFuncOffset += 32 + (item.padded.length / 2);
+  }
+
+  return '0x' + sel + head + destsData + valuesData + funcsHead + funcsBody;
+}
+
+/**
+ * Fetches live Uniswap V3 quote from QuoterV2 on Base Sepolia.
+ */
+export async function fetchUniswapQuote({
+  rpcUrl,
+  quoterAddress,
+  tokenIn,
+  tokenOut,
+  amountIn,
+  fee = 3000
+}) {
+  const sel = 'c6a5026a';
+  const cleanIn = tokenIn.replace(/^0x/, '').padStart(64, '0').toLowerCase();
+  const cleanOut = tokenOut.replace(/^0x/, '').padStart(64, '0').toLowerCase();
+  const amtHex = (typeof amountIn === 'bigint' ? amountIn.toString(16) : BigInt(amountIn).toString(16)).padStart(64, '0');
+  const feeHex = BigInt(fee).toString(16).padStart(64, '0');
+  const sqrtPriceHex = '0'.padStart(64, '0');
+
+  const calldata = '0x' + sel + cleanIn + cleanOut + amtHex + feeHex + sqrtPriceHex;
+
+  const resp = await fetch(rpcUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: Date.now(),
+      method: 'eth_call',
+      params: [{ to: quoterAddress, data: calldata }, 'latest']
+    })
+  });
+
+  if (!resp.ok) throw new Error(`Quoter RPC call failed: ${resp.status}`);
+  const json = await resp.json();
+  if (json.error) throw new Error(json.error.message || 'Quoter error');
+  if (!json.result || json.result === '0x') throw new Error('Quoter returned empty result');
+
+  const hexResult = json.result.replace(/^0x/, '');
+  const amountOutHex = hexResult.slice(0, 64);
+  return BigInt('0x' + amountOutHex);
+}
+

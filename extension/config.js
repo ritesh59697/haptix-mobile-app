@@ -11,23 +11,31 @@ export const NETWORKS = {
     entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
     factoryAddress: '0x1bB7cCf96cB211045982fC8a0069D9C0d718B83b',
     implementationAddress: '0x9B553dF98bbC1c7152698c4739A93281F0FBB110',
-    bundlerUrl: 'https://api.pimlico.io/v2/84532/rpc?apikey=pim_hkKhRbcJfLUYSzezx8ofPd',
+    bundlerUrl: (typeof localStorage !== 'undefined' ? localStorage.getItem('passkey_bundler_url') : null) || 'https://api.pimlico.io/v2/84532/rpc?apikey=pim_hkKhRbcJfLUYSzezx8ofPd',
     isTestnet: true,
     nativeCurrency: { name: 'Sepolia Ether', symbol: 'ETH', decimals: 18 },
+    uniswapV3Router: '0x94cC0AaC535CCDB3C01d6787D6413C739ae12bc4',
+    uniswapV3Quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27',
+    weth: '0x4200000000000000000000000000000000000006',
+    usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
     tokens: {
       ETH: {
         symbol: 'ETH',
         name: 'Native Ethereum',
         address: '0x0000000000000000000000000000000000000000',
         decimals: 18,
-        defaultThreshold: '0.01'
+        defaultThreshold: '0.01',
+        defaultThresholdUnits: 10000000000000000n,
+        defaultCap: '0.05'
       },
       USDC: {
         symbol: 'USDC',
         name: 'USD Coin (Base Sepolia)',
         address: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
         decimals: 6,
-        defaultThreshold: '25'
+        defaultThreshold: '25',
+        defaultThresholdUnits: 25000000n,
+        defaultCap: '100'
       }
     }
   },
@@ -178,10 +186,21 @@ export function getNetwork(chainId) {
   return NETWORKS[id] || NETWORKS[DEFAULT_CHAIN_ID];
 }
 
-// Default export configuration matching Base Sepolia for legacy callers
+// Default export configuration matching Base Sepolia for legacy callers and smart account defaults
 export const CONFIG = {
   ...NETWORKS[DEFAULT_CHAIN_ID],
   defaultAccount: '0xB01543453cF31052c769d79e9C755E3b035d796f',
+  
+  // Supported DEX & DeFi Infrastructure (Base Sepolia)
+  uniswapV3Router: '0x94cC0AaC535CCDB3C01d6787D6413C739ae12bc4',
+  uniswapV3Quoter: '0xC5290058841028F1614F3A6F0F5816cAd0df5E27',
+  weth: '0x4200000000000000000000000000000000000006',
+  usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
+
+  // Delegated AI Agent Session Keypair for Autonomous Execution
+  agentAddress: '0x093F8575a87cdb2919E5B3f1677eD8d7815c9461',
+  agentPrivateKey: '0x7fc37057650fd55a74b810ae0bac0fffa18185bdc50579f5f34e783834824799',
+
   gas: {
     verificationGasLimit: 200000n,
     callGasLimit: 60000n,
