@@ -185,6 +185,187 @@ async function runE2ETests() {
     });
     assert(!hasHorizontalOverflow, 'Zero horizontal overflow / scrollbar on web dashboard');
 
+    // --- Interactive Feature Testing on web/app.html ---
+    console.log('\n🎛️ Testing web/app.html Interactive Buttons & Controls...');
+
+    // 1. All Networks Dropdown
+    console.log('  1️⃣ Testing Network Switcher Dropdown...');
+    await appPage.click('#networkDropdownBtn');
+    await appPage.waitForTimeout(300);
+    const isNetworkMenuVisible = await appPage.$eval('#networkDropdownMenu', el => el.style.display !== 'none');
+    assert(isNetworkMenuVisible, 'Network dropdown menu opens on click');
+
+    // Select Arbitrum Sepolia
+    await appPage.click('.net-item[data-network="arbitrum-sepolia"]');
+    await appPage.waitForTimeout(300);
+    const activeNetText1 = await appPage.$eval('#activeNetworkLabel', el => el.textContent.trim());
+    assert(activeNetText1.includes('Arbitrum Sepolia'), `Network switched to Arbitrum Sepolia (label: ${activeNetText1})`);
+
+    // Switch back to All Networks
+    await appPage.click('#networkDropdownBtn');
+    await appPage.waitForTimeout(200);
+    await appPage.click('.net-item[data-network="all"]');
+    await appPage.waitForTimeout(300);
+    const activeNetText2 = await appPage.$eval('#activeNetworkLabel', el => el.textContent.trim());
+    assert(activeNetText2.includes('All Networks'), `Network restored to All Networks (label: ${activeNetText2})`);
+
+    // 2. Portfolio Privacy Eye Toggle
+    console.log('  2️⃣ Testing Portfolio Privacy Eye Toggle...');
+    await appPage.click('#togglePrivacyEye');
+    await appPage.waitForTimeout(300);
+    const hiddenBalance = await appPage.$eval('#sidePortfolioEth', el => el.textContent.trim());
+    assert(hiddenBalance === '$ • • • •', `Balance masked in privacy mode: ${hiddenBalance}`);
+
+    // Toggle back to visible
+    await appPage.click('#togglePrivacyEye');
+    await appPage.waitForTimeout(300);
+    const visibleBalance = await appPage.$eval('#sidePortfolioEth', el => el.textContent.trim());
+    assert(visibleBalance === '$10.29', `Balance restored to unmasked state: ${visibleBalance}`);
+
+    // 3. Profile Badge & Account Menu
+    console.log('  3️⃣ Testing Profile Badge & Account Menu...');
+    await appPage.click('#profileBadgeBtn');
+    await appPage.waitForTimeout(300);
+    const isProfileMenuVisible = await appPage.$eval('#profileDropdownMenu', el => el.style.display !== 'none');
+    assert(isProfileMenuVisible, 'Profile account dropdown menu opens on click');
+
+    // Click Copy Address in menu
+    await appPage.click('#menuCopyAddressBtn');
+    await appPage.waitForTimeout(300);
+    const copyBtnText = await appPage.$eval('#menuCopyAddressBtn', el => el.textContent.trim());
+    assert(copyBtnText === 'Copied!', `Copy button reflects success status: ${copyBtnText}`);
+
+    // Close profile menu by clicking outside
+    await appPage.click('body', { position: { x: 10, y: 10 } });
+    await appPage.waitForTimeout(200);
+
+    // 4. Real-time Search Filter
+    console.log('  4️⃣ Testing Real-Time Search Filter...');
+    await appPage.fill('#globalSearchInput', 'USD');
+    await appPage.waitForTimeout(300);
+    const ethHidden = await appPage.evaluate(() => {
+      const ethCard = Array.from(document.querySelectorAll('.asset-item')).find(el => el.innerText.toLowerCase().includes('ethereum'));
+      return ethCard ? ethCard.style.display === 'none' : false;
+    });
+    const usdcVisible = await appPage.evaluate(() => {
+      const usdcCard = Array.from(document.querySelectorAll('.asset-item')).find(el => el.innerText.toLowerCase().includes('usd coin'));
+      return usdcCard ? usdcCard.style.display !== 'none' : false;
+    });
+    assert(ethHidden && usdcVisible, 'Search "USD" filters out Ethereum and keeps USD Coin visible');
+
+    // Clear search
+    await appPage.fill('#globalSearchInput', '');
+    await appPage.waitForTimeout(200);
+
+    // 5. Notification Bell Dropdown
+    console.log('  5️⃣ Testing Notification Bell Dropdown...');
+    await appPage.click('#bellWrapper');
+    await appPage.waitForTimeout(300);
+    const isNotifVisible = await appPage.$eval('#notificationDropdown', el => el.style.display !== 'none');
+    assert(isNotifVisible, 'Notification dropdown opens on bell click');
+
+    await appPage.click('#btnClearNotifs');
+    await appPage.waitForTimeout(300);
+    const isBadgeHidden = await appPage.evaluate(() => {
+      const badge = document.getElementById('notifBadgeDot');
+      return !badge || badge.style.display === 'none';
+    });
+    assert(isBadgeHidden, 'Mark all as read dismisses unread badge');
+
+    // Close notif menu
+    await appPage.click('body', { position: { x: 10, y: 10 } });
+    await appPage.waitForTimeout(200);
+
+    // 6. Add Asset Modal & Custom Token Addition
+    console.log('  6️⃣ Testing Add Asset Modal & Custom Token Ingestion...');
+    await appPage.click('#openAddAssetModalBtn');
+    await appPage.waitForTimeout(300);
+    const isAddAssetModalOpen = await appPage.$eval('#addAssetModal', el => el.classList.contains('active'));
+    assert(isAddAssetModalOpen, 'Add Asset modal opens on "+ Add Asset" button click');
+
+    // Click DAI preset chip
+    await appPage.click('.asset-preset-chip[data-symbol="DAI"]');
+    await appPage.waitForTimeout(200);
+    const symbolVal = await appPage.$eval('#addAssetSymbol', el => el.value);
+    assert(symbolVal === 'DAI', `Preset chip populated custom token symbol to DAI (got: ${symbolVal})`);
+
+    // Submit custom token
+    await appPage.click('#btnConfirmAddAsset');
+    await appPage.waitForTimeout(400);
+    const isAddAssetModalClosed = await appPage.$eval('#addAssetModal', el => !el.classList.contains('active'));
+    assert(isAddAssetModalClosed, 'Add Asset modal closes after token ingestion');
+
+    const daiAssetPresent = await appPage.evaluate(() => {
+      const cards = document.querySelectorAll('.asset-item h4');
+      for (const c of cards) {
+        if (c.textContent.includes('DAI')) return true;
+      }
+      return false;
+    });
+    assert(daiAssetPresent, 'Newly ingested DAI asset card dynamically rendered in portfolio');
+
+    // 7. Dedicated Assets Tab Navigation
+    console.log('  7️⃣ Testing Dedicated Assets Tab View & Holdings Table...');
+    await appPage.click('.nav-item[onclick*="tab-assets"]');
+    await appPage.waitForTimeout(300);
+    const isAssetsTabActive = await appPage.$eval('#tab-assets', el => el.classList.contains('active'));
+    assert(isAssetsTabActive, 'Sidebar "Assets" link navigates directly to dedicated Assets tab');
+
+    const tableHasEth = await appPage.evaluate(() => {
+      const table = document.getElementById('assetsTableBody');
+      return table ? table.textContent.includes('Ethereum') && table.textContent.includes('USD Coin') : false;
+    });
+    assert(tableHasEth, 'Assets tab renders complete portfolio token allocation table with quick actions');
+
+    // Return to Home tab
+    await appPage.click('.nav-item[onclick*="tab-home"]');
+    await appPage.waitForTimeout(300);
+
+    // 8. Explore Cards (Discover dApps & Agents)
+    console.log('  8️⃣ Testing Explore Cards Interactivity...');
+    await appPage.click('.explore-item:nth-child(1)');
+    await appPage.waitForTimeout(300);
+    const isDiscoverModalOpen = await appPage.$eval('#dappDirectoryModal', el => el.classList.contains('active'));
+    assert(isDiscoverModalOpen, 'Discover dApps card opens curated Web3 ecosystem modal');
+
+    await appPage.click('#closeDappModal');
+    await appPage.waitForTimeout(200);
+
+    await appPage.click('.explore-item:nth-child(2)');
+    await appPage.waitForTimeout(300);
+    const isAgentsTabActive = await appPage.$eval('#tab-agents', el => el.classList.contains('active'));
+    assert(isAgentsTabActive, 'Use with Agents explore card seamlessly switches to Agents tab');
+
+    await appPage.click('.nav-item[onclick*="tab-home"]');
+    await appPage.waitForTimeout(300);
+
+    // 9. Recent Transactions Details Modal
+    console.log('  9️⃣ Testing Recent Transactions Row Details Modal...');
+    await appPage.click('.clickable-tx-row:first-child');
+    await appPage.waitForTimeout(300);
+    const isTxModalOpen = await appPage.$eval('#txDetailsModal', el => el.classList.contains('active'));
+    const txModalHash = await appPage.$eval('#txModalHash', el => el.textContent);
+    assert(isTxModalOpen, 'Clicking recent transaction row opens Transaction Details modal');
+    assert(txModalHash.startsWith('0x'), `Transaction Details modal displays on-chain hash: ${txModalHash}`);
+
+    await appPage.click('#closeTxModal');
+    await appPage.waitForTimeout(200);
+
+    // 10. Swap Token Invert Button
+    console.log('  🔟 Testing Swap Tab Token Invert Button...');
+    await appPage.click('.nav-item[onclick*="tab-swap"]');
+    await appPage.waitForTimeout(300);
+
+    const rateBefore = await appPage.$eval('#swapExchangeRate', el => el.textContent.trim());
+    await appPage.click('#btnFlipSwapTokens');
+    await appPage.waitForTimeout(300);
+    const rateAfter = await appPage.$eval('#swapExchangeRate', el => el.textContent.trim());
+    assert(rateBefore !== rateAfter, `Swap direction flipped (rate changed from ${rateBefore} to ${rateAfter})`);
+
+    // Return to Home tab
+    await appPage.click('.nav-item[onclick*="tab-home"]');
+    await appPage.waitForTimeout(300);
+
     // Capture Web Dashboard screenshot
     const dashboardScreenshotPath = path.join(screenshotsDir, '02_web_dashboard_verified.png');
     await appPage.screenshot({ path: dashboardScreenshotPath });
