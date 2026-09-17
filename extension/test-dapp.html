@@ -3,29 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Haptix dApp Simulator — EIP-6963 &amp; Web3 Testing</title>
+  <title>Haptix dApp Simulator — EIP-6963 &amp; Web3 Testing</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-black: #000000;
-      --bg-deep: #050508;
-      --bg-surface: #090A0F;
-      --bg-card: rgba(14, 16, 23, 0.85);
-      --text-white: #FFFFFF;
-      --text-body: #E2E8F0;
-      --text-muted: #8E9BAE;
+      --bg-deep: #080B11;
+      --bg-card: #0E121B;
+      --bg-card-elevated: #131722;
+      --bg-hover: #171C28;
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-focus: rgba(255, 255, 255, 0.16);
+      --border-accent: rgba(0, 82, 255, 0.4);
+      --text-primary: #FFFFFF;
+      --text-secondary: #CBD5E1;
+      --text-muted: #94A3B8;
       --base-blue: #0052FF;
-      --base-blue-hover: #0045D8;
+      --base-blue-glow: rgba(0, 82, 255, 0.25);
       --accent-emerald: #10B981;
       --accent-amber: #F59E0B;
-      --border-light: rgba(255, 255, 255, 0.08);
-      --border-focus: rgba(255, 255, 255, 0.18);
-      --radius-sm: 6px;
+      --accent-rose: #F43F5E;
+      --accent-cyan: #38BDF8;
+      --radius-sm: 8px;
       --radius-md: 12px;
-      --radius-lg: 20px;
-      --radius-full: 9999px;
+      --radius-lg: 18px;
       --font-heading: 'Outfit', sans-serif;
       --font-main: 'Plus Jakarta Sans', sans-serif;
       --font-mono: 'JetBrains Mono', monospace;
@@ -35,230 +37,758 @@
 
     body {
       background-color: var(--bg-deep);
-      color: var(--text-body);
+      background-image: 
+        radial-gradient(circle at 15% 10%, rgba(0, 82, 255, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.04) 0%, transparent 60%);
+      background-attachment: fixed;
+      color: var(--text-secondary);
       font-family: var(--font-main);
-      padding: 40px 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
       min-height: 100vh;
-      position: relative;
-      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
-    /* React Bits Grainient Background */
-    .grainient-canvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .grain-overlay {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1;
-      opacity: 0.35;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-      mix-blend-mode: overlay;
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 560px;
-      width: 100%;
-      background: var(--bg-card);
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-lg);
-      padding: 32px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+    /* Top Navigation Header */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(8, 11, 17, 0.85);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-logo-mark {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-title {
+      font-family: var(--font-heading);
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(0, 82, 255, 0.15);
+      color: #60A5FA;
+      border: 1px solid rgba(0, 82, 255, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
     .status-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      border-radius: var(--radius-full);
-      font-size: 11px;
+      gap: 7px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
       font-weight: 700;
       background: rgba(16, 185, 129, 0.1);
       color: var(--accent-emerald);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      margin-bottom: 16px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
       font-family: var(--font-mono);
+      transition: all 0.2s ease;
     }
 
-    h1 {
+    .status-pill::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .btn-nav-dashboard {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-size: 12.5px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-nav-dashboard:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-focus);
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+
+    /* Main Container */
+    .cockpit-container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 24px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 28px;
+      flex: 1;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .cockpit-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Section Headers */
+    .hero-header {
+      margin-bottom: 24px;
+    }
+
+    .hero-title {
       font-family: var(--font-heading);
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 800;
-      margin-bottom: 6px;
-      color: var(--text-white);
+      color: var(--text-primary);
       letter-spacing: -0.02em;
+      margin-bottom: 6px;
     }
 
-    p {
+    .hero-subtitle {
       font-size: 13.5px;
       color: var(--text-muted);
-      margin-bottom: 24px;
       line-height: 1.5;
     }
 
+    .hero-subtitle code {
+      font-family: var(--font-mono);
+      color: #60A5FA;
+      background: rgba(0, 82, 255, 0.12);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    /* Test Suites Groups */
+    .test-suite-group {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .suite-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .suite-header svg {
+      color: var(--accent-cyan);
+    }
+
+    /* Test Cards */
     .btn-group {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      margin-bottom: 24px;
     }
 
-    button {
-      background: #FFFFFF;
-      color: #000000;
-      border: 1px solid transparent;
-      padding: 13px 18px;
+    .test-card {
+      width: 100%;
+      background: var(--bg-card-elevated);
+      border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
-      font-weight: 700;
-      font-size: 13.5px;
-      cursor: pointer;
-      transition: all 0.15s ease;
+      padding: 13px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      cursor: pointer;
+      text-align: left;
       font-family: var(--font-main);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
     }
 
-    button:hover {
-      background: #E2E8F0;
-      transform: translateY(-1px);
-    }
-
-    button.sec {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-white);
-      border-color: var(--border-light);
-    }
-
-    button.sec:hover {
-      background: rgba(255, 255, 255, 0.1);
+    .test-card:hover {
+      background: var(--bg-hover);
       border-color: var(--border-focus);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    }
+
+    .test-card:active {
+      transform: scale(0.99);
+    }
+
+    .test-card.primary {
+      background: linear-gradient(135deg, #0052FF, #1D4ED8);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 16px var(--base-blue-glow);
+    }
+
+    .test-card.primary:hover {
+      background: linear-gradient(135deg, #1A62FF, #2563EB);
+      box-shadow: 0 6px 22px rgba(0, 82, 255, 0.45);
+    }
+
+    .test-card.primary .test-title {
+      color: #FFFFFF;
+      font-weight: 800;
+    }
+
+    .test-card.primary .test-desc {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .test-card.primary .method-pill {
+      background: rgba(0, 0, 0, 0.25);
+      color: #FFFFFF;
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .test-card-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .test-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .icon-emerald { background: rgba(16, 185, 129, 0.12); color: var(--accent-emerald); border-color: rgba(16, 185, 129, 0.25); }
+    .icon-blue { background: rgba(0, 82, 255, 0.12); color: #60A5FA; border-color: rgba(0, 82, 255, 0.25); }
+    .icon-amber { background: rgba(245, 158, 11, 0.12); color: var(--accent-amber); border-color: rgba(245, 158, 11, 0.25); }
+    .icon-rose { background: rgba(244, 63, 94, 0.12); color: var(--accent-rose); border-color: rgba(244, 63, 94, 0.25); }
+
+    .test-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .test-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .test-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .method-pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .pill-emerald { color: var(--accent-emerald); background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.2); }
+    .pill-amber { color: var(--accent-amber); background: rgba(245, 158, 11, 0.08); border-color: rgba(245, 158, 11, 0.2); }
+    .pill-rose { color: var(--accent-rose); background: rgba(244, 63, 94, 0.08); border-color: rgba(244, 63, 94, 0.2); }
+    .pill-cyan { color: var(--accent-cyan); background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.2); }
+
+    /* Right Sidebar (Inspection & Output) */
+    .sidebar-pane {
+      position: sticky;
+      top: 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .inspector-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    .inspector-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .enclave-status-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent-emerald);
+      background: rgba(16, 185, 129, 0.1);
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+
+    .account-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--bg-card-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+    }
+
+    .meta-label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    .meta-value {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-primary);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Terminal Console */
+    .terminal-card {
+      background: #05070B;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .terminal-header {
+      background: #0B0E17;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .terminal-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-family: var(--font-mono);
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 5px;
+    }
+
+    .terminal-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+
+    .dot-red { background: #EF4444; }
+    .dot-yellow { background: #F59E0B; }
+    .dot-green { background: #10B981; }
+
+    .terminal-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-term-action {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font-main);
+      transition: all 0.15s ease;
+    }
+
+    .btn-term-action:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
     }
 
     .output-box {
-      background: #000000;
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-sm);
-      padding: 14px;
+      padding: 16px;
       font-family: var(--font-mono);
-      font-size: 11.5px;
-      color: #93C5FD;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #38BDF8;
       white-space: pre-wrap;
       word-break: break-all;
-      max-height: 220px;
+      min-height: 220px;
+      max-height: 380px;
       overflow-y: auto;
+    }
+
+    .output-box::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .output-box::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .output-box::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 3px;
     }
   </style>
 </head>
 <body>
 
-  <!-- React Bits Grainient Canvas & Fine Film Grain Overlay -->
-  <canvas id="grainientCanvas" class="grainient-canvas"></canvas>
-  <div class="grain-overlay"></div>
+  <!-- Top Sticky Navigation Bar -->
+  <header class="top-nav">
+    <a href="app.html" class="brand-section">
+      <div class="brand-logo-mark">
+        <svg width="28" height="28" viewBox="0 0 100 100" fill="none">
+          <path d="M22 18 C22 18, 38 32, 54 48 C68 62, 82 78, 82 78" stroke="#0052FF" stroke-width="15" stroke-linecap="round"/>
+          <path d="M78 22 C78 22, 64 36, 50 50 C36 64, 20 80, 20 80" stroke="#FFFFFF" stroke-width="15" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="10" fill="#0052FF"/>
+        </svg>
+      </div>
+      <div class="brand-title">
+        <span>Haptix</span>
+        <span class="brand-badge">Simulator</span>
+      </div>
+    </a>
 
-  <div class="container">
-    <div class="status-pill" id="statusPill">Checking Provider...</div>
-    <h1>Haptix dApp Simulator</h1>
-    <p>Simulates Uniswap/Aave dApp calling <code>window.ethereum</code> methods to trigger Haptix biometric passkey signatures.</p>
+    <div class="nav-actions">
+      <div class="status-pill" id="statusPill">Checking Provider...</div>
+      <a href="app.html" class="btn-nav-dashboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        <span>Open Wallet App</span>
+      </a>
+    </div>
+  </header>
 
-    <div class="btn-group">
-      <button id="btnConnect">
-        <span>1. Connect Haptix Wallet</span>
-        <span style="font-family:var(--font-mono);font-size:12px;">eth_requestAccounts →</span>
-      </button>
-      <button class="sec" id="btnSmallTx" style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="display:flex;align-items:center;gap:8px;">
-          <img src="assets/eth_logo.svg" width="13" height="19" alt="ETH" />
-          <span>2. Send Small ETH (0.001 ETH)</span>
-        </span>
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-emerald);">1-Sig Touch ID →</span>
-      </button>
-      <button class="sec" id="btnUsdcTx" style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="display:flex;align-items:center;gap:8px;">
-          <img src="assets/usdc_logo.svg" width="18" height="18" alt="USDC" style="border-radius:50%;" />
-          <span>3. Send $20.00 USDC (Autonomous Agent)</span>
-        </span>
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-emerald);">0x01 Agent Sig →</span>
-      </button>
-      <button class="sec" id="btnLargeTx" style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="display:flex;align-items:center;gap:8px;">
-          <img src="assets/eth_logo.svg" width="13" height="19" alt="ETH" />
-          <span>4. Send Large Transfer (0.05 ETH)</span>
-        </span>
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-amber);">2-of-2 Quorum →</span>
-      </button>
-      <button class="sec" id="btnCeilingTx" style="border-color:rgba(244,63,94,0.3);color:#FDA4AF;display:flex;align-items:center;justify-content:space-between;">
-        <span style="display:flex;align-items:center;gap:8px;">
-          <img src="assets/usdc_logo.svg" width="18" height="18" alt="USDC" style="border-radius:50%;" />
-          <span>5. Over Ceiling Transfer ($350 USDC)</span>
-        </span>
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-rose);display:flex;align-items:center;gap:4px;">Policy Block <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
-      </button>
-      <button class="sec" id="btnSign">
-        <span>6. Sign In Message (ERC-1271)</span>
-        <span style="font-family:var(--font-mono);font-size:12px;">personal_sign →</span>
-      </button>
-      <button class="sec" id="btnSignTypedData" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>7. Sign EIP-712 Typed Data</span>
-        <span style="font-family:var(--font-mono);font-size:12px;color:#60A5FA;">eth_signTypedData_v4 →</span>
-      </button>
-      <button class="sec" id="btnSwitchChain" style="display:flex;align-items:center;justify-content:space-between;">
-        <span>8. Switch Chain (Base Sepolia ↔ Base Mainnet)</span>
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-emerald);">wallet_switchEthereumChain →</span>
-      </button>
-      <button class="sec" id="btnTestApproval" style="border-color:rgba(244,63,94,0.3);color:#FDA4AF;display:flex;align-items:center;justify-content:space-between;">
-        <span>9. Test Unlimited ERC-20 Approval (Simulation Alert)</span>
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-rose);display:flex;align-items:center;gap:4px;">Security Alert <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> →</span>
-      </button>
+  <!-- Main Cockpit Layout -->
+  <main class="cockpit-container">
+    
+    <!-- Left Column: Interactive Test Suites -->
+    <div class="left-column">
+      <div class="hero-header">
+        <h1 class="hero-title">EIP-6963 &amp; Web3 dApp Sandbox</h1>
+        <p class="hero-subtitle">
+          Simulates third-party Web3 protocols (e.g. Uniswap, Aave, OpenSea) requesting connection and transaction authorization from the <code>window.ethereum</code> Haptix biometric enclave.
+        </p>
+      </div>
+
+      <!-- Suite 1: Provider Connection -->
+      <div class="test-suite-group">
+        <div class="suite-header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          <span>1. Handshake &amp; Network Switching</span>
+        </div>
+        <div class="btn-group">
+          <button class="test-card primary" id="btnConnect">
+            <div class="test-card-left">
+              <div class="test-icon" style="background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path></svg>
+              </div>
+              <div class="test-info">
+                <span class="test-title">Connect Haptix Wallet</span>
+                <span class="test-desc">EIP-6963 multi-wallet handshake request</span>
+              </div>
+            </div>
+            <span class="method-pill">eth_requestAccounts →</span>
+          </button>
+
+          <button class="test-card" id="btnSwitchChain">
+            <div class="test-card-left">
+              <div class="test-icon icon-blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+              </div>
+              <div class="test-info">
+                <span class="test-title">Switch Active Chain</span>
+                <span class="test-desc">Toggle between Base Sepolia (84532) and Base Mainnet (8453)</span>
+              </div>
+            </div>
+            <span class="method-pill pill-cyan">wallet_switchEthereumChain →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Suite 2: SpendPolicy Firewall & Biometric Tiers -->
+      <div class="test-suite-group">
+        <div class="suite-header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>2. SpendPolicy Firewall &amp; Biometric Tiers</span>
+        </div>
+        <div class="btn-group">
+          <!-- 1-Sig Fast-Path -->
+          <button class="test-card" id="btnSmallTx">
+            <div class="test-card-left">
+              <div class="test-icon icon-emerald">
+                <img src="assets/eth_logo.svg" width="14" height="20" alt="ETH" />
+              </div>
+              <div class="test-info">
+                <span class="test-title">Send Micro ETH (0.001 ETH)</span>
+                <span class="test-desc">Sub-threshold transfer • Instant single hardware passkey</span>
+              </div>
+            </div>
+            <span class="method-pill pill-emerald">1-Sig Touch ID →</span>
+          </button>
+
+          <!-- Autonomous Agent Bot -->
+          <button class="test-card" id="btnUsdcTx">
+            <div class="test-card-left">
+              <div class="test-icon icon-blue">
+                <img src="assets/usdc_logo.svg" width="18" height="18" alt="USDC" style="border-radius:50%;" />
+              </div>
+              <div class="test-info">
+                <span class="test-title">Autonomous Agent ($20.00 USDC)</span>
+                <span class="test-desc">Delegated session key • Hands-off (Zero passkey prompt)</span>
+              </div>
+            </div>
+            <span class="method-pill pill-cyan">0x01 Agent Sig →</span>
+          </button>
+
+          <!-- Policy Escalation -->
+          <button class="test-card" id="btnLargeTx">
+            <div class="test-card-left">
+              <div class="test-icon icon-amber">
+                <img src="assets/eth_logo.svg" width="14" height="20" alt="ETH" />
+              </div>
+              <div class="test-info">
+                <span class="test-title">Send Large Transfer (0.05 ETH)</span>
+                <span class="test-desc">Exceeds 0.01 threshold • Escalates to 2-of-2 Passkey Quorum</span>
+              </div>
+            </div>
+            <span class="method-pill pill-amber">2-of-2 Quorum →</span>
+          </button>
+
+          <!-- Ceiling Firewall Block -->
+          <button class="test-card" id="btnCeilingTx" style="border-color: rgba(244,63,94,0.25);">
+            <div class="test-card-left">
+              <div class="test-icon icon-rose">
+                <img src="assets/usdc_logo.svg" width="18" height="18" alt="USDC" style="border-radius:50%;" />
+              </div>
+              <div class="test-info">
+                <span class="test-title">Over Ceiling Transfer ($350 USDC)</span>
+                <span class="test-desc">Exceeds $200 ceiling • Intercepted &amp; blocked on-chain</span>
+              </div>
+            </div>
+            <span class="method-pill pill-rose">Policy Block ✕</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Suite 3: Cryptographic Signatures -->
+      <div class="test-suite-group">
+        <div class="suite-header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m18 15-6-6-6 6"></path></svg>
+          <span>3. Cryptographic Verification &amp; Permits</span>
+        </div>
+        <div class="btn-group">
+          <button class="test-card" id="btnSign">
+            <div class="test-card-left">
+              <div class="test-icon icon-blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              </div>
+              <div class="test-info">
+                <span class="test-title">Sign In Message (ERC-1271)</span>
+                <span class="test-desc">Hardware WebAuthn off-chain signature</span>
+              </div>
+            </div>
+            <span class="method-pill">personal_sign →</span>
+          </button>
+
+          <button class="test-card" id="btnSignTypedData">
+            <div class="test-card-left">
+              <div class="test-icon icon-emerald">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              </div>
+              <div class="test-info">
+                <span class="test-title">Sign EIP-712 Typed Data</span>
+                <span class="test-desc">Structured gasless permit &amp; session statement</span>
+              </div>
+            </div>
+            <span class="method-pill pill-cyan">eth_signTypedData_v4 →</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Suite 4: Security Simulation -->
+      <div class="test-suite-group">
+        <div class="suite-header">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span>4. Threat Defense &amp; Security Simulation</span>
+        </div>
+        <div class="btn-group">
+          <button class="test-card" id="btnTestApproval" style="border-color: rgba(244,63,94,0.25);">
+            <div class="test-card-left">
+              <div class="test-icon icon-rose">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </div>
+              <div class="test-info">
+                <span class="test-title">Unlimited ERC-20 Approval Test</span>
+                <span class="test-desc">Tests Haptix pre-flight simulation warning flags</span>
+              </div>
+            </div>
+            <span class="method-pill pill-rose">Security Alert ⚠ →</span>
+          </button>
+        </div>
+      </div>
+
     </div>
 
-    <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">RPC Output Console</div>
-    <div class="output-box" id="outputConsole">Provider ready. Click Connect to start.</div>
-  </div>
+    <!-- Right Column: Inspector & Live Terminal -->
+    <div class="sidebar-pane">
+      
+      <!-- Connected Wallet Inspector -->
+      <div class="inspector-card">
+        <div class="inspector-header">
+          <span>Enclave State Inspector</span>
+          <span class="enclave-status-tag" id="enclaveStatusTag">Active (RIP-7212)</span>
+        </div>
+        
+        <div class="account-meta-row">
+          <span class="meta-label">Connected Account</span>
+          <span class="meta-value" id="dispConnectedAccount">0xB015...796f</span>
+        </div>
+
+        <div class="account-meta-row">
+          <span class="meta-label">Target Network</span>
+          <span class="meta-value" id="dispNetworkName">Base Sepolia (84532)</span>
+        </div>
+
+        <div class="account-meta-row">
+          <span class="meta-label">Verification Precompile</span>
+          <span class="meta-value" style="color:var(--accent-emerald);">P-256 (0x100) Active</span>
+        </div>
+      </div>
+
+      <!-- Live RPC Output Console -->
+      <div class="terminal-card">
+        <div class="terminal-header">
+          <div class="terminal-title">
+            <div class="terminal-dots">
+              <div class="terminal-dot dot-red"></div>
+              <div class="terminal-dot dot-yellow"></div>
+              <div class="terminal-dot dot-green"></div>
+            </div>
+            <span>RPC Response Console</span>
+          </div>
+          <div class="terminal-actions">
+            <button class="btn-term-action" id="btnClearConsole">Clear</button>
+            <button class="btn-term-action" id="btnCopyConsole">Copy</button>
+          </div>
+        </div>
+        <div class="output-box" id="outputConsole">Provider ready. Click "Connect Haptix Wallet" to start.</div>
+      </div>
+
+    </div>
+
+  </main>
 
   <script>
     let activeProvider = null;
     const discoveredWallets = new Map();
 
     const log = (msg) => {
-      document.getElementById('outputConsole').textContent = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg;
+      const consoleEl = document.getElementById('outputConsole');
+      if (!consoleEl) return;
+      consoleEl.textContent = typeof msg === 'object' ? JSON.stringify(msg, null, 2) : msg;
     };
 
     function updateStatus() {
       const p = getProvider();
       const pill = document.getElementById('statusPill');
+      const tag = document.getElementById('enclaveStatusTag');
       if (p) {
-        if (p.isPasskey || p === window.passkey) {
+        if (p.isPasskey || p === window.passkey || p.isHaptix) {
           pill.style.background = 'rgba(16, 185, 129, 0.1)';
           pill.style.color = '#10B981';
           pill.style.borderColor = 'rgba(16, 185, 129, 0.3)';
           pill.textContent = 'Passkey Smart Wallet Active (Direct / EIP-6963)';
+          if (tag) tag.textContent = 'Active (RIP-7212)';
         } else {
           pill.style.background = 'rgba(245, 158, 11, 0.1)';
           pill.style.color = '#F59E0B';
           pill.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-          pill.textContent = 'Generic Wallet Injected (Passkey Fallback Available)';
+          pill.textContent = 'Generic Wallet Injected';
+          if (tag) tag.textContent = 'Generic Mode';
         }
       } else {
         pill.textContent = 'Extension Not Detected Yet';
+        if (tag) tag.textContent = 'Disconnected';
       }
     }
 
@@ -266,9 +796,9 @@
       if (activeProvider) return activeProvider;
       if (window.passkey) return window.passkey;
       if (window.passkeyProvider) return window.passkeyProvider;
-      if (window.ethereum?.isPasskey) return window.ethereum;
+      if (window.ethereum?.isPasskey || window.ethereum?.isHaptix) return window.ethereum;
       if (window.ethereum?.providers) {
-        const pk = window.ethereum.providers.find(p => p.isPasskey);
+        const pk = window.ethereum.providers.find(p => p.isPasskey || p.isHaptix);
         if (pk) return pk;
       }
       return window.ethereum;
@@ -278,7 +808,7 @@
     window.addEventListener('eip6963:announceProvider', (event) => {
       const { info, provider } = event.detail;
       discoveredWallets.set(info.rdns, { info, provider });
-      if (info.name === 'Passkey Smart Wallet' || info.rdns === 'io.passkey.wallet' || provider.isPasskey) {
+      if (info.name === 'Passkey Smart Wallet' || info.name === 'Haptix' || info.rdns === 'io.passkey.wallet' || provider.isPasskey || provider.isHaptix) {
         activeProvider = provider;
         updateStatus();
       }
@@ -295,16 +825,21 @@
     document.getElementById('btnConnect').onclick = async () => {
       const p = getProvider();
       if (!p) {
-        log({ error: 'No Web3 provider found. Make sure Passkey Smart Wallet extension is installed & enabled.' });
+        log({ error: 'No Web3 provider found. Make sure Haptix / Passkey Smart Wallet extension is enabled.' });
         return;
       }
       try {
         log('Calling eth_requestAccounts on Passkey Wallet...');
         const accounts = await p.request({ method: 'eth_requestAccounts' });
         const chainId = await p.request({ method: 'eth_chainId' });
+        const acc = accounts[0] || '0xB01543453cF31052c769d79e9C755E3b035d796f';
+        
+        const dispAcc = document.getElementById('dispConnectedAccount');
+        if (dispAcc) dispAcc.textContent = acc.slice(0, 6) + '...' + acc.slice(-4);
+
         log({
-          provider: (p.isPasskey || p === window.passkey) ? 'Passkey Smart Wallet' : 'Generic',
-          connectedAccount: accounts[0],
+          provider: (p.isPasskey || p === window.passkey || p.isHaptix) ? 'Passkey Smart Wallet' : 'Generic',
+          connectedAccount: acc,
           chainId: chainId,
           network: 'Base Sepolia (84532)'
         });
@@ -329,7 +864,7 @@
             data: '0x'
           }]
         });
-        log({ status: 'Success (1-Sig Authorized)', userOpHash: txHash });
+        log({ status: 'Success (1-Sig Authorized)', userOpHash: txHash, amount: '0.001 ETH' });
       } catch (e) {
         log({ error: e.message });
       }
@@ -407,7 +942,7 @@
             data: '0x'
           }]
         });
-        log({ status: 'Success (2-of-2 Quorum Approved)', userOpHash: txHash });
+        log({ status: 'Success (2-of-2 Quorum Approved)', userOpHash: txHash, amount: '0.05 ETH' });
       } catch (e) {
         log({ error: e.message });
       }
@@ -423,7 +958,7 @@
         log('Requesting ERC-1271 off-chain sign-in message...');
         const sig = await p.request({
           method: 'personal_sign',
-          params: ['Sign in to Passkey dApp at ' + new Date().toISOString(), p.selectedAddress || '0x34Aeb3A39fd1838D1C897F879EAB0a258507802c']
+          params: ['Sign in to Haptix Biometric Enclave at ' + new Date().toISOString(), p.selectedAddress || '0xB01543453cF31052c769d79e9C755E3b035d796f']
         });
         log({ status: 'Signature Generated (Passkey ERC-1271)', signature: sig });
       } catch (e) {
@@ -494,6 +1029,8 @@
           params: [{ chainId: targetChainId }]
         });
         const newChain = await p.request({ method: 'eth_chainId' });
+        const dispNet = document.getElementById('dispNetworkName');
+        if (dispNet) dispNet.textContent = targetName;
         log({ status: 'Network Switch Completed', newChainId: newChain, network: targetName });
       } catch (e) {
         log({ error: e.message });
@@ -509,7 +1046,6 @@
       try {
         const accounts = await p.request({ method: 'eth_accounts' });
         const from = accounts[0] || '0x22db962929afe98d0269De0BAa6c442A3Aa6913D';
-        // ERC-20 approve(0xDef1C0ded9bec7F1a1670819833240f027b25EfF, type(uint256).max)
         const spender = '0xDef1C0ded9bec7F1a1670819833240f027b25EfF';
         const calldata = '0x095ea7b3' + spender.slice(2).padStart(64, '0') + 'f'.repeat(64);
         log('Requesting Unlimited Token Approval to test Haptix Security Simulation...');
@@ -522,108 +1058,45 @@
             data: calldata
           }]
         });
-        log({ status: 'Approval Request Handled', txHash });
+        log({ status: 'Approval Request Handled (Simulation Warning)', txHash });
       } catch (e) {
         log({ error: e.message });
       }
     };
 
-    // Attach Provider Events (chainChanged, accountsChanged)
+    // Console Action Buttons
+    document.getElementById('btnClearConsole').onclick = () => {
+      document.getElementById('outputConsole').textContent = 'Console cleared. Ready for RPC calls.';
+    };
+
+    document.getElementById('btnCopyConsole').onclick = () => {
+      const text = document.getElementById('outputConsole').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('btnCopyConsole');
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = orig, 1500);
+      });
+    };
+
+    // Provider Events
     window.addEventListener('load', () => {
       const p = getProvider();
       if (p && p.on) {
         p.on('chainChanged', (newChain) => {
           log({ event: 'chainChanged', chainId: newChain });
+          const dispNet = document.getElementById('dispNetworkName');
+          if (dispNet) dispNet.textContent = newChain === '0x2105' ? 'Base Mainnet (8453)' : 'Base Sepolia (84532)';
         });
         p.on('accountsChanged', (accounts) => {
           log({ event: 'accountsChanged', accounts });
+          if (accounts[0]) {
+            const dispAcc = document.getElementById('dispConnectedAccount');
+            if (dispAcc) dispAcc.textContent = accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4);
+          }
         });
       }
     });
-
-    // React Bits Grainient (Grainy Gradient with Soft Motion) Engine
-    const canvas = document.getElementById('grainientCanvas');
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      let width = 0, height = 0;
-      let mouseX = 0, mouseY = 0;
-      let targetMouseX = 0, targetMouseY = 0;
-
-      function resize() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-      }
-      window.addEventListener('resize', resize);
-      resize();
-
-      window.addEventListener('mousemove', e => {
-        targetMouseX = (e.clientX / window.innerWidth - 0.5) * 100;
-        targetMouseY = (e.clientY / window.innerHeight - 0.5) * 100;
-      });
-
-      let time = 0;
-
-      function renderGrainient() {
-        time += 0.006;
-        mouseX += (targetMouseX - mouseX) * 0.05;
-        mouseY += (targetMouseY - mouseY) * 0.05;
-
-        ctx.clearRect(0, 0, width, height);
-
-        // Midnight base
-        ctx.fillStyle = '#0f0821';
-        ctx.fillRect(0, 0, width, height);
-
-        // Blob 1: Vibrant Magenta / Orchid (Top Left / Center)
-        const b1x = width * 0.25 + Math.sin(time * 1.1) * (width * 0.12) + mouseX;
-        const b1y = height * 0.3 + Math.cos(time * 0.8) * (height * 0.12) + mouseY;
-        const b1r = Math.max(width, height) * 0.65;
-        const g1 = ctx.createRadialGradient(b1x, b1y, 0, b1x, b1y, b1r);
-        g1.addColorStop(0, 'rgba(236, 72, 153, 0.88)'); // #EC4899 Pink
-        g1.addColorStop(0.42, 'rgba(217, 70, 239, 0.62)'); // #D946EF Magenta
-        g1.addColorStop(0.85, 'rgba(168, 85, 247, 0.15)');
-        g1.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = g1;
-        ctx.fillRect(0, 0, width, height);
-
-        // Blob 2: Electric Violet / Lavender (Top Right / Middle)
-        const b2x = width * 0.72 + Math.cos(time * 0.9) * (width * 0.15) - mouseX * 0.8;
-        const b2y = height * 0.35 + Math.sin(time * 1.0) * (height * 0.14) - mouseY * 0.8;
-        const b2r = Math.max(width, height) * 0.7;
-        const g2 = ctx.createRadialGradient(b2x, b2y, 0, b2x, b2y, b2r);
-        g2.addColorStop(0, 'rgba(168, 85, 247, 0.92)'); // #A855F7 Purple
-        g2.addColorStop(0.48, 'rgba(139, 92, 246, 0.6)'); // #8B5CF6 Violet
-        g2.addColorStop(0.9, 'rgba(99, 102, 241, 0.15)');
-        g2.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = g2;
-        ctx.fillRect(0, 0, width, height);
-
-        // Blob 3: Royal Cobalt Blue / Base Blue (Bottom & Right)
-        const b3x = width * 0.85 + Math.sin(time * 0.7) * (width * 0.12);
-        const b3y = height * 0.75 + Math.cos(time * 0.6) * (height * 0.15);
-        const b3r = Math.max(width, height) * 0.75;
-        const g3 = ctx.createRadialGradient(b3x, b3y, 0, b3x, b3y, b3r);
-        g3.addColorStop(0, 'rgba(0, 82, 255, 0.9)'); // #0052FF Base Blue
-        g3.addColorStop(0.5, 'rgba(67, 56, 202, 0.65)'); // #4338CA Indigo
-        g3.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = g3;
-        ctx.fillRect(0, 0, width, height);
-
-        // Blob 4: Soft Lilac Highlight (Center Swirl)
-        const b4x = width * 0.48 + Math.cos(time * 1.2) * (width * 0.16);
-        const b4y = height * 0.22 + Math.sin(time * 1.1) * (height * 0.1);
-        const b4r = Math.max(width, height) * 0.5;
-        const g4 = ctx.createRadialGradient(b4x, b4y, 0, b4x, b4y, b4r);
-        g4.addColorStop(0, 'rgba(244, 114, 182, 0.8)'); // #F472B6
-        g4.addColorStop(0.55, 'rgba(192, 132, 252, 0.45)'); // #C084FC
-        g4.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = g4;
-        ctx.fillRect(0, 0, width, height);
-
-        requestAnimationFrame(renderGrainient);
-      }
-      renderGrainient();
-    }
   </script>
 </body>
 </html>
