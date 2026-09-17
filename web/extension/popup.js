@@ -85,7 +85,7 @@ let currentNetwork = getNetwork(DEFAULT_CHAIN_ID);
 async function signWithPasskeyDelegated(userOpHash, keyIndex = 0) {
   return new Promise((resolve, reject) => {
     const extId = (typeof chrome !== 'undefined' && chrome.runtime) ? chrome.runtime.id : '';
-    const signUrl = `http://localhost:57547/sign?hash=${userOpHash}&keyIndex=${keyIndex}&extId=${extId}`;
+    const signUrl = `http://localhost:57547/sign.html?hash=${userOpHash}&keyIndex=${keyIndex}&extId=${extId}`;
     const win = window.open(signUrl, 'HaptixEnclaveSigner', 'width=420,height=520,menubar=no,toolbar=no,location=no');
 
     let isDone = false;

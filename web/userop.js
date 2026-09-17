@@ -621,13 +621,19 @@ export async function ensureAccountInitCode(rpcUrl, factoryAddress, accountAddre
 export async function getPaymasterSponsorship(bundlerUrl, userOp, entryPoint) {
   if (!bundlerUrl) return null;
   try {
+    const toHex = (val) => {
+      if (typeof val === 'bigint') return '0x' + val.toString(16);
+      if (typeof val === 'number') return '0x' + val.toString(16);
+      return val;
+    };
+
     const payload = {
       sender: userOp.sender,
-      nonce: userOp.nonce,
+      nonce: toHex(userOp.nonce),
       initCode: userOp.initCode || '0x',
       callData: userOp.callData || '0x',
       accountGasLimits: userOp.accountGasLimits,
-      preVerificationGas: userOp.preVerificationGas,
+      preVerificationGas: toHex(userOp.preVerificationGas),
       gasFees: userOp.gasFees,
       paymasterAndData: '0x',
       signature: '0x'
@@ -641,7 +647,7 @@ export async function getPaymasterSponsorship(bundlerUrl, userOp, entryPoint) {
         id: Date.now(),
         method: 'pm_sponsorUserOperation',
         params: [payload, entryPoint]
-      })
+      }, (key, value) => typeof value === 'bigint' ? '0x' + value.toString(16) : value)
     });
     const json = await res.json();
     if (json.result) {
