@@ -406,6 +406,35 @@ async function runE2ETests() {
     await appPage.click('.nav-item[onclick*="tab-home"]');
     await appPage.waitForTimeout(300);
 
+    // 13. High-Contrast Crypto Tickers & Dark Mode Visibility
+    console.log('  1️⃣3️⃣ Testing High-Contrast Crypto Tickers & Text Legibility...');
+    // Ensure dark mode is active for contrast check
+    await appPage.evaluate(() => {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('haptix_theme', 'dark');
+    });
+    await appPage.waitForTimeout(300);
+
+    const netBtnColor = await appPage.$eval('#networkDropdownBtn', el => window.getComputedStyle(el).color);
+    const usdcTickerColor = await appPage.$eval('.asset-ticker-neutral', el => window.getComputedStyle(el).color);
+    const ethTickerSubColor = await appPage.$eval('.asset-ticker-sub', el => window.getComputedStyle(el).color);
+    const txSubAmountColor = await appPage.$eval('.tx-amount-sub', el => window.getComputedStyle(el).color);
+
+    console.log(`     Network Btn Color: ${netBtnColor}`);
+    console.log(`     USDC Ticker Color: ${usdcTickerColor}`);
+    console.log(`     ETH Ticker Sub Color: ${ethTickerSubColor}`);
+    console.log(`     Tx Sub Amount Color: ${txSubAmountColor}`);
+
+    assert(usdcTickerColor === 'rgb(203, 213, 225)', `USDC ticker has high contrast #CBD5E1 (got: ${usdcTickerColor})`);
+    assert(ethTickerSubColor === 'rgb(203, 213, 225)', `ETH ticker sub has high contrast #CBD5E1 (got: ${ethTickerSubColor})`);
+    assert(txSubAmountColor === 'rgb(148, 163, 184)', `Tx conversion amount has high contrast #94A3B8 (got: ${txSubAmountColor})`);
+    assert(netBtnColor === 'rgb(248, 250, 252)', `All Networks button has high contrast #F8FAFC (got: ${netBtnColor})`);
+
+    // Capture dedicated Dark Mode Contrast screenshot
+    const darkContrastScreenshot = path.join(screenshotsDir, '15_dark_mode_contrast_fixed.png');
+    await appPage.screenshot({ path: darkContrastScreenshot });
+    console.log(`  📸 Captured dark mode contrast screenshot: ${darkContrastScreenshot}`);
+
     // Capture Web Dashboard screenshot
     const dashboardScreenshotPath = path.join(screenshotsDir, '02_web_dashboard_verified.png');
     await appPage.screenshot({ path: dashboardScreenshotPath });

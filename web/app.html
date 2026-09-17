@@ -61,12 +61,12 @@
     --bg-card: #131722;
     --bg-hover: #171C28;
     --bg-active: #212738;
-    --bg-subtle: rgba(255, 255, 255, 0.04);
+    --bg-subtle: rgba(255, 255, 255, 0.05);
     
-    --text-primary: #F8FAFC;
-    --text-secondary: #94A3B8;
-    --text-muted: #64748B;
-    --text-dark: #CBD5E1;
+    --text-primary: #FFFFFF;
+    --text-secondary: #CBD5E1;
+    --text-muted: #94A3B8;
+    --text-dark: #E2E8F0;
     
     --accent-blue: #38BDF8;
     --accent-blue-light: rgba(56, 189, 248, 0.15);
@@ -273,6 +273,76 @@
   [data-theme="dark"] .notification-dropdown {
     background: var(--bg-surface) !important;
     border: 1px solid var(--border-light) !important;
+  }
+
+  /* Global button reset to prevent browser dark-mode text washout */
+  button {
+    font-family: inherit;
+    color: inherit;
+  }
+
+  /* Dark mode high-contrast text & ticker legibility */
+  [data-theme="dark"] .portfolio-network-btn {
+    background: #171C28 !important;
+    color: #F8FAFC !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+  }
+  [data-theme="dark"] .portfolio-network-btn:hover {
+    background: #212738 !important;
+    border-color: #38BDF8 !important;
+  }
+  [data-theme="dark"] .portfolio-network-btn .net-chevron {
+    color: #CBD5E1 !important;
+  }
+  [data-theme="dark"] .search-bar {
+    background: #131722;
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #94A3B8;
+  }
+  [data-theme="dark"] .search-bar:focus-within {
+    background: #171C28;
+    border-color: #38BDF8;
+  }
+  [data-theme="dark"] .search-bar input::placeholder {
+    color: #94A3B8 !important;
+  }
+  [data-theme="dark"] .asset-info h4 {
+    color: #FFFFFF !important;
+  }
+  [data-theme="dark"] .asset-info .val {
+    color: #FFFFFF !important;
+  }
+  [data-theme="dark"] .asset-ticker-neutral {
+    color: #CBD5E1 !important;
+  }
+  [data-theme="dark"] .asset-ticker-sub {
+    color: #CBD5E1 !important;
+  }
+  [data-theme="dark"] .tx-table th {
+    color: #94A3B8 !important;
+  }
+  [data-theme="dark"] .tx-table td {
+    color: #F8FAFC !important;
+  }
+  [data-theme="dark"] .tx-amount {
+    color: #FFFFFF !important;
+  }
+  [data-theme="dark"] .tx-amount-sub {
+    color: #94A3B8 !important;
+  }
+  [data-theme="dark"] .tx-network {
+    color: #E2E8F0 !important;
+  }
+  [data-theme="dark"] .tx-time-cell {
+    color: #94A3B8 !important;
+  }
+  [data-theme="dark"] .view-all {
+    color: #38BDF8 !important;
+  }
+  [data-theme="dark"] .widget-desc,
+  [data-theme="dark"] .progress-labels,
+  [data-theme="dark"] .explore-info p {
+    color: #CBD5E1 !important;
   }
 
   /* Prevent asset dragging/selection (Native App Feel) */
@@ -520,14 +590,24 @@
   .portfolio-network-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border: 1px solid var(--border-light);
+    gap: 7px;
+    padding: 6px 14px;
+    border: 1px solid var(--border-medium);
     border-radius: var(--radius-full);
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
     cursor: pointer;
     background: var(--bg-surface);
+    color: var(--text-primary);
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .portfolio-network-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-focus);
+  }
+  .portfolio-network-btn .net-chevron {
+    color: var(--text-secondary);
+    transition: transform 0.2s ease;
   }
 
   .portfolio-value {
@@ -720,19 +800,33 @@
   .asset-item:last-child { border-right: none; }
   
   .asset-icon {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     background: var(--bg-hover);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 16px;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
   }
-  .asset-info h4 { font-size: 14px; font-weight: 700; }
+  .asset-icon.eth-asset-icon { background: rgba(98, 126, 234, 0.12); color: #627EEA; }
+  .asset-icon.usdc-asset-icon { background: rgba(39, 117, 202, 0.12); color: #2775CA; }
+  .asset-icon.base-asset-icon { background: rgba(0, 82, 255, 0.12); color: #0052FF; }
+  .asset-icon.enclave-asset-icon { background: rgba(16, 185, 129, 0.12); color: #10B981; }
+
+  [data-theme="dark"] .asset-icon.eth-asset-icon { background: rgba(98, 126, 234, 0.2); color: #818CF8; border: 1px solid rgba(98, 126, 234, 0.3); }
+  [data-theme="dark"] .asset-icon.usdc-asset-icon { background: rgba(39, 117, 202, 0.2); color: #38BDF8; border: 1px solid rgba(39, 117, 202, 0.3); }
+  [data-theme="dark"] .asset-icon.base-asset-icon { background: rgba(0, 82, 255, 0.2); color: #60A5FA; border: 1px solid rgba(0, 82, 255, 0.3); }
+  [data-theme="dark"] .asset-icon.enclave-asset-icon { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+  .asset-info h4 { font-size: 14px; font-weight: 700; color: var(--text-primary); }
   .asset-info p { font-size: 12px; color: var(--text-secondary); }
-  .asset-info .val { font-weight: 600; color: var(--text-primary); font-family: var(--font-mono); }
-  .asset-info .change { color: var(--accent-green); font-weight: 600; }
+  .asset-info .val { font-weight: 700; color: var(--text-primary); font-family: var(--font-mono); font-size: 15px; margin: 2px 0 1px; }
+  .asset-info .change { color: var(--accent-green); font-weight: 600; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+  .asset-info .change.asset-ticker-neutral { color: var(--text-secondary); font-weight: 600; font-family: var(--font-mono); font-size: 12px; }
+  .asset-info .asset-ticker-sub { font-size: 11.5px; color: var(--text-secondary); font-weight: 600; font-family: var(--font-mono); margin-left: 2px; }
 
   /* Bottom Grid */
   .bottom-grid {
@@ -748,6 +842,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    color: var(--text-primary);
   }
   .view-all {
     font-size: 13px;
@@ -766,22 +861,25 @@
     padding: 12px 16px;
     font-size: 12px;
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     border-bottom: 1px solid var(--border-light);
+    letter-spacing: 0.02em;
   }
   .tx-table td {
     padding: 16px;
     font-size: 13px;
+    color: var(--text-primary);
     border-bottom: 1px solid var(--border-light);
     vertical-align: middle;
   }
   .tx-table tr:last-child td { border-bottom: none; }
   
-  .tx-type { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-weight: 600; }
+  .tx-type { display: flex; align-items: center; gap: 8px; color: var(--text-primary); font-weight: 600; }
   .tx-icon { width: 28px; height: 28px; background: var(--bg-hover); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-  .tx-amount { font-weight: 700; font-family: var(--font-mono); }
-  .tx-amount-sub { font-size: 11px; color: var(--text-muted); }
-  .tx-network { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+  .tx-amount { font-weight: 700; font-family: var(--font-mono); color: var(--text-primary); font-size: 13.5px; }
+  .tx-amount-sub { font-size: 11.5px; color: var(--text-secondary); font-family: var(--font-mono); font-weight: 500; margin-top: 2px; }
+  .tx-network { display: flex; align-items: center; gap: 6px; font-weight: 600; color: var(--text-primary); }
+  .tx-time-cell { color: var(--text-secondary); font-size: 12px; font-weight: 500; }
   .badge-completed { background: var(--accent-green-light); color: var(--accent-green); padding: 4px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; }
 
   /* Explore list */
@@ -1503,41 +1601,41 @@
           <div class="card-white" style="padding:16px 24px;margin-bottom:24px;">
             <div class="assets-row">
               <div class="asset-item">
-                <div class="asset-icon" style="background:#F3F4F6;"><span style="color:#627EEA;">Ξ</span></div>
+                <div class="asset-icon eth-asset-icon"><span style="color:#627EEA; font-weight:800;">Ξ</span></div>
                 <div class="asset-info">
                   <h4>Ethereum</h4>
                   <div class="val" id="sideHoldEth">$10.29</div>
-                  <div class="change">+2.4% <span style="font-size:11px;color:var(--text-secondary);">(0.0032 ETH)</span></div>
+                  <div class="change">+2.4% <span class="asset-ticker-sub">(0.0032 ETH)</span></div>
                 </div>
               </div>
               <div class="asset-item">
-                <div class="asset-icon" style="background:#EFF6FF;"><span style="color:#2775CA;">$</span></div>
+                <div class="asset-icon usdc-asset-icon"><span style="color:#2775CA; font-weight:800;">$</span></div>
                 <div class="asset-info">
                   <h4>USD Coin</h4>
                   <div class="val" id="sideHoldUsdc">$0.00</div>
-                  <div class="change" style="color:var(--text-secondary);">0.00 USDC</div>
+                  <div class="change asset-ticker-neutral">0.00 USDC</div>
                 </div>
               </div>
               <div class="asset-item">
-                <div class="asset-icon" style="background:#EFF6FF;"><span style="color:#0052FF;font-weight:900;">B</span></div>
+                <div class="asset-icon base-asset-icon"><span style="color:#0052FF; font-weight:900;">B</span></div>
                 <div class="asset-info">
                   <h4>Base Sepolia</h4>
                   <div class="val" id="sideHoldBase">Chain 84532</div>
-                  <div class="change">Active L2</div>
+                  <div class="change" style="color:var(--accent-green); font-weight:600;">Active L2</div>
                 </div>
               </div>
               <div class="asset-item" style="border-right:none;">
-                <div class="asset-icon" style="background:var(--bg-hover);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                <div class="asset-icon enclave-asset-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
                 <div class="asset-info">
                   <h4>Enclave Passkey</h4>
                   <div class="val" id="sideHoldEnclave">P-256</div>
-                  <div class="change">Hardware 2-of-2</div>
+                  <div class="change" style="color:var(--accent-green); font-weight:600;">Hardware 2-of-2</div>
                 </div>
               </div>
               
               <div style="flex:1;"></div>
               
-              <button class="btn-action-secondary" id="openAddAssetModalBtn" style="border:1px dashed var(--border-medium);background:transparent;box-shadow:none;cursor:pointer;">
+              <button class="btn-action-secondary" id="openAddAssetModalBtn" style="border:1px dashed var(--border-medium);background:transparent;box-shadow:none;cursor:pointer;color:var(--text-primary);font-size:12.5px;font-weight:600;padding:8px 16px;">
                 + Add Asset
               </button>
             </div>
@@ -1571,10 +1669,9 @@
                     <td>
                       <div class="tx-amount">0.05 ETH</div>
                       <div class="tx-amount-sub">≈ $160.00 USD</div>
-                    </td>
-                    <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base Sepolia</div></td>
+                     <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base Sepolia</div></td>
                     <td><span class="badge-completed" style="background:rgba(245,158,11,0.15);color:var(--accent-amber);">2-of-2 Quorum</span></td>
-                    <td style="color:var(--text-secondary);font-size:12px;">Sep 2 · 10:18 PM</td>
+                    <td class="tx-time-cell">Sep 2 · 10:18 PM</td>
                     <td><a href="https://sepolia.basescan.org/tx/0x7f4a21908bcda14238e8210941094190248231b2c45189028490124801948123" target="_blank" style="color:#60A5FA;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a></td>
                   </tr>
                   <tr class="clickable-tx-row" data-name="Uniswap V3 Router" data-type="AI Agent Swap" data-amount="-20.00 USDC" data-fiat="$20.00 USD" data-status="Success" data-time="Sep 2 · 8:42 PM" data-hash="0x4b89f10928310948102948120938401928301928301928301928301928301928" data-target="0x2626664c2603336E57B271c5C0b26F421741e481" style="cursor:pointer;">
@@ -1588,12 +1685,12 @@
                     </td>
                     <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base Sepolia</div></td>
                     <td><span class="badge-completed" style="background:rgba(16,185,129,0.15);color:var(--accent-emerald);">Success</span></td>
-                    <td style="color:var(--text-secondary);font-size:12px;">Sep 2 · 8:42 PM</td>
+                    <td class="tx-time-cell">Sep 2 · 8:42 PM</td>
                     <td><a href="https://sepolia.basescan.org/tx/0x4b89f10928310948102948120938401928301928301928301928301928301928" target="_blank" style="color:#60A5FA;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a></td>
                   </tr>
                   <tr class="clickable-tx-row" data-name="Base Sepolia Faucet" data-type="Received Inflow" data-amount="+0.010 ETH" data-fiat="$32.00 USD" data-status="Confirmed" data-time="Sep 2 · 6:15 PM" data-hash="0x91d3a41029381029381029381029381029381029381029381029381029381029" data-target="0xB01543453cF31052c769d79e9C755E3b035d796f" style="cursor:pointer;">
                     <td>
-                      <div class="tx-type"><div class="tx-icon" style="color:var(--accent-emerald);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/></svg></div> Receive</div>
+                      <div class="tx-type"><div class="tx-icon" style="color:var(--accent-emerald);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 7 17 17"/></svg></div> Receive</div>
                     </td>
                     <td style="font-weight:600;">Base Sepolia Faucet</td>
                     <td>
@@ -1602,7 +1699,7 @@
                     </td>
                     <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base Sepolia</div></td>
                     <td><span class="badge-completed" style="background:rgba(16,185,129,0.15);color:var(--accent-emerald);">Confirmed</span></td>
-                    <td style="color:var(--text-secondary);font-size:12px;">Sep 2 · 6:15 PM</td>
+                    <td class="tx-time-cell">Sep 2 · 6:15 PM</td>
                     <td><a href="https://sepolia.basescan.org/tx/0x91d3a41029381029381029381029381029381029381029381029381029381029" target="_blank" style="color:#60A5FA;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a></td>
                   </tr>
                 </tbody>
@@ -2587,7 +2684,7 @@ async function fetchRecentTransactions() {
                 </div>
                 <div>
                   <div style="font-weight:600;font-size:14px;color:var(--text-primary);">${isOut ? 'Send' : 'Receive'}</div>
-                  <div style="font-size:12px;color:var(--text-muted);">${date}</div>
+                  <div style="font-size:12px;color:var(--text-secondary);">${date}</div>
                 </div>
               </div>
             </td>
@@ -3720,11 +3817,11 @@ if (confirmAddBtn) {
       const newItem = document.createElement('div');
       newItem.className = 'asset-item';
       newItem.innerHTML = `
-        <div class="asset-icon" style="background:#EFF6FF;"><span style="color:#0052FF; font-weight:800;">★</span></div>
+        <div class="asset-icon base-asset-icon"><span style="color:#0052FF; font-weight:800;">★</span></div>
         <div class="asset-info">
           <h4>${sym}</h4>
           <div class="val">$0.00</div>
-          <div class="change" style="color:var(--text-secondary);">0.00 ${sym}</div>
+          <div class="change asset-ticker-neutral">0.00 ${sym}</div>
         </div>
       `;
       assetsRow.insertBefore(newItem, assetsRow.children[assetsRow.children.length - 2]);
