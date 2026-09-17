@@ -174,6 +174,21 @@ async function signWithPasskeyDelegated(userOpHash, keyIndex = 0) {
     };
   }
 
+  // 2b. Open Full Web Dashboard (Side Panel / Desktop)
+  const openDashboard = () => {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+        chrome.tabs.create({ url: 'http://localhost:57547/app.html' });
+      } else {
+        window.open('http://localhost:57547/app.html', '_blank');
+      }
+    } catch (e) {
+      window.open('http://localhost:57547/app.html', '_blank');
+    }
+  };
+  if ($('btnOpenDashboard')) $('btnOpenDashboard').onclick = openDashboard;
+  if ($('spOpenFullDashboard')) $('spOpenFullDashboard').onclick = openDashboard;
+
   // 3. Settings Sheet
   if ($('btnOpenSettings')) {
     $('btnOpenSettings').onclick = () => {
@@ -1750,13 +1765,9 @@ if ($('btnThemeToggle')) {
 
 if ($('mnuToggleTheme')) {
   $('mnuToggleTheme').onclick = () => {
+    panelOptions.classList.remove('open');
+    btnOptions.classList.remove('active');
     toggleTheme();
-    if (typeof panelOptions !== 'undefined' && panelOptions) {
-      panelOptions.classList.remove('open');
-    }
-    if (typeof btnOptions !== 'undefined' && btnOptions) {
-      btnOptions.classList.remove('active');
-    }
   };
 }
 

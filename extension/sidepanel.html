@@ -6,36 +6,40 @@
   <title>Haptix Side Panel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-base: #08090E;
-      --bg-surface: #0E111A;
-      --bg-card: rgba(18, 22, 34, 0.75);
-      --bg-card-hover: rgba(26, 32, 48, 0.85);
-      --bg-glass: rgba(255, 255, 255, 0.04);
-      --bg-glass-hover: rgba(255, 255, 255, 0.08);
+      --bg-base: #08090D;
+      --bg-surface: #10121A;
+      --bg-card: #151822;
+      --bg-card-hover: #1A1E2B;
+      --bg-elevated: #1F2332;
+      --bg-subtle: rgba(255, 255, 255, 0.04);
+      --bg-subtle-hover: rgba(255, 255, 255, 0.08);
 
-      --text-white: #FFFFFF;
-      --text-main: #F1F5F9;
-      --text-muted: #94A3B8;
-      --text-dark: #64748B;
+      --text-primary: #FFFFFF;
+      --text-secondary: #E2E8F0;
+      --text-muted: #8E9BAE;
+      --text-dark: #505B6E;
 
       --base-blue: #0052FF;
-      --base-blue-glow: rgba(0, 82, 255, 0.35);
-      --accent-cyan: #38BDF8;
-      --accent-purple: #A855F7;
+      --base-blue-hover: #0045D8;
+      --base-blue-light: rgba(0, 82, 255, 0.15);
       --accent-emerald: #10B981;
+      --accent-emerald-light: rgba(16, 185, 129, 0.12);
       --accent-amber: #F59E0B;
+      --accent-amber-light: rgba(245, 158, 11, 0.12);
       --accent-rose: #F43F5E;
+      --accent-rose-light: rgba(244, 63, 94, 0.12);
 
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-focus: rgba(255, 255, 255, 0.2);
-      --border-blue: rgba(0, 82, 255, 0.4);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-medium: rgba(255, 255, 255, 0.12);
+      --border-focus: rgba(0, 82, 255, 0.4);
 
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 18px;
       --radius-full: 9999px;
 
       --font-heading: 'Outfit', -apple-system, sans-serif;
@@ -44,311 +48,756 @@
     }
 
     /* ==========================================================================
-       CRISP LIGHT THEME FOR SIDEPANEL
+       CRISP LIGHT THEME (DaisyUI / Apple Clean Aesthetic)
        ========================================================================== */
     [data-theme="light"] {
       --bg-base: #F8FAFC;
       --bg-surface: #FFFFFF;
       --bg-card: #FFFFFF;
       --bg-card-hover: #F1F5F9;
-      --bg-glass: rgba(0, 0, 0, 0.04);
-      --bg-glass-hover: rgba(0, 0, 0, 0.08);
+      --bg-elevated: #F8FAFC;
+      --bg-subtle: rgba(0, 0, 0, 0.04);
+      --bg-subtle-hover: rgba(0, 0, 0, 0.08);
 
-      --text-white: #0F172A;
-      --text-main: #1E293B;
+      --text-primary: #0F172A;
+      --text-secondary: #334155;
       --text-muted: #64748B;
       --text-dark: #94A3B8;
 
+      --base-blue: #0052FF;
+      --base-blue-hover: #0041CC;
+      --base-blue-light: rgba(0, 82, 255, 0.10);
+
       --border-subtle: #E2E8F0;
-      --border-focus: #CBD5E1;
-      --border-blue: rgba(0, 82, 255, 0.5);
+      --border-medium: #CBD5E1;
+      --border-focus: rgba(0, 82, 255, 0.5);
     }
 
     [data-theme="light"] body {
-      background: #F8FAFC;
-      color: #1E293B;
+      background-color: #F8FAFC;
+      color: #334155;
     }
-    [data-theme="light"] .sp-header {
+
+    @media (min-width: 500px) {
+      [data-theme="light"] body {
+        background: radial-gradient(circle at 50% 20%, #E2E8F0 0%, #F1F5F9 100%) !important;
+      }
+      [data-theme="light"] .app-container {
+        background: #FFFFFF !important;
+        border: 1px solid #CBD5E1 !important;
+        box-shadow: 0 25px 70px -15px rgba(15, 23, 42, 0.15), 0 0 40px rgba(0, 82, 255, 0.08) !important;
+      }
+    }
+
+    [data-theme="light"] .wallet-header {
       background: rgba(255, 255, 255, 0.96);
       border-bottom: 1px solid #E2E8F0;
     }
-    [data-theme="light"] .sp-account-chip {
+
+    [data-theme="light"] .account-pill {
       background: #F1F5F9;
       border: 1px solid #CBD5E1;
       color: #0F172A;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
-    [data-theme="light"] .sp-network-pill {
+    [data-theme="light"] .account-pill:hover {
+      background: #E2E8F0;
+      color: #000;
+    }
+
+    [data-theme="light"] .btn-header-icon {
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      color: #475569;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    [data-theme="light"] .btn-header-icon:hover {
+      background: #E2E8F0;
+      color: #0F172A;
+    }
+
+    [data-theme="light"] .headless-options-btn {
       background: #F1F5F9;
       border: 1px solid #CBD5E1;
       color: #0F172A;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
-    [data-theme="light"] .sp-btn {
+    [data-theme="light"] .headless-options-btn:hover {
+      background: #E2E8F0;
+    }
+
+    [data-theme="light"] .headless-menu-panel {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 20px 45px -8px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .headless-menu-item {
+      color: #334155;
+    }
+    [data-theme="light"] .headless-menu-item:hover {
+      background: #F1F5F9;
+      color: #0F172A;
+    }
+    [data-theme="light"] .headless-menu-item .item-badge {
+      background: #F1F5F9;
+      color: #64748B;
+      border-color: #E2E8F0;
+    }
+    [data-theme="light"] .headless-menu-divider {
+      background: #E2E8F0;
+    }
+
+    [data-theme="light"] .action-icon-circle {
       background: #FFFFFF;
       border: 1px solid #E2E8F0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 #FFFFFF;
       color: #0F172A;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     }
-    [data-theme="light"] .sp-btn:hover {
+    [data-theme="light"] .action-btn-item:hover .action-icon-circle {
       background: #F8FAFC;
-      border-color: #CBD5E1;
+      border-color: var(--base-blue);
+      box-shadow: 0 4px 14px rgba(0, 82, 255, 0.2);
     }
-    [data-theme="light"] .sp-card {
+    [data-theme="light"] .action-btn-item {
+      color: #64748B;
+    }
+    [data-theme="light"] .action-btn-item:hover {
+      color: #0F172A;
+    }
+
+    [data-theme="light"] .nav-tabs-bar {
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+    }
+    [data-theme="light"] .tab-btn {
+      color: #64748B;
+    }
+    [data-theme="light"] .tab-btn:hover {
+      color: #0F172A;
+      background: rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .tab-btn.active {
+      background: #FFFFFF;
+      color: var(--base-blue);
+      border: 1px solid #CBD5E1;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    [data-theme="light"] .asset-card {
       background: #FFFFFF;
       border: 1px solid #E2E8F0;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
+    [data-theme="light"] .asset-card:hover {
+      background: #F8FAFC;
+      border-color: #CBD5E1;
+    }
+
+    [data-theme="light"] .sheet-overlay {
+      background: #FFFFFF;
+      color: #0F172A;
+    }
+    [data-theme="light"] .surface-card {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+    }
+    [data-theme="light"] .tx-card {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+    [data-theme="light"] .tx-card:hover {
+      background: #F8FAFC;
+      border-color: #CBD5E1;
+    }
+    [data-theme="light"] .wallet-footer {
+      background: #F8FAFC;
+      border-top: 1px solid #E2E8F0;
+      color: #64748B;
+    }
+
+    /* DaisyUI Switch Component for Theme */
+    .theme-switch-btn {
+      width: 44px;
+      height: 24px;
+      background: #334155;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+      cursor: pointer;
+      padding: 2px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+    }
+    [data-theme="light"] .theme-switch-btn {
+      background: #0052FF;
+      border-color: #0052FF;
+    }
+    .theme-switch-thumb {
+      width: 18px;
+      height: 18px;
+      background: #FFFFFF;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: block;
+    }
+    [data-theme="light"] .theme-switch-thumb {
+      transform: translateX(20px);
+    }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html {
+      width: 100%;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
     body {
+      width: 100%;
+      height: 100vh;
+      max-width: 100%;
+      margin: 0;
+      padding: 0;
       background-color: var(--bg-base);
-      color: var(--text-main);
+      color: var(--text-secondary);
       font-family: var(--font-body);
-      min-height: 100vh;
-      padding: 16px 14px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
+      overflow: hidden;
+      user-select: none;
       position: relative;
     }
 
-    /* Ambient Background Glow */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -60px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 280px;
-      height: 180px;
-      background: radial-gradient(circle, rgba(0, 82, 255, 0.18) 0%, rgba(168, 85, 247, 0.1) 50%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-      filter: blur(40px);
+    .app-container {
+      display: flex !important;
+      flex-direction: column !important;
+      height: 100vh !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      overflow-x: hidden !important;
+      overflow-y: hidden !important;
+      position: relative;
+      background-color: var(--bg-base);
     }
 
-    /* Top Navigation Header */
-    .sp-header {
-      position: relative;
-      z-index: 1;
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 4px; }
+
+    /* Header Bar */
+    .wallet-header {
+      background: rgba(16, 18, 26, 0.96);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 8px 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+      z-index: 20;
+      box-sizing: border-box;
+      height: 48px;
+      width: 100%;
     }
 
-    .sp-brand {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      text-decoration: none;
-    }
-
-    .sp-brand-text {
-      font-family: var(--font-heading);
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--text-white);
-      letter-spacing: -0.02em;
+    .brand-section {
       display: flex;
       align-items: center;
       gap: 6px;
+      flex-shrink: 0;
+      min-width: 0;
     }
 
-    .sp-enclave-badge {
-      font-size: 9px;
-      font-weight: 700;
-      font-family: var(--font-mono);
-      background: rgba(0, 82, 255, 0.15);
-      color: #60A5FA;
-      border: 1px solid rgba(0, 82, 255, 0.3);
-      padding: 1px 5px;
-      border-radius: var(--radius-sm);
-    }
-
-    .sp-header-right {
+    .brand-logo-icon {
+      width: 22px;
+      height: 22px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      flex-shrink: 0;
     }
 
-    /* Account Chip */
-    .sp-account-chip {
-      display: flex;
+    .account-pill {
+      height: 28px;
+      box-sizing: border-box;
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 5px 10px;
+      gap: 5px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
       border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.16), 0 1px 3px rgba(0, 0, 0, 0.3);
+      padding: 0 7px;
       border-radius: var(--radius-full);
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
       color: #F1F5F9;
       cursor: pointer;
+      line-height: 1;
+      white-space: nowrap;
+      flex-shrink: 0;
       transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .sp-account-chip:hover {
+    .account-pill:hover {
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.06) 100%);
       border-color: rgba(255, 255, 255, 0.22);
       color: #FFFFFF;
       transform: translateY(-1px);
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 3px 8px rgba(0, 0, 0, 0.4);
     }
-    .sp-account-chip:active {
+    .account-pill:active {
       transform: scale(0.97);
     }
-    .sp-account-dot {
+
+    .account-avatar-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--accent-emerald);
-      box-shadow: 0 0 6px var(--accent-emerald);
+      background: #10B981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+      flex-shrink: 0;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
 
+    .network-badge {
+      height: 28px;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 7px;
+      background: linear-gradient(180deg, rgba(0, 82, 255, 0.18) 0%, rgba(0, 82, 255, 0.08) 100%);
+      border: 1px solid rgba(0, 82, 255, 0.36);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: 700;
+      color: #93C5FD;
+      white-space: nowrap;
+      line-height: 1;
+      flex-shrink: 0;
+    }
 
-    /* Base Network Pill */
-    .sp-network-pill {
+    .btn-header-icon {
+      width: 28px;
+      height: 28px;
+      box-sizing: border-box;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 1px 3px rgba(0, 0, 0, 0.4);
+      color: #CBD5E1;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      flex-shrink: 0;
+    }
+    .btn-header-icon:hover {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.06) 100%);
+      color: #FFFFFF;
+      border-color: rgba(255, 255, 255, 0.22);
+      transform: translateY(-1px);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 3px 8px rgba(0, 0, 0, 0.5);
+    }
+    .btn-header-icon:active {
+      transform: scale(0.96);
+    }
+
+    /* Headless UI Style Options Dropdown */
+    .headless-menu-wrapper {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .headless-options-btn {
+      height: 28px;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.04) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.18), 0 1px 3px rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      padding: 0 8px;
+      color: #F1F5F9;
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .headless-options-btn:hover {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.07) 100%);
+      border-color: rgba(255, 255, 255, 0.24);
+      color: #FFFFFF;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 3px 8px rgba(0, 0, 0, 0.5);
+      transform: translateY(-1px);
+    }
+    .headless-options-btn:active, .headless-options-btn.active {
+      background: rgba(255, 255, 255, 0.06);
+      transform: scale(0.97);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+    .headless-options-btn .chevron-icon {
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      color: #94A3B8;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .headless-options-btn.active .chevron-icon {
+      transform: rotate(180deg);
+      color: #FFFFFF;
+    }
+
+    .headless-menu-panel {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      width: 220px;
+      background: rgba(14, 16, 24, 0.98);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.95),
+                  0 0 0 1px rgba(255, 255, 255, 0.06),
+                  inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
+      border-radius: 12px;
+      padding: 5px;
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      transform-origin: top right;
+      animation: menuEnter 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
+    }
+    .headless-menu-panel.open {
+      display: flex;
+    }
+    @keyframes menuEnter {
+      0% { opacity: 0; transform: scale(0.96) translateY(-4px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .headless-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 7px;
+      color: #CBD5E1;
+      font-size: 11.5px;
+      font-weight: 500;
+      text-decoration: none;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      width: 100%;
+      height: 30px;
+      box-sizing: border-box;
+      text-align: left;
+    }
+    .headless-menu-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFFFFF;
+    }
+    .headless-menu-item .item-icon {
+      color: #94A3B8;
+      flex-shrink: 0;
+      width: 15px;
+      height: 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.12s ease;
+    }
+    .headless-menu-item:hover .item-icon {
+      color: #FFFFFF;
+    }
+    .headless-menu-item .item-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 11.5px;
+    }
+    .headless-menu-item .item-badge {
+      font-size: 9.5px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: #94A3B8;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+      line-height: 1.3;
+      display: inline-flex;
+      align-items: center;
+      margin-left: auto;
+    }
+    .headless-menu-item .item-badge.cyan {
+      color: #38BDF8;
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.24);
+    }
+    .headless-menu-item .item-badge.danger {
+      color: #FDA4AF;
+      background: rgba(244, 63, 94, 0.14);
+      border-color: rgba(244, 63, 94, 0.28);
+    }
+    .headless-menu-item .item-kbd {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #94A3B8;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      flex-shrink: 0;
+      line-height: 1.3;
+      display: inline-flex;
+      align-items: center;
+      margin-left: auto;
+    }
+    .headless-menu-item.danger {
+      color: #FDA4AF;
+    }
+    .headless-menu-item.danger:hover {
+      background: rgba(244, 63, 94, 0.14);
+      color: #FFE4E6;
+    }
+    .headless-menu-item.danger:hover .item-icon {
+      color: #FDA4AF;
+    }
+    .headless-menu-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 3px 4px;
+    }
+
+    /* Network Selector Dropdown */
+    .network-selector-wrapper {
+      position: relative;
+    }
+    .network-select-btn {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      padding: 3px 8px;
-      background: rgba(0, 82, 255, 0.12);
-      border: 1px solid rgba(0, 82, 255, 0.3);
-      border-radius: var(--radius-full);
-      font-size: 10.5px;
-      font-weight: 700;
-      color: #93C5FD;
+      height: 26px;
+      padding: 0 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      color: #CBD5E1;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all 0.14s ease;
     }
-
-    /* Card Wrapper */
-    .sp-card {
-      position: relative;
-      z-index: 1;
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 16px;
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      transition: border-color 0.2s ease;
+    .network-select-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
     }
-    .sp-card:hover {
-      border-color: rgba(255, 255, 255, 0.14);
+    .network-select-btn .network-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3B82F6;
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+      flex-shrink: 0;
     }
-
-    /* Hero Portfolio Card */
-    .sp-hero-card {
-      background: linear-gradient(180deg, rgba(24, 30, 48, 0.85) 0%, rgba(14, 18, 28, 0.9) 100%);
-      border: 1px solid rgba(0, 82, 255, 0.25);
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45), 0 0 24px rgba(0, 82, 255, 0.1);
+    .network-select-btn .network-dot.mainnet {
+      background: #10B981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
     }
-
-    .sp-hero-top {
+    .network-select-btn .chevron-icon {
+      color: #94A3B8;
+      transition: transform 0.15s ease;
+    }
+    .network-select-btn.active .chevron-icon {
+      transform: rotate(180deg);
+    }
+    .network-menu-panel {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      width: 200px;
+      background: rgba(14, 16, 24, 0.98);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.95);
+      border-radius: 12px;
+      padding: 5px;
+      z-index: 1001;
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+      transform-origin: top right;
+      animation: menuEnter 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .network-menu-panel.open {
+      display: flex;
+    }
+    .network-item-btn {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
-    }
-
-    .sp-hero-label {
-      font-size: 10.5px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-dark);
-      font-family: var(--font-mono);
-    }
-
-    .sp-refresh-btn {
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 7px;
+      color: #CBD5E1;
+      font-size: 11.5px;
+      font-weight: 500;
       background: transparent;
       border: none;
-      color: var(--text-muted);
       cursor: pointer;
-      display: flex;
+      width: 100%;
+      text-align: left;
+      transition: all 0.12s ease;
+    }
+    .network-item-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFFFFF;
+    }
+    .network-item-btn.selected {
+      background: rgba(0, 82, 255, 0.15);
+      color: #60A5FA;
+      font-weight: 600;
+    }
+
+    /* Emergency Alert Banner */
+    .alert-banner {
+      display: none;
+      background: var(--accent-rose-light);
+      border-bottom: 1px solid rgba(244, 63, 94, 0.3);
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #FDA4AF;
+      text-align: center;
       align-items: center;
       justify-content: center;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      transition: all 0.2s ease;
+      gap: 6px;
     }
-    .sp-refresh-btn:hover {
-      color: var(--text-white);
-      background: var(--bg-glass);
-    }
-    .sp-refresh-btn.spinning svg {
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    .sp-hero-fiat {
-      font-family: var(--font-heading);
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--text-white);
-      letter-spacing: -0.03em;
-      line-height: 1.1;
+    /* Main Scrollable View */
+    .main-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Hero Balance Section */
+    .portfolio-hero {
+      padding: 18px 16px 14px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      background: radial-gradient(circle at 50% 0%, rgba(0, 82, 255, 0.08) 0%, transparent 70%);
+    }
+
+    .hero-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
       margin-bottom: 4px;
     }
 
-    .sp-hero-crypto {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .hero-balance {
+      font-family: var(--font-heading);
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-fiat {
       font-size: 13px;
       color: var(--text-muted);
-      font-family: var(--font-mono);
-      margin-bottom: 16px;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .sp-trend-badge {
-      font-size: 10.5px;
+    .pnl-chip {
+      font-size: 11px;
       font-weight: 700;
       color: var(--accent-emerald);
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.25);
+      background: var(--accent-emerald-light);
       padding: 1px 6px;
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-full);
     }
 
-    /* Quick Action Bar */
-    .sp-quick-actions {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    /* Quick Action Buttons */
+    .quick-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 16px;
+      width: 100%;
     }
 
-    .sp-action-btn {
+    .action-btn-item {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      background: transparent;
+      background: none;
       border: none;
       color: #94A3B8;
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
       cursor: pointer;
-      text-decoration: none;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .sp-action-btn:hover {
+    .action-btn-item:hover {
       color: #FFFFFF;
       transform: translateY(-2px);
     }
-    .sp-action-btn:active {
+    .action-btn-item:active {
       transform: translateY(0) scale(0.95);
     }
 
-    .sp-action-icon {
-      width: 42px;
-      height: 42px;
+    .action-icon-circle {
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 100%);
       border: 1px solid rgba(255, 255, 255, 0.12);
@@ -359,715 +808,1772 @@
       color: #F8FAFC;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .sp-action-btn:hover .sp-action-icon {
+    .action-btn-item:hover .action-icon-circle {
       background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.06) 100%);
       border-color: rgba(0, 82, 255, 0.5);
-      color: #FFFFFF;
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 6px 18px rgba(0, 82, 255, 0.3);
+      color: #FFFFFF;
     }
 
-    .sp-action-label {
-      font-size: 11px;
+    /* Headless UI / DaisyUI Segmented Navigation Tabs */
+    .nav-tabs-bar {
+      display: flex;
+      padding: 3px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 11px;
+      background: rgba(10, 12, 18, 0.6);
+      margin: 14px 14px 0;
+      gap: 3px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 7px 0;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-family: var(--font-body);
+      font-size: 11.5px;
       font-weight: 600;
+      color: #94A3B8;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      text-align: center;
+    }
+    .tab-btn:hover {
+      color: #F1F5F9;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .tab-btn.active {
+      color: #FFFFFF;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 2px 8px rgba(0, 0, 0, 0.4);
+      font-weight: 700;
     }
 
-    /* Section Header */
-    .sp-section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .sp-section-title {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-dark);
-      font-family: var(--font-mono);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* Token Asset List */
-    .sp-token-list {
+    /* Tab Panes Container */
+    .tab-content-area {
+      padding: 14px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
     }
 
-    .sp-token-row {
+    .tab-pane {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .tab-pane.active { display: flex; }
+
+    /* Token Asset Rows */
+    .token-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.02);
+      background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
       cursor: pointer;
     }
-    .sp-token-row:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: var(--border-focus);
-      transform: translateX(2px);
+    .token-row:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-medium);
     }
 
-    .sp-token-left {
+    .token-info {
       display: flex;
       align-items: center;
       gap: 10px;
     }
 
-    .sp-token-icon-wrap {
+    .token-logo-badge {
       width: 32px;
       height: 32px;
-      border-radius: 50%;
-      background: #141824;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-full);
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
       flex-shrink: 0;
     }
 
-    .sp-token-name {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-white);
-      line-height: 1.2;
-    }
-
-    .sp-token-network {
-      font-size: 10.5px;
-      color: var(--text-muted);
-    }
-
-    .sp-token-right {
-      text-align: right;
-    }
-
-    .sp-token-amt {
-      font-family: var(--font-mono);
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-white);
-      line-height: 1.2;
-    }
-
-    .sp-token-fiat {
-      font-size: 10.5px;
-      color: var(--text-muted);
-    }
-
-    /* Side Panel Transaction List */
-    .sp-tx-list {
+    .token-name-wrap {
       display: flex;
       flex-direction: column;
-      gap: 7px;
     }
-    .sp-tx-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 10px;
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      border-radius: var(--radius-sm);
-      font-size: 11.5px;
-      text-decoration: none;
-      color: inherit;
-      transition: all 0.15s ease;
-      cursor: pointer;
-    }
-    .sp-tx-item:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: var(--border-focus);
-      transform: translateX(2px);
-    }
-    .sp-tx-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .sp-tx-icon {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 12px;
-      flex-shrink: 0;
-    }
-    .sp-tx-icon.send { background: rgba(0, 82, 255, 0.15); color: #60A5FA; border: 1px solid rgba(0, 82, 255, 0.3); }
-    .sp-tx-icon.receive { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
-    .sp-tx-icon.agent { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); }
-    .sp-tx-icon.quorum { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
-    .sp-tx-icon.deploy { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.3); }
-
-    .sp-tx-title {
-      font-size: 12px;
+    .token-title {
+      font-size: 13.5px;
       font-weight: 700;
-      color: var(--text-white);
-      line-height: 1.2;
+      color: var(--text-primary);
     }
-    .sp-tx-sub {
-      font-size: 10px;
-      color: var(--text-muted);
-    }
-    .sp-tx-right {
-      text-align: right;
-    }
-    .sp-tx-fiat {
-      font-family: var(--font-mono);
-      font-size: 11.5px;
-      font-weight: 700;
-      color: var(--text-white);
-      line-height: 1.2;
-    }
-    .sp-tx-status {
-      font-size: 9.5px;
-      font-family: var(--font-mono);
-      font-weight: 700;
-    }
-
-    /* Policy Firewall Card */
-    .sp-policy-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .sp-policy-badge {
-      font-size: 9.5px;
-      font-weight: 800;
-      font-family: var(--font-mono);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--accent-emerald);
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.28);
-      padding: 2px 7px;
-      border-radius: var(--radius-sm);
-    }
-
-    .sp-policy-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .sp-policy-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 10px;
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      border-radius: var(--radius-sm);
-      font-size: 12px;
-    }
-
-    .sp-policy-key {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--text-muted);
-    }
-
-    .sp-policy-val {
-      font-family: var(--font-mono);
-      font-weight: 700;
-    }
-
-    .sp-enclave-footer {
-      margin-top: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 10.5px;
-      color: var(--text-dark);
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      padding-top: 8px;
-    }
-
-    /* AI Agent Card */
-    .sp-agent-pill {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      padding: 6px 10px;
-      border-radius: var(--radius-sm);
-      margin-bottom: 8px;
-    }
-
-    .sp-agent-key {
-      font-family: var(--font-mono);
+    .token-chain-tag {
       font-size: 11px;
-      color: #93C5FD;
+      color: var(--text-muted);
     }
 
-    .sp-agent-copy-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-dark);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      transition: color 0.15s ease;
-    }
-    .sp-agent-copy-btn:hover {
-      color: var(--text-white);
-    }
-
-    .sp-agent-bar-wrap {
-      height: 6px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: var(--radius-full);
-      overflow: hidden;
-      margin-top: 6px;
-    }
-
-    .sp-agent-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #38BDF8, #0052FF);
-      border-radius: var(--radius-full);
-      transition: width 0.4s ease;
-      box-shadow: 0 0 8px rgba(0, 82, 255, 0.5);
-    }
-
-    /* Bottom Action Dock */
-    .sp-footer-dock {
-      margin-top: auto;
+    .token-balance-wrap {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      padding-top: 8px;
+      align-items: flex-end;
+    }
+    .token-crypto-val {
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .token-fiat-val {
+      font-size: 11px;
+      color: var(--text-muted);
     }
 
-    .btn-dashboard-main {
+    /* Cards */
+    .surface-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title-text {
+      font-size: 11.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .status-chip {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .chip-active {
+      background: var(--accent-emerald-light);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .chip-revoked {
+      background: var(--accent-rose-light);
+      color: var(--accent-rose);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+    .chip-quorum {
+      background: var(--accent-amber-light);
+      color: var(--accent-amber);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .key-spec-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 12.5px;
+    }
+    .key-spec-row:last-child { border-bottom: none; }
+
+    /* DaisyUI / Linear Grade Action Buttons */
+    .btn-action-primary {
       background: linear-gradient(180deg, #0055FF 0%, #0043D0 100%);
       color: #FFFFFF;
       border: 1px solid rgba(255, 255, 255, 0.24);
-      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.35), 0 4px 16px rgba(0, 82, 255, 0.4);
-      padding: 12px 16px;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.32), 0 4px 14px rgba(0, 82, 255, 0.38);
+      padding: 11px 16px;
       border-radius: 10px;
-      font-family: var(--font-heading);
-      font-weight: 800;
-      font-size: 13.5px;
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 13px;
       cursor: pointer;
-      width: 100%;
-      text-align: center;
-      text-decoration: none;
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
       transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      width: 100%;
       letter-spacing: -0.01em;
       user-select: none;
     }
-    .btn-dashboard-main:hover {
+    .btn-action-primary:hover {
       background: linear-gradient(180deg, #1C68FF 0%, #004EE8 100%);
       border-color: rgba(255, 255, 255, 0.38);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.42), 0 6px 20px rgba(0, 82, 255, 0.5);
       transform: translateY(-1px);
-      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.45), 0 6px 22px rgba(0, 82, 255, 0.55);
       color: #FFFFFF;
     }
-    .btn-dashboard-main:active {
+    .btn-action-primary:active {
       transform: translateY(0) scale(0.98);
       box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
     }
+    .btn-action-primary:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
 
-    .btn-freeze-danger {
+    .btn-action-secondary {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+      color: #E2E8F0;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.15), 0 2px 5px rgba(0, 0, 0, 0.3);
+      padding: 9px 14px;
+      border-radius: 9px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+    .btn-action-secondary:hover {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.06) 100%);
+      color: #FFFFFF;
+      border-color: rgba(255, 255, 255, 0.22);
+      transform: translateY(-1px);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 4px 10px rgba(0, 0, 0, 0.4);
+    }
+    .btn-action-secondary:active {
+      transform: scale(0.97);
+    }
+
+    .btn-action-danger {
       background: linear-gradient(180deg, rgba(244, 63, 94, 0.14) 0%, rgba(244, 63, 94, 0.06) 100%);
       color: #FDA4AF;
       border: 1px solid rgba(244, 63, 94, 0.3);
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.14), 0 2px 6px rgba(244, 63, 94, 0.2);
-      padding: 9px 14px;
+      padding: 8px 13px;
       border-radius: 9px;
-      font-size: 12px;
+      font-family: var(--font-body);
       font-weight: 700;
+      font-size: 12px;
       cursor: pointer;
-      width: 100%;
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 5px;
       transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       user-select: none;
     }
-    .btn-freeze-danger:hover {
+    .btn-action-danger:hover {
       background: linear-gradient(180deg, rgba(244, 63, 94, 0.22) 0%, rgba(244, 63, 94, 0.1) 100%);
       border-color: rgba(244, 63, 94, 0.45);
       color: #FFE4E6;
       transform: translateY(-1px);
       box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 4px 12px rgba(244, 63, 94, 0.3);
     }
-    .btn-freeze-danger:active {
+    .btn-action-danger:active {
       transform: scale(0.97);
     }
 
-    .sp-dock-meta {
-      text-align: center;
+    /* Activity / Transaction History Bar */
+    .activity-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .activity-header-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .activity-title {
+      font-family: var(--font-heading);
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+    .activity-counter {
       font-size: 10px;
-      color: var(--text-dark);
       font-family: var(--font-mono);
-      margin-top: 2px;
+      font-weight: 700;
+      color: #93C5FD;
+      background: rgba(0, 82, 255, 0.15);
+      border: 1px solid rgba(0, 82, 255, 0.3);
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+    }
+    .activity-explorer-btn {
+      font-size: 11px;
+      font-weight: 700;
+      color: #60A5FA;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      transition: all 0.15s ease;
+    }
+    .activity-explorer-btn:hover {
+      background: var(--bg-subtle-hover);
+      color: #93C5FD;
+      border-color: var(--border-medium);
     }
 
-    /* Receive Modal Overlay */
-    .sp-modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      z-index: 100;
-      display: none;
+    /* Filter Chips */
+    .tx-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .tx-filter-chip {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .tx-filter-chip:hover {
+      background: var(--bg-card-hover);
+      color: var(--text-primary);
+    }
+    .tx-filter-chip.active {
+      background: rgba(0, 82, 255, 0.2);
+      border-color: var(--base-blue);
+      color: #FFFFFF;
+      font-weight: 700;
+    }
+
+    /* Transaction History List */
+    .tx-history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .tx-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tx-item:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-medium);
+      transform: translateY(-1px);
+    }
+    .tx-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      flex-shrink: 0;
+      font-weight: 800;
+      font-size: 14px;
     }
-    .sp-modal-backdrop.active {
-      display: flex;
+    .tx-icon-box.send {
+      background: rgba(0, 82, 255, 0.15);
+      border: 1px solid rgba(0, 82, 255, 0.3);
+      color: #60A5FA;
+    }
+    .tx-icon-box.receive {
+      background: var(--accent-emerald-light);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--accent-emerald);
+    }
+    .tx-icon-box.agent {
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: var(--accent-purple);
+    }
+    .tx-icon-box.quorum {
+      background: var(--accent-amber-light);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--accent-amber);
+    }
+    .tx-icon-box.deploy {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent-cyan);
     }
 
-    .sp-modal-card {
-      background: #111420;
-      border: 1px solid var(--border-medium);
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      width: 100%;
-      max-width: 320px;
+    .tx-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .tx-row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .tx-action-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .tx-status-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+    }
+    .tx-status-pill.success {
+      color: var(--accent-emerald);
+      background: var(--accent-emerald-light);
+    }
+    .tx-status-pill.quorum {
+      color: var(--accent-amber);
+      background: var(--accent-amber-light);
+    }
+    .tx-status-pill.pending {
+      color: #60A5FA;
+      background: rgba(0, 82, 255, 0.15);
+    }
+
+    .tx-row-mid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .tx-row-bot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 2px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 10px;
+      font-family: var(--font-mono);
+    }
+    .tx-auth-tag {
+      color: #93C5FD;
+    }
+    .tx-hash-link {
+      color: var(--text-dark);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      transition: color 0.15s ease;
+    }
+    .tx-hash-link:hover {
+      color: #60A5FA;
+    }
+
+    /* Detail Sheet Hero */
+    .tx-detail-hero {
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-      animation: modalPop 0.2s ease-out;
+      padding: 18px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
     }
-    @keyframes modalPop {
-      0% { transform: scale(0.92); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
+    .tx-detail-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-full);
+      background: var(--bg-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border-medium);
+    }
+    .tx-detail-amount {
+      font-family: var(--font-heading);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+    .tx-detail-fiat {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .tx-detail-status-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--accent-emerald);
+      background: var(--accent-emerald-light);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 2px 10px;
+      border-radius: var(--radius-full);
+    }
+    .btn-inline-copy {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+    }
+    .btn-inline-copy:hover { color: #FFF; }
+
+    /* Modal / Drawer Overlay Sheets (Send, Receive, Settings) */
+    .sheet-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-base);
+      z-index: 50;
+      display: none;
+      flex-direction: column;
+      padding: 14px;
+      overflow-y: auto;
+      animation: slideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sheet-overlay.active { display: flex; }
+
+    @keyframes slideIn {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
 
-    /* Toast Notification */
-    .sp-toast {
-      position: fixed;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%) translateY(-30px);
-      background: #1E293B;
-      color: #FFFFFF;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      padding: 6px 14px;
-      border-radius: var(--radius-full);
-      font-size: 11.5px;
-      font-weight: 600;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-      z-index: 200;
-      pointer-events: none;
-      opacity: 0;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 10px;
+      margin-bottom: 14px;
     }
-    .sp-toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
+
+    .sheet-title {
+      font-family: var(--font-heading);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-close-sheet {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      width: 26px;
+      height: 26px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-close-sheet:hover {
+      background: var(--bg-subtle-hover);
+      color: var(--text-primary);
+    }
+
+    /* Form Fields */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .form-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .form-input {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      color: #FFF;
+      font-family: var(--font-body);
+      font-size: 13px;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    .form-input:focus {
+      border-color: var(--base-blue);
+      box-shadow: 0 0 0 2px rgba(0, 82, 255, 0.2);
+    }
+
+    .input-with-action {
+      display: flex;
+      align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding-right: 6px;
+    }
+    .input-with-action input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 10px 12px;
+      color: #FFF;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      outline: none;
+    }
+
+    .btn-inline-action {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: #60A5FA;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+    .btn-inline-action:hover { background: var(--bg-subtle-hover); }
+
+    /* Policy Assessment Box */
+    .policy-box {
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin: 8px 0;
+    }
+    .policy-box.safe {
+      background: var(--accent-emerald-light);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .policy-box.quorum {
+      background: var(--accent-amber-light);
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .policy-box.freeze {
+      background: var(--accent-rose-light);
+      border-color: rgba(244, 63, 94, 0.35);
+    }
+
+    /* DApp Approval View (Sheet Mode) */
+    #viewApproval {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      padding: 14px;
+      background: var(--bg-base);
+      overflow-y: auto;
+      gap: 12px;
+    }
+
+    .approval-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 8px;
+    }
+
+    .btn-dismiss {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-dismiss:hover { color: var(--text-primary); }
+
+    .origin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .approval-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .approval-title {
+      font-family: var(--font-heading);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    /* Bottom Status Bar */
+    .wallet-footer {
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-dark);
+      flex-shrink: 0;
+    }
+
+    /* =========================================================
+       LIGHT THEME BULLETPROOF HOVER & TEXT VISIBILITY OVERRIDES
+       ========================================================= */
+    [data-theme="light"] {
+      --bg-base: #FFFFFF;
+      --bg-surface: #F8FAFC;
+      --bg-card: #FFFFFF;
+      --border-subtle: #E2E8F0;
+      --border-medium: #CBD5E1;
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #64748B;
+      --text-dark: #94A3B8;
+    }
+
+    [data-theme="light"] body {
+      background-color: #FFFFFF !important;
+      color: #334155 !important;
+    }
+
+    /* 1. Header Buttons & Hover */
+    [data-theme="light"] .wallet-header {
+      background: rgba(255, 255, 255, 0.98) !important;
+      border-bottom: 1px solid #E2E8F0 !important;
+    }
+
+    [data-theme="light"] .account-pill {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .account-pill:hover {
+      background: #E2E8F0 !important;
+      border-color: #94A3B8 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .account-pill svg {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .account-pill:hover svg {
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .btn-header-icon {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #475569 !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .btn-header-icon:hover {
+      background: #E2E8F0 !important;
+      border-color: #94A3B8 !important;
+      color: #0F172A !important;
+    }
+
+    [data-theme="light"] .headless-options-btn {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .headless-options-btn:hover {
+      background: #E2E8F0 !important;
+      border-color: #94A3B8 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .headless-options-btn .chevron-icon {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .headless-options-btn:hover .chevron-icon {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .headless-options-btn.active {
+      background: #E2E8F0 !important;
+      color: #0F172A !important;
+    }
+
+    /* 2. Options Menu Panel & Items */
+    [data-theme="light"] .headless-menu-panel {
+      background: rgba(255, 255, 255, 0.99) !important;
+      border: 1px solid #CBD5E1 !important;
+      box-shadow: 0 16px 40px -8px rgba(15, 23, 42, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+    }
+    [data-theme="light"] .headless-menu-item {
+      color: #334155 !important;
+    }
+    [data-theme="light"] .headless-menu-item .item-icon {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .headless-menu-item:hover {
+      background: #F1F5F9 !important;
+      color: #0F172A !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] .headless-menu-item:hover .item-icon {
+      color: #0052FF !important;
+    }
+    [data-theme="light"] .headless-menu-item .item-badge {
+      background: #F1F5F9 !important;
+      color: #475569 !important;
+      border: 1px solid #CBD5E1 !important;
+    }
+    [data-theme="light"] .headless-menu-item:hover .item-badge {
+      border-color: #94A3B8 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .headless-menu-item .item-badge.cyan {
+      background: rgba(0, 82, 255, 0.08) !important;
+      color: #0052FF !important;
+      border-color: rgba(0, 82, 255, 0.25) !important;
+    }
+    [data-theme="light"] .headless-menu-item .item-badge.danger {
+      background: rgba(244, 63, 94, 0.08) !important;
+      color: #E11D48 !important;
+      border-color: rgba(244, 63, 94, 0.25) !important;
+    }
+    [data-theme="light"] .headless-menu-item.danger {
+      color: #E11D48 !important;
+    }
+    [data-theme="light"] .headless-menu-item.danger .item-icon {
+      color: #E11D48 !important;
+    }
+    [data-theme="light"] .headless-menu-item.danger:hover {
+      background: rgba(244, 63, 94, 0.08) !important;
+      color: #BE123C !important;
+    }
+    [data-theme="light"] .headless-menu-item.danger:hover .item-icon {
+      color: #BE123C !important;
+    }
+    [data-theme="light"] .headless-menu-divider {
+      background: #E2E8F0 !important;
+    }
+
+    /* 3. Hero Net Worth Section */
+    [data-theme="light"] .hero-label {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .hero-balance {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .hero-fiat {
+      color: #64748B !important;
+    }
+
+    /* 4. Quick Action Buttons (Send, Receive, AI Agents, Freeze) */
+    [data-theme="light"] .action-btn-item {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .action-btn-item:hover {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .action-btn-item span {
+      color: #475569 !important;
+    }
+    [data-theme="light"] .action-btn-item:hover span {
+      color: #0F172A !important;
+      font-weight: 700 !important;
+    }
+    [data-theme="light"] .action-icon-circle {
+      background: #FFFFFF !important;
+      border: 1px solid #CBD5E1 !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), inset 0 1px 0 #FFFFFF !important;
+      color: #1E293B !important;
+    }
+    [data-theme="light"] .action-btn-item:hover .action-icon-circle {
+      background: #F8FAFC !important;
+      border-color: #0052FF !important;
+      color: #0052FF !important;
+      box-shadow: 0 4px 14px rgba(0, 82, 255, 0.2) !important;
+    }
+    /* AI Agents Button in light mode */
+    [data-theme="light"] #btnActionAgents .action-icon-circle {
+      background: rgba(0, 82, 255, 0.07) !important;
+      border: 1px solid rgba(0, 82, 255, 0.3) !important;
+      color: #0052FF !important;
+    }
+    [data-theme="light"] #btnActionAgents:hover .action-icon-circle {
+      background: rgba(0, 82, 255, 0.14) !important;
+      border-color: #0052FF !important;
+      box-shadow: 0 4px 14px rgba(0, 82, 255, 0.25) !important;
+    }
+    [data-theme="light"] #btnActionAgents span {
+      color: #0052FF !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] #btnActionAgents:hover span {
+      color: #0038B8 !important;
+    }
+    /* Freeze Button in light mode */
+    [data-theme="light"] #btnActionFreeze .action-icon-circle {
+      background: rgba(244, 63, 94, 0.07) !important;
+      border: 1px solid rgba(244, 63, 94, 0.3) !important;
+      color: #E11D48 !important;
+    }
+    [data-theme="light"] #btnActionFreeze:hover .action-icon-circle {
+      background: rgba(244, 63, 94, 0.14) !important;
+      border-color: #E11D48 !important;
+      box-shadow: 0 4px 14px rgba(244, 63, 94, 0.25) !important;
+    }
+    [data-theme="light"] #btnActionFreeze span {
+      color: #E11D48 !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] #btnActionFreeze:hover span {
+      color: #BE123C !important;
+    }
+
+    /* 5. Navigation Tab Buttons (Tokens | AI Agents | Security | Activity) */
+    [data-theme="light"] .nav-tabs-bar {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+    }
+    [data-theme="light"] .tab-btn {
+      color: #475569 !important;
+      font-weight: 600 !important;
+    }
+    [data-theme="light"] .tab-btn:hover {
+      color: #0F172A !important;
+      background: rgba(0, 0, 0, 0.06) !important;
+    }
+    [data-theme="light"] .tab-btn.active {
+      background: #FFFFFF !important;
+      color: #0052FF !important;
+      border: 1px solid #CBD5E1 !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+      font-weight: 700 !important;
+    }
+
+    /* 6. Token Cards / Rows */
+    [data-theme="light"] .token-row {
+      background: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    }
+    [data-theme="light"] .token-row:hover {
+      background: #F8FAFC !important;
+      border-color: #0052FF !important;
+      box-shadow: 0 4px 12px rgba(0, 82, 255, 0.08) !important;
+    }
+    [data-theme="light"] .token-name {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .token-row:hover .token-name {
+      color: #0052FF !important;
+    }
+    [data-theme="light"] .token-sym {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .token-fiat {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .token-amount {
+      color: #64748B !important;
+    }
+
+    /* 7. Activity Filter Chips and Transaction Cards */
+    [data-theme="light"] .tx-filter-chip {
+      background: #F1F5F9 !important;
+      color: #475569 !important;
+      border: 1px solid #CBD5E1 !important;
+    }
+    [data-theme="light"] .tx-filter-chip:hover {
+      background: #E2E8F0 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .tx-filter-chip.active {
+      background: #0052FF !important;
+      color: #FFFFFF !important;
+      border-color: #0052FF !important;
+    }
+    [data-theme="light"] .tx-card {
+      background: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+    }
+    [data-theme="light"] .tx-card:hover {
+      background: #F8FAFC !important;
+      border-color: #CBD5E1 !important;
+    }
+    [data-theme="light"] .tx-title {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .tx-sub {
+      color: #64748B !important;
+    }
+    [data-theme="light"] .tx-amount {
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .tx-fiat {
+      color: #64748B !important;
+    }
+
+    /* 8. Session Delegation & Security Cards */
+    [data-theme="light"] .surface-card {
+      background: #F8FAFC !important;
+      border: 1px solid #E2E8F0 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .session-box {
+      background: #FFFFFF !important;
+      border: 1px solid #E2E8F0 !important;
+    }
+
+    /* 9. Modals and Settings Sheet */
+    [data-theme="light"] .sheet-overlay {
+      background: #FFFFFF !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .btn-action-primary {
+      background: #0052FF !important;
+      color: #FFFFFF !important;
+    }
+    [data-theme="light"] .btn-action-primary:hover {
+      background: #0045D8 !important;
+      color: #FFFFFF !important;
+    }
+    [data-theme="light"] .btn-action-secondary {
+      background: #F1F5F9 !important;
+      border: 1px solid #CBD5E1 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .btn-action-secondary:hover {
+      background: #E2E8F0 !important;
+      color: #0F172A !important;
+    }
+    [data-theme="light"] .wallet-footer {
+      background: #F8FAFC !important;
+      border-top: 1px solid #E2E8F0 !important;
+      color: #64748B !important;
     }
   </style>
 </head>
 <body>
 
-  <!-- Toast -->
-  <div class="sp-toast" id="spToast">Address copied to clipboard!</div>
+<div class="app-container">
+  <!-- Header Bar -->
+  <header class="wallet-header">
+    <div class="brand-section sp-brand">
+      <div class="brand-logo-icon">
+        <svg width="22" height="22" viewBox="0 0 100 100" fill="none" style="flex-shrink:0;color:#FFFFFF;">
+          <!-- Official Haptix Brand Mark -->
+          <path d="M 21.12 58.80 L 19.77 58.86 L 18.40 58.77 L 17.03 58.54 L 15.66 58.17 L 14.32 57.68 L 13.01 57.07 L 11.75 56.34 L 10.56 55.52 L 9.45 54.60 L 8.43 53.59 L 7.52 52.50 L 6.73 51.34 L 6.07 50.12 L 5.57 48.83 L 5.22 47.51 L 5.02 46.15 L 4.96 44.76 L 5.04 43.37 L 5.23 41.99 L 5.55 40.62 L 5.97 39.28 L 6.48 37.97 L 7.07 36.69 L 7.71 35.43 L 8.39 34.19 L 9.09 32.97 L 9.81 31.77 L 10.52 30.58 L 11.25 29.40 L 11.99 28.23 L 12.74 27.07 L 13.50 25.92 L 14.28 24.77 L 15.08 23.63 L 15.89 22.49 L 16.72 21.36 L 17.58 20.22 L 18.45 19.09 L 19.36 17.97 L 20.29 16.89 L 21.26 15.84 L 22.27 14.85 L 23.31 13.94 L 24.40 13.10 L 25.54 12.36 L 26.73 11.73 L 27.97 11.22 L 29.27 10.85 L 30.63 10.62 L 32.03 10.54 L 33.45 10.58 L 34.88 10.76 L 36.31 11.06 L 37.71 11.47 L 39.08 12.00 L 40.39 12.63 L 41.64 13.36 L 42.80 14.19 L 43.86 15.10 L 44.80 16.10 L 45.61 17.17 L 46.27 18.32 L 46.78 19.53 L 47.13 20.79 L 47.35 22.10 L 47.44 23.45 L 47.41 24.81 L 47.26 26.20 L 47.00 27.59 L 46.65 28.98 L 46.21 30.35 L 45.69 31.70 L 45.09 33.02 L 44.43 34.29 L 43.72 35.52 L 42.96 36.70 L 42.16 37.85 L 41.35 38.97 L 40.53 40.09 L 39.72 41.20 L 38.92 42.32 L 38.15 43.45 L 37.40 44.60 L 36.65 45.76 L 35.90 46.93 L 35.13 48.10 L 34.31 49.26 L 33.45 50.41 L 32.54 51.54 L 31.59 52.63 L 30.59 53.67 L 29.55 54.65 L 28.46 55.56 L 27.33 56.38 L 26.17 57.11 L 24.96 57.73 L 23.72 58.22 L 22.44 58.58 L 21.12 58.80 Z" fill="currentColor" />
+          <path d="M 48.90 89.37 L 46.77 89.38 L 44.59 89.11 L 42.42 88.57 L 40.29 87.77 L 38.28 86.73 L 36.42 85.47 L 34.76 84.01 L 33.37 82.36 L 32.27 80.54 L 31.47 78.58 L 30.96 76.52 L 30.72 74.40 L 30.74 72.25 L 31.01 70.10 L 31.51 68.00 L 32.22 65.96 L 33.11 63.98 L 34.14 62.04 L 35.28 60.15 L 36.49 58.29 L 37.73 56.46 L 39.00 54.65 L 40.27 52.85 L 41.54 51.07 L 42.81 49.30 L 44.05 47.53 L 45.27 45.77 L 46.47 44.01 L 47.65 42.24 L 48.82 40.47 L 49.98 38.69 L 51.14 36.91 L 52.30 35.11 L 53.46 33.31 L 54.63 31.48 L 55.82 29.64 L 57.03 27.78 L 58.26 25.91 L 59.52 24.03 L 60.83 22.18 L 62.18 20.38 L 63.60 18.66 L 65.07 17.05 L 66.63 15.57 L 68.27 14.25 L 70.00 13.11 L 71.83 12.18 L 73.77 11.49 L 75.83 11.06 L 77.98 10.90 L 80.17 11.01 L 82.36 11.37 L 84.49 11.99 L 86.53 12.85 L 88.41 13.96 L 90.11 15.30 L 91.55 16.88 L 92.73 18.67 L 93.64 20.62 L 94.29 22.69 L 94.69 24.84 L 94.83 27.01 L 94.74 29.17 L 94.41 31.27 L 93.87 33.32 L 93.14 35.32 L 92.25 37.27 L 91.23 39.18 L 90.09 41.06 L 88.86 42.91 L 87.57 44.73 L 86.25 46.53 L 84.91 48.32 L 83.58 50.10 L 82.29 51.88 L 81.04 53.66 L 79.83 55.43 L 78.65 57.21 L 77.50 58.99 L 76.36 60.77 L 75.23 62.55 L 74.10 64.35 L 72.96 66.14 L 71.82 67.95 L 70.65 69.76 L 69.46 71.59 L 68.23 73.42 L 66.96 75.27 L 65.65 77.11 L 64.28 78.92 L 62.86 80.68 L 61.38 82.35 L 59.83 83.91 L 58.21 85.33 L 56.52 86.58 L 54.75 87.64 L 52.89 88.47 L 50.94 89.06 L 48.90 89.37 Z" fill="currentColor" />
+        </svg>
+      </div>
 
-  <!-- Header -->
-  <header class="sp-header">
-    <div class="sp-brand">
-      <svg width="22" height="22" viewBox="0 0 100 100" fill="none" style="flex-shrink:0;color:#FFFFFF;">
-        <!-- Official Haptix Brand Mark -->
-        <path d="M 21.12 58.80 L 19.77 58.86 L 18.40 58.77 L 17.03 58.54 L 15.66 58.17 L 14.32 57.68 L 13.01 57.07 L 11.75 56.34 L 10.56 55.52 L 9.45 54.60 L 8.43 53.59 L 7.52 52.50 L 6.73 51.34 L 6.07 50.12 L 5.57 48.83 L 5.22 47.51 L 5.02 46.15 L 4.96 44.76 L 5.04 43.37 L 5.23 41.99 L 5.55 40.62 L 5.97 39.28 L 6.48 37.97 L 7.07 36.69 L 7.71 35.43 L 8.39 34.19 L 9.09 32.97 L 9.81 31.77 L 10.52 30.58 L 11.25 29.40 L 11.99 28.23 L 12.74 27.07 L 13.50 25.92 L 14.28 24.77 L 15.08 23.63 L 15.89 22.49 L 16.72 21.36 L 17.58 20.22 L 18.45 19.09 L 19.36 17.97 L 20.29 16.89 L 21.26 15.84 L 22.27 14.85 L 23.31 13.94 L 24.40 13.10 L 25.54 12.36 L 26.73 11.73 L 27.97 11.22 L 29.27 10.85 L 30.63 10.62 L 32.03 10.54 L 33.45 10.58 L 34.88 10.76 L 36.31 11.06 L 37.71 11.47 L 39.08 12.00 L 40.39 12.63 L 41.64 13.36 L 42.80 14.19 L 43.86 15.10 L 44.80 16.10 L 45.61 17.17 L 46.27 18.32 L 46.78 19.53 L 47.13 20.79 L 47.35 22.10 L 47.44 23.45 L 47.41 24.81 L 47.26 26.20 L 47.00 27.59 L 46.65 28.98 L 46.21 30.35 L 45.69 31.70 L 45.09 33.02 L 44.43 34.29 L 43.72 35.52 L 42.96 36.70 L 42.16 37.85 L 41.35 38.97 L 40.53 40.09 L 39.72 41.20 L 38.92 42.32 L 38.15 43.45 L 37.40 44.60 L 36.65 45.76 L 35.90 46.93 L 35.13 48.10 L 34.31 49.26 L 33.45 50.41 L 32.54 51.54 L 31.59 52.63 L 30.59 53.67 L 29.55 54.65 L 28.46 55.56 L 27.33 56.38 L 26.17 57.11 L 24.96 57.73 L 23.72 58.22 L 22.44 58.58 L 21.12 58.80 Z" fill="currentColor" />
-        <path d="M 48.90 89.37 L 46.77 89.38 L 44.59 89.11 L 42.42 88.57 L 40.29 87.77 L 38.28 86.73 L 36.42 85.47 L 34.76 84.01 L 33.37 82.36 L 32.27 80.54 L 31.47 78.58 L 30.96 76.52 L 30.72 74.40 L 30.74 72.25 L 31.01 70.10 L 31.51 68.00 L 32.22 65.96 L 33.11 63.98 L 34.14 62.04 L 35.28 60.15 L 36.49 58.29 L 37.73 56.46 L 39.00 54.65 L 40.27 52.85 L 41.54 51.07 L 42.81 49.30 L 44.05 47.53 L 45.27 45.77 L 46.47 44.01 L 47.65 42.24 L 48.82 40.47 L 49.98 38.69 L 51.14 36.91 L 52.30 35.11 L 53.46 33.31 L 54.63 31.48 L 55.82 29.64 L 57.03 27.78 L 58.26 25.91 L 59.52 24.03 L 60.83 22.18 L 62.18 20.38 L 63.60 18.66 L 65.07 17.05 L 66.63 15.57 L 68.27 14.25 L 70.00 13.11 L 71.83 12.18 L 73.77 11.49 L 75.83 11.06 L 77.98 10.90 L 80.17 11.01 L 82.36 11.37 L 84.49 11.99 L 86.53 12.85 L 88.41 13.96 L 90.11 15.30 L 91.55 16.88 L 92.73 18.67 L 93.64 20.62 L 94.29 22.69 L 94.69 24.84 L 94.83 27.01 L 94.74 29.17 L 94.41 31.27 L 93.87 33.32 L 93.14 35.32 L 92.25 37.27 L 91.23 39.18 L 90.09 41.06 L 88.86 42.91 L 87.57 44.73 L 86.25 46.53 L 84.91 48.32 L 83.58 50.10 L 82.29 51.88 L 81.04 53.66 L 79.83 55.43 L 78.65 57.21 L 77.50 58.99 L 76.36 60.77 L 75.23 62.55 L 74.10 64.35 L 72.96 66.14 L 71.82 67.95 L 70.65 69.76 L 69.46 71.59 L 68.23 73.42 L 66.96 75.27 L 65.65 77.11 L 64.28 78.92 L 62.86 80.68 L 61.38 82.35 L 59.83 83.91 L 58.21 85.33 L 56.52 86.58 L 54.75 87.64 L 52.89 88.47 L 50.94 89.06 L 48.90 89.37 Z" fill="currentColor" />
-      </svg>
-      <div class="sp-brand-text">
-        Haptix
-        <span class="sp-enclave-badge">P-256</span>
+      <div class="account-pill" id="copyAddrBtn" title="Click to copy address">
+        <span id="shortAddr">0xB015...796f</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
       </div>
     </div>
 
-    <div class="sp-header-right">
-      <button class="sp-account-chip" id="spAccountChip" title="Click to copy full address">
-        <span id="spAccountAddr">0xB015...796f</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+    <div class="header-actions">
+      <!-- Network Selector Dropdown -->
+      <div class="network-selector-wrapper" id="networkWrapper">
+        <button class="network-select-btn" id="btnNetworkSelect" title="Switch Network">
+          <span class="network-dot" id="networkDot"></span>
+          <span class="network-name-text" id="networkNameText">Base Sepolia</span>
+          <svg class="chevron-icon" width="10" height="10" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+
+        <div class="network-menu-panel" id="networkMenuPanel">
+          <!-- Populated dynamically with available networks -->
+        </div>
+      </div>
+
+      <!-- Open Full Web Dashboard Button -->
+      <button class="btn-header-icon" id="btnOpenDashboard" title="Open Full Web Dashboard">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </button>
 
-      <div class="sp-network-pill">
-        <span style="width:5px;height:5px;border-radius:50%;background:#38BDF8;"></span>
-        Base
+      <!-- Headless UI Options Dropdown Menu (Image 2) -->
+      <div class="headless-menu-wrapper" id="menuWrapper">
+        <button class="headless-options-btn" id="btnHeadlessOptions" title="Options Menu">
+          <span>Options</span>
+          <svg class="chevron-icon" width="13" height="13" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+
+        <div class="headless-menu-panel" id="headlessMenuPanel">
+          <button class="headless-menu-item" id="mnuCopyAddr">
+            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span class="item-text">Copy Address</span>
+            <span class="item-badge">0xB015</span>
+          </button>
+          <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="headless-menu-item" id="mnuBaseScan">
+            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            <span class="item-text">View on BaseScan</span>
+            <span class="item-kbd"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
+          </a>
+          <button class="headless-menu-item" id="mnuCredentials">
+            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/></svg>
+            <span class="item-text">Hardware Keys</span>
+            <span class="item-badge cyan">P-256</span>
+          </button>
+          <button class="headless-menu-item" id="mnuFirewall">
+            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span class="item-text">Policy Firewall</span>
+            <span class="item-badge">Strict</span>
+          </button>
+          <button class="headless-menu-item" id="mnuDesktopMode">
+            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+            <span class="item-text">Expand Desktop Mode</span>
+          </button>
+          <button class="headless-menu-item" id="mnuSettings">
+            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="item-text">Wallet Preferences</span>
+          </button>
+          <button class="headless-menu-item" id="mnuToggleTheme">
+            <span class="item-icon" id="mnuThemeIcon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </span>
+            <span class="item-text">Theme: <strong id="mnuThemeLabel">Dark</strong></span>
+            <span class="item-badge" id="mnuThemeBadge">Light</span>
+          </button>
+          <div class="headless-menu-divider"></div>
+          <button class="headless-menu-item danger" id="mnuPanicFreeze">
+            <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span class="item-text">Emergency Panic Lock</span>
+            <span class="item-badge danger">1-Sig</span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
 
-  <!-- Hero Portfolio Card -->
-  <div class="sp-card sp-hero-card">
-    <div class="sp-hero-top">
-      <span class="sp-hero-label">Total Portfolio</span>
-      <button class="sp-refresh-btn" id="spRefreshBtn" title="Refresh balances">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-      </button>
-    </div>
-
-    <div class="sp-hero-fiat" id="spTotalFiat">$13.12 USD</div>
-    <div class="sp-hero-crypto">
-      <span id="spTotalEth">0.0041 ETH</span>
-      <span class="sp-trend-badge">+2.4% 24h</span>
-    </div>
-
-    <!-- Quick Action Bar -->
-    <div class="sp-quick-actions">
-      <button class="sp-action-btn" id="spQuickSendBtn">
-        <div class="sp-action-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-        </div>
-        <span class="sp-action-label">Send</span>
-      </button>
-
-      <button class="sp-action-btn" id="spQuickReceiveBtn">
-        <div class="sp-action-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg>
-        </div>
-        <span class="sp-action-label">Receive</span>
-      </button>
-
-      <button class="sp-action-btn" id="spQuickAgentBtn">
-        <div class="sp-action-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83"/></svg>
-        </div>
-        <span class="sp-action-label">AI Agent</span>
-      </button>
-
-      <button class="sp-action-btn" id="spQuickSecurityBtn">
-        <div class="sp-action-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <span class="sp-action-label">Firewall</span>
-      </button>
-    </div>
+  <!-- Emergency Freeze Alert Banner -->
+  <div class="alert-banner" id="popupFreezeBanner">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>FREEZE ACTIVE: 2-of-2 Quorum Required</span>
+    <button id="popupUnfreezeBtn" style="background:none;border:none;color:#FFF;text-decoration:underline;cursor:pointer;font-weight:800;margin-left:4px;">Unfreeze</button>
   </div>
 
-  <!-- Token Asset List -->
-  <div class="sp-card">
-    <div class="sp-section-head">
-      <span class="sp-section-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M6 12h12"/></svg>
-        Verified Tokens (2)
-      </span>
-      <span style="font-size:10.5px;color:var(--text-dark);font-family:var(--font-mono);">Base Sepolia</span>
-    </div>
+  <!-- Main Wallet View -->
+  <main class="main-scroll-area" id="viewDefault">
+    <!-- Hero Balance -->
+    <section class="portfolio-hero">
+      <span class="hero-label">Smart Account Net Worth</span>
+      <div class="hero-balance" id="totalPortfolioUsd">0.0041 ETH</div>
+      <div class="hero-fiat">
+        <span id="fiatPortfolioUsd">≈ $13.12 USD</span>
+      </div>
 
-    <div class="sp-token-list">
-      <!-- Ethereum Token Row -->
-      <div class="sp-token-row" id="spEthRow">
-        <div class="sp-token-left">
-          <div class="sp-token-icon-wrap">
-            <img src="assets/eth_logo.svg" width="15" height="22" alt="ETH" />
+      <!-- Quick Action Buttons -->
+      <div class="quick-actions">
+        <button class="action-btn-item" id="btnActionSend">
+          <div class="action-icon-circle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
           </div>
-          <div>
-            <div class="sp-token-name">Ethereum</div>
-            <div class="sp-token-network">ETH · Base Sepolia</div>
+          <span>Send</span>
+        </button>
+
+        <button class="action-btn-item" id="btnActionReceive">
+          <div class="action-icon-circle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
           </div>
-        </div>
-        <div class="sp-token-right">
-          <div class="sp-token-amt" id="spEthVal">0.0041 ETH</div>
-          <div class="sp-token-fiat" id="spEthFiat">≈ $13.12 USD</div>
-        </div>
-      </div>
+          <span>Receive</span>
+        </button>
 
-      <!-- USDC Token Row -->
-      <div class="sp-token-row" id="spUsdcRow">
-        <div class="sp-token-left">
-          <div class="sp-token-icon-wrap" style="background:#2775CA;">
-            <img src="assets/usdc_logo.svg" width="30" height="30" alt="USDC" />
+        <button class="action-btn-item" id="btnActionAgents">
+          <div class="action-icon-circle" style="background:linear-gradient(135deg, rgba(56,189,248,0.15), rgba(0,82,255,0.2));border-color:rgba(0,82,255,0.4);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
           </div>
-          <div>
-            <div class="sp-token-name">USD Coin</div>
-            <div class="sp-token-network">USDC · Circle Native</div>
+          <span>AI Agents</span>
+        </button>
+
+        <button class="action-btn-item" id="popupFreezeBtn">
+          <div class="action-icon-circle" style="background:var(--accent-rose-light);border-color:rgba(244,63,94,0.3);color:var(--accent-rose);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </div>
-        </div>
-        <div class="sp-token-right">
-          <div class="sp-token-amt" id="spUsdcVal">0.00 USDC</div>
-          <div class="sp-token-fiat" id="spUsdcFiat">≈ $0.00 USD</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Recent Activity / Transaction History Card -->
-  <div class="sp-card" id="spActivitySection">
-    <div class="sp-section-head">
-      <span class="sp-section-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 8 12 12 14 14"/><circle cx="12" cy="12" r="10"/></svg>
-        Transaction History
-      </span>
-      <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-weight:700;display:flex;align-items:center;gap:3px;" id="spViewBaseScanLink">
-        <span>BaseScan</span>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      </a>
-    </div>
-
-    <div class="sp-tx-list" id="spTxList">
-      <!-- Populated dynamically by sidepanel.js -->
-    </div>
-  </div>
-
-  <!-- On-Chain Policy Firewall Card -->
-  <div class="sp-card" id="spFirewallSection">
-    <div class="sp-policy-header">
-      <span class="sp-section-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Policy Firewall
-      </span>
-      <span class="sp-policy-badge">Enforced On-Chain</span>
-    </div>
-
-    <div class="sp-policy-grid">
-      <div class="sp-policy-row">
-        <div class="sp-policy-key">
-          <span style="width:4px;height:4px;border-radius:50%;background:#38BDF8;"></span>
-          <span>1-Sig Threshold:</span>
-        </div>
-        <span class="sp-policy-val" style="color:#38BDF8;">&lt; 0.010 ETH</span>
-      </div>
-
-      <div class="sp-policy-row">
-        <div class="sp-policy-key">
-          <span style="width:4px;height:4px;border-radius:50%;background:#10B981;"></span>
-          <span>Address Book:</span>
-        </div>
-        <span class="sp-policy-val" style="color:#10B981;">Active (Strict)</span>
-      </div>
-
-      <div class="sp-policy-row">
-        <div class="sp-policy-key">
-          <span style="width:4px;height:4px;border-radius:50%;background:#F59E0B;"></span>
-          <span>Approval Escalation:</span>
-        </div>
-        <span class="sp-policy-val" style="color:#F59E0B;">2-of-2 Quorum</span>
-      </div>
-    </div>
-
-    <div class="sp-enclave-footer">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
-      <span>Apple Secure Enclave WebAuthn P-256</span>
-    </div>
-  </div>
-
-  <!-- AI Agent Delegation Card -->
-  <div class="sp-card" id="spAgentSection">
-    <div class="sp-policy-header">
-      <span class="sp-section-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A855F7" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83"/></svg>
-        AI Agent Delegation
-      </span>
-      <span id="spAgentBadge" class="sp-policy-badge" style="color:#10B981;border-color:rgba(16,185,129,0.3);background:rgba(16,185,129,0.1);">● Active</span>
-    </div>
-
-    <div class="sp-agent-pill">
-      <div style="display:flex;align-items:center;gap:6px;">
-        <span style="font-size:10px;color:var(--text-dark);">KEY:</span>
-        <span class="sp-agent-key" id="spAgentKey">0x8a91...b819</span>
-      </div>
-      <button class="sp-agent-copy-btn" id="spCopyAgentKeyBtn" title="Copy Agent Key">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-      </button>
-    </div>
-
-    <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
-      <span style="color:var(--text-muted);">24h Rolling Spend:</span>
-      <span style="font-family:var(--font-mono);color:#93C5FD;font-weight:700;" id="spAgentUsage">30% ($30 / $100)</span>
-    </div>
-
-    <div class="sp-agent-bar-wrap">
-      <div class="sp-agent-bar-fill" id="spAgentFill" style="width:30%;"></div>
-    </div>
-
-    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dark);margin-top:6px;font-family:var(--font-mono);">
-      <span>Autonomous Cap: $50/tx</span>
-      <span>Daily Max: $100 USDC</span>
-    </div>
-  </div>
-
-  <!-- Bottom Navigation Dock -->
-  <div class="sp-footer-dock">
-    <button class="btn-freeze-danger" id="spPanicFreezeBtn">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      Emergency Freeze (1-Sig Lockdown)
-    </button>
-
-    <a href="http://localhost:57547/app.html" target="_blank" class="btn-dashboard-main" id="spOpenFullDashboard">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      Open Full Web Dashboard
-    </a>
-
-    <div class="sp-dock-meta">
-      Haptix Enclave v0.7 · RIP-7212 Precompile (Base 84532)
-    </div>
-  </div>
-
-  <!-- Receive QR Modal -->
-  <div class="sp-modal-backdrop" id="spReceiveModal">
-    <div class="sp-modal-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:14px;">
-        <span style="font-family:var(--font-heading);font-weight:700;font-size:15px;color:#FFF;">Receive Assets</span>
-        <button id="spCloseModalBtn" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span>Freeze</span>
         </button>
       </div>
+    </section>
 
-      <!-- QR Code Placeholder -->
-      <div style="width:160px;height:160px;background:#FFFFFF;border-radius:var(--radius-md);padding:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">
-        <svg viewBox="0 0 100 100" width="100%" height="100%">
-          <rect width="100" height="100" fill="#FFF"/>
-          <!-- Simplified Geometric QR Pattern -->
-          <rect x="10" y="10" width="25" height="25" fill="#000"/>
-          <rect x="15" y="15" width="15" height="15" fill="#FFF"/>
-          <rect x="18" y="18" width="9" height="9" fill="#000"/>
-          <rect x="65" y="10" width="25" height="25" fill="#000"/>
-          <rect x="70" y="15" width="15" height="15" fill="#FFF"/>
-          <rect x="73" y="18" width="9" height="9" fill="#000"/>
-          <rect x="10" y="65" width="25" height="25" fill="#000"/>
-          <rect x="15" y="70" width="15" height="15" fill="#FFF"/>
-          <rect x="18" y="73" width="9" height="9" fill="#000"/>
-          <rect x="42" y="15" width="6" height="6" fill="#000"/>
-          <rect x="52" y="22" width="6" height="12" fill="#000"/>
-          <rect x="42" y="42" width="16" height="16" fill="#0052FF"/>
-          <rect x="65" y="45" width="8" height="8" fill="#000"/>
-          <rect x="45" y="68" width="12" height="6" fill="#000"/>
-          <rect x="65" y="65" width="10" height="10" fill="#000"/>
-          <rect x="78" y="78" width="12" height="12" fill="#000"/>
+    <!-- Segmented Navigation Tabs -->
+    <nav class="nav-tabs-bar">
+      <button class="tab-btn active" data-tab="tab-tokens">Tokens</button>
+      <button class="tab-btn" data-tab="tab-agents">AI Agents</button>
+      <button class="tab-btn" data-tab="tab-security">Security</button>
+      <button class="tab-btn" data-tab="tab-activity">Activity</button>
+    </nav>
+
+    <!-- Content Area -->
+    <div class="tab-content-area">
+      <!-- Tab 1: Tokens -->
+      <div class="tab-pane active" id="tab-tokens">
+        <div class="token-row" id="tokenRowEth">
+          <div class="token-info">
+            <div class="token-logo-badge" style="background:#161B26;border:1px solid rgba(255,255,255,0.1);padding:4px;display:flex;align-items:center;justify-content:center;">
+              <img src="assets/eth_logo.svg" width="18" height="24" alt="Ethereum" style="display:block;" />
+            </div>
+            <div class="token-name-wrap">
+              <span class="token-title">Ethereum</span>
+              <span class="token-chain-tag">ETH · Base Sepolia</span>
+            </div>
+          </div>
+          <div class="token-balance-wrap">
+            <span class="token-crypto-val" id="ethBalance">0.0041 ETH</span>
+            <span class="token-fiat-val" id="ethFiatVal">≈ $13.12 USD</span>
+          </div>
+        </div>
+
+        <div class="token-row" id="tokenRowUsdc">
+          <div class="token-info">
+            <div class="token-logo-badge" style="background:transparent;border:none;padding:0;display:flex;align-items:center;justify-content:center;">
+              <img src="assets/usdc_logo.svg" width="30" height="30" alt="USDC" style="display:block;border-radius:50%;" />
+            </div>
+            <div class="token-name-wrap">
+              <span class="token-title">USD Coin</span>
+              <span class="token-chain-tag">USDC · Circle</span>
+            </div>
+          </div>
+          <div class="token-balance-wrap">
+            <span class="token-crypto-val" id="usdcBalance">0.00 USDC</span>
+            <span class="token-fiat-val" id="usdcFiatVal">≈ $0.00 USD</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: AI Agents -->
+      <div class="tab-pane" id="tab-agents">
+        <div class="surface-card">
+          <div class="card-header-row">
+            <span class="card-title-text">Active Session Delegation</span>
+            <span class="status-chip chip-active" id="popAgentBadge">● Active</span>
+          </div>
+
+          <div style="font-size:11.5px;color:var(--text-muted);font-family:var(--font-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:rgba(0,0,0,0.4);padding:6px 8px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);" id="popAgentKey">
+            0x8a912e73f912a738c821938491029381029b819e
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:var(--bg-surface);padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+              <div style="font-size:10.5px;color:var(--text-muted);">Autonomous Limit</div>
+              <strong style="font-size:13px;color:#FFF;font-family:var(--font-mono);">$50.00 USDC</strong>
+            </div>
+            <div style="background:var(--bg-surface);padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+              <div style="font-size:10.5px;color:var(--text-muted);">Escalation Ceiling</div>
+              <strong style="font-size:13px;color:#FFF;font-family:var(--font-mono);">$200.00 USDC</strong>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px;">
+              <span>24h Rolling Spend</span>
+              <span id="popAgentSpendLabel">30% Used ($30 / $100)</span>
+            </div>
+            <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:var(--radius-full);overflow:hidden;">
+              <div id="popAgentUsageFill" style="height:100%;width:30%;background:linear-gradient(90deg, #38BDF8, #0052FF);border-radius:var(--radius-full);transition:width 0.3s ease;"></div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:4px;">
+            <button class="btn-action-secondary" style="flex:1;" id="popOpenDashboardAgentBtn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              Reconfigure
+            </button>
+            <button class="btn-action-danger" style="flex:1;" id="popRevokeAgentBtn">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/></svg>
+              Revoke Session
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Security -->
+      <div class="tab-pane" id="tab-security">
+        <div class="surface-card">
+          <div class="card-header-row">
+            <span class="card-title-text">Enrolled Hardware Keys</span>
+            <span class="status-chip chip-quorum">2-of-2 Quorum</span>
+          </div>
+
+          <div class="key-spec-row">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2"><path d="M12 2a10 10 0 0 0-10 10c0 4.4 2.9 8.2 7 9.5V17H7v-2h2v-1.5c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.2 0-1.7.8-1.7 1.6V15h2.7l-.4 2h-2.3v4.5c4.1-1.3 7-5.1 7-9.5A10 10 0 0 0 12 2z"/></svg>
+              <strong>Key #0: Primary Touch ID</strong>
+            </div>
+            <button id="enrollKey0Btn" class="btn-action-secondary" style="padding:3px 10px;font-size:11px;">Enroll Key #0</button>
+          </div>
+
+          <div class="key-spec-row">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+              <strong>Key #1: Backup Quorum Key</strong>
+            </div>
+            <button id="enrollKey1Btn" class="btn-action-secondary" style="padding:3px 10px;font-size:11px;">Enroll Key #1</button>
+          </div>
+        </div>
+
+        <div class="surface-card">
+          <div class="card-header-row">
+            <span class="card-title-text">On-Chain Spending Firewall</span>
+          </div>
+          <div class="key-spec-row">
+            <span style="color:var(--text-muted);">Threshold (1-Sig):</span>
+            <strong style="font-family:var(--font-mono);color:#60A5FA;">&lt; 0.010 ETH</strong>
+          </div>
+          <div class="key-spec-row">
+            <span style="color:var(--text-muted);">Address Whitelist:</span>
+            <strong style="color:var(--accent-emerald);">Active (Strict)</strong>
+          </div>
+          <div class="key-spec-row">
+            <span style="color:var(--text-muted);">Emergency Panic Switch:</span>
+            <strong style="color:var(--text-secondary);">Normal</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Transaction History & Activity -->
+      <div class="tab-pane" id="tab-activity">
+        <div class="activity-top-bar">
+          <div class="activity-header-left">
+            <span class="activity-title">Transaction History</span>
+            <span class="activity-counter" id="txHistoryCount">5</span>
+          </div>
+          <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="activity-explorer-btn" id="linkBaseScanHistory">
+            <span>BaseScan</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="tx-filter-bar">
+          <button class="tx-filter-chip active" data-filter="ALL">All</button>
+          <button class="tx-filter-chip" data-filter="SEND">Sent</button>
+          <button class="tx-filter-chip" data-filter="RECEIVE">Received</button>
+          <button class="tx-filter-chip" data-filter="AGENT">AI Agent</button>
+          <button class="tx-filter-chip" data-filter="QUORUM">Quorum</button>
+        </div>
+
+        <!-- Transaction List Container -->
+        <div class="tx-history-list" id="txHistoryContainer">
+          <!-- Populated dynamically by popup.js -->
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- SEND ASSET SHEET -->
+  <div class="sheet-overlay" id="sheetSend">
+    <div class="sheet-header">
+      <div class="sheet-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+        Send Asset
+      </div>
+      <button class="btn-close-sheet" id="btnCloseSend" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Asset</label>
+      <select class="form-input" id="sendAssetSelect" style="background:var(--bg-card);color:#FFF;">
+        <option value="ETH">Ethereum (ETH) — Base Sepolia</option>
+        <option value="USDC">USD Coin (USDC)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">
+        <span>Recipient Address</span>
+        <span style="color:#60A5FA;cursor:pointer;" id="btnUseWhitelist">Use Whitelist</span>
+      </div>
+      <div class="input-with-action">
+        <input type="text" id="sendRecipientInput" placeholder="0x... or ENS name">
+        <button class="btn-inline-action" id="btnPasteRecipient">Paste</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">
+        <span>Amount</span>
+        <span style="color:var(--text-muted);" id="sendBalanceHint">Available: 0.0003 ETH</span>
+      </div>
+      <div class="input-with-action">
+        <input type="number" id="sendAmountInput" placeholder="0.0" step="0.0001">
+        <button class="btn-inline-action" id="btnMaxAmount">Max</button>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px;" id="sendFiatEstimate">≈ $0.00 USD</div>
+    </div>
+
+    <div class="policy-box safe" id="sendPolicyPreview">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;">
+        <span id="sendPolicyStatus" style="color:var(--accent-emerald);">● Single Touch ID Tap</span>
+        <span id="sendPolicyBadge">Sub-threshold</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);" id="sendPolicyReason">
+        Amount is within safe spending threshold (&lt; 0.010 ETH).
+      </div>
+    </div>
+
+    <!-- Send 24h Rolling Window Allocation Bar -->
+    <div id="sendSpendWindowContainer" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 10px;display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;">
+        <span style="color:var(--text-muted);">24h Rolling Window:</span>
+        <span id="sendSpendWindowText" style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">0.00 / 0.05 ETH (0%)</span>
+      </div>
+      <div style="width:100%;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+        <div id="sendSpendWindowProgress" style="width:0%;height:100%;background:var(--accent-emerald);transition:width 0.3s ease;"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px;">
+      <button class="btn-action-primary" id="btnExecuteSend">
+        Review &amp; Sign with Touch ID
+      </button>
+      <button class="btn-action-secondary" id="btnCancelSend">Cancel</button>
+    </div>
+  </div>
+
+  <!-- RECEIVE ASSET SHEET -->
+  <div class="sheet-overlay" id="sheetReceive">
+    <div class="sheet-header">
+      <div class="sheet-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+        Receive Assets
+      </div>
+      <button class="btn-close-sheet" id="btnCloseReceive" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:16px 0;">
+      <!-- Vector QR Code representation -->
+      <div style="background:#FFF;padding:14px;border-radius:var(--radius-md);box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+        <svg width="140" height="140" viewBox="0 0 120 120" fill="#000">
+          <rect x="10" y="10" width="30" height="30" fill="#000"/>
+          <rect x="15" y="15" width="20" height="20" fill="#FFF"/>
+          <rect x="20" y="20" width="10" height="10" fill="#000"/>
+          <rect x="80" y="10" width="30" height="30" fill="#000"/>
+          <rect x="85" y="15" width="20" height="20" fill="#FFF"/>
+          <rect x="90" y="20" width="10" height="10" fill="#000"/>
+          <rect x="10" y="80" width="30" height="30" fill="#000"/>
+          <rect x="15" y="85" width="20" height="20" fill="#FFF"/>
+          <rect x="20" y="90" width="10" height="10" fill="#000"/>
+          <rect x="50" y="20" width="10" height="10" fill="#000"/>
+          <rect x="65" y="20" width="10" height="20" fill="#000"/>
+          <rect x="50" y="45" width="20" height="10" fill="#000"/>
+          <rect x="20" y="55" width="15" height="15" fill="#000"/>
+          <rect x="80" y="50" width="15" height="15" fill="#000"/>
+          <rect x="50" y="80" width="25" height="25" fill="#000"/>
+          <rect x="85" y="85" width="20" height="10" fill="#000"/>
         </svg>
       </div>
 
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Your Base Sepolia Smart Account</div>
-      <div style="background:rgba(0,0,0,0.4);border:1px solid var(--border-subtle);padding:8px 10px;border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:10.5px;color:#93C5FD;word-break:break-all;margin-bottom:12px;" id="spFullAddr">
+      <div style="font-size:12px;color:var(--text-muted);">
+        Send native ETH or ERC-20 tokens on <strong style="color:#60A5FA;">Base Sepolia</strong> to:
+      </div>
+
+      <div style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:10px;width:100%;word-break:break-all;font-family:var(--font-mono);font-size:11.5px;color:#FFF;" id="receiveFullAddr">
         0xB01543453cF31052c769d79e9C755E3b035d796f
       </div>
 
-      <button id="spCopyFullAddrBtn" style="background:var(--base-blue);color:#FFF;border:none;padding:8px 16px;border-radius:var(--radius-sm);font-weight:700;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;width:100%;justify-content:center;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+      <button class="btn-action-primary" id="btnCopyReceiveAddr">
         Copy Address
       </button>
+
+      <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="btn-action-secondary" style="width:100%;text-decoration:none;">
+        View on BaseScan Explorer ↗
+      </a>
     </div>
   </div>
 
-  <script type="module" src="sidepanel.js"></script>
+  <!-- SETTINGS SHEET -->
+  <div class="sheet-overlay" id="sheetSettings">
+    <div class="sheet-header">
+      <div class="sheet-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Wallet Settings
+      </div>
+      <button class="btn-close-sheet" id="btnCloseSettings" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <!-- Appearance & Theme Mode (Light / Dark) -->
+      <div class="surface-card">
+        <div class="card-title-text">Appearance &amp; Theme</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div id="themeIconSlot" style="width:32px;height:32px;border-radius:8px;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-primary);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--text-primary);" id="themeModeName">Dark Mode</div>
+              <div style="font-size:11px;color:var(--text-muted);" id="themeModeDesc">Switch to Crisp Light theme</div>
+            </div>
+          </div>
+          <button class="theme-switch-btn" id="btnThemeToggle" title="Toggle Theme (Light / Dark)">
+            <span class="theme-switch-thumb"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hardware Passkeys & Enclave Quorum (2-of-N) -->
+      <div class="surface-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div class="card-title-text" style="margin-bottom:0;">Hardware Passkeys (2-of-N)</div>
+          <span style="font-size:10px;font-weight:700;background:rgba(0,82,255,0.15);color:#60A5FA;padding:2px 6px;border-radius:4px;border:1px solid rgba(0,82,255,0.3);">P-256 RIP-7212</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);line-height:1.4;margin-bottom:10px;">
+          Biometric credentials stored in your device Secure Enclave. Zero seed phrases. Micro-transfers (&lt; $50) use 1 passkey; larger spends require 2-of-2 hardware quorum.
+        </div>
+        
+        <div id="enrolledPasskeysList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+          <!-- Dynamically rendered in popup.js -->
+        </div>
+
+        <button class="btn-action-secondary" id="btnRegisterBackupPasskey" style="display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;font-size:12px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>+ Register Backup Passkey</span>
+        </button>
+      </div>
+
+      <div class="surface-card">
+        <div class="card-title-text">Connected DApps</div>
+        <div id="connectedDappsList" style="font-size:12px;color:var(--text-muted);display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-surface);padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+            <span>http://localhost:57547</span>
+            <button id="btnRevokeLocalOrigin" class="btn-inline-action" style="color:var(--accent-rose);">Revoke</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="surface-card">
+        <div class="card-title-text">Network &amp; RPC Infrastructure</div>
+        <div class="key-spec-row">
+          <span style="color:var(--text-muted);">Network:</span>
+          <strong>Base Sepolia (84532)</strong>
+        </div>
+        <div class="key-spec-row">
+          <span style="color:var(--text-muted);">EntryPoint:</span>
+          <span style="font-family:var(--font-mono);font-size:11px;">v0.7 (Canonical)</span>
+        </div>
+        <div class="key-spec-row">
+          <span style="color:var(--text-muted);">RIP-7212 Precompile:</span>
+          <span style="color:var(--accent-emerald);font-size:11px;">Active (0x100)</span>
+        </div>
+      </div>
+
+      <div class="surface-card">
+        <div class="card-title-text">Maintenance &amp; Diagnostics</div>
+        <button class="btn-action-secondary" id="btnClearApprovalQueue">
+          Clear Pending Approval Queue
+        </button>
+        <button class="btn-action-danger" id="btnResetExtensionStorage">
+          Reset Local Extension Cache
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DApp Approval View (Sheet Mode) -->
+  <div id="viewApproval">
+    <div class="approval-header">
+      <button class="btn-dismiss" id="btnDismissApproval">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        <span>Back to Wallet</span>
+      </button>
+
+      <div class="origin-badge">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span id="appDappOrigin">localhost:57547</span>
+      </div>
+    </div>
+
+    <div class="approval-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div class="approval-title" id="appActionTitle" style="margin-bottom:0;">Confirm Request</div>
+        <span id="appOpBadge" style="font-size:10px;font-weight:700;background:rgba(0,82,255,0.15);color:#60A5FA;padding:2px 8px;border-radius:9999px;border:1px solid rgba(0,82,255,0.3);">Transaction</span>
+      </div>
+
+      <!-- High-Risk Unlimited Approval Warning Alert -->
+      <div id="appApprovalWarning" style="display:none;background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.35);padding:10px;border-radius:var(--radius-sm);color:var(--accent-rose);font-size:11.5px;line-height:1.4;">
+        <div style="font-weight:800;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span>SECURITY ALERT: UNLIMITED TOKEN APPROVAL</span>
+        </div>
+        <div>This dApp is requesting permission to spend <strong>ALL</strong> tokens in your account without future biometric confirmation.</div>
+      </div>
+
+      <div style="background:var(--bg-base);padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);display:flex;flex-direction:column;gap:6px;font-size:12px;">
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--text-muted);">Target / Recipient:</span>
+          <span class="tx-val" id="appTargetAddr" style="font-family:var(--font-mono);font-weight:700;color:#FFF;">0x...</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span style="color:var(--text-muted);">Amount / Value:</span>
+          <span class="tx-val" id="appValue" style="font-family:var(--font-mono);font-weight:700;color:#FFF;">0.00 ETH</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;" id="appCalldataRow">
+          <span style="color:var(--text-muted);">Calldata:</span>
+          <span class="tx-val" id="appCalldata" style="font-family:var(--font-mono);color:var(--text-muted);">0x</span>
+        </div>
+        <div id="appMessageRow" style="display:none;flex-direction:column;gap:4px;margin-top:4px;">
+          <span style="color:var(--text-muted);font-size:11px;font-weight:600;">Message to Sign:</span>
+          <pre id="appMessageText" style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px;font-family:var(--font-mono);font-size:11px;color:#E2E8F0;max-height:90px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;margin:0;"></pre>
+        </div>
+      </div>
+
+      <!-- 24h Rolling Window Allocation Bar -->
+      <div id="appSpendWindowContainer" style="background:var(--bg-base);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 10px;display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;">
+          <span style="color:var(--text-muted);">24h Rolling Window:</span>
+          <span id="appSpendWindowText" style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">0.00 / 0.05 ETH (0%)</span>
+        </div>
+        <div style="width:100%;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+          <div id="appSpendWindowProgress" style="width:0%;height:100%;background:var(--accent-emerald);transition:width 0.3s ease;"></div>
+        </div>
+      </div>
+
+      <!-- Policy Risk Assessment Box -->
+      <div id="appPolicyBox" class="policy-box safe">
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;">
+          <span id="appPolicyTitle" style="color:var(--accent-emerald);">● Safe Operation</span>
+          <span id="appPolicyBadge" style="font-family:var(--font-mono);">1-Sig</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-secondary);line-height:1.4;" id="appPolicyDesc">
+          Sub-threshold transfer. Authorized with 1 Touch ID biometric signature.
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
+        <button class="btn-action-primary" id="approveWithPasskeyBtn">
+          Authorize with Touch ID
+        </button>
+        <button class="btn-action-secondary" id="rejectRequestBtn">
+          Cancel / Reject
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRANSACTION DETAILS SHEET -->
+  <div class="sheet-overlay" id="sheetTxDetails">
+    <div class="sheet-header">
+      <div class="sheet-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        Transaction Details
+      </div>
+      <button class="btn-close-sheet" id="btnCloseTxDetails" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+    </div>
+
+    <div class="tx-detail-hero">
+      <div class="tx-detail-icon" id="dtTxIcon">↗</div>
+      <div class="tx-detail-amount" id="dtTxAmount">0.05 ETH</div>
+      <div class="tx-detail-fiat" id="dtTxFiat">≈ $160.00 USD</div>
+      <div class="tx-detail-status-pill" id="dtTxStatus">Confirmed</div>
+    </div>
+
+    <div class="key-spec-card" style="margin-top:12px;">
+      <div class="key-spec-row">
+        <span style="color:var(--text-muted);">Network:</span>
+        <strong style="color:#FFF;">Base Sepolia (84532)</strong>
+      </div>
+      <div class="key-spec-row">
+        <span style="color:var(--text-muted);">Timestamp:</span>
+        <strong style="color:var(--text-secondary);" id="dtTxTime">Sep 2, 2026 · 10:18 PM</strong>
+      </div>
+      <div class="key-spec-row">
+        <span style="color:var(--text-muted);">Security Policy:</span>
+        <strong style="color:#60A5FA;" id="dtTxAuth">2-of-2 Quorum</strong>
+      </div>
+      <div class="key-spec-row">
+        <span style="color:var(--text-muted);">Destination / Target:</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-family:var(--font-mono);font-size:11px;color:#93C5FD;" id="dtTxTo">0x22db...913D</span>
+          <button class="btn-inline-copy" id="dtCopyRecipient" title="Copy address"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button>
+        </div>
+      </div>
+      <div class="key-spec-row">
+        <span style="color:var(--text-muted);">Gas Execution:</span>
+        <strong style="color:var(--accent-emerald);" id="dtTxGas">&lt; 100k gas (RIP-7212)</strong>
+      </div>
+      <div class="key-spec-row" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        <span style="color:var(--text-muted);">UserOp / Transaction Hash:</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;background:rgba(0,0,0,0.3);padding:6px 8px;border-radius:6px;">
+          <span style="font-family:var(--font-mono);font-size:10.5px;color:#93C5FD;word-break:break-all;" id="dtTxHash">0x7f4a21...31b2</span>
+          <button class="btn-inline-copy" id="dtCopyHash" title="Copy Hash"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <a href="#" target="_blank" class="btn-action-primary" id="dtBtnViewBaseScan" style="margin-top:14px;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <span>View on BaseScan Explorer</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    </a>
+  </div>
+
+  <!-- Bottom Bar -->
+  <footer class="wallet-footer">
+    <div style="display:flex;align-items:center;gap:5px;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Enclave v0.7 · RIP-7212</span>
+    </div>
+    <span style="font-family:var(--font-mono);font-size:11px;">Haptix Labs</span>
+  </footer>
+</div>
+
+  <script type="module" src="popup.js"></script>
 </body>
 </html>

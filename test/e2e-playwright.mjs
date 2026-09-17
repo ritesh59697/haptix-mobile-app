@@ -230,15 +230,41 @@ async function runE2ETests() {
       await sidepanelPage.waitForTimeout(500);
 
       // Verify sidepanel brand logo
-      const brandText = await sidepanelPage.$eval('.sp-brand-text', el => el.innerText.trim());
-      assert(brandText.includes('Haptix'), `Sidepanel brand text contains Haptix (got: "${brandText}")`);
-      const hasBrandSvg = await sidepanelPage.$eval('.sp-brand svg', el => el.getAttribute('viewBox') === '0 0 100 100');
+      const pageTitle = await sidepanelPage.title();
+      assert(pageTitle.includes('Haptix'), `Sidepanel title contains Haptix (got: "${pageTitle}")`);
+      const hasBrandSvg = await sidepanelPage.$eval('.brand-section svg', el => el.getAttribute('viewBox') === '0 0 100 100');
       assert(hasBrandSvg, 'Sidepanel header renders official new Haptix brand mark SVG (viewBox="0 0 100 100")');
 
-      // Capture Extension Sidepanel screenshot
-      const sidepanelScreenshotPath = path.join(screenshotsDir, '04_extension_sidepanel_verified.png');
-      await sidepanelPage.screenshot({ path: sidepanelScreenshotPath });
-      console.log(`  📸 Captured extension sidepanel screenshot: ${sidepanelScreenshotPath}`);
+      // Dismiss approval sheet if open from previous test to display main wallet
+      const isApprovalVisible = await sidepanelPage.evaluate(() => {
+        const el = document.getElementById('viewApproval');
+        return el && window.getComputedStyle(el).display !== 'none';
+      });
+      if (isApprovalVisible) {
+        await sidepanelPage.click('#btnDismissApproval');
+        await sidepanelPage.waitForTimeout(300);
+      }
+
+      // Verify sidepanel has full unified features (Hero Net Worth, Action Buttons, Navigation Tabs)
+      const hasNetWorth = await sidepanelPage.$eval('#totalPortfolioUsd', el => el.innerText.length > 0);
+      assert(hasNetWorth, 'Sidepanel renders Smart Account Net Worth hero');
+      const sidepanelTabs = await sidepanelPage.$$eval('.tab-btn', els => els.map(e => e.getAttribute('data-tab')));
+      assert(sidepanelTabs.includes('tab-tokens') && sidepanelTabs.includes('tab-activity'), 'Sidepanel features segmented navigation tabs');
+
+      // Capture Extension Sidepanel (Light Mode) screenshot
+      const sidepanelLightScreenshotPath = path.join(screenshotsDir, '04_extension_sidepanel_light_verified.png');
+      await sidepanelPage.screenshot({ path: sidepanelLightScreenshotPath });
+      console.log(`  📸 Captured extension sidepanel (Light Mode) screenshot: ${sidepanelLightScreenshotPath}`);
+
+      // Switch theme back to Dark to capture dark mode sidepanel as well
+      await sidepanelPage.click('#btnHeadlessOptions');
+      await sidepanelPage.waitForTimeout(300);
+      await sidepanelPage.click('#mnuToggleTheme');
+      await sidepanelPage.waitForTimeout(300);
+
+      const sidepanelDarkScreenshotPath = path.join(screenshotsDir, '05_extension_sidepanel_dark_verified.png');
+      await sidepanelPage.screenshot({ path: sidepanelDarkScreenshotPath });
+      console.log(`  📸 Captured extension sidepanel (Dark Mode) screenshot: ${sidepanelDarkScreenshotPath}`);
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(2);
