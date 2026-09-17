@@ -705,7 +705,7 @@ export function decodeCalldataOperation(to = '', valueWei = 0n, calldata = '0x')
     const isUnlimited = rawAmount >= (1n << 96n) || rawAmount === (2n ** 256n - 1n);
     return {
       type: 'ERC20_APPROVE',
-      label: isUnlimited ? '🚨 Unlimited Token Approval' : 'Token Approval',
+      label: isUnlimited ? 'Unlimited Token Approval' : 'Token Approval',
       tokenAddress: to,
       spender,
       rawAmount: rawAmount.toString(),
@@ -776,19 +776,19 @@ export function simulateUserOpPolicy({
     requiredSignatures = 2;
     policyTag = '2-Sig (Frozen)';
     badgeClass = 'danger';
-    title = '🔒 Wallet is Frozen';
+    title = '● Wallet is Frozen';
     description = 'All operations require 2-of-2 Hardware Passkey Quorum while wallet is frozen.';
   } else if (decoded.isUnlimitedApproval) {
     requiredSignatures = 2;
     policyTag = '2-Sig (High Risk)';
     badgeClass = 'danger';
-    title = '🚨 Unlimited Token Approval';
+    title = '● Unlimited Token Approval (High Risk)';
     description = 'DApp requests unlimited spend access. Requires 2-of-2 Hardware Quorum confirmation.';
   } else if (exceedsThreshold || exceedsWindow || hasInnerCall || isUntrusted) {
     requiredSignatures = 2;
     policyTag = '2-Sig (Quorum)';
     badgeClass = 'warning';
-    title = '⚠️ 2-of-2 Hardware Quorum Required';
+    title = '● 2-of-2 Hardware Quorum Required';
 
     const reasons = [];
     if (exceedsThreshold) reasons.push('amount exceeds per-op limit (0.01 ETH / $32)');

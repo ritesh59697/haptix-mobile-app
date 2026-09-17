@@ -10,7 +10,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   const data = await chrome.storage.local.get(['account', 'connectedOrigins', 'activeChainId']);
   await chrome.storage.local.set({
     account: data.account || DEFAULT_ACCOUNT,
-    connectedOrigins: data.connectedOrigins || {},
+    connectedOrigins: data.connectedOrigins || { 'http://localhost:57547': true },
     activeChainId: data.activeChainId || DEFAULT_CHAIN_ID,
     pendingQueue: []
   });

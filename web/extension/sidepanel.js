@@ -248,20 +248,28 @@ if ($('spRefreshBtn')) {
 // Emergency Panic Freeze
 if ($('spPanicFreezeBtn')) {
   $('spPanicFreezeBtn').onclick = async () => {
-    const confirmFreeze = confirm('🚨 EMERGENCY PANIC FREEZE:\n\nLock down your smart account immediately?\nAll single-sig transactions and AI agent sessions will be blocked.');
+    const confirmFreeze = confirm('[EMERGENCY PANIC FREEZE]\n\nLock down your smart account immediately?\nAll single-sig transactions and AI agent sessions will be blocked.');
     if (!confirmFreeze) return;
 
     try {
       if (chrome && chrome.storage && chrome.storage.local) {
         await chrome.storage.local.set({ isFrozen: true });
       }
-      showToast('🚨 Smart Account Frozen! Single-sig locked.');
-      alert('🚨 ACCOUNT FROZEN: Emergency 1-Sig Lock activated. Multi-device 2-of-2 Quorum required to unlock.');
+      showToast('[LOCKED] Smart Account Frozen! Single-sig locked.');
+      alert('[ACCOUNT FROZEN] Emergency 1-Sig Lock activated. Multi-device 2-of-2 Quorum required to unlock.');
     } catch (e) {
       alert('Lockdown signal dispatched.');
     }
   };
 }
+
+// Rune-style Minimalist Vector SVG Icons
+const RUNE_ICONS = {
+  quorum: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  agent: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  receive: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/></svg>`,
+  send: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>`
+};
 
 // Render Side Panel Transaction History
 async function renderSpTxHistory() {
@@ -276,7 +284,7 @@ async function renderSpTxHistory() {
       status: 'Quorum',
       statusColor: 'var(--accent-amber)',
       type: 'quorum',
-      icon: '🛡',
+      icon: RUNE_ICONS.quorum,
       txHash: '0x7f4a21908bcda14238e8210941094190248231b2c45189028490124801948123'
     },
     {
@@ -286,7 +294,7 @@ async function renderSpTxHistory() {
       status: 'Success',
       statusColor: 'var(--accent-emerald)',
       type: 'agent',
-      icon: '⚡',
+      icon: RUNE_ICONS.agent,
       txHash: '0x4b89f10928310948102948120938401928301928301928301928301928301928'
     },
     {
@@ -296,7 +304,7 @@ async function renderSpTxHistory() {
       status: 'Confirmed',
       statusColor: 'var(--accent-emerald)',
       type: 'receive',
-      icon: '↙',
+      icon: RUNE_ICONS.receive,
       txHash: '0x91d3a41029381029381029381029381029381029381029381029381029381029'
     }
   ];
@@ -306,16 +314,19 @@ async function renderSpTxHistory() {
     if (chrome && chrome.storage && chrome.storage.local) {
       const data = await chrome.storage.local.get(['haptix_tx_history']);
       if (data && data.haptix_tx_history && data.haptix_tx_history.length > 0) {
-        history = data.haptix_tx_history.slice(0, 3).map(t => ({
-          action: t.action,
-          fiat: t.fiat,
-          toLabel: t.toLabel,
-          status: t.statusLabel || 'Confirmed',
-          statusColor: t.status === 'QUORUM' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
-          type: t.type === 'RECEIVE' ? 'receive' : (t.type === 'AGENT' ? 'agent' : (t.status === 'QUORUM' ? 'quorum' : 'send')),
-          icon: t.type === 'RECEIVE' ? '↙' : (t.type === 'AGENT' ? '⚡' : (t.status === 'QUORUM' ? '🛡' : '↗')),
-          txHash: t.txHash
-        }));
+        history = data.haptix_tx_history.slice(0, 3).map(t => {
+          const tType = t.type === 'RECEIVE' ? 'receive' : (t.type === 'AGENT' ? 'agent' : (t.status === 'QUORUM' ? 'quorum' : 'send'));
+          return {
+            action: t.action,
+            fiat: t.fiat,
+            toLabel: t.toLabel,
+            status: t.statusLabel || 'Confirmed',
+            statusColor: t.status === 'QUORUM' ? 'var(--accent-amber)' : 'var(--accent-emerald)',
+            type: tType,
+            icon: RUNE_ICONS[tType] || RUNE_ICONS.send,
+            txHash: t.txHash
+          };
+        });
       }
     }
   } catch (e) {}

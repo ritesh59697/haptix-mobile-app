@@ -18,7 +18,7 @@ export const SendModal: React.FC = () => {
     setIsSigning(true);
     setTimeout(() => {
       setIsSigning(false);
-      alert(`✓ UserOp successfully signed with Touch ID!\nTx Hash: 0x9f8c...3b11\nAmount: ${amount} ETH sent to ${recipient}`);
+      alert(`[AUTHENTICATED] UserOp successfully signed with Touch ID!\nTx Hash: 0x9f8c...3b11\nAmount: ${amount} ETH sent to ${recipient}`);
       setActiveModal(null);
     }, 1200);
   };

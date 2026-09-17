@@ -1,5 +1,6 @@
 // WebAuthn, ERC-4337 UserOp Builder, and Bundler Client for Passkey Smart Wallet
 import { p256 } from './p256.js';
+import { keccak_256 } from './keccak256.js';
 
 const P256_N = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551n;
 
@@ -181,6 +182,134 @@ export async function signWithPasskey(challenge32Bytes, allowCredentialIds = [])
 }
 
 /**
+ * Serializes a single WebAuthn.Signature struct into ABI-encoded bytes
+ */
+export function encodeSingleWebAuthnSignature(sig) {
+  const authDataBytes = fromHex(sig.authenticatorData);
+  const cdBytes = new TextEncoder().encode(sig.clientDataJSON);
+
+  const offAuth = 192;
+  const authPaddedLen = Math.ceil(authDataBytes.length / 32) * 32;
+  const offCd = offAuth + 32 + authPaddedLen;
+
+  let structHead = pad64(offAuth) +
+                   pad64(offCd) +
+                   pad64(sig.challengeIndex) +
+                   pad64(sig.typeIndex) +
+                   padBytes32(sig.r) +
+                   padBytes32(sig.s);
+
+  let authDataPayload = pad64(authDataBytes.length) + hex(authDataBytes).padEnd(authPaddedLen * 2, '0');
+
+  const cdPaddedLen = Math.ceil(cdBytes.length / 32) * 32;
+  let cdPayload = pad64(cdBytes.length) + hex(cdBytes).padEnd(cdPaddedLen * 2, '0');
+
+  return structHead + authDataPayload + cdPayload;
+}
+
+/**
+ * ABI encodes (uint256 signerId, WebAuthn.Signature sig) matching PasskeyAccount.sol:isValidSignature
+ */
+export function encode1271Signature(signerId, signature) {
+  // Head: (uint256 signerId, offsetToSigStruct)
+  // uint256 is 32 bytes, offsetToSigStruct is at 64 (0x40)
+  const head = pad64(signerId) + pad64(64);
+  const structBody = encodeSingleWebAuthnSignature(signature);
+  return '0x' + head + structBody;
+}
+
+/**
+ * Computes standard Ethereum personal_sign message hash: keccak256("\x19Ethereum Signed Message:\n" + len + msg)
+ */
+export function hashPersonalMessage(message) {
+  let msgBytes;
+  if (typeof message === 'string' && message.startsWith('0x') && message.length % 2 === 0) {
+    msgBytes = fromHex(message);
+  } else if (typeof message === 'string') {
+    msgBytes = new TextEncoder().encode(message);
+  } else {
+    msgBytes = message;
+  }
+  const prefix = new TextEncoder().encode(`\x19Ethereum Signed Message:\n${msgBytes.length}`);
+  const combined = new Uint8Array(prefix.length + msgBytes.length);
+  combined.set(prefix, 0);
+  combined.set(msgBytes, prefix.length);
+  return '0x' + hex(keccak_256(combined));
+}
+
+/**
+ * Computes standard Keccak256 hash
+ */
+export function keccak256(data) {
+  let bytes;
+  if (typeof data === 'string') {
+    bytes = data.startsWith('0x') ? fromHex(data) : new TextEncoder().encode(data);
+  } else {
+    bytes = data;
+  }
+  return '0x' + hex(keccak_256(bytes));
+}
+
+/**
+ * Computes the EIP-712 getMessageHash digest matching PasskeyAccount.sol
+ */
+export function computeErc1271MessageHash(accountAddress, chainId, rawMessageHash) {
+  const TYPE_HASH = '0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f'; // EIP712Domain
+  const NAME_HASH = '0xd0c6519a9308df8f9cbcaac8360e47a90886ae7239177d7ab4d94377ff0b9e6e'; // Haptix
+  const VERSION_HASH = '0xc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6'; // 1
+  const MSG_TYPEHASH = '0xa793968e60b54b6717f772385bc379443c5a4171b73850d1d8a1b6c756949fdc'; // HaptixMessage(bytes32)
+
+  const cleanAddr = accountAddress.replace(/^0x/, '').toLowerCase().padStart(64, '0');
+  const cleanChain = BigInt(chainId).toString(16).padStart(64, '0');
+
+  // domainSeparator = keccak256(abi.encode(TYPE_HASH, NAME_HASH, VERSION_HASH, block.chainid, address(this)))
+  const domainData = fromHex(TYPE_HASH + NAME_HASH.slice(2) + VERSION_HASH.slice(2) + cleanChain + cleanAddr);
+  const domainSeparator = '0x' + hex(keccak_256(domainData));
+
+  // structHash = keccak256(abi.encode(MSG_TYPEHASH, messageHash))
+  const cleanMsgHash = padBytes32(rawMessageHash);
+  const structData = fromHex(MSG_TYPEHASH + cleanMsgHash);
+  const structHash = '0x' + hex(keccak_256(structData));
+
+  // digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash))
+  const prefix = new Uint8Array([0x19, 0x01]);
+  const domBytes = fromHex(domainSeparator);
+  const structBytes = fromHex(structHash);
+  const total = new Uint8Array(prefix.length + domBytes.length + structBytes.length);
+  total.set(prefix, 0);
+  total.set(domBytes, prefix.length);
+  total.set(structBytes, prefix.length + domBytes.length);
+
+  return '0x' + hex(keccak_256(total));
+}
+
+/**
+ * Queries getMessageHash from on-chain smart account via eth_call with fallback to local computation
+ */
+export async function getAccountMessageHash(rpcUrl, accountAddress, chainId, rawMessageHash) {
+  try {
+    const callData = '0x399b77da' + padBytes32(rawMessageHash);
+    const resp = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: Date.now(),
+        method: 'eth_call',
+        params: [{ to: accountAddress, data: callData }, 'latest']
+      })
+    });
+    const json = await resp.json();
+    if (json.result && json.result.length === 66 && json.result !== '0x' + '0'.repeat(64)) {
+      return json.result;
+    }
+  } catch (e) {
+    console.warn('On-chain getMessageHash query fell back to local computation:', e);
+  }
+  return computeErc1271MessageHash(accountAddress, chainId, rawMessageHash);
+}
+
+/**
  * ABI encodes (uint256[] signerIds, WebAuthn.Signature[] sigs) matching PasskeyAccount.sol
  */
 export function encodeSignaturePayload(signerIds, signatures) {
@@ -205,28 +334,7 @@ export function encodeSignaturePayload(signerIds, signatures) {
 
   for (let i = 0; i < sigCount; i++) {
     sigStructOffsets += pad64(currentStructOffset);
-
-    const sig = signatures[i];
-    const authDataBytes = fromHex(sig.authenticatorData);
-    const cdBytes = new TextEncoder().encode(sig.clientDataJSON);
-
-    const offAuth = 192;
-    const authPaddedLen = Math.ceil(authDataBytes.length / 32) * 32;
-    const offCd = offAuth + 32 + authPaddedLen;
-
-    let structHead = pad64(offAuth) +
-                     pad64(offCd) +
-                     pad64(sig.challengeIndex) +
-                     pad64(sig.typeIndex) +
-                     padBytes32(sig.r) +
-                     padBytes32(sig.s);
-
-    let authDataPayload = pad64(authDataBytes.length) + hex(authDataBytes).padEnd(authPaddedLen * 2, '0');
-
-    const cdPaddedLen = Math.ceil(cdBytes.length / 32) * 32;
-    let cdPayload = pad64(cdBytes.length) + hex(cdBytes).padEnd(cdPaddedLen * 2, '0');
-
-    const structTotalBytes = structHead + authDataPayload + cdPayload;
+    const structTotalBytes = encodeSingleWebAuthnSignature(signatures[i]);
     sigStructBodies += structTotalBytes;
     currentStructOffset += structTotalBytes.length / 2;
   }
@@ -458,3 +566,251 @@ export async function identifySignerId(sig, signers) {
   }
   return 0;
 }
+
+/**
+ * Builds the ERC-4337 v0.7 initCode for a counterfactual account deployment:
+ * initCode = factoryAddress (20 bytes) || factoryCalldata (createAccount)
+ */
+export function buildAccountInitCode(factoryAddress, passkey0, passkey1, threshold = 10000000000000000n, salt = 1n) {
+  const cleanFactory = factoryAddress.toLowerCase().replace(/^0x/, '');
+  const p0x = padBytes32(passkey0.x);
+  const p0y = padBytes32(passkey0.y);
+  const p1x = padBytes32(passkey1.x);
+  const p1y = padBytes32(passkey1.y);
+  const threshHex = pad64(threshold);
+  const saltHex = padBytes32(salt);
+
+  const calldata = '0xf261e8a5' + p0x + p0y + p1x + p1y + threshHex + saltHex;
+  return '0x' + cleanFactory + calldata.slice(2);
+}
+
+/**
+ * Checks if smart account is deployed on-chain; if not, returns initCode for just-in-time creation
+ */
+export async function ensureAccountInitCode(rpcUrl, factoryAddress, accountAddress, signers, threshold = 10000000000000000n, salt = 1n) {
+  try {
+    const res = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: Date.now(),
+        method: 'eth_getCode',
+        params: [accountAddress, 'latest']
+      })
+    });
+    const json = await res.json();
+    if (json.result && json.result !== '0x' && json.result !== '0x0') {
+      return '0x';
+    }
+  } catch (e) {
+    console.warn('eth_getCode query failed:', e);
+    return '0x';
+  }
+
+  if (!factoryAddress || !signers || signers.length < 2) {
+    return '0x';
+  }
+
+  return buildAccountInitCode(factoryAddress, signers[0], signers[1], threshold, salt);
+}
+
+/**
+ * Solicits gas sponsorship from an ERC-4337 Paymaster (Pimlico / Alchemy pm_sponsorUserOperation)
+ */
+export async function getPaymasterSponsorship(bundlerUrl, userOp, entryPoint) {
+  if (!bundlerUrl) return null;
+  try {
+    const payload = {
+      sender: userOp.sender,
+      nonce: userOp.nonce,
+      initCode: userOp.initCode || '0x',
+      callData: userOp.callData || '0x',
+      accountGasLimits: userOp.accountGasLimits,
+      preVerificationGas: userOp.preVerificationGas,
+      gasFees: userOp.gasFees,
+      paymasterAndData: '0x',
+      signature: '0x'
+    };
+
+    const res = await fetch(bundlerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: Date.now(),
+        method: 'pm_sponsorUserOperation',
+        params: [payload, entryPoint]
+      })
+    });
+    const json = await res.json();
+    if (json.result) {
+      return json.result;
+    }
+  } catch (e) {
+    console.warn('Paymaster sponsorship attempt failed, falling back to unsponsored:', e);
+  }
+  return null;
+}
+
+/**
+ * Decodes high-level operation details from raw calldata
+ */
+export function decodeCalldataOperation(to = '', valueWei = 0n, calldata = '0x') {
+  const cleanData = (calldata || '').replace(/^0x/, '');
+  const cleanTo = (to || '').toLowerCase();
+  
+  // 1. Native ETH transfer
+  if (!cleanData || cleanData.length === 0) {
+    const ethVal = Number(BigInt(valueWei || '0')) / 1e18;
+    return {
+      type: 'ETH_TRANSFER',
+      label: 'Native ETH Transfer',
+      target: to,
+      amountFormatted: `${ethVal.toFixed(4)} ETH`,
+      amountValue: ethVal,
+      isApproval: false,
+      isUnlimitedApproval: false,
+      riskLevel: 'safe',
+      summary: `Transfer ${ethVal.toFixed(4)} ETH to ${to ? to.slice(0, 6) + '...' + to.slice(-4) : 'recipient'}`
+    };
+  }
+
+  const selector = cleanData.slice(0, 8).toLowerCase();
+
+  // 2. ERC-20 transfer(address to, uint256 amount) -> 0xa9059cbb
+  if (selector === 'a9059cbb' && cleanData.length >= 72) {
+    const recipient = '0x' + cleanData.slice(32, 72);
+    const amountHex = cleanData.slice(72, 136);
+    const rawAmount = BigInt('0x' + (amountHex || '0'));
+    return {
+      type: 'ERC20_TRANSFER',
+      label: 'Token Transfer',
+      tokenAddress: to,
+      recipient,
+      rawAmount: rawAmount.toString(),
+      isApproval: false,
+      isUnlimitedApproval: false,
+      riskLevel: 'safe',
+      summary: `Transfer tokens from ${to.slice(0, 6)}... to ${recipient.slice(0, 6)}...${recipient.slice(-4)}`
+    };
+  }
+
+  // 3. ERC-20 approve(address spender, uint256 amount) -> 0x095ea7b3
+  if (selector === '095ea7b3' && cleanData.length >= 72) {
+    const spender = '0x' + cleanData.slice(32, 72);
+    const amountHex = cleanData.slice(72, 136);
+    const rawAmount = BigInt('0x' + (amountHex || '0'));
+    // Check if unlimited approval: >= 2^96 or 0xffffffff...
+    const isUnlimited = rawAmount >= (1n << 96n) || rawAmount === (2n ** 256n - 1n);
+    return {
+      type: 'ERC20_APPROVE',
+      label: isUnlimited ? 'Unlimited Token Approval' : 'Token Approval',
+      tokenAddress: to,
+      spender,
+      rawAmount: rawAmount.toString(),
+      isApproval: true,
+      isUnlimitedApproval: isUnlimited,
+      riskLevel: isUnlimited ? 'critical' : 'warning',
+      summary: isUnlimited
+        ? `Grant UNLIMITED token allowance to ${spender.slice(0, 6)}...${spender.slice(-4)}! DApp can drain approved balance.`
+        : `Approve token allowance for ${spender.slice(0, 6)}...${spender.slice(-4)}`
+    };
+  }
+
+  // 4. Uniswap V3 exactInputSingle -> 0x414bf382 or 0x04e45aaf
+  if (selector === '414bf382' || selector === '04e45aaf') {
+    return {
+      type: 'SWAP',
+      label: 'Uniswap V3 Swap',
+      router: to,
+      isApproval: false,
+      isUnlimitedApproval: false,
+      riskLevel: 'safe',
+      summary: `Execute decentralized swap on Uniswap V3 router ${to.slice(0, 6)}...`
+    };
+  }
+
+  // 5. Generic / Custom Contract Call
+  return {
+    type: 'CONTRACT_CALL',
+    label: 'Contract Interaction',
+    target: to,
+    selector: '0x' + selector,
+    isApproval: false,
+    isUnlimitedApproval: false,
+    riskLevel: 'warning',
+    summary: `Execute contract method 0x${selector} on ${to.slice(0, 6)}...${to.slice(-4)}`
+  };
+}
+
+/**
+ * Simulates user operation against security policies & rolling spend windows
+ */
+export function simulateUserOpPolicy({
+  valueWei = 0n,
+  innerCall = '',
+  dest = '',
+  isFrozen = false,
+  allowedAddresses = [],
+  ethThreshold = 10000000000000000n, // 0.01 ETH
+  ethWindowCap = 50000000000000000n, // 0.05 ETH
+  spentInWindow = 0n
+}) {
+  const decoded = decodeCalldataOperation(dest, valueWei, innerCall);
+  const isUntrusted = allowedAddresses.length > 0 && 
+    !allowedAddresses.map(a => a.toLowerCase()).includes(dest.toLowerCase());
+
+  const valBig = BigInt(valueWei || '0');
+  const exceedsThreshold = valBig >= ethThreshold;
+  const exceedsWindow = (spentInWindow + valBig) > ethWindowCap;
+  const hasInnerCall = (innerCall && innerCall !== '0x' && innerCall.length > 0);
+  
+  let requiredSignatures = 1;
+  let policyTag = '1-Sig (Instant)';
+  let badgeClass = 'safe';
+  let title = '● Safe Instant Operation';
+  let description = 'Sub-threshold transfer. Authorized with 1 Touch ID biometric signature.';
+
+  if (isFrozen) {
+    requiredSignatures = 2;
+    policyTag = '2-Sig (Frozen)';
+    badgeClass = 'danger';
+    title = '● Wallet is Frozen';
+    description = 'All operations require 2-of-2 Hardware Passkey Quorum while wallet is frozen.';
+  } else if (decoded.isUnlimitedApproval) {
+    requiredSignatures = 2;
+    policyTag = '2-Sig (High Risk)';
+    badgeClass = 'danger';
+    title = '● Unlimited Token Approval (High Risk)';
+    description = 'DApp requests unlimited spend access. Requires 2-of-2 Hardware Quorum confirmation.';
+  } else if (exceedsThreshold || exceedsWindow || hasInnerCall || isUntrusted) {
+    requiredSignatures = 2;
+    policyTag = '2-Sig (Quorum)';
+    badgeClass = 'warning';
+    title = '● 2-of-2 Hardware Quorum Required';
+
+    const reasons = [];
+    if (exceedsThreshold) reasons.push('amount exceeds per-op limit (0.01 ETH / $32)');
+    if (exceedsWindow) reasons.push('exceeds 24h rolling spend window (0.05 ETH / $160)');
+    if (hasInnerCall) reasons.push('custom contract execution');
+    if (isUntrusted) reasons.push('unrecognized contract address');
+
+    description = `Requires dual biometric hardware signers (${reasons.join(', ')}).`;
+  }
+
+  const windowUsagePercent = ethWindowCap > 0n 
+    ? Math.min(100, Math.round(Number(((spentInWindow + valBig) * 100n) / ethWindowCap)))
+    : 0;
+
+  return {
+    requiredSignatures,
+    policyTag,
+    badgeClass,
+    title,
+    description,
+    decoded,
+    windowUsagePercent
+  };
+}
+

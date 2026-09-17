@@ -13,6 +13,10 @@
     "test:contracts": "forge test",
     "demo": "node scripts/demo-flow.mjs",
     "demo:agent": "node scripts/execute-autonomous-agent.mjs",
-    "demo:reject": "node scripts/test-policy-violation.mjs"
+    "demo:reject": "node scripts/test-policy-violation.mjs",
+    "test:e2e": "node test/e2e-playwright.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
   }
 }

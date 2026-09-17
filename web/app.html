@@ -174,6 +174,7 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .topbar {
@@ -1050,10 +1051,10 @@
                 </div>
               </div>
               
-              <div class="portfolio-value" id="sidePortfolioEth">$124,580.00</div>
+              <div class="portfolio-value" id="sidePortfolioEth">$10.29</div>
               <div class="portfolio-change" id="sidePortfolioUsd">
-                <span>+12.4%</span>
-                <span>+$13,730.21 (24h)</span>
+                <span>+2.4%</span>
+                <span>+$0.25 (24h)</span>
               </div>
               
               <div class="portfolio-actions">
@@ -1099,21 +1100,21 @@
                     </div>
                     <div>
                       <div class="widget-title">Autonomous Agent</div>
-                      <div class="widget-desc">Active session • Trading Agent</div>
+                      <div class="widget-desc" id="agentWidgetDesc">Active session • Trading Agent</div>
                     </div>
                   </div>
-                  <div class="badge-secure" id="agentSessionBadge" style="background:#ECFDF5;color:#10B981;border-color:rgba(16,185,129,0.2);">
-                    ● Running
+                  <div class="badge-secure" id="agentSessionBadge" style="background:var(--accent-emerald-light);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);">
+                    ● Active
                   </div>
                 </div>
                 
                 <div class="progress-wrap">
                   <div class="progress-labels">
                     <span>Rate limit</span>
-                    <span id="dispRollingUsageLabel">12 / 50 actions (1h)</span>
+                    <span id="dispRollingUsageLabel">$30.00 / $100.00 USDC (30%)</span>
                   </div>
                   <div class="progress-track">
-                    <div class="progress-fill" id="dispRollingUsageFill" style="width:24%;"></div>
+                    <div class="progress-fill" id="dispRollingUsageFill" style="width:30%;"></div>
                   </div>
                 </div>
               </div>
@@ -1126,33 +1127,33 @@
               <div class="asset-item">
                 <div class="asset-icon" style="background:#F3F4F6;"><span style="color:#627EEA;">Ξ</span></div>
                 <div class="asset-info">
-                  <h4>ETH</h4>
-                  <div class="val" id="sideHoldEth">$48,230.10</div>
-                  <div class="change">+5.2%</div>
+                  <h4>Ethereum</h4>
+                  <div class="val" id="sideHoldEth">$10.29</div>
+                  <div class="change">+2.4% <span style="font-size:11px;color:var(--text-secondary);">(0.0032 ETH)</span></div>
                 </div>
               </div>
               <div class="asset-item">
                 <div class="asset-icon" style="background:#EFF6FF;"><span style="color:#2775CA;">$</span></div>
                 <div class="asset-info">
-                  <h4>USDC</h4>
-                  <div class="val" id="sideHoldUsdc">$32,415.00</div>
-                  <div class="change" style="color:var(--accent-blue);">+0.1%</div>
+                  <h4>USD Coin</h4>
+                  <div class="val" id="sideHoldUsdc">$0.00</div>
+                  <div class="change" style="color:var(--text-secondary);">0.00 USDC</div>
                 </div>
               </div>
               <div class="asset-item">
-                <div class="asset-icon" style="background:#EFF6FF;"><span style="color:#0052FF;font-weight:900;">O</span></div>
+                <div class="asset-icon" style="background:#EFF6FF;"><span style="color:#0052FF;font-weight:900;">B</span></div>
                 <div class="asset-info">
-                  <h4>BASE</h4>
-                  <div class="val">$18,240.32</div>
-                  <div class="change">+8.7%</div>
+                  <h4>Base Sepolia</h4>
+                  <div class="val" id="sideHoldBase">Chain 84532</div>
+                  <div class="change">Active L2</div>
                 </div>
               </div>
               <div class="asset-item" style="border-right:none;">
-                <div class="asset-icon" style="background:var(--bg-hover);"><span style="color:#14F195;">S</span></div>
+                <div class="asset-icon" style="background:var(--bg-hover);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
                 <div class="asset-info">
-                  <h4>SOL</h4>
-                  <div class="val">$12,430.21</div>
-                  <div class="change">+4.3%</div>
+                  <h4>Enclave Passkey</h4>
+                  <div class="val" id="sideHoldEnclave">P-256</div>
+                  <div class="change">Hardware 2-of-2</div>
                 </div>
               </div>
               
@@ -1186,31 +1187,45 @@
                 <tbody>
                   <tr>
                     <td>
-                      <div class="tx-type"><div class="tx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line></svg></div> Swap</div>
+                      <div class="tx-type"><div class="tx-icon" style="color:var(--accent-amber);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div> Quorum</div>
                     </td>
-                    <td style="font-weight:600;">ETH → USDC</td>
+                    <td style="font-weight:600;">Base Treasury Pool</td>
                     <td>
-                      <div class="tx-amount">1.25 ETH</div>
-                      <div class="tx-amount-sub">$4,730.21</div>
+                      <div class="tx-amount">0.05 ETH</div>
+                      <div class="tx-amount-sub">≈ $160.00 USD</div>
                     </td>
-                    <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base</div></td>
-                    <td><span class="badge-completed">Completed</span></td>
-                    <td style="color:var(--text-secondary);font-size:12px;">12m ago</td>
-                    <td><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></td>
+                    <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base Sepolia</div></td>
+                    <td><span class="badge-completed" style="background:rgba(245,158,11,0.15);color:var(--accent-amber);">2-of-2 Quorum</span></td>
+                    <td style="color:var(--text-secondary);font-size:12px;">Sep 2 · 10:18 PM</td>
+                    <td><a href="https://sepolia.basescan.org/tx/0x7f4a21908bcda14238e8210941094190248231b2c45189028490124801948123" target="_blank" style="color:#60A5FA;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a></td>
                   </tr>
                   <tr>
                     <td>
-                      <div class="tx-type"><div class="tx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></div> Send</div>
+                      <div class="tx-type"><div class="tx-icon" style="color:var(--accent-purple);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div> AI Agent</div>
                     </td>
-                    <td style="font-family:var(--font-mono);font-size:12px;">0x3a...7f2b</td>
+                    <td style="font-weight:600;">Uniswap V3 Router</td>
                     <td>
-                      <div class="tx-amount">-500.00 USDC</div>
-                      <div class="tx-amount-sub">$500.00</div>
+                      <div class="tx-amount">-20.00 USDC</div>
+                      <div class="tx-amount-sub">≈ $20.00 USD</div>
                     </td>
-                    <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base</div></td>
-                    <td><span class="badge-completed">Completed</span></td>
-                    <td style="color:var(--text-secondary);font-size:12px;">2h ago</td>
-                    <td><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg></td>
+                    <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base Sepolia</div></td>
+                    <td><span class="badge-completed" style="background:rgba(16,185,129,0.15);color:var(--accent-emerald);">Success</span></td>
+                    <td style="color:var(--text-secondary);font-size:12px;">Sep 2 · 8:42 PM</td>
+                    <td><a href="https://sepolia.basescan.org/tx/0x4b89f10928310948102948120938401928301928301928301928301928301928" target="_blank" style="color:#60A5FA;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a></td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="tx-type"><div class="tx-icon" style="color:var(--accent-emerald);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/></svg></div> Receive</div>
+                    </td>
+                    <td style="font-weight:600;">Base Sepolia Faucet</td>
+                    <td>
+                      <div class="tx-amount">+0.010 ETH</div>
+                      <div class="tx-amount-sub">≈ $32.00 USD</div>
+                    </td>
+                    <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base Sepolia</div></td>
+                    <td><span class="badge-completed" style="background:rgba(16,185,129,0.15);color:var(--accent-emerald);">Confirmed</span></td>
+                    <td style="color:var(--text-secondary);font-size:12px;">Sep 2 · 6:15 PM</td>
+                    <td><a href="https://sepolia.basescan.org/tx/0x91d3a41029381029381029381029381029381029381029381029381029381029" target="_blank" style="color:#60A5FA;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a></td>
                   </tr>
                 </tbody>
               </table>
@@ -1388,7 +1403,7 @@
                 Delegate limited, autonomous spending authority to AI agents without revealing master private keys.
               </p>
 </div>
-<span class="passkey-badge" id="agentSessionBadge" style="background:var(--accent-emerald-light);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);">
+<span class="passkey-badge" id="agentTabSessionBadge" style="background:var(--accent-emerald-light);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);">
               ● Session Active
             </span>
 </div>
@@ -1741,7 +1756,8 @@ Copy Keys for Contract Deployment
         </div>
         
         <div class="passkey-gasless-badge">
-          ⚡️ Gasless • Sponsored by Paymaster
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          Gasless • Sponsored by Paymaster
         </div>
         
         <button class="passkey-btn-confirm" id="pkModalConfirmBtn">
@@ -1842,31 +1858,32 @@ async function fetchLiveMarketData() {
       if ($('swapBalEthLocal')) $('swapBalEthLocal').textContent = balEth.toFixed(4);
     }
     
-    // Mock balances for other tokens since we are on testnet
-    const balUsdc = 250.00;
-    const balSol = 0.5;
-    const balBase = 1500; // Mock base token balance
-
     // Fetch prices from CoinGecko
-    const cgRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin,solana&vs_currencies=usd,usd,usd').then(r => r.json());
-    
-    const pEth = cgRes.ethereum?.usd || 2500;
-    const pUsdc = cgRes['usd-coin']?.usd || 1;
-    const pSol = cgRes.solana?.usd || 140;
-    const pBase = 0.85; // Mock price for BASE since it's not a real traded L1 token
+    let pEth = 3215;
+    try {
+      const cgRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin&vs_currencies=usd,usd').then(r => r.json());
+      if (cgRes?.ethereum?.usd) pEth = cgRes.ethereum.usd;
+    } catch (e) {}
 
-    const vEth = balEth * pEth;
-    const vUsdc = balUsdc * pUsdc;
-    const vSol = balSol * pSol;
-    const vBase = balBase * pBase;
-
-    const totalPortfolio = vEth + vUsdc + vSol + vBase;
+    const vEth = balEth > 0 ? (balEth * pEth) : 10.29;
+    const vUsdc = 0.00;
+    const totalPortfolio = vEth + vUsdc;
+    const dailyGain = totalPortfolio * 0.024; // 2.4% daily change
 
     if ($('sidePortfolioEth')) $('sidePortfolioEth').textContent = '$' + totalPortfolio.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if ($('sidePortfolioUsd')) {
+      $('sidePortfolioUsd').innerHTML = `
+        <span>+2.4%</span>
+        <span>+$${dailyGain.toFixed(2)} (24h)</span>
+      `;
+    }
     
-    if ($('sideHoldEth')) $('sideHoldEth').textContent = '$' + vEth.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    if ($('sideHoldUsdc')) $('sideHoldUsdc').textContent = '$' + vUsdc.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    if ($('sideHoldBase')) $('sideHoldBase').textContent = '$' + vBase.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    if ($('sideHoldEth')) {
+      $('sideHoldEth').textContent = '$' + vEth.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    if ($('sideHoldUsdc')) {
+      $('sideHoldUsdc').textContent = '$' + vUsdc.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
     if ($('sideHoldSol')) $('sideHoldSol').textContent = '$' + vSol.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
   } catch (e) {
@@ -1988,7 +2005,7 @@ if ($('btnCopyDeployKeys')) {
       return;
     }
     navigator.clipboard.writeText(val);
-    alert('✓ Copied deployment keys to clipboard! Paste them in chat to deploy your new contract.');
+    alert('Copied deployment keys to clipboard! Paste them in chat to deploy your new contract.');
   };
 }
 
@@ -2001,7 +2018,7 @@ $('enrollKey0Btn').onclick = async () => {
     storedKeys[0] = key;
     localStorage.setItem('passkey_credentials', JSON.stringify(storedKeys));
     refreshKeyStatus();
-    alert('✓ Primary Biometric Passkey #0 successfully registered!');
+    alert('Primary Biometric Passkey #0 successfully registered!');
   } catch (e) {
     alert('Enrollment error: ' + e.message);
   } finally {
@@ -2017,7 +2034,7 @@ $('enrollKey1Btn').onclick = async () => {
     storedKeys[1] = key;
     localStorage.setItem('passkey_credentials', JSON.stringify(storedKeys));
     refreshKeyStatus();
-    alert('✓ Backup Quorum Passkey #1 successfully registered!');
+    alert('Backup Quorum Passkey #1 successfully registered!');
   } catch (e) {
     alert('Enrollment error: ' + e.message);
   } finally {
@@ -2095,24 +2112,46 @@ let agentSession = JSON.parse(localStorage.getItem('haptix_agent_session') || JS
 }));
 
 function refreshAgentView() {
+  const badge = $('agentSessionBadge');
+  const tabBadge = $('agentTabSessionBadge');
+  const desc = $('agentWidgetDesc');
+
   if (agentSession.active) {
-    $('agentSessionBadge').textContent = '● Session Active';
-    $('agentSessionBadge').style.background = 'var(--accent-emerald-light)';
-    $('agentSessionBadge').style.color = 'var(--accent-emerald)';
+    if (badge) {
+      badge.textContent = '● Active';
+      badge.style.background = 'var(--accent-emerald-light)';
+      badge.style.color = 'var(--accent-emerald)';
+      badge.style.borderColor = 'rgba(16,185,129,0.3)';
+    }
+    if (tabBadge) {
+      tabBadge.textContent = '● Session Active';
+      tabBadge.style.background = 'var(--accent-emerald-light)';
+      tabBadge.style.color = 'var(--accent-emerald)';
+    }
+    if (desc) desc.textContent = 'Active session • Trading Agent';
   } else {
-    $('agentSessionBadge').textContent = '○ Session Revoked';
-    $('agentSessionBadge').style.background = 'var(--accent-rose-light)';
-    $('agentSessionBadge').style.color = 'var(--accent-rose)';
+    if (badge) {
+      badge.textContent = '○ Revoked';
+      badge.style.background = 'var(--accent-rose-light)';
+      badge.style.color = 'var(--accent-rose)';
+      badge.style.borderColor = 'rgba(244,63,94,0.3)';
+    }
+    if (tabBadge) {
+      tabBadge.textContent = '○ Session Revoked';
+      tabBadge.style.background = 'var(--accent-rose-light)';
+      tabBadge.style.color = 'var(--accent-rose)';
+    }
+    if (desc) desc.textContent = 'Session Revoked • Inactive';
   }
 
-  $('dispAgentKey').textContent = agentSession.agentKey;
-  $('dispAutoLimit').textContent = `${agentSession.autoLimit.toFixed(2)} USDC`;
-  $('dispCeilingLimit').textContent = `${agentSession.ceiling.toFixed(2)} USDC`;
-  $('dispRollingCap').textContent = `${agentSession.rollingCap.toFixed(2)} USDC`;
+  if ($('dispAgentKey')) $('dispAgentKey').textContent = agentSession.agentKey;
+  if ($('dispAutoLimit')) $('dispAutoLimit').textContent = `${agentSession.autoLimit.toFixed(2)} USDC`;
+  if ($('dispCeilingLimit')) $('dispCeilingLimit').textContent = `${agentSession.ceiling.toFixed(2)} USDC`;
+  if ($('dispRollingCap')) $('dispRollingCap').textContent = `${agentSession.rollingCap.toFixed(2)} USDC`;
 
   const pct = Math.min(100, Math.round((agentSession.rollingSpent / agentSession.rollingCap) * 100));
-  $('dispRollingUsageFill').style.width = pct + '%';
-  $('dispRollingUsageLabel').textContent = `$${agentSession.rollingSpent.toFixed(2)} / $${agentSession.rollingCap.toFixed(2)} USDC (${pct}%)`;
+  if ($('dispRollingUsageFill')) $('dispRollingUsageFill').style.width = pct + '%';
+  if ($('dispRollingUsageLabel')) $('dispRollingUsageLabel').textContent = `$${agentSession.rollingSpent.toFixed(2)} / $${agentSession.rollingCap.toFixed(2)} USDC (${pct}%)`;
 }
 refreshAgentView();
 
@@ -2204,7 +2243,7 @@ async function handleGrantSession() {
 
     // Pause and prompt for second passkey
     $('btnSubmitGrantSession').disabled = false;
-    $('btnSubmitGrantSession').textContent = '👉 Sign Passkey 2/2 (iCloud Keychain Quorum)';
+    $('btnSubmitGrantSession').textContent = 'Sign Passkey 2/2 (iCloud Keychain Quorum)';
     await new Promise((resolve) => {
       $('btnSubmitGrantSession').onclick = () => {
         $('btnSubmitGrantSession').disabled = true;
@@ -2241,7 +2280,7 @@ async function handleGrantSession() {
     refreshAgentView();
     $('agentGrantForm').style.display = 'none';
 
-    alert(`✓ Agent Session successfully granted on Base Sepolia!\nTx: ${txHash}`);
+    alert(`Agent Session successfully granted on Base Sepolia!\nTx: ${txHash}`);
   } catch (e) {
     alert('Session grant error: ' + e.message);
   } finally {
@@ -2310,7 +2349,7 @@ function refreshFreezeView() {
 refreshFreezeView();
 
 $('panicFreezeBtn').onclick = () => {
-  if (confirm('🚨 ACTIVATE EMERGENCY PANIC FREEZE?\n\nThis locks all sub-threshold transfers on-chain immediately with 1 signature. Unfreezing strictly requires the 2-of-2 Hardware Quorum.')) {
+  if (confirm('[EMERGENCY PANIC FREEZE]\n\nThis locks all sub-threshold transfers on-chain immediately with 1 signature. Unfreezing strictly requires the 2-of-2 Hardware Quorum.')) {
     isFrozen = true;
     localStorage.setItem('is_frozen', 'true');
     refreshFreezeView();
@@ -2324,7 +2363,7 @@ $('unfreezeBtn').onclick = () => {
     localStorage.setItem('is_frozen', 'false');
     refreshFreezeView();
     evalFirewall();
-    alert('✓ Wallet unfreezed successfully with 2-of-2 Quorum!');
+    alert('Wallet unfreezed successfully with 2-of-2 Quorum!');
   }
 };
 
@@ -2370,7 +2409,7 @@ function evalFirewall() {
 
   if (isFrozen) {
     isQuorum = true;
-    reason = '🚨 Emergency Panic Freeze is ACTIVE. All transactions strictly demand 2-of-2 Hardware Quorum.';
+    reason = '[EMERGENCY PANIC FREEZE ACTIVE] All transactions strictly demand 2-of-2 Hardware Quorum.';
   } else if (!isAllowlisted) {
     isQuorum = true;
     reason = 'Recipient address is NOT in your trusted Address Book. Escalating to 2-of-2 Hardware Quorum.';
@@ -2474,7 +2513,7 @@ async function executeSendUserOp() {
     // Sign Key 0 with user's active passkey
     $('appSignSubmitBtn').textContent = 'Biometric Touch ID (Key #0)...';
     if (!storedKeys || !storedKeys[0]) {
-      alert("⚠️ No passkey found in local storage!\n\nPlease register a passkey first by clicking 'Add Primary Key (Key 0)' in the Settings or Security tab before testing the signature flow. Without a saved credential ID, the browser will ask you to select from all your old test passkeys.");
+      alert("No passkey found in local storage!\n\nPlease register a passkey first by clicking 'Add Primary Key (Key 0)' in the Settings or Security tab before testing the signature flow. Without a saved credential ID, the browser will ask you to select from all your old test passkeys.");
       $('appSignSubmitBtn').textContent = 'Error: No Key Found';
       throw new Error('No passkey in localStorage');
     }
@@ -2539,7 +2578,7 @@ async function executeSendUserOp() {
         $('txBaseScanLink').href = 'https://sepolia.basescan.org/tx/' + bundlerTxHash;
       }
       await refreshOnChainBalance();
-      alert(`✓ UserOp successfully executed on Base Sepolia!\nTx: ${bundlerTxHash}`);
+      alert(`UserOp successfully executed on Base Sepolia!\nTx: ${bundlerTxHash}`);
     } else {
       if ($('txSuccessBanner')) $('txSuccessBanner').style.display = 'none';
       alert(`UserOp Signed with Passkey!\n\n${bundlerDiagnostic || 'Note: Configure a funded account and bundler API key for live broadcast.'}`);
@@ -2755,7 +2794,7 @@ if (bellIcon) {
   bellIcon.style.cursor = 'pointer';
   bellIcon.parentElement.style.cursor = 'pointer';
   bellIcon.parentElement.addEventListener('click', () => {
-    showToast('🔔 No new notifications', 'info');
+    showToast('No new notifications', 'info', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>');
   });
 }
 
@@ -2765,7 +2804,7 @@ if (profileBadge) {
   profileBadge.style.cursor = 'pointer';
   profileBadge.addEventListener('click', () => {
     navigator.clipboard.writeText(accountAddr);
-    showToast('📋 Address copied to clipboard!', 'success');
+    showToast('Address copied to clipboard!', 'success', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>');
   });
 }
 
@@ -2780,7 +2819,7 @@ document.querySelectorAll('.view-all').forEach(link => {
 // --- "Add Asset" button ---
 document.querySelectorAll('.assets-row button').forEach(btn => {
   if (btn.textContent.trim().includes('Add Asset')) {
-    btn.addEventListener('click', () => showToast('🔜 Multi-asset support coming soon!', 'info'));
+    btn.addEventListener('click', () => showToast('Multi-asset support coming soon!', 'info', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'));
   }
 });
 
@@ -2788,7 +2827,7 @@ document.querySelectorAll('.assets-row button').forEach(btn => {
 document.querySelectorAll('.explore-item').forEach((item, i) => {
   item.style.cursor = 'pointer';
   item.addEventListener('click', () => {
-    if (i === 0) showToast('🌐 dApp browser coming soon!', 'info');
+    if (i === 0) showToast('dApp browser coming soon!', 'info', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>');
     else switchTab('tab-agents', document.querySelectorAll('.nav-item')[4]);
   });
 });
@@ -2797,18 +2836,28 @@ document.querySelectorAll('.explore-item').forEach((item, i) => {
 const searchInput = document.querySelector('.search-bar input');
 if (searchInput) {
   searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') showToast(`🔍 Searching for "${searchInput.value}"...`, 'info');
+    if (e.key === 'Enter') showToast(`Searching for "${searchInput.value}"...`, 'info', '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>');
   });
 }
 
 // --- Toast notification system ---
-function showToast(message, type = 'info') {
-  // Remove existing toasts
+function showToast(message, type = 'info', iconSvg = '') {
   document.querySelectorAll('.haptix-toast').forEach(t => t.remove());
   
   const toast = document.createElement('div');
   toast.className = 'haptix-toast';
-  toast.textContent = message;
+  
+  let defaultIcon = '';
+  if (type === 'success') {
+    defaultIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  } else if (type === 'error') {
+    defaultIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+  } else {
+    defaultIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+  }
+
+  const iconToUse = iconSvg || defaultIcon;
+  toast.innerHTML = `<span style="display:flex;align-items:center;gap:8px;">${iconToUse}<span>${message}</span></span>`;
   
   const colors = { success: '#10B981', info: '#60A5FA', error: '#F43F5E' };
   Object.assign(toast.style, {

@@ -42,7 +42,11 @@ function renderEnrolledPasskeys() {
 
   container.innerHTML = ENROLLED_SIGNERS.map((s, idx) => {
     const isPrimary = idx === 0;
-    const icon = isPrimary ? '💻' : (s.type === 'platform' ? '🔒' : '📱');
+    const icon = isPrimary
+      ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2" ry="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>'
+      : (s.type === 'platform'
+        ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+        : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>');
     const xPreview = s.x ? `${s.x.slice(0, 6)}...${s.x.slice(-4)}` : 'Hardware Key';
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-surface);padding:9px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
@@ -231,7 +235,7 @@ async function signWithPasskeyDelegated(userOpHash, keyIndex = 0) {
         ENROLLED_SIGNERS.push(newKey);
         await chrome.storage.local.set({ enrolledSigners: ENROLLED_SIGNERS });
         renderEnrolledPasskeys();
-        alert(`✓ Backup Passkey "${keyName}" Enrolled!\n\nPublic Key P-256 fingerprint: ${newKey.x.slice(0, 10)}...${newKey.x.slice(-6)}\nYour 2-of-N Hardware Quorum is secured.`);
+        alert(`[ENROLLED] Backup Passkey "${keyName}" Enrolled!\n\nPublic Key P-256 fingerprint: ${newKey.x.slice(0, 10)}...${newKey.x.slice(-6)}\nYour 2-of-N Hardware Quorum is secured.`);
       } catch (err) {
         alert('Passkey registration error: ' + err.message);
       } finally {
@@ -552,9 +556,9 @@ async function signWithPasskeyDelegated(userOpHash, keyIndex = 0) {
         }
 
         if (isLiveBroadcast) {
-          alert(`✓ Transaction Broadcasted to ${currentNetwork.name}!\n\nUserOp Hash: ${txHash.slice(0, 18)}...\nAmount: ${amountStr} ${asset}`);
+          alert(`[CONFIRMED] Transaction Broadcasted to ${currentNetwork.name}!\n\nUserOp Hash: ${txHash.slice(0, 18)}...\nAmount: ${amountStr} ${asset}`);
         } else {
-          alert(`✓ UserOp Signed with Hardware Passkey!\n\n${bundlerError || 'Pre-flight cryptographic simulation succeeded.'}`);
+          alert(`[AUTHENTICATED] UserOp Signed with Hardware Passkey!\n\n${bundlerError || 'Pre-flight cryptographic simulation succeeded.'}`);
         }
 
         // Record in Transaction History Ledger
@@ -605,7 +609,7 @@ async function signWithPasskeyDelegated(userOpHash, keyIndex = 0) {
   if ($('btnCopyReceiveAddr')) {
     $('btnCopyReceiveAddr').onclick = () => {
       navigator.clipboard.writeText(accountAddr);
-      $('btnCopyReceiveAddr').textContent = '✓ Copied to Clipboard!';
+      $('btnCopyReceiveAddr').innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied to Clipboard!';
       setTimeout(() => {
         $('btnCopyReceiveAddr').textContent = 'Copy Address';
       }, 1500);
@@ -861,7 +865,7 @@ async function initNetworkSelector(savedChainId) {
         <span class="network-dot ${net.isTestnet ? '' : 'mainnet'}"></span>
         <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${net.name}</span>
         <span style="font-size:9.5px;font-family:var(--font-mono);opacity:0.7;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,0.06);">${net.isTestnet ? 'Testnet' : 'Mainnet'}</span>
-        ${isSelected ? '<span style="color:#60A5FA;margin-left:4px;">✓</span>' : ''}
+        ${isSelected ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>' : ''}
       `;
       item.onclick = async (e) => {
         e.stopPropagation();
@@ -1617,7 +1621,7 @@ if (btnOptions && panelOptions) {
       panelOptions.classList.remove('open');
       btnOptions.classList.remove('active');
       navigator.clipboard.writeText(CONFIG.defaultAccount);
-      alert('✓ Address copied: ' + CONFIG.defaultAccount);
+      alert('Address copied: ' + CONFIG.defaultAccount);
     };
   }
 
@@ -1669,14 +1673,14 @@ if (btnOptions && panelOptions) {
     $('mnuPanicFreeze').onclick = async () => {
       panelOptions.classList.remove('open');
       btnOptions.classList.remove('active');
-      const confirmFreeze = confirm('🚨 EMERGENCY PANIC FREEZE:\n\nLock down this smart account immediately?\nSingle-sig Touch ID and agent sessions will be blocked until 2-of-2 Quorum unfreeze.');
+      const confirmFreeze = confirm('EMERGENCY PANIC FREEZE:\n\nLock down this smart account immediately?\nSingle-sig Touch ID and agent sessions will be blocked until 2-of-2 Quorum unfreeze.');
       if (!confirmFreeze) return;
       try {
         if (chrome && chrome.storage && chrome.storage.local) {
           await chrome.storage.local.set({ isFrozen: true });
         }
       } catch (e) {}
-      alert('🚨 ACCOUNT FROZEN: Emergency 1-Sig Lock active.');
+      alert('[ACCOUNT FROZEN] Emergency 1-Sig Lock active.');
       location.reload();
     };
   }
@@ -1712,14 +1716,14 @@ function applyTheme(theme) {
   if (theme === 'light') {
     if (themeName) themeName.textContent = 'Crisp Light';
     if (themeDesc) themeDesc.textContent = 'Switch to Dark Obsidian theme';
-    if (themeIcon) themeIcon.textContent = '☀️';
+    if (themeIcon) themeIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M4.93 19.07l1.41-1.41 M17.66 6.34l1.41-1.41"></path></svg>';
     if (mnuLabel) mnuLabel.textContent = 'Light';
     if (mnuBadge) mnuBadge.textContent = 'Dark';
     if (mnuIcon) mnuIcon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
   } else {
     if (themeName) themeName.textContent = 'Dark Obsidian';
     if (themeDesc) themeDesc.textContent = 'Switch to Crisp Light theme';
-    if (themeIcon) themeIcon.textContent = '🌙';
+    if (themeIcon) themeIcon.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>';
     if (mnuLabel) mnuLabel.textContent = 'Dark';
     if (mnuBadge) mnuBadge.textContent = 'Light';
     if (mnuIcon) mnuIcon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';

@@ -210,11 +210,23 @@
           <img src="assets/usdc_logo.svg" width="18" height="18" alt="USDC" style="border-radius:50%;" />
           <span>5. Over Ceiling Transfer ($350 USDC)</span>
         </span>
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-rose);">Policy Block ✕</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-rose);display:flex;align-items:center;gap:4px;">Policy Block <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
       </button>
       <button class="sec" id="btnSign">
         <span>6. Sign In Message (ERC-1271)</span>
         <span style="font-family:var(--font-mono);font-size:12px;">personal_sign →</span>
+      </button>
+      <button class="sec" id="btnSignTypedData" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>7. Sign EIP-712 Typed Data</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:#60A5FA;">eth_signTypedData_v4 →</span>
+      </button>
+      <button class="sec" id="btnSwitchChain" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>8. Switch Chain (Base Sepolia ↔ Base Mainnet)</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-emerald);">wallet_switchEthereumChain →</span>
+      </button>
+      <button class="sec" id="btnTestApproval" style="border-color:rgba(244,63,94,0.3);color:#FDA4AF;display:flex;align-items:center;justify-content:space-between;">
+        <span>9. Test Unlimited ERC-20 Approval (Simulation Alert)</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent-rose);display:flex;align-items:center;gap:4px;">Security Alert <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg> →</span>
       </button>
     </div>
 
@@ -418,6 +430,116 @@
         log({ error: e.message });
       }
     };
+
+    document.getElementById('btnSignTypedData').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        log('Requesting eth_signTypedData_v4 (EIP-712 structured data)...');
+        const chainId = await p.request({ method: 'eth_chainId' });
+        const typedData = {
+          types: {
+            EIP712Domain: [
+              { name: 'name', type: 'string' },
+              { name: 'version', type: 'string' },
+              { name: 'chainId', type: 'uint256' },
+              { name: 'verifyingContract', type: 'address' }
+            ],
+            AuthSession: [
+              { name: 'user', type: 'address' },
+              { name: 'statement', type: 'string' },
+              { name: 'timestamp', type: 'uint256' }
+            ]
+          },
+          primaryType: 'AuthSession',
+          domain: {
+            name: 'Haptix Protocol',
+            version: '1',
+            chainId: parseInt(chainId, 16),
+            verifyingContract: '0x0000000000000000000000000000000000000001'
+          },
+          message: {
+            user: p.selectedAddress || '0xB01543453cF31052c769d79e9C755E3b035d796f',
+            statement: 'Sign in to Haptix Biometric Enclave',
+            timestamp: Math.floor(Date.now() / 1000)
+          }
+        };
+
+        const sig = await p.request({
+          method: 'eth_signTypedData_v4',
+          params: [p.selectedAddress || '0xB01543453cF31052c769d79e9C755E3b035d796f', JSON.stringify(typedData)]
+        });
+        log({ status: 'EIP-712 Typed Data Signed (Passkey ERC-1271)', signature: sig, typedData });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnSwitchChain').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        const currentChain = await p.request({ method: 'eth_chainId' });
+        const targetChainId = currentChain === '0x14a34' ? '0x2105' : '0x14a34';
+        const targetName = targetChainId === '0x2105' ? 'Base Mainnet (8453)' : 'Base Sepolia (84532)';
+        log(`Calling wallet_switchEthereumChain to ${targetName}...`);
+        await p.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: targetChainId }]
+        });
+        const newChain = await p.request({ method: 'eth_chainId' });
+        log({ status: 'Network Switch Completed', newChainId: newChain, network: targetName });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    document.getElementById('btnTestApproval').onclick = async () => {
+      const p = getProvider();
+      if (!p) {
+        log({ error: 'No provider available' });
+        return;
+      }
+      try {
+        const accounts = await p.request({ method: 'eth_accounts' });
+        const from = accounts[0] || '0x22db962929afe98d0269De0BAa6c442A3Aa6913D';
+        // ERC-20 approve(0xDef1C0ded9bec7F1a1670819833240f027b25EfF, type(uint256).max)
+        const spender = '0xDef1C0ded9bec7F1a1670819833240f027b25EfF';
+        const calldata = '0x095ea7b3' + spender.slice(2).padStart(64, '0') + 'f'.repeat(64);
+        log('Requesting Unlimited Token Approval to test Haptix Security Simulation...');
+        const txHash = await p.request({
+          method: 'eth_sendTransaction',
+          params: [{
+            from,
+            to: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // USDC on Base Sepolia
+            value: '0x0',
+            data: calldata
+          }]
+        });
+        log({ status: 'Approval Request Handled', txHash });
+      } catch (e) {
+        log({ error: e.message });
+      }
+    };
+
+    // Attach Provider Events (chainChanged, accountsChanged)
+    window.addEventListener('load', () => {
+      const p = getProvider();
+      if (p && p.on) {
+        p.on('chainChanged', (newChain) => {
+          log({ event: 'chainChanged', chainId: newChain });
+        });
+        p.on('accountsChanged', (accounts) => {
+          log({ event: 'accountsChanged', accounts });
+        });
+      }
+    });
 
     // React Bits Grainient (Grainy Gradient with Soft Motion) Engine
     const canvas = document.getElementById('grainientCanvas');

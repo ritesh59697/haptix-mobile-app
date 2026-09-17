@@ -1997,7 +1997,7 @@
           <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="headless-menu-item" id="mnuBaseScan">
             <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             <span class="item-text">View on BaseScan</span>
-            <span class="item-kbd">↗</span>
+            <span class="item-kbd"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
           </a>
           <button class="headless-menu-item" id="mnuCredentials">
             <svg class="item-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/></svg>
@@ -2256,7 +2256,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
         Send Asset
       </div>
-      <button class="btn-close-sheet" id="btnCloseSend">✕</button>
+      <button class="btn-close-sheet" id="btnCloseSend" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     </div>
 
     <div class="form-group">
@@ -2326,7 +2326,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
         Receive Assets
       </div>
-      <button class="btn-close-sheet" id="btnCloseReceive">✕</button>
+      <button class="btn-close-sheet" id="btnCloseReceive" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     </div>
 
     <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:16px 0;">
@@ -2377,7 +2377,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Wallet Settings
       </div>
-      <button class="btn-close-sheet" id="btnCloseSettings">✕</button>
+      <button class="btn-close-sheet" id="btnCloseSettings" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -2386,8 +2386,8 @@
         <div class="card-title-text">Appearance &amp; Theme</div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;">
           <div style="display:flex;align-items:center;gap:10px;">
-            <div id="themeIconSlot" style="width:32px;height:32px;border-radius:8px;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;font-size:16px;">
-              🌙
+            <div id="themeIconSlot" style="width:32px;height:32px;border-radius:8px;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;color:var(--text-primary);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
             </div>
             <div>
               <div style="font-size:13px;font-weight:700;color:var(--text-primary);" id="themeModeName">Dark Mode</div>
@@ -2481,7 +2481,8 @@
       <!-- High-Risk Unlimited Approval Warning Alert -->
       <div id="appApprovalWarning" style="display:none;background:rgba(244,63,94,0.12);border:1px solid rgba(244,63,94,0.35);padding:10px;border-radius:var(--radius-sm);color:var(--accent-rose);font-size:11.5px;line-height:1.4;">
         <div style="font-weight:800;display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-          <span>🚨 SECURITY ALERT: UNLIMITED TOKEN APPROVAL</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span>SECURITY ALERT: UNLIMITED TOKEN APPROVAL</span>
         </div>
         <div>This dApp is requesting permission to spend <strong>ALL</strong> tokens in your account without future biometric confirmation.</div>
       </div>
@@ -2545,7 +2546,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
         Transaction Details
       </div>
-      <button class="btn-close-sheet" id="btnCloseTxDetails">✕</button>
+      <button class="btn-close-sheet" id="btnCloseTxDetails" title="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
     </div>
 
     <div class="tx-detail-hero">
@@ -2572,7 +2573,7 @@
         <span style="color:var(--text-muted);">Destination / Target:</span>
         <div style="display:flex;align-items:center;gap:6px;">
           <span style="font-family:var(--font-mono);font-size:11px;color:#93C5FD;" id="dtTxTo">0x22db...913D</span>
-          <button class="btn-inline-copy" id="dtCopyRecipient" title="Copy address">📋</button>
+          <button class="btn-inline-copy" id="dtCopyRecipient" title="Copy address"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button>
         </div>
       </div>
       <div class="key-spec-row">
@@ -2583,7 +2584,7 @@
         <span style="color:var(--text-muted);">UserOp / Transaction Hash:</span>
         <div style="display:flex;align-items:center;justify-content:space-between;width:100%;background:rgba(0,0,0,0.3);padding:6px 8px;border-radius:6px;">
           <span style="font-family:var(--font-mono);font-size:10.5px;color:#93C5FD;word-break:break-all;" id="dtTxHash">0x7f4a21...31b2</span>
-          <button class="btn-inline-copy" id="dtCopyHash" title="Copy Hash">📋</button>
+          <button class="btn-inline-copy" id="dtCopyHash" title="Copy Hash"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></button>
         </div>
       </div>
     </div>

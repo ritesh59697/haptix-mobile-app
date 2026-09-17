@@ -317,7 +317,7 @@
 
       <!-- Success Notification -->
       <div class="success-banner" id="successBanner">
-        <strong>✓ Agent Session Confirmed On-Chain!</strong><br>
+        <strong>Agent Session Confirmed On-Chain!</strong><br>
         <span id="txHashText">Transaction Hash: ...</span><br>
         <a id="txBaseScanLink" href="#" target="_blank">View on BaseScan →</a>
         <pre id="sessionStateDump"></pre>
@@ -341,10 +341,10 @@
 
       <div class="grid-2" style="margin-bottom: 16px;">
         <button class="btn-main" id="btnRunAutonomous" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); font-size:13px; padding:12px 14px;">
-          ⚡ 1. Run Autonomous Spend (0.0001 ETH)
+          1. Run Autonomous Spend (0.0001 ETH)
         </button>
         <button class="btn-main" id="btnRunViolation" style="background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); font-size:13px; padding:12px 14px;">
-          🛡️ 2. Test Policy Firewall (0.005 ETH)
+          2. Test Policy Firewall (0.005 ETH)
         </button>
       </div>
 
@@ -519,13 +519,13 @@
         btn.textContent = 'Touch ID Prompt (Passkey 1 of 2)...';
         const cred0 = storedKeys[0]?.rawId ? [storedKeys[0].rawId] : (storedKeys[0]?.id ? [storedKeys[0].id] : []);
         const sig0 = await signWithPasskey(userOpHash, cred0);
-        setStep(3, 'done', '3. ✅ Passkey #0 signature verified (1/2 Completed)');
+        setStep(3, 'done', '3. Passkey #0 signature verified (1/2 Completed)');
 
         // Step 4: Explicit Quorum Ceremony for Signer #1
         setStep(4, 'active', '4. Passkey 1/2 complete. Click below to sign with Passkey 2/2 (iCloud Keychain Quorum)...');
         btn.disabled = false;
         btn.classList.add('btn-quorum');
-        btn.textContent = '👉 Sign Passkey 2/2 (iCloud Keychain Quorum)';
+        btn.textContent = 'Sign Passkey 2/2 (iCloud Keychain Quorum)';
 
         await new Promise((resolve) => {
           btn.onclick = () => {
@@ -539,7 +539,7 @@
         setStep(4, 'active', '4. Prompting Passkey #1 (iCloud Keychain Quorum)...');
         const cred1 = storedKeys[1]?.rawId ? [storedKeys[1].rawId] : (storedKeys[1]?.id ? [storedKeys[1].id] : []);
         const sig1 = await signWithPasskey(userOpHash, cred1);
-        setStep(4, 'done', '4. ✅ Passkey #1 quorum verified (2/2 Quorum Complete)');
+        setStep(4, 'done', '4. Passkey #1 quorum verified (2/2 Quorum Complete)');
 
         // Encode 2-signature payload
         op.signature = encodeSignaturePayload([0, 1], [sig0, sig1]);
@@ -615,7 +615,7 @@
       };
 
       try {
-        text.innerHTML = '<strong>⚡ AUTONOMOUS AI AGENT EXECUTION STARTED</strong><br>';
+        text.innerHTML = '<strong>AUTONOMOUS AI AGENT EXECUTION STARTED</strong><br>';
         appendLog(`Target Account: <span style="color:#60A5FA;">${account}</span>`);
         appendLog(`Agent Session Key: <span style="color:#FBBF24;">${agentKey}</span>`);
         appendLog(`Spend Value: 0.0001 ETH (within 0.001 ETH limit)`);
@@ -643,21 +643,21 @@
         const userOpHash = await getUserOpHash(rpcUrl, entryPoint, op);
         appendLog(`   UserOpHash: <span style="color:#94A3B8;">${userOpHash.slice(0, 18)}...</span>`);
 
-        appendLog('4. Autonomous ECDSA signing (<span style="color:#34D399;font-weight:700;">⚡ ZERO Passkey Prompts</span>)...');
+        appendLog('4. Autonomous ECDSA signing (<span style="color:#34D399;font-weight:700;">ZERO Passkey Prompts</span>)...');
         const rawSig = await signUserOpHash(agentPrivKey, userOpHash);
         op.signature = encodeAutonomousAgentSignature(agentKey, rawSig);
-        appendLog('   ✅ Type 0x01 Agent Signature created seamlessly!');
+        appendLog('   Type 0x01 Agent Signature created seamlessly!');
 
         appendLog('5. Broadcasting UserOp to Pimlico Bundler...');
         const uoHash = await sendUserOpToBundler(bundlerUrl, op, entryPoint);
-        appendLog(`   🚀 Bundler accepted! UserOpHash: <span style="color:#60A5FA;">${uoHash.slice(0, 18)}...</span>`);
+        appendLog(`   Bundler accepted! UserOpHash: <span style="color:#60A5FA;">${uoHash.slice(0, 18)}...</span>`);
 
         appendLog('6. Polling Base Sepolia receipt...');
         const receipt = await pollUserOpReceipt(bundlerUrl, uoHash, 25, 2000);
         const txHash = receipt?.receipt?.transactionHash || uoHash;
         
         appendLog(`<br><div style="padding:10px; background:rgba(16,185,129,0.15); border:1px solid #10B981; border-radius:6px;">` +
-          `<strong style="color:#34D399;">✓ AUTONOMOUS TRANSACTION CONFIRMED ON BASE SEPOLIA!</strong><br>` +
+          `<strong style="color:#34D399;">AUTONOMOUS TRANSACTION CONFIRMED ON BASE SEPOLIA!</strong><br>` +
           `Tx Hash: <span style="color:#E2E8F0;">${txHash}</span><br>` +
           `<a href="https://sepolia.basescan.org/tx/${txHash}" target="_blank" style="color:#60A5FA; text-decoration:underline;">View on BaseScan →</a>` +
           `</div>`
@@ -665,11 +665,11 @@
 
         await loadAccountState();
       } catch (err) {
-        appendLog(`<span style="color:#EF4444;">❌ Error: ${err.message}</span>`);
+        appendLog(`<span style="color:#EF4444;">Error: ${err.message}</span>`);
         console.error('Autonomous spend error:', err);
       } finally {
         btn.disabled = false;
-        btn.textContent = '⚡ 1. Run Autonomous Spend (0.0001 ETH)';
+        btn.textContent = '1. Run Autonomous Spend (0.0001 ETH)';
       }
     }
 
@@ -693,7 +693,7 @@
       };
 
       try {
-        text.innerHTML = '<strong>🛡️ POLICY ENFORCEMENT & FIREWALL AUDIT TEST</strong><br>';
+        text.innerHTML = '<strong>POLICY ENFORCEMENT & FIREWALL AUDIT TEST</strong><br>';
         appendLog(`Configured Per-Op Limit: <span style="color:#10B981;">0.001 ETH</span>`);
         appendLog(`Attempted Transfer: <span style="color:#EF4444;font-weight:700;">0.005 ETH (5x OVER-LIMIT VIOLATION)</span>`);
 
@@ -747,7 +747,7 @@
         }
 
         appendLog(`<br><div style="padding:10px; background:rgba(16,185,129,0.15); border:1px solid #10B981; border-radius:6px;">` +
-          `<strong style="color:#34D399;">🛡️ ON-CHAIN POLICY ENFORCEMENT VERIFIED!</strong><br>` +
+          `<strong style="color:#34D399;">ON-CHAIN POLICY ENFORCEMENT VERIFIED!</strong><br>` +
           `• Smart contract returned <code>SIG_VALIDATION_FAILED (1)</code><br>` +
           `• Bundler mempool blocked the transaction before mining (<code>AA24 signature error</code>)<br>` +
           `• Account balance and passkey quorums remain 100% protected.` +
@@ -758,7 +758,7 @@
         console.error('Policy violation error:', err);
       } finally {
         btn.disabled = false;
-        btn.textContent = '🛡️ 2. Test Policy Firewall (0.005 ETH)';
+        btn.textContent = '2. Test Policy Firewall (0.005 ETH)';
       }
     }
 

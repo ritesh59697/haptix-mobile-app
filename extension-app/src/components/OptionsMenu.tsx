@@ -35,14 +35,14 @@ export const OptionsMenu: React.FC = () => {
   const handlePanicFreeze = () => {
     setIsOpen(false);
     const confirmLock = window.confirm(
-      '🚨 EMERGENCY PANIC FREEZE:\n\nLock down this smart account immediately?\nSingle-sig Touch ID and agent sessions will be blocked until 2-of-2 Quorum unfreeze.'
+      '[EMERGENCY PANIC FREEZE]\n\nLock down this smart account immediately?\nSingle-sig Touch ID and agent sessions will be blocked until 2-of-2 Quorum unfreeze.'
     );
     if (!confirmLock) return;
     setFrozen(true);
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.set({ isFrozen: true });
     }
-    alert('🚨 ACCOUNT FROZEN: Emergency 1-Sig Lock active.');
+    alert('[ACCOUNT FROZEN] Emergency 1-Sig Lock active.');
   };
 
   const handleExpandDesktop = () => {
@@ -156,7 +156,7 @@ export const OptionsMenu: React.FC = () => {
               <span>Theme: <strong>{isDark ? 'Dark' : 'Light'}</strong></span>
             </div>
             <span className="badge badge-xs bg-base-100 border-base-content/10 text-[9px]">
-              {isDark ? 'Light ☀️' : 'Dark 🌙'}
+              {isDark ? 'Light' : 'Dark'}
             </span>
           </button>
 

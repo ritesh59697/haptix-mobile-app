@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Haptix Hardware Enclave Signer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090A0F;
+      --card: rgba(18, 20, 29, 0.9);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #F8FAFC;
+      --muted: #94A3B8;
+      --blue: #0052FF;
+      --emerald: #10B981;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+      -webkit-font-smoothing: antialiased;
+    }
+    .signer-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 28px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .shield-ring {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: rgba(0, 82, 255, 0.12);
+      border: 1px solid rgba(0, 82, 255, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      animation: pulse 2.2s infinite ease-in-out;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,82,255,0.4); }
+      50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(0,82,255,0.3); }
+    }
+    h2 { font-size: 19px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.02em; }
+    p { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 24px; }
+    .hash-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #60A5FA;
+      background: rgba(96, 165, 250, 0.1);
+      border: 1px solid rgba(96, 165, 250, 0.2);
+      padding: 6px 12px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      word-break: break-all;
+    }
+    .btn-auth {
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      padding: 13px 28px;
+      border-radius: 9999px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+    .btn-auth:hover { background: #0045D8; }
+    .success-state { color: var(--emerald); font-weight: 600; font-size: 14px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="signer-box">
+    <div class="shield-ring">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+    </div>
+
+    <h2>Biometric Verification</h2>
+    <p id="statusMsg">Touch ID prompt is active. Authenticate with your enrolled Chrome Profile passkey.</p>
+
+    <div class="hash-badge" id="hashDisplay">0x...</div>
+
+    <button class="btn-auth" id="btnTriggerAuth">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 0 0-10 10c0 4.4 2.9 8.2 7 9.5V17H7v-2h2v-1.5c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.2 0-1.7.8-1.7 1.6V15h2.7l-.4 2h-2.3v4.5c4.1-1.3 7-5.1 7-9.5A10 10 0 0 0 12 2z"/></svg>
+      Authorize with Touch ID
+    </button>
+
+    <div class="success-state" id="successMsg">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      Signed successfully! Returning to wallet...
+    </div>
+  </div>
+
+  <script type="module">
+    import { signWithPasskey } from './userop.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const hash = params.get('hash');
+    const extId = params.get('extId');
+    const keyIndex = parseInt(params.get('keyIndex') || '0', 10);
+
+    if (hash) {
+      document.getElementById('hashDisplay').textContent = hash.slice(0, 14) + '...' + hash.slice(-8);
+    }
+
+    if (keyIndex === 1) {
+      document.querySelector('h2').textContent = 'Quorum Verification (Key #1)';
+      document.getElementById('statusMsg').textContent = 'Touch ID prompt is active for Backup Quorum Passkey #1.';
+    }
+
+    const storedKeys = JSON.parse(localStorage.getItem('passkey_credentials') || '{}');
+    const targetKey = storedKeys[keyIndex] || storedKeys[0];
+    const cred = targetKey?.rawId ? [targetKey.rawId] : (targetKey?.id ? [targetKey.id] : []);
+
+    async function doAuth() {
+      try {
+        document.getElementById('statusMsg').textContent = `Waiting for Passkey #${keyIndex}...`;
+        document.getElementById('btnTriggerAuth').disabled = true;
+
+        const sig = await signWithPasskey(hash, cred);
+
+        document.getElementById('statusMsg').style.display = 'none';
+        document.getElementById('btnTriggerAuth').style.display = 'none';
+        document.getElementById('successMsg').style.display = 'block';
+
+        // Deliver result via window.opener
+        if (window.opener) {
+          window.opener.postMessage({ type: 'HAPTIX_PASSKEY_SIG', hash, keyIndex, sig }, '*');
+        }
+
+        // Deliver result via chrome.runtime if extension ID passed
+        if (extId && window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
+          try {
+            chrome.runtime.sendMessage(extId, { type: 'HAPTIX_PASSKEY_SIG', hash, keyIndex, sig });
+          } catch (e) {
+            console.warn('Direct extension message error:', e);
+          }
+        }
+
+        setTimeout(() => {
+          window.close();
+        }, 800);
+      } catch (err) {
+        document.getElementById('statusMsg').textContent = 'Authentication canceled: ' + err.message;
+        document.getElementById('btnTriggerAuth').disabled = false;
+      }
+    }
+
+    document.getElementById('btnTriggerAuth').onclick = doAuth;
+
+    // Trigger immediately on load
+    setTimeout(doAuth, 400);
+  </script>
+</body>
+</html>
