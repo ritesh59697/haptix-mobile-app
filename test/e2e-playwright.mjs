@@ -362,6 +362,46 @@ async function runE2ETests() {
     const rateAfter = await appPage.$eval('#swapExchangeRate', el => el.textContent.trim());
     assert(rateBefore !== rateAfter, `Swap direction flipped (rate changed from ${rateBefore} to ${rateAfter})`);
 
+    // 11. Complete Web App Dark Mode System
+    console.log('  1️⃣1️⃣ Testing Web App Dark Mode System & Theme Toggle...');
+    // Toggle to Dark Mode
+    await appPage.click('#btnHeaderThemeToggle');
+    await appPage.waitForTimeout(300);
+    const theme1 = await appPage.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    assert(theme1 === 'dark' || theme1 === 'light', `Header toggle switches data-theme attribute (now: ${theme1})`);
+
+    // Verify localStorage persistence
+    const savedTheme = await appPage.evaluate(() => localStorage.getItem('haptix_theme'));
+    assert(savedTheme === theme1, `Theme state persisted to localStorage: ${savedTheme}`);
+
+    // Toggle back
+    await appPage.click('#btnHeaderThemeToggle');
+    await appPage.waitForTimeout(300);
+    const theme2 = await appPage.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    assert(theme2 !== theme1, `Header toggle alternates theme successfully (${theme1} -> ${theme2})`);
+
+    // 12. Redesigned Agent Actions & Simulator Tiles
+    console.log('  1️⃣2️⃣ Testing Redesigned Agent Actions & Simulator Tiles...');
+    await appPage.click('.nav-item[onclick*="tab-agents"]');
+    await appPage.waitForTimeout(300);
+
+    // Test Reconfigure Session collapsible
+    await appPage.click('#btnToggleGrantForm');
+    await appPage.waitForTimeout(200);
+    const isGrantOpen = await appPage.$eval('#agentGrantForm', el => el.style.display !== 'none');
+    assert(isGrantOpen, 'Reconfigure Session button toggles delegation configuration form open');
+
+    await appPage.click('#btnToggleGrantForm');
+    await appPage.waitForTimeout(200);
+    const isGrantClosed = await appPage.$eval('#agentGrantForm', el => el.style.display === 'none');
+    assert(isGrantClosed, 'Reconfigure Session button toggles delegation configuration form closed');
+
+    // Test Simulator Tiles
+    const hasMicroTile = await appPage.$eval('#btnTestAgentMicro', el => el.classList.contains('sim-card'));
+    const hasEscalatedTile = await appPage.$eval('#btnTestAgentEscalated', el => el.classList.contains('sim-card'));
+    const hasCeilingTile = await appPage.$eval('#btnTestAgentCeiling', el => el.classList.contains('sim-card'));
+    assert(hasMicroTile && hasEscalatedTile && hasCeilingTile, 'All 3 agent simulator actions styled as high-end interactive tiles');
+
     // Return to Home tab
     await appPage.click('.nav-item[onclick*="tab-home"]');
     await appPage.waitForTimeout(300);
