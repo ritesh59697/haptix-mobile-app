@@ -80,24 +80,31 @@ async function main() {
   console.log(`   blockTime:    ${new Date(blockTime * 1000).toISOString()}`);
   console.log(`   perTxEth:     ${Number(perTxEth) / 1e18} ETH`);
 
+  const IS_DRY_RUN = process.argv.includes('--dry-run') || process.argv.includes('--simulate');
+  const DASHBOARD_URL = process.env.WEB_URL || 'http://localhost:57547/app.html';
+
   if (!isRegistered || revoked) {
     console.error(`\n❌ Error: Agent session for ${AGENT_ADDRESS} is not registered or was revoked.`);
-    console.error(`Authorize the session using the Agents tab at http://localhost:5199/app.html`);
+    console.error(`Authorize the session using the Agents tab at ${DASHBOARD_URL}#tab-agents`);
     process.exit(1);
   }
 
-  if (blockTime > Number(validUntil)) {
+  if (blockTime > Number(validUntil) && !IS_DRY_RUN) {
     console.log('\n⚠️  Notice: The on-chain session timestamp has reached its validity window limit.');
     console.log(`   Expired on: ${new Date(Number(validUntil) * 1000).toISOString()}`);
     console.log(`   Current:    ${new Date(blockTime * 1000).toISOString()}`);
     console.log('\n💡 To re-authorize with a fresh 30-day session:');
-    console.log(`   1. Open http://localhost:5199/app.html#tab-agents`);
+    console.log(`   1. Open ${DASHBOARD_URL}#tab-agents`);
     console.log(`   2. Click "Reconfigure Session" -> "Authorize Delegation with Passkey Quorum"`);
     console.log(`   3. Re-run this script!\n`);
+    console.log('   (Tip: You can also run with --dry-run to test UserOp packing & 0x01 ECDSA signing offline:');
+    console.log('    node scripts/run-autonomous-agent-bot.mjs --dry-run)\n');
     process.exit(0);
+  } else if (IS_DRY_RUN && blockTime > Number(validUntil)) {
+    console.log('\nℹ️  [Dry-Run Mode] Continuing simulation to verify UserOp assembly & Type 0x01 signature...\n');
+  } else {
+    console.log('   ✅ Valid On-Chain Session Active!\n');
   }
-
-  console.log('   ✅ Valid On-Chain Session Active!\n');
 
   // Step 2: Query EntryPoint Nonce
   console.log('--- Step 2: Fetching Account Nonce from EntryPoint v0.7 ---');
@@ -146,6 +153,19 @@ async function main() {
   console.log(`   🔒 ZERO Passkey / WebAuthn Prompts Required!\n`);
 
   // Step 6: Submit to Pimlico Bundler
+  if (IS_DRY_RUN) {
+    console.log('--- Step 6: [Dry-Run] UserOp Assembly Complete ---');
+    console.log(JSON.stringify({
+      sender: userOp.sender,
+      nonce: '0x' + userOp.nonce.toString(16),
+      callData: userOp.callData.slice(0, 42) + '...',
+      signatureType: 'Type 0x01 Autonomous ECDSA',
+      signature: userOp.signature.slice(0, 42) + '...'
+    }, null, 2));
+    console.log('\n✅ Dry-Run Verification Successful: Packed UserOp and 0x01 ECDSA signature assembled with ZERO passkey prompts.\n');
+    process.exit(0);
+  }
+
   console.log('--- Step 6: Submitting to Pimlico Bundler on Base Sepolia ---');
   const bundler = new BundlerClient(BUNDLER_URL, ENTRYPOINT, 84532);
   const uoHash = await bundler.sendUserOperation(userOp);
