@@ -54,6 +54,12 @@ contract DeployMainnet is Script {
         } else if (chainId == 11155420) {
             networkName = "OP Sepolia";
             explorerBase = "https://sepolia-optimism.etherscan.io/address/";
+        } else if (chainId == 5042) {
+            networkName = "Arc Mainnet";
+            explorerBase = "https://explorer.arc.io/address/";
+        } else if (chainId == 5042002) {
+            networkName = "Arc Testnet";
+            explorerBase = "https://testnet.arcscan.app/address/";
         } else {
             console.log("Deploying to non-standard chainId:", chainId);
         }

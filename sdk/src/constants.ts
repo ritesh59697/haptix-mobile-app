@@ -117,6 +117,22 @@ export const SUPPORTED_NETWORKS = {
       USDC: { address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as Address, decimals: 6, symbol: 'USDC' },
       USDG: { address: '0x004B506865409877C9fA29bfb1ebA929984B9bbC' as Address, decimals: 6, symbol: 'USDG' }
     }
+  },
+  ARC_TESTNET: {
+    chainId: 5042002,
+    name: 'Arc Testnet',
+    entryPoint: CANONICAL_ENTRYPOINT_V07,
+    tokens: {
+      USDC: { address: '0x0000000000000000000000000000000000000000' as Address, decimals: 18, symbol: 'USDC' }
+    }
+  },
+  ARC_MAINNET: {
+    chainId: 5042,
+    name: 'Arc Mainnet',
+    entryPoint: CANONICAL_ENTRYPOINT_V07,
+    tokens: {
+      USDC: { address: '0x0000000000000000000000000000000000000000' as Address, decimals: 18, symbol: 'USDC' }
+    }
   }
 } as const;
 

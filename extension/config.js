@@ -143,6 +143,46 @@ export const NETWORKS = {
       }
     }
   },
+  5042002: {
+    chainId: 5042002,
+    chainIdHex: '0x4cefa2',
+    name: 'Arc Testnet',
+    shortName: 'Arc Testnet',
+    rpcUrl: 'https://rpc.testnet.arc.network',
+    explorerUrl: 'https://testnet.arcscan.app',
+    entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+    isTestnet: true,
+    nativeCurrency: { name: 'USD Coin', symbol: 'USDC', decimals: 18 },
+    tokens: {
+      USDC: {
+        symbol: 'USDC',
+        name: 'Native USDC (Gas)',
+        address: '0x0000000000000000000000000000000000000000',
+        decimals: 18,
+        defaultThreshold: '25'
+      }
+    }
+  },
+  5042: {
+    chainId: 5042,
+    chainIdHex: '0x13b2',
+    name: 'Arc Mainnet',
+    shortName: 'Arc',
+    rpcUrl: 'https://rpc.mainnet.arc.io',
+    explorerUrl: 'https://explorer.arc.io',
+    entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+    isTestnet: false,
+    nativeCurrency: { name: 'USD Coin', symbol: 'USDC', decimals: 18 },
+    tokens: {
+      USDC: {
+        symbol: 'USDC',
+        name: 'Native USDC (Gas)',
+        address: '0x0000000000000000000000000000000000000000',
+        decimals: 18,
+        defaultThreshold: '50'
+      }
+    }
+  },
   10: {
     chainId: 10,
     chainIdHex: '0xa',
