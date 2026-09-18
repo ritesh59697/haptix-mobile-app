@@ -1509,6 +1509,13 @@
                       </span>
                       <span class="net-check" style="color:#0052FF; font-weight:800; display:none;">✓</span>
                     </button>
+                    <button class="net-item" data-network="arc-testnet" data-name="Arc Testnet" data-chainid="5042002" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
+                      <span style="display:flex; align-items:center; gap:8px;">
+                        <span style="width:7px; height:7px; border-radius:50%; background:#00D26A;"></span>
+                        <span>Arc Testnet (5042002)</span>
+                      </span>
+                      <span class="net-check" style="color:#0052FF; font-weight:800; display:none;">✓</span>
+                    </button>
                     <button class="net-item" data-network="optimism-sepolia" data-name="Optimism Sepolia" data-chainid="11155420" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
                       <span style="display:flex; align-items:center; gap:8px;">
                         <span style="width:7px; height:7px; border-radius:50%; background:#EF4444;"></span>
@@ -4146,6 +4153,7 @@ if (netBtn && netMenu) {
         'all': '#0052FF',
         'base-sepolia': '#38BDF8',
         'arbitrum-sepolia': '#A855F7',
+        'arc-testnet': '#00D26A',
         'optimism-sepolia': '#EF4444',
         'eth-sepolia': '#627EEA'
       };
@@ -4161,6 +4169,9 @@ if (netBtn && netMenu) {
         } else if (netKey === 'arbitrum-sepolia') {
           baseCardVal.textContent = 'Chain 421614';
           baseCardChange.textContent = 'Arbitrum Nitro';
+        } else if (netKey === 'arc-testnet') {
+          baseCardVal.textContent = 'Chain 5042002';
+          baseCardChange.textContent = 'Arc USDC Gas';
         } else if (netKey === 'optimism-sepolia') {
           baseCardVal.textContent = 'Chain 11155420';
           baseCardChange.textContent = 'OP Stack L2';

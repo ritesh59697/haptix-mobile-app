@@ -536,7 +536,7 @@
               </div>
               <div class="test-info">
                 <span class="test-title">Switch Active Chain</span>
-                <span class="test-desc">Toggle between Base Sepolia (84532) and Base Mainnet (8453)</span>
+                <span class="test-desc">Toggle between Arbitrum Sepolia (421614), Arc Testnet (5042002) &amp; Base (84532)</span>
               </div>
             </div>
             <span class="method-pill pill-blue">wallet_switchEthereumChain →</span>
@@ -980,8 +980,17 @@
       }
       try {
         const currentChain = await p.request({ method: 'eth_chainId' });
-        const targetChainId = currentChain === '0x14a34' ? '0x2105' : '0x14a34';
-        const targetName = targetChainId === '0x2105' ? 'Base Mainnet (8453)' : 'Base Sepolia (84532)';
+        let targetChainId = '0x66eee'; // Arbitrum Sepolia
+        let targetName = 'Arbitrum Sepolia (421614)';
+
+        if (currentChain === '0x66eee') {
+          targetChainId = '0x4cef52'; // Arc Testnet
+          targetName = 'Arc Testnet (5042002)';
+        } else if (currentChain === '0x4cef52') {
+          targetChainId = '0x14a34'; // Base Sepolia
+          targetName = 'Base Sepolia (84532)';
+        }
+
         log(`Calling wallet_switchEthereumChain to ${targetName}...`);
         await p.request({
           method: 'wallet_switchEthereumChain',
