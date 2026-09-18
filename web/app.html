@@ -1534,16 +1534,21 @@
   }
 
 
-  /* --- Passkey Approval Modal --- */
+  /* --- Confirm sheet --- */
   .passkey-modal-overlay {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(8px);
+    background: rgba(8, 11, 17, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     display: none;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     z-index: 200;
+    padding: 16px;
+  }
+  @media (min-width: 640px) {
+    .passkey-modal-overlay { align-items: center; }
   }
   .passkey-modal-overlay.active {
     display: flex;
@@ -1552,75 +1557,146 @@
   .passkey-modal-content {
     background: var(--bg-surface);
     border: 1px solid var(--border-light);
-    border-radius: 32px;
-    padding: 32px;
-    width: 90%;
-    max-width: 440px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    text-align: center;
+    border-radius: 24px;
+    padding: 28px 24px 20px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: var(--shadow-lg);
+    text-align: left;
     position: relative;
     font-family: var(--font-main);
   }
   .passkey-modal-close {
     position: absolute;
-    top: 24px; right: 24px;
-    background: var(--bg-hover); border: none;
-    width: 32px; height: 32px; border-radius: 50%;
-    font-size: 18px; cursor: pointer; color: var(--text-secondary);
+    top: 16px; right: 16px;
+    background: var(--bg-hover); border: 1px solid var(--border-light);
+    width: 32px; height: 32px; border-radius: 10px;
+    cursor: pointer; color: var(--text-secondary);
     display: flex; align-items: center; justify-content: center;
   }
+  .passkey-modal-close:hover { color: var(--text-primary); background: var(--bg-active); }
   .passkey-icon-wrapper {
-    width: 80px; height: 80px;
-    background: #ECFDF5;
-    border-radius: 50%;
+    width: 52px; height: 52px;
+    background: var(--accent-green-light);
+    border-radius: 14px;
     display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 24px;
-    color: #10B981;
+    margin: 0 0 16px;
+    color: var(--accent-emerald);
+  }
+  .passkey-icon-wrapper.mode-quorum {
+    background: var(--accent-amber-light);
+    color: var(--accent-amber);
+  }
+  .passkey-icon-wrapper.mode-agent {
+    background: var(--accent-blue-light);
+    color: var(--accent-blue);
+  }
+  .passkey-icon-wrapper.mode-blocked {
+    background: rgba(244, 63, 94, 0.12);
+    color: var(--accent-rose);
+  }
+  .confirm-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+  .confirm-pill.mode-one_sig { background: var(--accent-green-light); color: var(--accent-emerald); }
+  .confirm-pill.mode-quorum { background: var(--accent-amber-light); color: var(--accent-amber); }
+  .confirm-pill.mode-agent { background: var(--accent-blue-light); color: var(--accent-blue); }
+  .confirm-pill.mode-blocked { background: rgba(244, 63, 94, 0.12); color: var(--accent-rose); }
+  .confirm-kicker {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  .confirm-amount {
+    font-family: var(--font-heading);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+    margin-bottom: 16px;
   }
   .passkey-tx-card {
-    background: #F8FAFC;
+    background: var(--bg-hover);
     border: 1px solid var(--border-light);
-    border-radius: 20px;
-    padding: 20px;
-    margin: 24px 0 16px;
+    border-radius: 14px;
+    padding: 4px 16px;
+    margin: 0 0 14px;
+  }
+  .confirm-row {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    text-align: left;
-    gap: 16px;
+    gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 13px;
+  }
+  .confirm-row:last-child { border-bottom: none; }
+  .confirm-row dt { color: var(--text-muted); font-weight: 600; }
+  .confirm-row dd {
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .confirm-row dd.mono { font-family: var(--font-mono); font-size: 12px; }
+  .confirm-reason {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin-bottom: 18px;
   }
   .passkey-gasless-badge {
-    background: #ECFDF5;
-    color: #10B981;
+    background: var(--accent-green-light);
+    color: var(--accent-emerald);
     font-size: 12px; font-weight: 700;
-    padding: 6px 14px;
+    padding: 6px 12px;
     border-radius: 20px;
     display: inline-flex; align-items: center; gap: 6px;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
   }
   .passkey-btn-confirm {
-    background: #0F172A;
-    color: #fff;
+    background: var(--text-primary);
+    color: var(--bg-app);
     width: 100%;
-    padding: 18px;
+    padding: 16px;
     border: none;
-    border-radius: 20px;
-    font-size: 16px;
+    border-radius: 14px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    transition: background 0.2s;
+    transition: opacity 0.15s ease, transform 0.15s ease;
   }
-  .passkey-btn-confirm:hover { background: #1E293B; }
+  .passkey-btn-confirm:hover { opacity: 0.92; }
+  .passkey-btn-confirm:active { transform: scale(0.98); }
+  .passkey-btn-confirm:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+  .passkey-btn-confirm.mode-quorum { background: var(--accent-amber); color: #111; }
+  .passkey-btn-confirm.mode-agent { background: var(--accent-blue); color: #fff; }
+  .passkey-btn-confirm.mode-blocked { background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-light); }
+  .passkey-btn-confirm:disabled { opacity: 0.6; cursor: wait; }
   .passkey-btn-cancel {
     background: transparent;
     color: var(--text-secondary);
     border: none;
-    font-size: 15px; font-weight: 600;
-    margin-top: 16px;
+    font-size: 14px; font-weight: 600;
+    margin-top: 12px;
+    width: 100%;
     cursor: pointer;
+    padding: 8px;
   }
   .passkey-btn-cancel:hover { color: var(--text-primary); }
-
 
   @keyframes spin { 100% { transform: rotate(360deg); } }
   .spin { animation: spin 1s linear infinite; }
@@ -1734,6 +1810,179 @@
 
   .explore-item .i { margin-left: auto; color: var(--text-muted); }
   .explore-item:hover .i { color: var(--text-primary); }
+
+  /* Skiper22 Swap UI Overhaul */
+  .swap-skiper-card {
+    margin: 0 auto;
+    max-width: 440px;
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 28px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.05);
+  }
+  [data-theme="dark"] .swap-skiper-card {
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+
+  .swap-block {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .swap-block.top-block {
+    background: var(--bg-body); /* Slightly darker/different shade */
+    padding-bottom: 32px;
+  }
+  .swap-block.bottom-block {
+    background: var(--bg-surface);
+    padding-top: 32px;
+  }
+
+  .swap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .skiper-token-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-light);
+    padding: 6px 12px 6px 6px;
+    border-radius: 99px;
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .skiper-token-selector:hover {
+    background: var(--bg-surface);
+    transform: translateY(-1px);
+  }
+  .skiper-token-selector img {
+    border-radius: 50%;
+  }
+
+  .skiper-use-max {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .skiper-use-max:hover {
+    color: var(--text-primary);
+    border-color: var(--text-muted);
+  }
+
+  .swap-input-row {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .skiper-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    text-align: right;
+    font-size: 48px;
+    font-weight: 600;
+    color: var(--text-title);
+    font-family: var(--font-main);
+    outline: none;
+    padding: 0;
+  }
+  .skiper-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+  .skiper-input:disabled {
+    opacity: 1;
+    color: var(--text-primary);
+  }
+
+  .swap-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .swap-divider-wrapper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+  }
+  .skiper-flip-btn {
+    background: var(--bg-surface);
+    border: 4px solid var(--bg-body); /* Creates a cut-out effect */
+    color: var(--text-primary);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  [data-theme="dark"] .skiper-flip-btn {
+    border-color: #000;
+  }
+  [data-theme="light"] .skiper-flip-btn {
+    border-color: #fff;
+  }
+  .skiper-flip-btn:hover {
+    transform: translate(-50%, -50%) rotate(180deg) scale(1.05);
+    color: var(--text-title);
+  }
+
+  .skiper-submit-btn {
+    margin: 16px auto 0;
+    max-width: 440px;
+    width: 100%;
+    display: block;
+    padding: 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  [data-theme="light"] .skiper-submit-btn {
+    background: rgba(0,0,0,0.03);
+  }
+  .skiper-submit-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  .skiper-submit-btn.action-ready {
+    background: var(--text-title);
+    color: var(--bg-body);
+    border-color: transparent;
+  }
+  .skiper-submit-btn.action-ready:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
 </style>
 </head>
 <body>
@@ -1755,6 +2004,21 @@
     </symbol>
     <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+    </symbol>
+    <symbol id="i-scan-face" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/>
+    </symbol>
+    <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/>
+    </symbol>
+    <symbol id="i-ban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><path d="M4.929 4.929 19.07 19.071"/>
+    </symbol>
+    <symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>
+    </symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
     </symbol>
   </svg>
 
@@ -2223,40 +2487,61 @@
         
         <!-- ================= SWAP TAB (New) ================= -->
         <div class="tab-view" id="tab-swap">
-          <div class="transfer-card" style="margin: 0 auto; max-width: 480px; width: 100%;">
-            <!-- From Token -->
-            <div class="form-group">
-              <label>You Pay</label>
-              <div class="input-wrap" style="display: flex; gap: 12px; align-items: center;">
-                <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="swapInputAmt" value="0.001" style="flex: 1;">
-                <button class="token-switch-btn active" id="swapPayTokenBtn" style="flex-shrink: 0; padding: 12px 16px;">
-                  <img id="swapPayTokenImg" src="assets/eth_logo.svg" width="18" height="18" style="display:inline-block; vertical-align:middle; margin-right:6px;" alt="ETH">
-                  <span id="swapPayTokenSymbol">ETH</span>
+          <div class="swap-skiper-card">
+            <!-- Top Block: Pay -->
+            <div class="swap-block top-block">
+              <div class="swap-header">
+                <button class="skiper-token-selector" id="swapPayTokenBtn">
+                  <img id="swapPayTokenImg" src="assets/eth_logo.svg" width="24" height="24" alt="ETH">
+                  <span class="token-name" id="swapPayTokenSymbol">Ethereum</span>
+                  <svg class="i" width="16" height="16" aria-hidden="true"><use href="#i-chevron-down"/></svg>
                 </button>
+                <button class="skiper-use-max" id="btnSwapMax">Use Max</button>
               </div>
-              <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Balance: <span id="swapPayBalDisplay">0.00</span> <span id="swapPayBalSymbol">ETH</span></div>
+              
+              <div class="swap-input-row">
+                <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="swapInputAmt" value="0.001" class="skiper-input">
+              </div>
+
+              <div class="swap-footer">
+                <span class="balance">Balance: <span id="swapPayBalDisplay">0.00</span> <span id="swapPayBalSymbol">ETH</span></span>
+                <span class="fiat-equiv"></span>
+              </div>
             </div>
-            
-            <!-- Swap Divider (Interactive Flip Button) -->
-            <div style="text-align: center; margin: 16px 0;">
-              <button id="btnFlipSwapTokens" class="swap-flip-btn" title="Flip swap direction" aria-label="Flip swap direction">
-                <svg class="i" width="16" height="16" aria-hidden="true"><use href="#i-arrow-down-up"/></svg>
+
+            <!-- Divider Button -->
+            <div class="swap-divider-wrapper">
+              <button id="btnFlipSwapTokens" class="skiper-flip-btn" aria-label="Flip swap direction">
+                <svg class="i" width="20" height="20" aria-hidden="true"><use href="#i-arrow-down-up"/></svg>
               </button>
             </div>
-            
-            <!-- To Token -->
-            <div class="form-group">
-              <label>You Receive (Estimated)</label>
-              <div class="input-wrap" style="display: flex; gap: 12px; align-items: center;">
-                <input type="number" id="swapOutputAmt" disabled style="flex: 1; background: rgba(255,255,255,0.02); color: var(--text-title);" value="--">
-                <button class="token-switch-btn active" id="swapRecvTokenBtn" style="flex-shrink: 0; padding: 12px 16px; border: 1px solid var(--border-light);">
-                  <img id="swapRecvTokenImg" src="assets/usdc_logo.svg" width="18" height="18" style="display:inline-block; vertical-align:middle; margin-right:6px; border-radius: 50%;" alt="USDC">
-                  <span id="swapRecvTokenSymbol">USDC</span>
+
+            <!-- Bottom Block: Receive -->
+            <div class="swap-block bottom-block">
+              <div class="swap-header">
+                <button class="skiper-token-selector" id="swapRecvTokenBtn">
+                  <img id="swapRecvTokenImg" src="assets/usdc_logo.svg" width="24" height="24" alt="USDC">
+                  <span class="token-name" id="swapRecvTokenSymbol">USDC (Base)</span>
+                  <svg class="i" width="16" height="16" aria-hidden="true"><use href="#i-chevron-down"/></svg>
                 </button>
               </div>
-              <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Rate: 1 <span id="swapRateBase">ETH</span> = <span id="swapExchangeRate">--</span> <span id="swapRateQuote">USDC</span> <span style="font-size:11px; opacity:0.7;">(Uniswap V3 QuoterV2)</span></div>
+              
+              <div class="swap-input-row">
+                <input type="number" id="swapOutputAmt" disabled class="skiper-input" value="0">
+              </div>
+
+              <div class="swap-footer">
+                <span class="balance">Receive <span id="swapRecvTokenSymbolBottom">USDC</span></span>
+                <span class="fiat-equiv">Rate: 1 <span id="swapRateBase">ETH</span> = <span id="swapExchangeRate">--</span> <span id="swapRateQuote">USDC</span></span>
+              </div>
             </div>
-            
+          </div>
+          
+          <button id="swapSignSubmitBtn" class="skiper-submit-btn">
+            Authorize Swap with Hardware Passkey
+          </button>
+          
+          <div style="max-width: 440px; margin: 0 auto;">
             <!-- Real-time Firewall Evaluation Box -->
             <div class="firewall-live-box firewall-box-single" id="swapFirewallBox">
               <div class="firewall-header">
@@ -2267,10 +2552,6 @@
                 DEX Router is a trusted contract on Base Sepolia. A single biometric signature will authorize this Swap UserOp.
               </p>
             </div>
-            
-            <button id="swapSignSubmitBtn" class="action-btn-primary" style="width:100%; padding:14px; font-size:15px; margin-top:8px;">
-              Authorize Swap with Hardware Passkey
-            </button>
             
             <!-- UserOp & Transaction Receipt -->
             <div id="swapReceiptArea" class="userop-receipt-box" style="display:none; margin-top: 20px;">
@@ -2550,7 +2831,7 @@
             </span>
 </div>
 <!-- Active Agent Session Overview -->
-<div style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
+<div id="agentActiveSession" style="display:none;background:var(--bg-hover);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
 <div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Delegated Agent Key</div>
 <button class="copy-btn glass-btn" id="btnCopyAgentKey" style="padding:4px 10px; border-radius:6px; font-size:11px; box-shadow:none; gap:5px;">
@@ -2597,32 +2878,32 @@
   </button>
 </div>
 </div>
-<!-- Grant / Reconfigure Session Form (Collapsible) -->
-<div id="agentGrantForm" style="display:none;background:var(--bg-hover);border:1px solid var(--border-focus);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
-<h4 style="font-family:var(--font-heading);font-size:15px;color:var(--text-primary);margin-bottom:12px;">Configure Agent Delegation (2-of-2 Passkeys Required)</h4>
-<div class="form-group">
-<label>Agent Public Key (Address) <span id="btnGenAgentKey" style="color:#60A5FA;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"><svg fill="none" height="12" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="12"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg> Generate Key</span></label>
-<div class="input-wrap">
-<input id="inputAgentAddr" style="font-family:var(--font-mono);font-size:13px;" type="text" value="0x093F8575a87cdb2919E5B3f1677eD8d7815c9461"/>
-</div>
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-<div class="form-group">
-<label>Autonomous Limit (USDC)</label>
-<div class="input-wrap"><input id="inputAgentAutoLimit" step="1" type="number" value="50.00"/></div>
-</div>
-<div class="form-group">
-<label>Escalation Ceiling (USDC)</label>
-<div class="input-wrap"><input id="inputAgentCeiling" step="1" type="number" value="200.00"/></div>
-</div>
-</div>
-<div class="form-group">
-<label>24h Rolling Cap (USDC)</label>
-<div class="input-wrap"><input id="inputAgentRollingCap" step="1" type="number" value="100.00"/></div>
-</div>
-<button class="action-btn-primary" id="btnSubmitGrantSession" style="width:100%;padding:12px;font-size:14px;">
-              Authorize Delegation with Passkey Quorum
-            </button>
+<!-- Grant / Reconfigure Session Form (Conversational UI) -->
+<div id="agentGrantForm" style="display:none;background:var(--bg-hover);border:1px solid var(--border-focus);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;">
+  
+  <div style="margin-bottom: 24px; text-align: center;">
+    <p style="font-size:16px; color:var(--text-primary); line-height:1.6; font-weight: 500;">
+      Agent can spend up to <strong style="color:var(--accent-emerald); font-weight:800;">$50.00</strong> without asking.<br>
+      Over that, <strong style="color:var(--accent-amber); font-weight:800;">Face ID + backup key</strong> is required.<br>
+      Over <strong style="color:var(--accent-rose); font-weight:800;">$200.00</strong>, nobody can, not even you in this session.
+    </p>
+  </div>
+  
+  <!-- Hidden inputs to preserve JS logic compatibility -->
+  <input type="hidden" id="inputAgentAutoLimit" value="50.00" />
+  <input type="hidden" id="inputAgentCeiling" value="200.00" />
+  <input type="hidden" id="inputAgentRollingCap" value="100.00" />
+  
+  <div class="form-group" style="margin-bottom:20px; max-width: 400px; margin-left: auto; margin-right: auto;">
+    <label style="display:flex; justify-content:space-between;">Agent Public Key <span id="btnGenAgentKey" style="color:#60A5FA;cursor:pointer;display:inline-flex;align-items:center;gap:4px;"><svg fill="none" height="12" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24" width="12"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"></path></svg> Generate Session Key</span></label>
+    <div class="input-wrap">
+      <input id="inputAgentAddr" style="font-family:var(--font-mono);font-size:13px; text-align:center;" type="text" value="0x093F8575a87cdb2919E5B3f1677eD8d7815c9461"/>
+    </div>
+  </div>
+
+  <button class="action-btn-primary" id="btnSubmitGrantSession" style="width:100%;padding:14px;font-size:15px;background:linear-gradient(135deg, #10B981 0%, #059669 100%);box-shadow:0 0 20px rgba(16,185,129,0.2); border: 1px solid rgba(16,185,129,0.5);">
+    Grant Session with Hardware Quorum
+  </button>
 </div>
 <!-- Agent Execution Playground -->
 <div style="border-top:1px solid var(--border-light);padding-top:20px;">
@@ -2804,111 +3085,96 @@ View on BaseScan <svg class="i" width="14" height="14" aria-hidden="true"><use h
 </a>
 </div>
 <div style="display:flex;flex-direction:column;gap:10px;">
-<!-- Item 1: Quorum Transfer -->
-<div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-<div style="display:flex;align-items:center;gap:12px;">
-<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;">
-<img src="assets/icons/shield.svg" alt="Quorum" style="width:20px;height:20px;">
-</div>
-<div>
-<div style="display:flex;align-items:center;gap:8px;">
-<span style="font-weight:700;font-size:13.5px;color:var(--text-primary);">Send 0.05 ETH</span>
-<span style="font-size:10.5px;font-weight:700;color:#F59E0B;background:rgba(245,158,11,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">2-of-2 Quorum</span>
-</div>
-<div style="font-size:11.5px;color:var(--text-muted);">To: Base Treasury Pool (0x22db...913D) · Sep 2, 2026, 10:18 PM</div>
-<div style="font-size:10.5px;color:var(--accent-blue);font-family:var(--font-mono);margin-top:2px;">Touch ID + YubiKey Quorum Verified · 84,210 gas</div>
-</div>
-</div>
-<div style="text-align:right;">
-<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">-0.05 ETH</div>
-<div style="font-size:11px;color:var(--text-muted);">≈ $160.00 USD</div>
-<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" class="hash-link" target="_blank" rel="noopener">0x7f4a...31b2 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
-</div>
-</div>
-<!-- Item 2: Agent Swap -->
-<div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-<div style="display:flex;align-items:center;gap:12px;">
-<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;">
-<img src="assets/icons/zap.svg" alt="Swap" style="width:20px;height:20px;">
-</div>
-<div>
-<div style="display:flex;align-items:center;gap:8px;">
-<span style="font-weight:700;font-size:13.5px;color:var(--text-primary);">Send 20.00 USDC (Autonomous Swap)</span>
-<span style="font-size:10.5px;font-weight:700;color:var(--accent-emerald);background:rgba(16,185,129,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Success</span>
-</div>
-<div style="font-size:11.5px;color:var(--text-muted);">To: Uniswap V3 Router (0x2626...f9d0) · Sep 2, 2026, 09:44 PM</div>
-<div style="font-size:10.5px;color:var(--text-primary);font-family:var(--font-mono);margin-top:2px;">AI Agent Session (0x8a91...b819) · 0.4s Latency</div>
-</div>
-</div>
-<div style="text-align:right;">
-<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">-20.00 USDC</div>
-<div style="font-size:11px;color:var(--text-muted);">≈ $20.00 USD</div>
-<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" class="hash-link" target="_blank" rel="noopener">0x4b89...88c4 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
-</div>
-</div>
-<!-- Item 3: Faucet Deposit -->
-<div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-<div style="display:flex;align-items:center;gap:12px;">
-<div style="width:36px;height:36px;border-radius:50%;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;color:var(--accent-emerald);">
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
-</div>
-<div>
-<div style="display:flex;align-items:center;gap:8px;">
-<span style="font-weight:700;font-size:13.5px;color:var(--text-primary);">Received 0.010 ETH</span>
-<span style="font-size:10.5px;font-weight:700;color:var(--accent-emerald);background:rgba(16,185,129,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Confirmed</span>
-</div>
-<div style="font-size:11.5px;color:var(--text-muted);">From: Base Sepolia Faucet · Sep 2, 2026, 08:30 PM</div>
-<div style="font-size:10.5px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">Inbound Direct Deposit</div>
-</div>
-</div>
-<div style="text-align:right;">
-<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--accent-emerald);">+0.010 ETH</div>
-<div style="font-size:11px;color:var(--text-muted);">≈ $32.00 USD</div>
-<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" class="hash-link" target="_blank" rel="noopener">0x91d3...1029 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
-</div>
-</div>
-<!-- Item 4: Micro Transfer -->
-<div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-<div style="display:flex;align-items:center;gap:12px;">
-<div style="width:36px;height:36px;border-radius:50%;background:rgba(0,82,255,0.15);border:1px solid rgba(0,82,255,0.3);display:flex;align-items:center;justify-content:center;color:#60A5FA;">
-<svg class="i" width="18" height="18" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
-</div>
-<div>
-<div style="display:flex;align-items:center;gap:8px;">
-<span style="font-weight:700;font-size:13.5px;color:var(--text-primary);">Send 0.0001 ETH</span>
-<span style="font-size:10.5px;font-weight:700;color:#60A5FA;background:rgba(0,82,255,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Sub-Threshold</span>
-</div>
-<div style="font-size:11.5px;color:var(--text-muted);">To: Aave V3 Pool (0x8787...4318) · Sep 2, 2026, 07:15 PM</div>
-<div style="font-size:10.5px;color:var(--accent-blue);font-family:var(--font-mono);margin-top:2px;">1-Sig Biometric Instant (&lt; 0.010 ETH) · 88,140 gas</div>
-</div>
-</div>
-<div style="text-align:right;">
-<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">-0.0001 ETH</div>
-<div style="font-size:11px;color:var(--text-muted);">≈ $0.32 USD</div>
-<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" class="hash-link" target="_blank" rel="noopener">0x12c4...99a0 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
-</div>
-</div>
-<!-- Item 5: Deployment -->
-<div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
-<div style="display:flex;align-items:center;gap:12px;">
-<div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--border-light);display:flex;align-items:center;justify-content:center;">
-<img src="assets/icons/sparkle.svg" alt="Deploy" style="width:20px;height:20px;">
-</div>
-<div>
-<div style="display:flex;align-items:center;gap:8px;">
-<span style="font-weight:700;font-size:13.5px;color:var(--text-primary);">Smart Account Deployed on Base Sepolia</span>
-<span style="font-size:10.5px;font-weight:700;color:#38BDF8;background:rgba(56,189,248,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Initialized</span>
-</div>
-<div style="font-size:11.5px;color:var(--text-muted);">Account: 0xB01543453cF31052c769d79e9C755E3b035d796f · Sep 1, 2026, 04:12 PM</div>
-<div style="font-size:10.5px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px;">RIP-7212 WebAuthn P-256 Registered · Factory Create2</div>
-</div>
-</div>
-<div style="text-align:right;">
-<div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">Contract Init</div>
-<div style="font-size:11px;color:var(--text-muted);">P-256 Root Key</div>
-<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" class="hash-link" target="_blank" rel="noopener">0x89e0...55f3 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
-</div>
-</div>
+  <!-- Item 1: Blocked by Policy -->
+  <div style="padding:16px;background:var(--bg-surface);border:1px solid rgba(244,63,94,0.3);border-radius:12px;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--accent-rose);"></div>
+    <div style="display:flex;align-items:center;gap:14px;padding-left:6px;">
+      <div style="width:40px;height:40px;border-radius:50%;background:rgba(244,63,94,0.1);display:flex;align-items:center;justify-content:center;color:var(--accent-rose);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:700;font-size:14px;color:var(--text-primary);">Send 0.50 ETH</span>
+          <span style="font-size:11px;font-weight:700;color:var(--accent-rose);background:rgba(244,63,94,0.12);padding:2px 8px;border-radius:6px;font-family:var(--font-mono);">Blocked by Firewall</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">To: Unknown Address (0x99a...32f1) · Just now</div>
+        <div style="font-size:11px;color:var(--accent-rose);font-family:var(--font-mono);margin-top:4px;font-weight:600;">Policy Reject: Amount exceeds absolute human ceiling</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-family:var(--font-mono);font-weight:700;font-size:15px;color:var(--text-primary); text-decoration:line-through;">-0.50 ETH</div>
+      <div style="font-size:11px;color:var(--text-muted);">≈ $1,600.00 USD</div>
+    </div>
+  </div>
+
+  <!-- Item 2: Agent Auto-Signed -->
+  <div style="padding:16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:#38BDF8;"></div>
+    <div style="display:flex;align-items:center;gap:14px;padding-left:6px;">
+      <div style="width:40px;height:40px;border-radius:50%;background:rgba(56,189,248,0.1);display:flex;align-items:center;justify-content:center;color:#38BDF8;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 12 2.1 7.1"/></svg>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:700;font-size:14px;color:var(--text-primary);">Swap 20.00 USDC</span>
+          <span style="font-size:11px;font-weight:700;color:#38BDF8;background:rgba(56,189,248,0.12);padding:2px 8px;border-radius:6px;font-family:var(--font-mono);">Agent Auto-Signed</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">To: Uniswap V3 (0x262...f9d0) · 2 mins ago</div>
+        <div style="font-size:11px;color:var(--accent-emerald);font-family:var(--font-mono);margin-top:4px;font-weight:600;">Zero Prompts: Handled by Active Session</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-family:var(--font-mono);font-weight:700;font-size:15px;color:var(--text-primary);">-20.00 USDC</div>
+      <div style="font-size:11px;color:var(--text-muted);">≈ $20.00 USD</div>
+      <a href="#" class="hash-link" style="margin-top:4px;display:inline-block;">0x4b89...88c4 <svg class="i" width="10" height="10" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
+    </div>
+  </div>
+
+  <!-- Item 3: Signed by Quorum -->
+  <div style="padding:16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--accent-amber);"></div>
+    <div style="display:flex;align-items:center;gap:14px;padding-left:6px;">
+      <div style="width:40px;height:40px;border-radius:50%;background:rgba(245,158,11,0.1);display:flex;align-items:center;justify-content:center;color:var(--accent-amber);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:700;font-size:14px;color:var(--text-primary);">Send 0.05 ETH</span>
+          <span style="font-size:11px;font-weight:700;color:var(--accent-amber);background:rgba(245,158,11,0.12);padding:2px 8px;border-radius:6px;font-family:var(--font-mono);">Signed by Quorum</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">To: Base Treasury (0x22d...913D) · 1 hr ago</div>
+        <div style="font-size:11px;color:var(--accent-amber);font-family:var(--font-mono);margin-top:4px;font-weight:600;">2-of-2 Hardware Keys Required (High Value)</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-family:var(--font-mono);font-weight:700;font-size:15px;color:var(--text-primary);">-0.05 ETH</div>
+      <div style="font-size:11px;color:var(--text-muted);">≈ $160.00 USD</div>
+      <a href="#" class="hash-link" style="margin-top:4px;display:inline-block;">0x7f4a...31b2 <svg class="i" width="10" height="10" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
+    </div>
+  </div>
+
+  <!-- Item 4: Signed by You -->
+  <div style="padding:16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;bottom:0;width:4px;background:var(--accent-emerald);"></div>
+    <div style="display:flex;align-items:center;gap:14px;padding-left:6px;">
+      <div style="width:40px;height:40px;border-radius:50%;background:rgba(16,185,129,0.1);display:flex;align-items:center;justify-content:center;color:var(--accent-emerald);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:700;font-size:14px;color:var(--text-primary);">Send 0.005 ETH</span>
+          <span style="font-size:11px;font-weight:700;color:var(--accent-emerald);background:rgba(16,185,129,0.12);padding:2px 8px;border-radius:6px;font-family:var(--font-mono);">Signed by You</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">To: Alice (0x81b...a2e9) · 3 hrs ago</div>
+        <div style="font-size:11px;color:var(--accent-emerald);font-family:var(--font-mono);margin-top:4px;font-weight:600;">1-Signature (Face ID) Sufficient</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-family:var(--font-mono);font-weight:700;font-size:15px;color:var(--text-primary);">-0.005 ETH</div>
+      <div style="font-size:11px;color:var(--text-muted);">≈ $16.00 USD</div>
+      <a href="#" class="hash-link" style="margin-top:4px;display:inline-block;">0x1a82...8d81 <svg class="i" width="10" height="10" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -2929,42 +3195,87 @@ View on BaseScan <svg class="i" width="14" height="14" aria-hidden="true"><use h
 
 
     
-    <!-- Passkey Approval Modal -->
-    <div id="passkeyModal" class="passkey-modal-overlay">
+    <!-- Confirm sheet: 1-tap / 2-of-2 / agent / blocked -->
+    <div id="passkeyModal" class="passkey-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pkSheetTitle">
       <div class="passkey-modal-content">
-        <button class="passkey-modal-close" id="closePasskeyModal">&times;</button>
-        
-        <div class="passkey-icon-wrapper">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10"/><path d="M12 22v-3"/><path d="M9.1 19.4A7.9 7.9 0 0 1 6 15"/><path d="M14.9 19.4A7.9 7.9 0 0 0 18 15"/><path d="M12 15v-3"/><path d="M8.5 11.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 3.5 3.5"/><path d="M6 11.5A6 6 0 0 1 12 5.5a6 6 0 0 1 6 6"/></svg>
-        </div>
-        
-        <h3 style="font-family:var(--font-heading); font-size:24px; font-weight:800; color:var(--text-primary);">Approve with Passkey</h3>
-        <p style="font-size:14px; color:var(--text-secondary); margin-top:8px;">Base Sepolia Network</p>
-        
-        <div class="passkey-tx-card">
-          <div id="pkModalTokenIcon" style="width:40px;height:40px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <img id="pkModalTokenIconImg" src="assets/usdc.svg" width="40" height="40" style="width:100%;height:100%;object-fit:contain;border-radius:50%;" alt="Token">
-          </div>
-          <div style="flex:1;">
-            <div id="pkModalAmount" style="font-weight:700; font-size:16px; color:var(--text-primary);">Send 500.00 USDC</div>
-            <div style="font-size:13px; color:var(--text-secondary); margin-top:4px; display:flex; align-items:center; gap:6px;">
-              To <span id="pkModalDest">0x3a7F...8c2D</span> 
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            </div>
-          </div>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
-        </div>
-        
-        <div class="passkey-gasless-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-          Gasless • Sponsored by Paymaster
-        </div>
-        
-        <button class="passkey-btn-confirm" id="pkModalConfirmBtn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10"/><path d="M12 22v-3"/><path d="M9.1 19.4A7.9 7.9 0 0 1 6 15"/><path d="M14.9 19.4A7.9 7.9 0 0 0 18 15"/><path d="M12 15v-3"/><path d="M8.5 11.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 3.5 3.5"/><path d="M6 11.5A6 6 0 0 1 12 5.5a6 6 0 0 1 6 6"/></svg>
-          Scan Touch ID / Face ID
+        <button class="passkey-modal-close" id="closePasskeyModal" aria-label="Close">
+          <svg class="i" width="16" height="16" aria-hidden="true"><use href="#i-x"/></svg>
         </button>
-        <button class="passkey-btn-cancel" id="pkModalCancelBtn">Cancel</button>
+
+        <div class="passkey-icon-wrapper" id="pkSheetIconWrap">
+          <svg class="i" width="24" height="24" aria-hidden="true"><use id="pkSheetIcon" href="#i-scan-face"/></svg>
+        </div>
+
+        <div class="confirm-pill mode-one_sig" id="pkPolicyPill">
+          <span class="status-dot"></span>
+          <span id="pkPolicyPillText">You · 1 tap</span>
+        </div>
+
+        <div class="confirm-kicker" id="pkSheetKicker">Confirm send</div>
+        <div class="confirm-amount" id="pkModalAmount">0.005 ETH</div>
+
+        <dl class="passkey-tx-card">
+          <div class="confirm-row">
+            <dt>To</dt>
+            <dd class="mono" id="pkModalDest">0x22db…913D</dd>
+          </div>
+          <div class="confirm-row">
+            <dt>Network</dt>
+            <dd id="pkSheetNetwork">Base Sepolia</dd>
+          </div>
+          <div class="confirm-row">
+            <dt>Who signs</dt>
+            <dd id="pkSheetWho">Face ID</dd>
+          </div>
+        </dl>
+
+        <p class="confirm-reason" id="pkPolicyReason">Under 0.01 ETH to a trusted address. One Face ID is enough.</p>
+
+        <button class="passkey-btn-confirm" id="pkModalConfirmBtn" type="button">
+          <svg class="i" width="18" height="18" aria-hidden="true"><use href="#i-scan-face"/></svg>
+          <span id="pkModalConfirmLabel">Scan Face ID</span>
+        </button>
+        <button class="passkey-btn-cancel" id="pkModalCancelBtn" type="button">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Blocked by Policy Modal -->
+    <div id="policyBlockModal" class="passkey-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="blockModalTitle">
+      <div class="passkey-modal-content" style="border:1px solid rgba(244,63,94,0.4); box-shadow:0 -10px 40px rgba(244,63,94,0.15);">
+        <button class="passkey-modal-close" id="closeBlockModalBtn" aria-label="Close">
+          <svg class="i" width="16" height="16" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+
+        <div class="passkey-icon-wrapper" style="background:rgba(244,63,94,0.15); border-color:rgba(244,63,94,0.3); color:var(--accent-rose);">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </div>
+
+        <div class="confirm-pill" style="background:rgba(244,63,94,0.15); color:var(--accent-rose);">
+          <span class="status-dot" style="background:var(--accent-rose);box-shadow:0 0 8px var(--accent-rose);"></span>
+          <span>Blocked by Hardware Policy</span>
+        </div>
+
+        <div class="confirm-kicker">Transaction Rejected</div>
+        <div class="confirm-amount" id="blockModalAmount">1.50 ETH</div>
+
+        <dl class="passkey-tx-card" style="border-color:rgba(244,63,94,0.2);">
+          <div class="confirm-row">
+            <dt>To</dt>
+            <dd class="mono" id="blockModalDest">Unknown Address</dd>
+          </div>
+          <div class="confirm-row">
+            <dt>Status</dt>
+            <dd style="color:var(--accent-rose); font-weight:600;">Reverted Locally</dd>
+          </div>
+          <div class="confirm-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+            <dt>Policy Enforcement</dt>
+            <dd id="blockModalReason" style="text-align:left; line-height:1.4;">Amount exceeds absolute human ceiling. Hardcoded in SpendPolicy.sol.</dd>
+          </div>
+        </dl>
+
+        <p class="confirm-reason" style="color:var(--text-primary); opacity:0.9;">No combination of keys (even Quorum) can sign this transaction.</p>
+
+        <button class="passkey-btn-cancel" id="blockModalDismissBtn" type="button" style="background:var(--bg-hover); color:var(--text-primary); border:1px solid var(--border-light); width:100%;">Dismiss</button>
       </div>
     </div>
 
@@ -3499,6 +3810,8 @@ function refreshAgentView() {
   const desc = $('agentWidgetDesc');
 
   if (agentSession.active) {
+    if ($('agentActiveSession')) $('agentActiveSession').style.display = 'block';
+    if ($('agentGrantForm')) $('agentGrantForm').style.display = 'none';
     if (badge) {
       badge.innerHTML = '<span class="status-dot"></span> Active';
       badge.style.background = 'var(--accent-emerald-light)';
@@ -3512,8 +3825,10 @@ function refreshAgentView() {
     }
     if (desc) desc.textContent = 'Active session • Trading Agent';
   } else {
+    if ($('agentActiveSession')) $('agentActiveSession').style.display = 'none';
+    if ($('agentGrantForm')) $('agentGrantForm').style.display = 'block';
     if (badge) {
-      badge.innerHTML = '<span class="status-dot"></span> Revoked';
+      badge.innerHTML = '<span class="status-dot"></span> No Session';
       badge.style.background = 'var(--accent-rose-light)';
       badge.style.color = 'var(--accent-rose)';
       badge.style.borderColor = 'rgba(244,63,94,0.3)';
@@ -3692,7 +4007,7 @@ $('btnRevokeAgentSession').onclick = () => {
 };
 
 // --- LIVE AUTONOMOUS AGENT BOT EXECUTION ---
-$('btnTestAgentMicro').onclick = async () => {
+const runAgentMicro = async () => {
   if (!agentSession.active) {
     alert('Cannot execute: Agent session is revoked.');
     return;
@@ -3838,13 +4153,29 @@ $('btnTestAgentMicro').onclick = async () => {
   }
 };
 
-$('btnTestAgentEscalated').onclick = async () => {
+$('btnTestAgentMicro').onclick = () => {
   if (!agentSession.active) {
     alert('Cannot execute: Agent session is revoked.');
     return;
   }
-  const proceed = confirm('FIREWALL ESCALATION ALERT:\n\nRequested Amount ($150.00 USDC) exceeds the $50.00 Autonomous Limit.\n\nThe smart account SpendPolicy requires Human Biometric Passkey Quorum (Type 0x02).\n\nProceed to authenticate with Hardware Passkeys?');
-  if (!proceed) return;
+  openConfirmSheet({
+    kicker: 'Agent spend',
+    amount: '0.0001 ETH',
+    dest: '0x22db…913D',
+    network: 'Base Sepolia',
+    policy: {
+      mode: 'agent',
+      reason: 'Within the $50 autonomous limit. The agent submits this. You will not see a Face ID prompt.'
+    },
+    onConfirm: runAgentMicro
+  });
+};
+
+const runAgentEscalated = async () => {
+  if (!agentSession.active) {
+    alert('Cannot execute: Agent session is revoked.');
+    return;
+  }
 
   const agentReceiptArea = $('agentReceiptArea');
   const agentSuccessBanner = $('agentSuccessBanner');
@@ -3888,25 +4219,49 @@ $('btnTestAgentEscalated').onclick = async () => {
   }
 };
 
-$('btnTestAgentCeiling').onclick = () => {
-  const agentReceiptArea = $('agentReceiptArea');
-  const agentUserOpCode = $('agentUserOpCode');
-  const agentSigTypeBadge = $('agentSigTypeBadge');
-
-  if (agentReceiptArea) agentReceiptArea.style.display = 'block';
-  if (agentSigTypeBadge) agentSigTypeBadge.textContent = 'SpendPolicy Rejection';
-
-  if (agentUserOpCode) {
-    agentUserOpCode.textContent = JSON.stringify({
-      status: 'TRANSACTION_REJECTED_ON_CHAIN',
-      errorCode: 'POLICY_CEILING_EXCEEDED',
-      requestedAmount: '350.00 USDC',
-      allowedCeiling: `${agentSession.ceiling.toFixed(2)} USDC`,
-      contractViolation: 'SpendPolicy.sol:classify() -> alwaysTwoSigs with ceiling overflow',
-      result: 'REVERT: Transaction strictly blocked by smart account before network propagation'
-    }, null, 2);
+$('btnTestAgentEscalated').onclick = () => {
+  if (!agentSession.active) {
+    alert('Cannot execute: Agent session is revoked.');
+    return;
   }
-  alert('SECURITY VIOLATION ON-CHAIN:\n\nRequested $350.00 USDC exceeds the $200.00 Human Escalation Ceiling.\n\nThe smart account SpendPolicy strictly rejected this transaction.');
+  openConfirmSheet({
+    kicker: 'Agent spend',
+    amount: '150.00 USDC',
+    dest: 'Over autonomous limit',
+    network: 'Base Sepolia',
+    policy: {
+      mode: 'quorum',
+      reason: 'Over the $50 agent limit. The agent cannot do this alone. Face ID plus backup key required.'
+    },
+    onConfirm: runAgentEscalated
+  });
+};
+
+const showCeilingBlock = (amt = "350.00 USDC", dest = "Unknown Address", reason = "Amount exceeds absolute human ceiling. Hardcoded in SpendPolicy.sol.") => {
+  const modal = $('policyBlockModal');
+  if (modal) {
+    if ($('blockModalAmount')) $('blockModalAmount').textContent = amt;
+    if ($('blockModalDest')) $('blockModalDest').textContent = dest;
+    if ($('blockModalReason')) $('blockModalReason').textContent = reason;
+    modal.classList.add('active');
+  }
+};
+
+if ($('closeBlockModalBtn')) $('closeBlockModalBtn').onclick = () => { if ($('policyBlockModal')) $('policyBlockModal').classList.remove('active'); };
+if ($('blockModalDismissBtn')) $('blockModalDismissBtn').onclick = () => { if ($('policyBlockModal')) $('policyBlockModal').classList.remove('active'); };
+
+$('btnTestAgentCeiling').onclick = () => {
+  openConfirmSheet({
+    kicker: 'Agent spend',
+    amount: '350.00 USDC',
+    dest: 'Would exceed ceiling',
+    network: 'Base Sepolia',
+    policy: {
+      mode: 'blocked',
+      reason: 'Over the $' + agentSession.ceiling.toFixed(0) + ' human ceiling. The contract will reject this before it hits the network. Not even 2-of-2 can pass it as an agent op.'
+    },
+    onConfirm: showCeilingBlock
+  });
 };
 
 
@@ -3978,28 +4333,95 @@ $('appMaxBtn').onclick = () => {
   evalFirewall();
 };
 
+// --- Confirm sheet (1-tap / 2-of-2 / agent / blocked) ---
+const POLICY_COPY = {
+  one_sig: { pill: 'You · 1 tap', who: 'Face ID', cta: 'Scan Face ID', icon: '#i-scan-face', btnIcon: '#i-scan-face' },
+  quorum: { pill: 'You + backup key', who: 'Face ID, then backup key', cta: 'Authorize with 2 keys', icon: '#i-users', btnIcon: '#i-scan-face' },
+  agent: { pill: 'Agent · no Face ID', who: 'Agent session key', cta: 'Run without Face ID', icon: '#i-shield-check', btnIcon: '#i-shield-check' },
+  blocked: { pill: 'This will be blocked', who: 'Nobody — on-chain reject', cta: 'Got it', icon: '#i-ban', btnIcon: '#i-x' }
+};
+
+function shortenAddr(addr) {
+  if (!addr || addr.length < 12) return addr || '—';
+  return addr.slice(0, 6) + '…' + addr.slice(-4);
+}
+
+function classifySend(amt, asset, recipient) {
+  const isAllowlisted = !isAllowlistEnabled || allowedAddresses.map(a => a.toLowerCase()).includes((recipient || '').toLowerCase());
+  if (isFrozen) return { mode: 'quorum', reason: 'Panic freeze is on. Every transfer needs Face ID and your backup key.' };
+  if (!isAllowlisted) return { mode: 'quorum', reason: 'This address is not on your allowlist. Face ID plus backup key required.' };
+  if (asset === 'ETH' && amt >= 0.010) return { mode: 'quorum', reason: amt + ' ETH is at or over the 0.01 ETH limit. Face ID plus backup key required.' };
+  if (asset === 'USDC' && amt >= 50) return { mode: 'quorum', reason: amt + ' USDC is at or over the $50 limit. Face ID plus backup key required.' };
+  return { mode: 'one_sig', reason: 'Under the limit, to a trusted address. One Face ID is enough.' };
+}
+
+function classifySwap(amt, direction) {
+  if (isFrozen) return { mode: 'quorum', reason: 'Panic freeze is on. This swap needs Face ID and your backup key.' };
+  if (direction === 'ETH_TO_USDC' && amt >= 0.010) return { mode: 'quorum', reason: amt + ' ETH is over the 0.01 ETH swap limit. Face ID plus backup key required.' };
+  if (direction === 'USDC_TO_ETH' && amt >= 25) return { mode: 'quorum', reason: amt + ' USDC is over the $25 swap limit. Face ID plus backup key required.' };
+  return { mode: 'one_sig', reason: 'Under the swap limit on Uniswap V3. One Face ID is enough.' };
+}
+
+function openConfirmSheet({ kicker, amount, dest, network, policy, onConfirm }) {
+  const mode = policy.mode;
+  const copy = POLICY_COPY[mode];
+  const overlay = document.getElementById('passkeyModal');
+  const wrap = document.getElementById('pkSheetIconWrap');
+  const btn = document.getElementById('pkModalConfirmBtn');
+  const cancelBtn = document.getElementById('pkModalCancelBtn');
+
+  wrap.className = 'passkey-icon-wrapper mode-' + mode;
+  document.getElementById('pkSheetIcon').setAttribute('href', copy.icon);
+  const pill = document.getElementById('pkPolicyPill');
+  pill.className = 'confirm-pill mode-' + mode;
+  document.getElementById('pkPolicyPillText').textContent = copy.pill;
+  document.getElementById('pkSheetKicker').textContent = kicker;
+  document.getElementById('pkModalAmount').textContent = amount;
+  document.getElementById('pkModalDest').textContent = dest;
+  document.getElementById('pkSheetNetwork').textContent = network || 'Base Sepolia';
+  document.getElementById('pkSheetWho').textContent = copy.who;
+  document.getElementById('pkPolicyReason').textContent = policy.reason;
+  document.getElementById('pkModalConfirmLabel').textContent = copy.cta;
+  btn.className = 'passkey-btn-confirm mode-' + mode;
+  const btnUse = btn.querySelector('use');
+  if (btnUse) btnUse.setAttribute('href', copy.btnIcon);
+  cancelBtn.style.display = mode === 'blocked' ? 'none' : '';
+  btn.disabled = false;
+
+  overlay.classList.add('active');
+  btn.focus();
+
+  const close = () => overlay.classList.remove('active');
+
+  btn.onclick = async () => {
+    if (typeof onConfirm !== 'function') { close(); return; }
+    btn.disabled = true;
+    document.getElementById('pkModalConfirmLabel').textContent = mode === 'blocked' ? 'Closing…' : (mode === 'agent' ? 'Submitting…' : 'Waiting for Face ID…');
+    try {
+      await onConfirm();
+    } finally {
+      btn.disabled = false;
+      close();
+    }
+  };
+  cancelBtn.onclick = close;
+  document.getElementById('closePasskeyModal').onclick = close;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const overlay = document.getElementById('passkeyModal');
+    if (overlay && overlay.classList.contains('active')) overlay.classList.remove('active');
+  }
+});
+
 // --- Real-time Firewall Evaluation ---
 function evalFirewall() {
   const amt = parseFloat($('appTransferAmt').value) || 0;
   const recipient = $('appRecipientAddr').value.trim();
-  const isAllowlisted = !isAllowlistEnabled || allowedAddresses.map(a => a.toLowerCase()).includes(recipient.toLowerCase());
-
-  let isQuorum = false;
-  let reason = '';
-
-  if (isFrozen) {
-    isQuorum = true;
-    reason = '[EMERGENCY PANIC FREEZE ACTIVE] All transactions strictly demand 2-of-2 Hardware Quorum.';
-  } else if (!isAllowlisted) {
-    isQuorum = true;
-    reason = 'Recipient address is NOT in your trusted Address Book. Escalating to 2-of-2 Hardware Quorum.';
-  } else if (selectedAsset === 'ETH' && amt >= 0.010) {
-    isQuorum = true;
-    reason = `Amount (${amt} ETH) meets or exceeds the 0.010 ETH threshold. Policy strictly enforces 2-of-2 Hardware Quorum.`;
-  } else if (selectedAsset === 'USDC' && amt >= 50) {
-    isQuorum = true;
-    reason = `Amount (${amt} USDC) meets or exceeds the 50 USDC threshold. Policy strictly enforces 2-of-2 Hardware Quorum.`;
-  }
+  const verdict = classifySend(amt, selectedAsset, recipient);
+  const isQuorum = verdict.mode === 'quorum';
+  const reason = verdict.reason;
 
   if (isQuorum) {
     $('appFirewallBox').className = 'firewall-live-box firewall-box-quorum';
@@ -4020,7 +4442,7 @@ function evalFirewall() {
     $('appFirewallBadge').textContent = '1-Signature';
     $('appFirewallBadge').style.background = 'var(--accent-emerald-light)';
     $('appFirewallBadge').style.color = 'var(--accent-emerald)';
-    $('appFirewallDesc').textContent = 'Transfer amount is below threshold and recipient is trusted. A single biometric signature is sufficient.';
+    $('appFirewallDesc').textContent = reason;
     $('appQuorumStepper').style.display = 'none';
     $('appSignSubmitBtn').textContent = 'Authorize with 1 Hardware Passkey';
     $('appSignSubmitBtn').style.background = '#FFFFFF';
@@ -4172,43 +4594,22 @@ async function executeSendUserOp() {
 
 }
 
-// --- Intercept Send Click for Passkey Modal ---
 $('appSignSubmitBtn').onclick = () => {
   const amt = parseFloat($('appTransferAmt').value) || 0;
   const recipient = $('appRecipientAddr').value.trim();
-  
   if (!recipient || amt <= 0) {
-    alert("Please enter a valid amount and recipient address.");
+    alert('Please enter a valid amount and recipient address.');
     return;
   }
-
-  // Populate Modal
-  document.getElementById('pkModalAmount').textContent = `Send ${amt.toFixed(2)} ${selectedAsset}`;
-  document.getElementById('pkModalDest').textContent = recipient.slice(0, 6) + '...' + recipient.slice(-4);
-  const pkImg = document.getElementById('pkModalTokenIconImg');
-  if (pkImg) {
-    pkImg.src = selectedAsset === 'ETH' ? 'assets/ethereum.svg' : 'assets/usdc.svg';
-    pkImg.alt = selectedAsset;
-  }
-  
-  document.getElementById('passkeyModal').classList.add('active');
-};
-
-// --- Passkey Modal Button Bindings ---
-document.getElementById('closePasskeyModal').onclick = () => document.getElementById('passkeyModal').classList.remove('active');
-document.getElementById('pkModalCancelBtn').onclick = () => document.getElementById('passkeyModal').classList.remove('active');
-
-document.getElementById('pkModalConfirmBtn').onclick = async () => {
-  const confirmBtn = document.getElementById('pkModalConfirmBtn');
-  const originalText = confirmBtn.innerHTML;
-  
-  // Loading state in modal
-  confirmBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Scanning Touch ID...`;
-  
-  await executeSendUserOp();
-  
-  confirmBtn.innerHTML = originalText;
-  document.getElementById('passkeyModal').classList.remove('active');
+  const displayAmt = selectedAsset === 'ETH' ? amt.toString() : amt.toFixed(2);
+  openConfirmSheet({
+    kicker: 'Confirm send',
+    amount: displayAmt + ' ' + selectedAsset,
+    dest: shortenAddr(recipient),
+    network: 'Base Sepolia',
+    policy: classifySend(amt, selectedAsset, recipient),
+    onConfirm: executeSendUserOp
+  });
 };
 
 // React Bits Grainient (Grainy Gradient with Soft Motion) Engine
@@ -4332,82 +4733,60 @@ const swapRateQuote = $('swapRateQuote');
 function updateSwapBalances() {
   const ethBal = $('homeEthBal') ? $('homeEthBal').textContent : '0.0032';
   const usdcBal = $('homeUsdcBal') ? $('homeUsdcBal').textContent : '0.00';
+  const recvSymBottom = $('swapRecvTokenSymbolBottom');
 
   if (swapDirection === 'ETH_TO_USDC') {
     if (swapPayBalDisplay) swapPayBalDisplay.textContent = ethBal;
     if (swapPayBalSymbol) swapPayBalSymbol.textContent = 'ETH';
     if (swapRecvBalDisplay) swapRecvBalDisplay.textContent = usdcBal;
     if (swapRecvBalSymbol) swapRecvBalSymbol.textContent = 'USDC';
+    if (recvSymBottom) recvSymBottom.textContent = 'USDC';
   } else {
     if (swapPayBalDisplay) swapPayBalDisplay.textContent = usdcBal;
     if (swapPayBalSymbol) swapPayBalSymbol.textContent = 'USDC';
     if (swapRecvBalDisplay) swapRecvBalDisplay.textContent = ethBal;
     if (swapRecvBalSymbol) swapRecvBalSymbol.textContent = 'ETH';
+    if (recvSymBottom) recvSymBottom.textContent = 'ETH';
   }
 }
 
 // Evaluate Swap SpendPolicy Firewall
 function evalSwapFirewall() {
   const amt = parseFloat(String(swapInputAmt.value).replace(',', '.')) || 0;
-  const firewallBox = $('swapFirewallBox');
   const title = $('swapFirewallTitle');
   const badge = $('swapFirewallBadge');
   const desc = $('swapFirewallDesc');
+  const firewallBox = $('swapFirewallBox');
+  const verdict = classifySwap(amt, swapDirection);
+  const isQuorum = verdict.mode === 'quorum';
 
-  if (swapDirection === 'ETH_TO_USDC') {
-    const isQuorum = isFrozen || amt >= 0.010;
-    if (isQuorum) {
-      if (title) title.textContent = '▲ Policy Escalation: 2-of-2 Hardware Quorum';
-      if (title) title.style.color = 'var(--accent-amber)';
-      if (badge) {
-        badge.textContent = '2-of-2 Quorum';
-        badge.style.background = 'var(--accent-amber-light)';
-        badge.style.color = 'var(--accent-amber)';
-      }
-      if (desc) desc.textContent = 'Swap amount exceeds 0.010 ETH threshold. Strict 2-of-2 hardware passkey quorum required by SpendPolicy.';
-      if (swapSignSubmitBtn && !swapSignSubmitBtn.disabled) {
-        swapSignSubmitBtn.textContent = 'Authorize Swap with Passkey Quorum (2 Keys)';
-      }
-    } else {
-      if (title) title.innerHTML = '<span class="status-dot"></span> Policy Check: Single Biometric Passkey';
-      if (title) title.style.color = 'var(--accent-emerald)';
-      if (badge) {
-        badge.textContent = '1-Signature';
-        badge.style.background = 'var(--accent-emerald-light)';
-        badge.style.color = 'var(--accent-emerald)';
-      }
-      if (desc) desc.textContent = 'Uniswap V3 SwapRouter02 is a verified router. This sub-threshold swap requires 1 Biometric Passkey.';
-      if (swapSignSubmitBtn && !swapSignSubmitBtn.disabled) {
-        swapSignSubmitBtn.textContent = 'Authorize Swap with Hardware Passkey';
-      }
+  if (firewallBox) {
+    firewallBox.className = 'firewall-live-box firewall-box-' + (isQuorum ? 'quorum' : 'single');
+  }
+
+  if (isQuorum) {
+    if (title) title.textContent = '▲ Policy Escalation: 2-of-2 Hardware Quorum';
+    if (title) title.style.color = 'var(--accent-amber)';
+    if (badge) {
+      badge.textContent = '2-of-2 Quorum';
+      badge.style.background = 'var(--accent-amber-light)';
+      badge.style.color = 'var(--accent-amber)';
+    }
+    if (desc) desc.textContent = verdict.reason;
+    if (swapSignSubmitBtn && !swapSignSubmitBtn.disabled) {
+      swapSignSubmitBtn.textContent = 'Authorize Swap with Passkey Quorum (2 Keys)';
     }
   } else {
-    // USDC -> ETH
-    const isQuorum = isFrozen || amt >= 25.0;
-    if (isQuorum) {
-      if (title) title.textContent = '▲ Policy Escalation: 2-of-2 Hardware Quorum';
-      if (title) title.style.color = 'var(--accent-amber)';
-      if (badge) {
-        badge.textContent = '2-of-2 Quorum';
-        badge.style.background = 'var(--accent-amber-light)';
-        badge.style.color = 'var(--accent-amber)';
-      }
-      if (desc) desc.textContent = 'Swap amount exceeds $25.00 USDC threshold. Strict 2-of-2 hardware passkey quorum required.';
-      if (swapSignSubmitBtn && !swapSignSubmitBtn.disabled) {
-        swapSignSubmitBtn.textContent = 'Authorize Swap with Passkey Quorum (2 Keys)';
-      }
-    } else {
-      if (title) title.innerHTML = '<span class="status-dot"></span> Policy Check: Single Biometric Passkey';
-      if (title) title.style.color = 'var(--accent-emerald)';
-      if (badge) {
-        badge.textContent = '1-Signature';
-        badge.style.background = 'var(--accent-emerald-light)';
-        badge.style.color = 'var(--accent-emerald)';
-      }
-      if (desc) desc.textContent = 'USDC Approval + Uniswap V3 swap within $25 policy limit. Single biometric passkey sufficient.';
-      if (swapSignSubmitBtn && !swapSignSubmitBtn.disabled) {
-        swapSignSubmitBtn.textContent = 'Authorize Swap with Hardware Passkey';
-      }
+    if (title) title.innerHTML = '<span class="status-dot"></span> Policy Check: Single Biometric Passkey';
+    if (title) title.style.color = 'var(--accent-emerald)';
+    if (badge) {
+      badge.textContent = '1-Signature';
+      badge.style.background = 'var(--accent-emerald-light)';
+      badge.style.color = 'var(--accent-emerald)';
+    }
+    if (desc) desc.textContent = verdict.reason;
+    if (swapSignSubmitBtn && !swapSignSubmitBtn.disabled) {
+      swapSignSubmitBtn.textContent = 'Authorize Swap with Hardware Passkey';
     }
   }
 }
@@ -4497,17 +4876,17 @@ if (btnFlipSwapTokens) {
     
     if (swapDirection === 'ETH_TO_USDC') {
       if (swapPayTokenImg) swapPayTokenImg.src = 'assets/eth_logo.svg';
-      if (swapPayTokenSymbol) swapPayTokenSymbol.textContent = 'ETH';
+      if (swapPayTokenSymbol) swapPayTokenSymbol.textContent = 'Ethereum';
       if (swapRecvTokenImg) swapRecvTokenImg.src = 'assets/usdc_logo.svg';
-      if (swapRecvTokenSymbol) swapRecvTokenSymbol.textContent = 'USDC';
+      if (swapRecvTokenSymbol) swapRecvTokenSymbol.textContent = 'USDC (Base)';
       if (swapInputAmt) {
         swapInputAmt.value = '0.001';
       }
     } else {
       if (swapPayTokenImg) swapPayTokenImg.src = 'assets/usdc_logo.svg';
-      if (swapPayTokenSymbol) swapPayTokenSymbol.textContent = 'USDC';
+      if (swapPayTokenSymbol) swapPayTokenSymbol.textContent = 'USDC (Base)';
       if (swapRecvTokenImg) swapRecvTokenImg.src = 'assets/eth_logo.svg';
-      if (swapRecvTokenSymbol) swapRecvTokenSymbol.textContent = 'ETH';
+      if (swapRecvTokenSymbol) swapRecvTokenSymbol.textContent = 'Ethereum';
       if (swapInputAmt) {
         swapInputAmt.value = '5.00';
       }
@@ -4517,13 +4896,23 @@ if (btnFlipSwapTokens) {
   };
 }
 
+if ($('btnSwapMax')) {
+  $('btnSwapMax').onclick = () => {
+    if (swapDirection === 'ETH_TO_USDC') {
+      if (swapInputAmt) swapInputAmt.value = ($('homeEthBal') ? $('homeEthBal').textContent : '0.0032');
+    } else {
+      if (swapInputAmt) swapInputAmt.value = ($('homeUsdcBal') ? $('homeUsdcBal').textContent : '5.00');
+    }
+    updateSwapQuote();
+  };
+}
+
 // Initialize Quote & Balances
 updateSwapBalances();
 updateSwapQuote();
 
-// Execute Live On-Chain Uniswap V3 Swap UserOp
-if (swapSignSubmitBtn) {
-  swapSignSubmitBtn.onclick = async () => {
+async function executeSwapUserOp() {
+  if (!swapSignSubmitBtn) return;
     try {
       swapSignSubmitBtn.disabled = true;
       swapSignSubmitBtn.textContent = 'Preparing Live Swap UserOp...';
@@ -4695,6 +5084,25 @@ if (swapSignSubmitBtn) {
       swapSignSubmitBtn.disabled = false;
       evalSwapFirewall();
     }
+}
+
+if (swapSignSubmitBtn) {
+  swapSignSubmitBtn.onclick = () => {
+    const amt = parseFloat(String(swapInputAmt.value).replace(',', '.')) || 0;
+    if (amt <= 0) {
+      alert('Please enter a valid swap amount.');
+      return;
+    }
+    const pay = swapDirection === 'ETH_TO_USDC' ? 'ETH' : 'USDC';
+    const recv = swapDirection === 'ETH_TO_USDC' ? 'USDC' : 'ETH';
+    openConfirmSheet({
+      kicker: 'Confirm swap',
+      amount: amt + ' ' + pay + ' → ' + recv,
+      dest: 'Uniswap V3 Router',
+      network: 'Base Sepolia',
+      policy: classifySwap(amt, swapDirection),
+      onConfirm: executeSwapUserOp
+    });
   };
 }
 
