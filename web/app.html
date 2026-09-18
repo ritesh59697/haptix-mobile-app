@@ -90,27 +90,37 @@
     --shadow-dropdown: 0 20px 50px rgba(0, 0, 0, 0.75);
   }
 
-  /* Header Theme Toggle Button */
+  /* Header Theme Toggle Button (Precision Squircle) */
   .theme-toggle-header-btn {
     width: 36px;
     height: 36px;
-    border-radius: 50%;
-    background: var(--bg-hover);
-    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
     color: var(--text-secondary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     padding: 0;
     flex-shrink: 0;
   }
   .theme-toggle-header-btn:hover {
-    background: var(--bg-active);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--text-primary);
-    transform: scale(1.06);
-    border-color: var(--border-medium);
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+  [data-theme="light"] .theme-toggle-header-btn {
+    background: #F4F4F5;
+    border-color: #E4E4E7;
+    color: #18181B;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  }
+  [data-theme="light"] .theme-toggle-header-btn:hover {
+    background: #E4E4E7;
   }
   [data-theme="light"] .theme-icon-sun { display: none; }
   [data-theme="light"] .theme-icon-moon { display: block; }
@@ -337,7 +347,10 @@
     color: #94A3B8 !important;
   }
   [data-theme="dark"] .view-all {
-    color: #38BDF8 !important;
+    color: #94A3B8 !important;
+  }
+  [data-theme="dark"] .view-all:hover {
+    color: #F8FAFC !important;
   }
   [data-theme="dark"] .widget-desc,
   [data-theme="dark"] .progress-labels,
@@ -460,15 +473,16 @@
     position: absolute;
     top: 20px;
     right: 20px;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    color: #fff;
   }
+  .promo-arrow .i { width: 14px; height: 14px; }
 
   /* Main Area */
   .main-column {
@@ -480,26 +494,63 @@
   }
 
   .topbar {
-    height: 72px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 40px;
-    background: var(--bg-app);
+    padding: 24px 40px 16px;
+    min-height: 80px;
+    background: rgba(248, 250, 252, 0.88);
+    border-bottom: 1px solid var(--border-light);
     position: sticky;
     top: 0;
     z-index: 10;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  [data-theme="dark"] .topbar {
+    background: rgba(8, 11, 17, 0.88);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .search-bar {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: var(--bg-hover);
-    border-radius: var(--radius-full);
-    padding: 10px 20px;
-    width: 400px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 8px 14px;
+    width: 380px;
     color: var(--text-secondary);
+    transition: all 0.2s ease;
+  }
+  [data-theme="light"] .search-bar {
+    background: #F4F4F5;
+    border: 1px solid #E4E4E7;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  }
+  .search-bar:focus-within {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .search-shortcut-kbd {
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    user-select: none;
+    margin-left: auto;
+  }
+  [data-theme="light"] .search-shortcut-kbd {
+    background: #E4E4E7;
+    border-color: #D4D4D8;
+    color: #71717A;
   }
   
   .search-bar input {
@@ -507,7 +558,7 @@
     background: transparent;
     outline: none;
     font-family: var(--font-main);
-    font-size: 14px;
+    font-size: 13.5px;
     width: 100%;
     color: var(--text-primary);
   }
@@ -515,38 +566,103 @@
   .user-profile {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
+  }
+  
+  .bell-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+  .bell-wrapper:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
+    transform: translateY(-1px);
+  }
+  [data-theme="light"] .bell-wrapper {
+    background: #F4F4F5;
+    border-color: #E4E4E7;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
   }
   
   .bell-icon {
     color: var(--text-secondary);
-    cursor: pointer;
   }
   
   .profile-badge {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
     cursor: pointer;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 3px 12px 3px 4px;
+    height: 36px;
+    transition: all 0.18s ease;
+  }
+  .profile-badge:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+  [data-theme="light"] .profile-badge {
+    background: #F4F4F5;
+    border-color: #E4E4E7;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+    color: #18181B;
+  }
+  [data-theme="light"] .profile-badge:hover {
+    background: #E4E4E7;
   }
   
   .avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
     background: #1E293B;
-    color:var(--text-primary);
+    color: #FFFFFF;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 12px;
   }
 
   .content-area {
-    padding: 10px 40px 60px 40px;
+    padding: 28px 40px 60px 40px;
+  }
+
+  .page-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    min-height: 52px;
+  }
+  .page-heading h3 {
+    font-family: var(--font-heading);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .page-heading p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    line-height: 1.4;
   }
 
   /* Tab View Logic */
@@ -557,9 +673,10 @@
   /* Grid Layout for Home */
   .home-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 1.55fr 1fr;
     gap: 24px;
     margin-bottom: 24px;
+    align-items: stretch;
   }
 
   .card-white {
@@ -574,7 +691,19 @@
   .portfolio-card {
     position: relative;
     overflow: hidden;
-    padding: 32px;
+    padding: 28px 32px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(243, 246, 252, 0.85) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  [data-theme="dark"] .portfolio-card {
+    background: var(--bg-surface);
+  }
+  
+  .portfolio-info-wrap {
+    position: relative;
+    z-index: 2;
   }
   
   .portfolio-header {
@@ -623,30 +752,42 @@
   }
   
   .portfolio-change {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--accent-green);
-    display: flex;
-    gap: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-emerald);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    padding: 3px 10px;
+    border-radius: 6px;
+    width: fit-content;
+  }
+  [data-theme="light"] .portfolio-change {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: #059669;
   }
 
   .portfolio-actions {
     display: flex;
     gap: 12px;
-    margin-top: 40px;
+    margin-top: 24px;
     position: relative;
     z-index: 2;
   }
 
+  /* Precision Obsidian Primary Button (Linear / Vercel / Raycast Style) */
   .btn-action-primary {
-    background: linear-gradient(180deg, #0055FF 0%, #0043D0 100%);
-    color: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.35), 0 4px 18px rgba(0, 82, 255, 0.42);
-    border-radius: var(--radius-full);
-    padding: 13px 22px;
-    font-size: 14px;
-    font-weight: 700;
+    background: #FFFFFF;
+    color: #09090B;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 1), 0 0 16px -2px rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 10px 22px;
+    font-size: 14.5px;
+    font-weight: 600;
     font-family: var(--font-main);
     display: inline-flex;
     align-items: center;
@@ -657,42 +798,174 @@
     letter-spacing: -0.01em;
   }
   .btn-action-primary:hover {
-    background: linear-gradient(180deg, #1C68FF 0%, #004EE8 100%);
-    border-color: rgba(255, 255, 255, 0.38);
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.45), 0 6px 24px rgba(0, 82, 255, 0.55);
+    background: #F4F4F5;
+    border-color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 24px -2px rgba(255, 255, 255, 0.3);
     transform: translateY(-1px);
-    color: #FFFFFF;
+    color: #09090B;
   }
   .btn-action-primary:active {
-    transform: translateY(0) scale(0.98);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    transform: translateY(0);
+    background: #E4E4E7;
   }
 
-  .btn-action-secondary {
-    background: var(--bg-surface);
-    color: var(--text-primary);
-    border: 1px solid var(--border-light);
-    padding: 12px 24px;
-    border-radius: var(--radius-full);
-    font-size: 14px;
-    font-weight: 600;
-    font-family: var(--font-main);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
-    box-shadow: var(--shadow-sm);
+  [data-theme="light"] .btn-action-primary {
+    background: #09090B;
+    color: #FFFFFF;
+    border: 1px solid #18181B;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
   }
-  .btn-action-secondary:hover { background: var(--bg-hover); }
+  [data-theme="light"] .btn-action-primary:hover {
+    background: #18181B;
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Precision Obsidian Secondary & Glass Button (ReactBits Style) */
+  .glass-btn,
+  .btn-action-secondary {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 10px;
+    color: #E4E4E7;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    font-family: var(--font-main);
+  }
+
+  .glass-btn:hover,
+  .btn-action-secondary:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #FFFFFF;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .glass-btn:active,
+  .btn-action-secondary:active {
+    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .icon {
+    width: 18px;
+    height: 18px;
+    transition: all 0.2s ease;
+  }
+
+  .copied-text {
+    color: #34D399 !important;
+  }
+
+  .copied-icon {
+    stroke: #34D399 !important;
+    color: #34D399 !important;
+  }
+
+  [data-theme="light"] .glass-btn,
+  [data-theme="light"] .btn-action-secondary {
+    background: #F4F4F5;
+    border: 1px solid #E4E4E7;
+    color: #18181B;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  [data-theme="light"] .glass-btn:hover,
+  [data-theme="light"] .btn-action-secondary:hover {
+    background: #ECECEE;
+    border-color: #D4D4D8;
+    color: #09090B;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Table Action Small Buttons (Precision Squircle) */
+  .table-action-btn {
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 500;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: #D4D4D8;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-family: var(--font-main);
+  }
+  .table-action-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+  }
+  .table-action-btn.primary {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+  .table-action-btn.primary:hover {
+    background: #FFFFFF;
+    color: #09090B;
+    border-color: #FFFFFF;
+  }
+  [data-theme="light"] .table-action-btn {
+    background: #F4F4F5;
+    border-color: #E4E4E7;
+    color: #18181B;
+  }
+  [data-theme="light"] .table-action-btn:hover {
+    background: #E4E4E7;
+    color: #09090B;
+  }
+  [data-theme="light"] .table-action-btn.primary {
+    background: #09090B;
+    color: #FFFFFF;
+    border-color: #09090B;
+  }
+
+  /* Refined Network Badge (Anti-Sloppy) */
+  .network-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+  [data-theme="light"] .network-badge {
+    background: #F4F4F5;
+    border-color: #E4E4E7;
+    color: #52525B;
+  }
 
   .wave-bg {
     position: absolute;
     bottom: 0;
     right: 0;
-    width: 60%;
-    height: 60%;
-    background: radial-gradient(circle at bottom right, rgba(59,130,246,0.1) 0%, transparent 70%);
+    width: 70%;
+    height: 75%;
+    background: radial-gradient(circle at bottom right, rgba(0, 82, 255, 0.14) 0%, rgba(56, 189, 248, 0.08) 40%, transparent 70%);
     pointer-events: none;
     z-index: 1;
   }
@@ -702,17 +975,25 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    height: 100%;
   }
 
   .widget-card {
     background: var(--bg-surface);
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    padding: 20px;
+    border-radius: var(--radius-xl);
+    padding: 22px 24px;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 12px;
     box-shadow: var(--shadow-sm);
+    flex: 1;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .widget-card:hover {
+    border-color: var(--border-medium);
+    box-shadow: var(--shadow-md);
   }
 
   .widget-header {
@@ -788,6 +1069,12 @@
     display: flex;
     align-items: center;
     gap: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .assets-row::-webkit-scrollbar {
+    display: none;
   }
   
   .asset-item {
@@ -796,6 +1083,7 @@
     gap: 12px;
     padding-right: 20px;
     border-right: 1px solid var(--border-light);
+    flex-shrink: 0;
   }
   .asset-item:last-child { border-right: none; }
   
@@ -810,15 +1098,22 @@
     font-size: 16px;
     flex-shrink: 0;
     transition: all 0.2s ease;
+    overflow: hidden;
   }
-  .asset-icon.eth-asset-icon { background: rgba(98, 126, 234, 0.12); color: #627EEA; }
-  .asset-icon.usdc-asset-icon { background: rgba(39, 117, 202, 0.12); color: #2775CA; }
-  .asset-icon.base-asset-icon { background: rgba(0, 82, 255, 0.12); color: #0052FF; }
+  .asset-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
+    display: block;
+  }
+  .asset-icon.eth-asset-icon { background: #627EEA; }
+  .asset-icon.usdc-asset-icon { background: #2775CA; }
+  .asset-icon.base-asset-icon { background: #0052FF; }
+  .asset-icon.arb-asset-icon { background: #213147; }
+  .asset-icon.arc-asset-icon { background: #8669AE; }
   .asset-icon.enclave-asset-icon { background: rgba(16, 185, 129, 0.12); color: #10B981; }
 
-  [data-theme="dark"] .asset-icon.eth-asset-icon { background: rgba(98, 126, 234, 0.2); color: #818CF8; border: 1px solid rgba(98, 126, 234, 0.3); }
-  [data-theme="dark"] .asset-icon.usdc-asset-icon { background: rgba(39, 117, 202, 0.2); color: #38BDF8; border: 1px solid rgba(39, 117, 202, 0.3); }
-  [data-theme="dark"] .asset-icon.base-asset-icon { background: rgba(0, 82, 255, 0.2); color: #60A5FA; border: 1px solid rgba(0, 82, 255, 0.3); }
   [data-theme="dark"] .asset-icon.enclave-asset-icon { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
 
   .asset-info h4 { font-size: 14px; font-weight: 700; color: var(--text-primary); }
@@ -846,10 +1141,15 @@
   }
   .view-all {
     font-size: 13px;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     text-decoration: none;
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    transition: color 0.15s ease;
   }
+  .view-all:hover { color: var(--text-primary); }
 
   /* Table */
   .tx-table {
@@ -898,22 +1198,49 @@
     transition: background 0.2s;
   }
   .explore-item:hover { background: var(--bg-hover); }
-  .explore-icon { width: 40px; height: 40px; background: var(--accent-blue-light); color: var(--accent-blue); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+  .explore-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #E4E4E7;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .explore-item:hover .explore-icon {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #FFFFFF;
+  }
+  [data-theme="light"] .explore-icon {
+    background: #F4F4F5;
+    color: #18181B;
+    border: 1px solid #E4E4E7;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  }
+  [data-theme="light"] .explore-item:hover .explore-icon {
+    background: #E4E4E7;
+  }
   .explore-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
   .explore-info p { font-size: 12px; color: var(--text-secondary); }
 
   /* Restyle existing tabs slightly so they aren't invisible on white bg */
   .tab-view input, .tab-view select { background: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-light); border-radius: 8px; padding: 10px; width: 100%; outline: none; }
-  .tab-view input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px var(--accent-blue-light); }
+  .tab-view input:focus { border-color: rgba(255, 255, 255, 0.3); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08); }
+  [data-theme="light"] .tab-view input:focus { border-color: #18181B; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05); }
   
   .tab-view .action-btn-primary {
-    background: linear-gradient(180deg, #0055FF 0%, #0043D0 100%);
-    color: #FFFFFF;
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.35), 0 4px 18px rgba(0, 82, 255, 0.42);
-    border-radius: var(--radius-full);
+    background: #FFFFFF;
+    color: #09090B;
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 1px 0 0 rgba(255, 255, 255, 1), 0 0 16px -2px rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
     padding: 13px 22px;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 14px;
     cursor: pointer;
     transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
@@ -922,17 +1249,29 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    font-family: var(--font-main);
   }
   .tab-view .action-btn-primary:hover {
-    background: linear-gradient(180deg, #1C68FF 0%, #004EE8 100%);
-    border-color: rgba(255, 255, 255, 0.38);
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.45), 0 6px 24px rgba(0, 82, 255, 0.55);
+    background: #F4F4F5;
+    border-color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), 0 0 24px -2px rgba(255, 255, 255, 0.3);
     transform: translateY(-1px);
-    color: #FFFFFF;
+    color: #09090B;
   }
   .tab-view .action-btn-primary:active {
-    transform: translateY(0) scale(0.98);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    transform: translateY(0);
+    background: #E4E4E7;
+  }
+  [data-theme="light"] .tab-view .action-btn-primary {
+    background: #09090B;
+    color: #FFFFFF;
+    border: 1px solid #18181B;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  }
+  [data-theme="light"] .tab-view .action-btn-primary:hover {
+    background: #18181B;
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
 
   .tab-view .policy-capsule-card { background: var(--bg-surface); border: 1px solid var(--border-light); padding: 20px; border-radius: 12px; }
@@ -1285,9 +1624,139 @@
 
   @keyframes spin { 100% { transform: rotate(360deg); } }
   .spin { animation: spin 1s linear infinite; }
+
+  /* Lucide sprite icons */
+  svg.i {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    display: inline-block;
+    vertical-align: -0.15em;
+    stroke: currentColor;
+    fill: none;
+  }
+  .ext-label,
+  .hash-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-decoration: none;
+  }
+  .hash-link {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    transition: color 0.15s ease;
+  }
+  .hash-link:hover { color: var(--text-primary); }
+  .tx-ext {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .tx-ext:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+    border-color: var(--border-light);
+  }
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+  .badge-secure,
+  .passkey-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  ::selection {
+    background: rgba(56, 189, 248, 0.28);
+    color: #fff;
+  }
+  .main-column::-webkit-scrollbar { width: 10px; }
+  .main-column::-webkit-scrollbar-track { background: transparent; }
+  .main-column::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 99px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  [data-theme="light"] .main-column::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.12);
+    background-clip: padding-box;
+  }
+
+  .tx-amount, .tx-amount-sub, .portfolio-value, .asset-info .val {
+    font-variant-numeric: tabular-nums;
+  }
+  .tx-table tbody tr { transition: background 0.15s ease; }
+  .tx-table tbody tr:hover td { background: var(--bg-hover); }
+
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
+  .swap-flip-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  }
+  .swap-flip-btn:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-medium);
+  }
+  .swap-flip-btn:active { transform: rotate(180deg); }
+
+  .explore-item .i { margin-left: auto; color: var(--text-muted); }
+  .explore-item:hover .i { color: var(--text-primary); }
 </style>
 </head>
 <body>
+  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <symbol id="i-arrow-up-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 7h10v10"/><path d="M7 17 17 7"/>
+    </symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m9 18 6-6-6-6"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 6 9 17l-5-5"/>
+    </symbol>
+    <symbol id="i-arrow-down-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/>
+    </symbol>
+    <symbol id="i-external-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+    </symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+    </symbol>
+  </svg>
 
   <!-- Hidden legacy elements required by JS but not shown in UI -->
   <div style="display:none;">
@@ -1348,7 +1817,7 @@
       <div class="promo-card" id="sidebarPromoCard" style="cursor:pointer;" title="View Hardware Security & Enclave">
         <h4>More control.<br>A safer onchain you.</h4>
         <p>Web3. Protected by you.</p>
-        <div class="promo-arrow">↗</div>
+        <div class="promo-arrow"><svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></div>
       </div>
     </nav>
     
@@ -1356,8 +1825,9 @@
     <div class="main-column">
       <header class="topbar">
         <div class="search-bar">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="text" id="globalSearchInput" placeholder="Search tokens, addresses, or apps... (Real-time filter)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="globalSearchInput" placeholder="Search tokens, addresses, or apps...">
+          <span class="search-shortcut-kbd">/</span>
         </div>
         <div class="user-profile" style="position:relative; display:flex; align-items:center; gap:12px;">
           <!-- Header Theme Toggle Button -->
@@ -1429,12 +1899,15 @@
                 <div style="font-size:10.5px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em;">Connected Smart Account</div>
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-top:4px;">
                   <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--text-primary);" id="menuFullAddress">0xB015...796f</span>
-                  <button id="menuCopyAddressBtn" style="background:var(--bg-hover); border:1px solid var(--border-light); padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">Copy</button>
+                  <button id="menuCopyAddressBtn" class="glass-btn" style="padding:4px 10px; font-size:11px; border-radius:6px; box-shadow:none; gap:5px;">
+                    <svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    <span id="menuCopyText">Copy</span>
+                  </button>
                 </div>
               </div>
               <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" class="menu-dropdown-item" style="display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; color:var(--text-primary); text-decoration:none; font-size:13px; font-weight:600; transition:background 0.15s ease;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                <span>View on BaseScan Explorer ↗</span>
+                <svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-external-link"/></svg>
+                <span>View on BaseScan Explorer</span>
               </a>
               <button id="menuNavSecurity" class="menu-dropdown-item" style="display:flex; align-items:center; gap:8px; width:100%; padding:8px 10px; border-radius:8px; border:none; background:transparent; color:var(--text-primary); font-size:13px; font-weight:600; cursor:pointer; text-align:left; transition:background 0.15s ease;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1470,74 +1943,76 @@
             <!-- Left: Portfolio -->
             <div class="card-white portfolio-card">
               <div class="wave-bg"></div>
-              <div class="portfolio-header">
-                <span style="display:flex;align-items:center;gap:6px;">
-                  Total Portfolio 
-                  <button id="togglePrivacyEye" style="background:none; border:none; cursor:pointer; padding:2px; display:inline-flex; align-items:center; color:var(--text-secondary); transition:color 0.15s ease;" title="Toggle balance privacy">
-                    <svg id="privacyEyeSvg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                  </button>
-                </span>
-                
-                <!-- Interactive Network Selector Dropdown -->
-                <div class="network-select-wrapper" style="position:relative;">
-                  <button class="portfolio-network-btn" id="networkDropdownBtn" style="cursor:pointer; transition:all 0.18s ease;">
-                    <span id="activeNetworkDot" style="width:7px; height:7px; border-radius:50%; background:#0052FF; display:inline-block;"></span>
-                    <span id="activeNetworkLabel">All Networks</span>
-                    <svg class="net-chevron" width="12" height="12" viewBox="0 0 20 20" fill="currentColor" style="transition:transform 0.2s ease;"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
-                  </button>
+              <div class="portfolio-info-wrap">
+                <div class="portfolio-header">
+                  <span style="display:flex;align-items:center;gap:6px;">
+                    Total Portfolio 
+                    <button id="togglePrivacyEye" style="background:none; border:none; cursor:pointer; padding:2px; display:inline-flex; align-items:center; color:var(--text-secondary); transition:color 0.15s ease;" title="Toggle balance privacy">
+                      <svg id="privacyEyeSvg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                  </span>
+                  
+                  <!-- Interactive Network Selector Dropdown -->
+                  <div class="network-select-wrapper" style="position:relative;">
+                    <button class="portfolio-network-btn" id="networkDropdownBtn" style="cursor:pointer; transition:all 0.18s ease;">
+                      <span id="activeNetworkDot" style="width:7px; height:7px; border-radius:50%; background:#0052FF; display:inline-block;"></span>
+                      <span id="activeNetworkLabel">All Networks</span>
+                      <svg class="net-chevron" width="12" height="12" viewBox="0 0 20 20" fill="currentColor" style="transition:transform 0.2s ease;"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+                    </button>
 
-                  <div class="network-dropdown-menu" id="networkDropdownMenu" style="display:none; position:absolute; top:calc(100% + 6px); right:0; width:240px; background:var(--bg-surface); border:1px solid var(--border-light); border-radius:12px; box-shadow:0 12px 30px rgba(15,23,42,0.12); padding:6px; z-index:100;">
-                    <div style="font-size:10.5px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); padding:6px 10px; letter-spacing:0.04em;">Select Network</div>
-                    <button class="net-item active" data-network="all" data-name="All Networks" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:var(--bg-hover); border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
-                      <span style="display:flex; align-items:center; gap:8px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#0052FF;"></span>
-                        <span>All Networks</span>
-                      </span>
-                      <span class="net-check" style="color:#0052FF; font-weight:800;">✓</span>
-                    </button>
-                    <button class="net-item" data-network="base-sepolia" data-name="Base Sepolia" data-chainid="84532" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
-                      <span style="display:flex; align-items:center; gap:8px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#38BDF8;"></span>
-                        <span>Base Sepolia (84532)</span>
-                      </span>
-                      <span class="net-check" style="color:#0052FF; font-weight:800; display:none;">✓</span>
-                    </button>
-                    <button class="net-item" data-network="arbitrum-sepolia" data-name="Arbitrum Sepolia" data-chainid="421614" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
-                      <span style="display:flex; align-items:center; gap:8px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#A855F7;"></span>
-                        <span>Arbitrum Sepolia (421614)</span>
-                      </span>
-                      <span class="net-check" style="color:#0052FF; font-weight:800; display:none;">✓</span>
-                    </button>
-                    <button class="net-item" data-network="arc-testnet" data-name="Arc Testnet" data-chainid="5042002" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
-                      <span style="display:flex; align-items:center; gap:8px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#00D26A;"></span>
-                        <span>Arc Testnet (5042002)</span>
-                      </span>
-                      <span class="net-check" style="color:#0052FF; font-weight:800; display:none;">✓</span>
-                    </button>
-                    <button class="net-item" data-network="optimism-sepolia" data-name="Optimism Sepolia" data-chainid="11155420" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
-                      <span style="display:flex; align-items:center; gap:8px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#EF4444;"></span>
-                        <span>Optimism Sepolia (11155420)</span>
-                      </span>
-                      <span class="net-check" style="color:#0052FF; font-weight:800; display:none;">✓</span>
-                    </button>
-                    <button class="net-item" data-network="eth-sepolia" data-name="Ethereum Sepolia" data-chainid="11155111" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer;">
-                      <span style="display:flex; align-items:center; gap:8px;">
-                        <span style="width:7px; height:7px; border-radius:50%; background:#627EEA;"></span>
-                        <span>Ethereum Sepolia (11155111)</span>
-                      </span>
-                      <span class="net-check" style="color:#0052FF; font-weight:800; display:none;">✓</span>
-                    </button>
+                    <div class="network-dropdown-menu" id="networkDropdownMenu" style="display:none; position:absolute; top:calc(100% + 6px); right:0; width:240px; background:var(--bg-surface); border:1px solid var(--border-light); border-radius:12px; box-shadow:0 12px 30px rgba(15,23,42,0.12); padding:6px; z-index:100;">
+                      <div style="font-size:10.5px; font-weight:700; text-transform:uppercase; color:var(--text-secondary); padding:6px 10px; letter-spacing:0.04em;">Select Network</div>
+                      <button class="net-item active" data-network="all" data-name="All Networks" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:var(--bg-hover); border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                          <span style="width:7px; height:7px; border-radius:50%; background:#0052FF;"></span>
+                          <span>All Networks</span>
+                        </span>
+                        <span class="net-check" style="color:#0052FF; display:inline-flex;"><svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg></span>
+                      </button>
+                      <button class="net-item" data-network="base-sepolia" data-name="Base Sepolia" data-chainid="84532" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                          <span style="width:7px; height:7px; border-radius:50%; background:#38BDF8;"></span>
+                          <span>Base Sepolia (84532)</span>
+                        </span>
+                        <span class="net-check" style="color:#0052FF; display:none;"><svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg></span>
+                      </button>
+                      <button class="net-item" data-network="arbitrum-sepolia" data-name="Arbitrum Sepolia" data-chainid="421614" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                          <span style="width:7px; height:7px; border-radius:50%; background:#A855F7;"></span>
+                          <span>Arbitrum Sepolia (421614)</span>
+                        </span>
+                        <span class="net-check" style="color:#0052FF; display:none;"><svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg></span>
+                      </button>
+                      <button class="net-item" data-network="arc-testnet" data-name="Arc Testnet" data-chainid="5042002" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                          <span style="width:7px; height:7px; border-radius:50%; background:#00D26A;"></span>
+                          <span>Arc Testnet (5042002)</span>
+                        </span>
+                        <span class="net-check" style="color:#0052FF; display:none;"><svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg></span>
+                      </button>
+                      <button class="net-item" data-network="optimism-sepolia" data-name="Optimism Sepolia" data-chainid="11155420" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer; margin-bottom:2px;">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                          <span style="width:7px; height:7px; border-radius:50%; background:#EF4444;"></span>
+                          <span>Optimism Sepolia (11155420)</span>
+                        </span>
+                        <span class="net-check" style="color:#0052FF; display:none;"><svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg></span>
+                      </button>
+                      <button class="net-item" data-network="eth-sepolia" data-name="Ethereum Sepolia" data-chainid="11155111" style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:8px 10px; border:none; background:transparent; border-radius:6px; font-size:13px; font-weight:600; color:var(--text-primary); cursor:pointer;">
+                        <span style="display:flex; align-items:center; gap:8px;">
+                          <span style="width:7px; height:7px; border-radius:50%; background:#627EEA;"></span>
+                          <span>Ethereum Sepolia (11155111)</span>
+                        </span>
+                        <span class="net-check" style="color:#0052FF; display:none;"><svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-check"/></svg></span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div class="portfolio-value" id="sidePortfolioEth">$10.29</div>
-              <div class="portfolio-change" id="sidePortfolioUsd">
-                <span>+2.4%</span>
-                <span>+$0.25 (24h)</span>
+                
+                <div class="portfolio-value" id="sidePortfolioEth">$10.29</div>
+                <div class="portfolio-change" id="sidePortfolioUsd">
+                  <span>+2.4%</span>
+                  <span>+$0.25 (24h)</span>
+                </div>
               </div>
               
               <div class="portfolio-actions">
@@ -1545,12 +2020,12 @@
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                   Send
                 </button>
-                <button class="btn-action-secondary" id="openReceiveBtn">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                <button class="btn-action-secondary glass-btn" id="openReceiveBtn">
+                  <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
                   Receive
                 </button>
-                <button class="btn-action-secondary" onclick="switchTab('tab-swap', null)">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+                <button class="btn-action-secondary glass-btn" onclick="switchTab('tab-swap', null)">
+                  <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
                   Swap
                 </button>
               </div>
@@ -1587,7 +2062,7 @@
                     </div>
                   </div>
                   <div class="badge-secure" id="agentSessionBadge" style="background:var(--accent-emerald-light);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);">
-                    ● Active
+                    <span class="status-dot"></span> Active
                   </div>
                 </div>
                 
@@ -1608,7 +2083,9 @@
           <div class="card-white" style="padding:16px 24px;margin-bottom:24px;">
             <div class="assets-row">
               <div class="asset-item">
-                <div class="asset-icon eth-asset-icon"><span style="color:#627EEA; font-weight:800;">Ξ</span></div>
+                <div class="asset-icon eth-asset-icon">
+                  <img src="assets/ethereum.svg" alt="Ethereum" width="34" height="34">
+                </div>
                 <div class="asset-info">
                   <h4>Ethereum</h4>
                   <div class="val" id="sideHoldEth">$10.29</div>
@@ -1616,7 +2093,9 @@
                 </div>
               </div>
               <div class="asset-item">
-                <div class="asset-icon usdc-asset-icon"><span style="color:#2775CA; font-weight:800;">$</span></div>
+                <div class="asset-icon usdc-asset-icon">
+                  <img src="assets/usdc.svg" alt="USD Coin" width="34" height="34">
+                </div>
                 <div class="asset-info">
                   <h4>USD Coin</h4>
                   <div class="val" id="sideHoldUsdc">$0.00</div>
@@ -1624,11 +2103,13 @@
                 </div>
               </div>
               <div class="asset-item">
-                <div class="asset-icon base-asset-icon"><span style="color:#0052FF; font-weight:900;">B</span></div>
+                <div class="asset-icon base-asset-icon">
+                  <img src="assets/base_logo.svg" alt="Base Sepolia" width="34" height="34">
+                </div>
                 <div class="asset-info">
                   <h4>Base Sepolia</h4>
                   <div class="val" id="sideHoldBase">Chain 84532</div>
-                  <div class="change" style="color:var(--accent-green); font-weight:600;">Active L2</div>
+                  <div class="change asset-ticker-neutral" style="display:flex; align-items:center; gap:5px;"><span style="width:6px; height:6px; border-radius:50%; background:#10B981; display:inline-block; box-shadow:0 0 6px #10B981;"></span>Active L2</div>
                 </div>
               </div>
               <div class="asset-item" style="border-right:none;">
@@ -1636,14 +2117,15 @@
                 <div class="asset-info">
                   <h4>Enclave Passkey</h4>
                   <div class="val" id="sideHoldEnclave">P-256</div>
-                  <div class="change" style="color:var(--accent-green); font-weight:600;">Hardware 2-of-2</div>
+                  <div class="change asset-ticker-neutral" style="display:flex; align-items:center; gap:5px;"><span style="width:6px; height:6px; border-radius:50%; background:#10B981; display:inline-block; box-shadow:0 0 6px #10B981;"></span>Hardware 2-of-2</div>
                 </div>
               </div>
               
               <div style="flex:1;"></div>
               
-              <button class="btn-action-secondary" id="openAddAssetModalBtn" style="border:1px dashed var(--border-medium);background:transparent;box-shadow:none;cursor:pointer;color:var(--text-primary);font-size:12.5px;font-weight:600;padding:8px 16px;">
-                + Add Asset
+              <button class="glass-btn" id="openAddAssetModalBtn" style="padding:8px 16px; font-size:13px; font-weight:600;">
+                <svg class="icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                <span>Add Asset</span>
               </button>
             </div>
           </div>
@@ -1653,7 +2135,7 @@
             <div class="card-white">
               <div class="section-title">
                 Recent Transactions
-                <a href="#" class="view-all">View all ></a>
+                <a href="#" class="view-all">View all <svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-chevron-right"/></svg></a>
               </div>
               <table class="tx-table">
                 <thead>
@@ -1676,10 +2158,11 @@
                     <td>
                       <div class="tx-amount">0.05 ETH</div>
                       <div class="tx-amount-sub">≈ $160.00 USD</div>
-                     <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base Sepolia</div></td>
+                    </td>
+                    <td><div class="tx-network" style="display:inline-flex; align-items:center; gap:6px;"><img src="assets/base_logo.svg" width="14" height="14" style="border-radius:50%;" alt="Base"> Base Sepolia</div></td>
                     <td><span class="badge-completed" style="background:rgba(245,158,11,0.15);color:var(--accent-amber);">2-of-2 Quorum</span></td>
                     <td class="tx-time-cell">Sep 2 · 10:18 PM</td>
-                    <td><a href="https://sepolia.basescan.org/tx/0x7f4a21908bcda14238e8210941094190248231b2c45189028490124801948123" target="_blank" style="color:#60A5FA;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a></td>
+                    <td><a class="tx-ext" href="https://sepolia.basescan.org/tx/0x7f4a21908bcda14238e8210941094190248231b2c45189028490124801948123" target="_blank" rel="noopener" aria-label="View on BaseScan"><svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a></td>
                   </tr>
                   <tr class="clickable-tx-row" data-name="Uniswap V3 Router" data-type="AI Agent Swap" data-amount="-20.00 USDC" data-fiat="$20.00 USD" data-status="Success" data-time="Sep 2 · 8:42 PM" data-hash="0x4b89f10928310948102948120938401928301928301928301928301928301928" data-target="0x2626664c2603336E57B271c5C0b26F421741e481" style="cursor:pointer;">
                     <td>
@@ -1690,10 +2173,10 @@
                       <div class="tx-amount">-20.00 USDC</div>
                       <div class="tx-amount-sub">≈ $20.00 USD</div>
                     </td>
-                    <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base Sepolia</div></td>
+                    <td><div class="tx-network" style="display:inline-flex; align-items:center; gap:6px;"><img src="assets/base_logo.svg" width="14" height="14" style="border-radius:50%;" alt="Base"> Base Sepolia</div></td>
                     <td><span class="badge-completed" style="background:rgba(16,185,129,0.15);color:var(--accent-emerald);">Success</span></td>
                     <td class="tx-time-cell">Sep 2 · 8:42 PM</td>
-                    <td><a href="https://sepolia.basescan.org/tx/0x4b89f10928310948102948120938401928301928301928301928301928301928" target="_blank" style="color:#60A5FA;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a></td>
+                    <td><a class="tx-ext" href="https://sepolia.basescan.org/tx/0x4b89f10928310948102948120938401928301928301928301928301928301928" target="_blank" rel="noopener" aria-label="View on BaseScan"><svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a></td>
                   </tr>
                   <tr class="clickable-tx-row" data-name="Base Sepolia Faucet" data-type="Received Inflow" data-amount="+0.010 ETH" data-fiat="$32.00 USD" data-status="Confirmed" data-time="Sep 2 · 6:15 PM" data-hash="0x91d3a41029381029381029381029381029381029381029381029381029381029" data-target="0xB01543453cF31052c769d79e9C755E3b035d796f" style="cursor:pointer;">
                     <td>
@@ -1704,10 +2187,10 @@
                       <div class="tx-amount">+0.010 ETH</div>
                       <div class="tx-amount-sub">≈ $32.00 USD</div>
                     </td>
-                    <td><div class="tx-network"><span style="color:#0052FF;font-weight:900;">O</span> Base Sepolia</div></td>
+                    <td><div class="tx-network" style="display:inline-flex; align-items:center; gap:6px;"><img src="assets/base_logo.svg" width="14" height="14" style="border-radius:50%;" alt="Base"> Base Sepolia</div></td>
                     <td><span class="badge-completed" style="background:rgba(16,185,129,0.15);color:var(--accent-emerald);">Confirmed</span></td>
                     <td class="tx-time-cell">Sep 2 · 6:15 PM</td>
-                    <td><a href="https://sepolia.basescan.org/tx/0x91d3a41029381029381029381029381029381029381029381029381029381029" target="_blank" style="color:#60A5FA;text-decoration:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a></td>
+                    <td><a class="tx-ext" href="https://sepolia.basescan.org/tx/0x91d3a41029381029381029381029381029381029381029381029381029381029" target="_blank" rel="noopener" aria-label="View on BaseScan"><svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a></td>
                   </tr>
                 </tbody>
               </table>
@@ -1722,6 +2205,7 @@
                     <h4>Discover dApps</h4>
                     <p>Explore the best of Web3</p>
                   </div>
+                  <svg class="i" width="16" height="16" aria-hidden="true"><use href="#i-chevron-right"/></svg>
                 </div>
                 <div class="explore-item">
                   <div class="explore-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"></rect><circle cx="12" cy="5" r="2"></circle><path d="M12 7v4"></path></svg></div>
@@ -1729,6 +2213,7 @@
                     <h4>Use with Agents</h4>
                     <p>Automate your onchain activity</p>
                   </div>
+                  <svg class="i" width="16" height="16" aria-hidden="true"><use href="#i-chevron-right"/></svg>
                 </div>
               </div>
             </div>
@@ -1743,7 +2228,7 @@
             <div class="form-group">
               <label>You Pay</label>
               <div class="input-wrap" style="display: flex; gap: 12px; align-items: center;">
-                <input type="number" id="swapInputAmt" value="0.001" step="0.0005" min="0.0001" style="flex: 1;">
+                <input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" id="swapInputAmt" value="0.001" style="flex: 1;">
                 <button class="token-switch-btn active" id="swapPayTokenBtn" style="flex-shrink: 0; padding: 12px 16px;">
                   <img id="swapPayTokenImg" src="assets/eth_logo.svg" width="18" height="18" style="display:inline-block; vertical-align:middle; margin-right:6px;" alt="ETH">
                   <span id="swapPayTokenSymbol">ETH</span>
@@ -1754,8 +2239,8 @@
             
             <!-- Swap Divider (Interactive Flip Button) -->
             <div style="text-align: center; margin: 16px 0;">
-              <button id="btnFlipSwapTokens" style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--bg-surface); border: 1px solid var(--border-light); color: var(--text-primary); cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.06); transition: all 0.2s ease;" title="Click to flip swap direction">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 10v12"/><path d="m11 18-4 4-4-4"/><path d="M17 14V2"/><path d="m13 6 4-4 4 4"/></svg>
+              <button id="btnFlipSwapTokens" class="swap-flip-btn" title="Flip swap direction" aria-label="Flip swap direction">
+                <svg class="i" width="16" height="16" aria-hidden="true"><use href="#i-arrow-down-up"/></svg>
               </button>
             </div>
             
@@ -1775,7 +2260,7 @@
             <!-- Real-time Firewall Evaluation Box -->
             <div class="firewall-live-box firewall-box-single" id="swapFirewallBox">
               <div class="firewall-header">
-                <strong id="swapFirewallTitle" style="color:var(--accent-emerald); font-size:13.5px;">● Policy Check: Single Biometric Passkey</strong>
+                <strong id="swapFirewallTitle" style="color:var(--accent-emerald); font-size:13.5px; display:inline-flex; align-items:center; gap:8px;"><span class="status-dot"></span> Policy Check: Single Biometric Passkey</strong>
                 <span id="swapFirewallBadge" style="font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; background:var(--accent-emerald-light); color:var(--accent-emerald); font-family:var(--font-mono);">1-Signature</span>
               </div>
               <p id="swapFirewallDesc" style="font-size:13px; color:var(--text-muted); line-height:1.4;">
@@ -1796,7 +2281,7 @@
                 </div>
                 <div id="swapHashDisplay" style="font-size:12px; color:#94A3B8; margin-top:6px; word-break:break-all; font-family:var(--font-mono);"></div>
                 <a href="#" id="swapBaseScanLink" target="_blank" style="display:inline-block; margin-top:8px; font-size:12px; font-weight:700; color:#60A5FA; text-decoration:none;">
-                  View on BaseScan Explorer ↗
+                  View on BaseScan Explorer <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
                 </a>
               </div>
               
@@ -1811,12 +2296,12 @@
 
         <!-- ================= ASSETS TAB (Dedicated Portfolio Breakdown) ================= -->
         <div class="tab-view" id="tab-assets">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <div class="page-heading">
             <div>
-              <h3 style="font-family:var(--font-heading); font-size:22px; font-weight:800; color:var(--text-primary);">Asset Portfolio</h3>
-              <p style="font-size:13px; color:var(--text-secondary);">Real-time balances across connected EVM networks.</p>
+              <h3>Asset Portfolio</h3>
+              <p>Real-time balances across connected EVM networks.</p>
             </div>
-            <button class="btn-action-primary" id="assetsAddTokenBtn" style="padding:8px 16px; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
+            <button class="glass-btn" id="assetsAddTokenBtn" style="padding:8px 16px; font-size:13px; display:inline-flex; align-items:center; gap:6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Import Token
             </button>
@@ -1825,18 +2310,24 @@
           <!-- Assets Breakdown Cards -->
           <div class="home-grid" style="margin-bottom:24px;">
             <div class="card-white" style="padding:18px;">
-              <div style="font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Verified Portfolio Value</div>
+              <div style="font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.02em;">Verified Portfolio Value</div>
               <div style="font-family:var(--font-heading); font-size:28px; font-weight:800; color:var(--text-primary); margin-top:4px;" id="assetsTotalUsd">$10.29 USD</div>
-              <div style="font-size:12px; color:var(--accent-green); font-weight:600; margin-top:2px;" id="assetsSubText">2 Verified Tokens • 1 Connected L2</div>
+              <div style="font-size:12px; color:var(--text-secondary); font-weight:500; margin-top:4px; display:flex; align-items:center; gap:6px;" id="assetsSubText">
+                <span style="width:6px; height:6px; border-radius:50%; background:#10B981; display:inline-block; box-shadow:0 0 6px #10B981;"></span>
+                <span>4 Verified Tokens • 3 Connected Chains (Base • Arbitrum • Arc)</span>
+              </div>
             </div>
             <div class="card-white" style="padding:18px;">
-              <div style="font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Asset Allocation</div>
+              <div style="font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.02em;">Asset Allocation</div>
               <div style="height:10px; background:var(--bg-hover); border-radius:999px; overflow:hidden; display:flex; margin-top:12px;">
-                <div style="width:100%; background:#627EEA;" title="Ethereum (100%)"></div>
+                <div style="width:60%; background:#627EEA;" title="Ethereum (ETH) - 60%"></div>
+                <div style="width:25%; background:#12AAFF;" title="Arbitrum (ARB) - 25%"></div>
+                <div style="width:15%; background:#2775CA;" title="USD Coin (USDC) - 15%"></div>
               </div>
               <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary); margin-top:8px;">
-                <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px; height:6px; border-radius:50%; background:#627EEA;"></span> ETH: 100%</span>
-                <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px; height:6px; border-radius:50%; background:#2775CA;"></span> USDC: 0%</span>
+                <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px; height:6px; border-radius:50%; background:#627EEA;"></span> ETH: 60%</span>
+                <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px; height:6px; border-radius:50%; background:#12AAFF;"></span> ARB: 25%</span>
+                <span style="display:flex; align-items:center; gap:4px;"><span style="width:6px; height:6px; border-radius:50%; background:#2775CA;"></span> USDC: 15%</span>
               </div>
             </div>
           </div>
@@ -1860,46 +2351,116 @@
                 <tr id="assetsRowEth">
                   <td>
                     <div style="display:flex; align-items:center; gap:10px;">
-                      <div class="asset-icon" style="background:#F3F4F6; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><span style="color:#627EEA; font-weight:800;">Ξ</span></div>
+                      <div class="asset-icon" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <img src="assets/ethereum.svg" alt="Ethereum" width="34" height="34" style="width:100%; height:100%; object-fit:contain; border-radius:50%;">
+                      </div>
                       <div>
                         <div style="font-weight:700; color:var(--text-primary);">Ethereum</div>
                         <div style="font-size:11px; color:var(--text-secondary);">ETH</div>
                       </div>
                     </div>
                   </td>
-                  <td><span style="font-size:12px; font-weight:600; color:#0052FF;">Base Sepolia</span></td>
+                  <td>
+                    <span class="network-badge">
+                      <img src="assets/base_logo.svg" width="14" height="14" style="border-radius:50%;" alt="Base"> Base Sepolia
+                    </span>
+                  </td>
                   <td style="font-family:var(--font-mono); font-weight:600;">$3,200.00</td>
                   <td style="font-family:var(--font-mono); font-weight:700;" id="tableHoldEth">0.0032 ETH</td>
                   <td style="font-family:var(--font-mono); font-weight:700;" id="tableValEth">$10.29</td>
-                  <td style="color:var(--accent-green); font-weight:700;">+2.4%</td>
+                  <td><span style="color:#10B981; font-weight:600; font-family:var(--font-mono); font-size:12px; background:rgba(16,185,129,0.12); padding:2px 7px; border-radius:6px;">+2.4%</span></td>
                   <td>
                     <div style="display:flex; gap:6px;">
-                      <button class="btn-action-primary" onclick="switchTab('tab-send', document.querySelectorAll('.nav-item')[1])" style="padding:4px 10px; font-size:11px;">Send</button>
-                      <button class="btn-action-secondary" onclick="document.getElementById('openReceiveBtn').click()" style="padding:4px 10px; font-size:11px;">Receive</button>
-                      <button class="btn-action-secondary" onclick="switchTab('tab-swap', null)" style="padding:4px 10px; font-size:11px;">Swap</button>
+                      <button class="table-action-btn primary" onclick="switchTab('tab-send', document.querySelectorAll('.nav-item')[1])">Send</button>
+                      <button class="table-action-btn" onclick="document.getElementById('openReceiveBtn').click()">Receive</button>
+                      <button class="table-action-btn" onclick="switchTab('tab-swap', null)">Swap</button>
                     </div>
                   </td>
                 </tr>
                 <tr id="assetsRowUsdc">
                   <td>
                     <div style="display:flex; align-items:center; gap:10px;">
-                      <div class="asset-icon" style="background:#EFF6FF; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><span style="color:#2775CA; font-weight:800;">$</span></div>
+                      <div class="asset-icon" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <img src="assets/usdc.svg" alt="USD Coin" width="34" height="34" style="width:100%; height:100%; object-fit:contain; border-radius:50%;">
+                      </div>
                       <div>
                         <div style="font-weight:700; color:var(--text-primary);">USD Coin</div>
                         <div style="font-size:11px; color:var(--text-secondary);">USDC (Circle Native)</div>
                       </div>
                     </div>
                   </td>
-                  <td><span style="font-size:12px; font-weight:600; color:#0052FF;">Base Sepolia</span></td>
+                  <td>
+                    <span class="network-badge">
+                      <img src="assets/base_logo.svg" width="14" height="14" style="border-radius:50%;" alt="Base"> Base Sepolia
+                    </span>
+                  </td>
                   <td style="font-family:var(--font-mono); font-weight:600;">$1.00</td>
                   <td style="font-family:var(--font-mono); font-weight:700;" id="tableHoldUsdc">0.00 USDC</td>
                   <td style="font-family:var(--font-mono); font-weight:700;" id="tableValUsdc">$0.00</td>
-                  <td style="color:var(--text-secondary); font-weight:700;">0.0%</td>
+                  <td><span style="color:var(--text-muted); font-weight:500; font-family:var(--font-mono); font-size:12px;">0.0%</span></td>
                   <td>
                     <div style="display:flex; gap:6px;">
-                      <button class="btn-action-primary" onclick="switchTab('tab-send', document.querySelectorAll('.nav-item')[1])" style="padding:4px 10px; font-size:11px;">Send</button>
-                      <button class="btn-action-secondary" onclick="document.getElementById('openReceiveBtn').click()" style="padding:4px 10px; font-size:11px;">Receive</button>
-                      <button class="btn-action-secondary" onclick="switchTab('tab-swap', null)" style="padding:4px 10px; font-size:11px;">Swap</button>
+                      <button class="table-action-btn primary" onclick="switchTab('tab-send', document.querySelectorAll('.nav-item')[1])">Send</button>
+                      <button class="table-action-btn" onclick="document.getElementById('openReceiveBtn').click()">Receive</button>
+                      <button class="table-action-btn" onclick="switchTab('tab-swap', null)">Swap</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr id="assetsRowArb">
+                  <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <div class="asset-icon" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                        <img src="assets/arbitrum.svg" alt="Arbitrum" width="34" height="34" style="width:100%; height:100%; object-fit:contain; border-radius:50%;">
+                      </div>
+                      <div>
+                        <div style="font-weight:700; color:var(--text-primary);">Arbitrum</div>
+                        <div style="font-size:11px; color:var(--text-secondary);">ARB (Native Token)</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="network-badge">
+                      <img src="assets/arbitrum.svg" width="14" height="14" style="border-radius:50%;" alt="Arbitrum"> Arbitrum Sepolia
+                    </span>
+                  </td>
+                  <td style="font-family:var(--font-mono); font-weight:600;">$0.85</td>
+                  <td style="font-family:var(--font-mono); font-weight:700;" id="tableHoldArb">100.00 ARB</td>
+                  <td style="font-family:var(--font-mono); font-weight:700;" id="tableValArb">$85.00</td>
+                  <td><span style="color:#10B981; font-weight:600; font-family:var(--font-mono); font-size:12px; background:rgba(16,185,129,0.12); padding:2px 7px; border-radius:6px;">+4.1%</span></td>
+                  <td>
+                    <div style="display:flex; gap:6px;">
+                      <button class="table-action-btn primary" onclick="switchTab('tab-send', document.querySelectorAll('.nav-item')[1])">Send</button>
+                      <button class="table-action-btn" onclick="document.getElementById('openReceiveBtn').click()">Receive</button>
+                      <button class="table-action-btn" onclick="switchTab('tab-swap', null)">Swap</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr id="assetsRowArc">
+                  <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                      <div class="asset-icon" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:#8669AE;">
+                        <img src="assets/circle.svg" alt="Circle Arc" width="22" height="22" style="width:22px; height:22px; object-fit:contain; filter:brightness(0) invert(1);">
+                      </div>
+                      <div>
+                        <div style="font-weight:700; color:var(--text-primary);">Arc USD Coin</div>
+                        <div style="font-size:11px; color:var(--text-secondary);">USDC (Circle Grant Pilot)</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="network-badge">
+                      <img src="assets/circle.svg" width="14" height="14" style="border-radius:50%; filter:brightness(0) invert(1);" alt="Arc"> Arc Testnet
+                    </span>
+                  </td>
+                  <td style="font-family:var(--font-mono); font-weight:600;">$1.00</td>
+                  <td style="font-family:var(--font-mono); font-weight:700;" id="tableHoldArc">50.00 USDC</td>
+                  <td style="font-family:var(--font-mono); font-weight:700;" id="tableValArc">$50.00</td>
+                  <td><span style="color:var(--text-muted); font-weight:500; font-family:var(--font-mono); font-size:12px;">0.0%</span></td>
+                  <td>
+                    <div style="display:flex; gap:6px;">
+                      <button class="table-action-btn primary" onclick="switchTab('tab-send', document.querySelectorAll('.nav-item')[1])">Send</button>
+                      <button class="table-action-btn" onclick="document.getElementById('openReceiveBtn').click()">Receive</button>
+                      <button class="table-action-btn" onclick="switchTab('tab-swap', null)">Swap</button>
                     </div>
                   </td>
                 </tr>
@@ -1942,7 +2503,7 @@
 <!-- Real-time Firewall Evaluation Box -->
 <div class="firewall-live-box firewall-box-single" id="appFirewallBox">
 <div class="firewall-header">
-<strong id="appFirewallTitle" style="color:var(--accent-emerald);font-size:13.5px;">● Policy Check: Single Biometric Passkey</strong>
+<strong id="appFirewallTitle" style="color:var(--accent-emerald);font-size:13.5px;display:inline-flex;align-items:center;gap:8px;"><span class="status-dot"></span> Policy Check: Single Biometric Passkey</strong>
 <span id="appFirewallBadge" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--accent-emerald-light);color:var(--accent-emerald);font-family:var(--font-mono);">1-Signature</span>
 </div>
 <p id="appFirewallDesc" style="font-size:13px;color:var(--text-muted);line-height:1.4;">
@@ -1964,7 +2525,7 @@
               </div>
 <div id="txHashDisplay" style="font-size:12px;color:#94A3B8;margin-top:6px;word-break:break-all;font-family:var(--font-mono);"></div>
 <a href="#" id="txBaseScanLink" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:#60A5FA;text-decoration:none;" target="_blank">
-                View on BaseScan Explorer ↗
+                View on BaseScan Explorer <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
               </a>
 </div>
 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -1985,14 +2546,17 @@
               </p>
 </div>
 <span class="passkey-badge" id="agentTabSessionBadge" style="background:var(--accent-emerald-light);color:var(--accent-emerald);border-color:rgba(16,185,129,0.3);">
-              ● Session Active
+              <span class="status-dot"></span> Session Active
             </span>
 </div>
 <!-- Active Agent Session Overview -->
 <div style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
 <div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Delegated Agent Key</div>
-<button class="copy-btn" id="btnCopyAgentKey" style="background:var(--bg-hover);color:var(--text-primary);border:1px solid var(--border-light);padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;">Copy Key</button>
+<button class="copy-btn glass-btn" id="btnCopyAgentKey" style="padding:4px 10px; border-radius:6px; font-size:11px; box-shadow:none; gap:5px;">
+  <svg class="icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+  <span id="copyAgentKeyText">Copy Key</span>
+</button>
 </div>
 <div id="dispAgentKey" style="font-family:var(--font-mono);font-size:13.5px;color:var(--accent-blue);word-break:break-all;margin-bottom:16px;">
               0x093F8575a87cdb2919E5B3f1677eD8d7815c9461
@@ -2023,8 +2587,8 @@
 </div>
 </div>
 <div style="display:flex; gap:12px; margin-top:20px;">
-  <button id="btnToggleGrantForm" class="btn-agent-action secondary" style="flex:1;">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+  <button id="btnToggleGrantForm" class="btn-agent-action secondary glass-btn" style="flex:1;">
+    <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
     <span>Reconfigure Session</span>
   </button>
   <button id="btnRevokeAgentSession" class="btn-agent-action destructive" style="flex:1;">
@@ -2123,7 +2687,7 @@
       </div>
       <div id="agentHashDisplay" style="font-size:12px; color:#94A3B8; margin-top:6px; word-break:break-all; font-family:var(--font-mono);"></div>
       <a href="#" id="agentBaseScanLink" target="_blank" style="display:inline-block; margin-top:8px; font-size:12px; font-weight:700; color:#60A5FA; text-decoration:none;">
-        View Autonomous Tx on BaseScan Explorer ↗
+        View Autonomous Tx on BaseScan Explorer <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
       </a>
     </div>
     
@@ -2187,7 +2751,7 @@
 <div id="allowlistEntries" style="display:flex;flex-direction:column;gap:8px;">
 <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-hover);border:1px solid var(--border-light);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:12px;">
 <span>0x22db962929afe98d0269De0BAa6c442A3Aa6913D (Cold Storage)</span>
-<span style="color:var(--accent-emerald);font-weight:700;">● Allowed</span>
+<span style="color:var(--accent-emerald);font-weight:700;display:inline-flex;align-items:center;gap:6px;"><span class="status-dot"></span> Allowed</span>
 </div>
 </div>
 </div>
@@ -2230,13 +2794,13 @@ Copy Keys for Contract Deployment
 </div>
 </div>
         <div class="tab-view" id="tab-activity">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+<div class="page-heading">
 <div>
-<h3 style="font-family:var(--font-heading);font-size:18px;font-weight:800;color:var(--text-primary);">Transaction History</h3>
-<p style="font-size:12px;color:var(--text-muted);">Verified Base Sepolia Smart Account Activity (ERC-4337 UserOps &amp; On-Chain Policies)</p>
+<h3>Transaction History</h3>
+<p>Verified Base Sepolia Smart Account Activity (ERC-4337 UserOps &amp; On-Chain Policies)</p>
 </div>
-<a class="action-btn-primary" href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:12px;padding:6px 14px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;" target="_blank">
-<span>View on BaseScan ↗</span>
+<a class="glass-btn" href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="padding:8px 16px; font-size:13px; text-decoration:none;" target="_blank" rel="noopener">
+View on BaseScan <svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
 </a>
 </div>
 <div style="display:flex;flex-direction:column;gap:10px;">
@@ -2258,7 +2822,7 @@ Copy Keys for Contract Deployment
 <div style="text-align:right;">
 <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">-0.05 ETH</div>
 <div style="font-size:11px;color:var(--text-muted);">≈ $160.00 USD</div>
-<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);" target="_blank">0x7f4a...31b2 ↗</a>
+<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" class="hash-link" target="_blank" rel="noopener">0x7f4a...31b2 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
 </div>
 </div>
 <!-- Item 2: Agent Swap -->
@@ -2279,7 +2843,7 @@ Copy Keys for Contract Deployment
 <div style="text-align:right;">
 <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">-20.00 USDC</div>
 <div style="font-size:11px;color:var(--text-muted);">≈ $20.00 USD</div>
-<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);" target="_blank">0x4b89...88c4 ↗</a>
+<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" class="hash-link" target="_blank" rel="noopener">0x4b89...88c4 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
 </div>
 </div>
 <!-- Item 3: Faucet Deposit -->
@@ -2300,14 +2864,14 @@ Copy Keys for Contract Deployment
 <div style="text-align:right;">
 <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--accent-emerald);">+0.010 ETH</div>
 <div style="font-size:11px;color:var(--text-muted);">≈ $32.00 USD</div>
-<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);" target="_blank">0x91d3...1029 ↗</a>
+<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" class="hash-link" target="_blank" rel="noopener">0x91d3...1029 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
 </div>
 </div>
 <!-- Item 4: Micro Transfer -->
 <div style="padding:14px 16px;background:var(--bg-surface);border:1px solid var(--border-light);border-radius:12px;display:flex;justify-content:space-between;align-items:center;">
 <div style="display:flex;align-items:center;gap:12px;">
 <div style="width:36px;height:36px;border-radius:50%;background:rgba(0,82,255,0.15);border:1px solid rgba(0,82,255,0.3);display:flex;align-items:center;justify-content:center;color:#60A5FA;">
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+<svg class="i" width="18" height="18" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
 </div>
 <div>
 <div style="display:flex;align-items:center;gap:8px;">
@@ -2321,7 +2885,7 @@ Copy Keys for Contract Deployment
 <div style="text-align:right;">
 <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">-0.0001 ETH</div>
 <div style="font-size:11px;color:var(--text-muted);">≈ $0.32 USD</div>
-<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);" target="_blank">0x12c4...99a0 ↗</a>
+<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" class="hash-link" target="_blank" rel="noopener">0x12c4...99a0 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
 </div>
 </div>
 <!-- Item 5: Deployment -->
@@ -2342,7 +2906,7 @@ Copy Keys for Contract Deployment
 <div style="text-align:right;">
 <div style="font-family:var(--font-mono);font-weight:700;font-size:14px;color:var(--text-primary);">Contract Init</div>
 <div style="font-size:11px;color:var(--text-muted);">P-256 Root Key</div>
-<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" style="font-size:10.5px;color:#60A5FA;text-decoration:none;font-family:var(--font-mono);" target="_blank">0x89e0...55f3 ↗</a>
+<a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" class="hash-link" target="_blank" rel="noopener">0x89e0...55f3 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
 </div>
 </div>
 </div>
@@ -2378,7 +2942,9 @@ Copy Keys for Contract Deployment
         <p style="font-size:14px; color:var(--text-secondary); margin-top:8px;">Base Sepolia Network</p>
         
         <div class="passkey-tx-card">
-          <div id="pkModalTokenIcon" style="width:40px;height:40px;border-radius:50%;background:#EFF6FF;color:#2775CA;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">$</div>
+          <div id="pkModalTokenIcon" style="width:40px;height:40px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <img id="pkModalTokenIconImg" src="assets/usdc.svg" width="40" height="40" style="width:100%;height:100%;object-fit:contain;border-radius:50%;" alt="Token">
+          </div>
           <div style="flex:1;">
             <div id="pkModalAmount" style="font-weight:700; font-size:16px; color:var(--text-primary);">Send 500.00 USDC</div>
             <div style="font-size:13px; color:var(--text-secondary); margin-top:4px; display:flex; align-items:center; gap:6px;">
@@ -2411,50 +2977,47 @@ Copy Keys for Contract Deployment
         
         <!-- Vector QR Code representation -->
         <div style="background:#FFF; padding:14px; border-radius:12px; margin:16px auto; width:160px; height:160px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(0,0,0,0.08); border:1px solid var(--border-light);">
-          <svg width="100%" height="100%" viewBox="0 0 120 120" fill="#000">
-            <rect x="10" y="10" width="30" height="30" fill="#000"/>
-            <rect x="15" y="15" width="20" height="20" fill="#FFF"/>
-            <rect x="20" y="20" width="10" height="10" fill="#000"/>
-            <rect x="80" y="10" width="30" height="30" fill="#000"/>
-            <rect x="85" y="15" width="20" height="20" fill="#FFF"/>
-            <rect x="90" y="20" width="10" height="10" fill="#000"/>
-            <rect x="10" y="80" width="30" height="30" fill="#000"/>
-            <rect x="15" y="85" width="20" height="20" fill="#FFF"/>
-            <rect x="20" y="90" width="10" height="10" fill="#000"/>
-            <rect x="50" y="20" width="10" height="10" fill="#000"/>
-            <rect x="65" y="20" width="10" height="20" fill="#000"/>
-            <rect x="50" y="45" width="20" height="10" fill="#000"/>
-            <rect x="20" y="55" width="15" height="15" fill="#000"/>
-            <rect x="80" y="50" width="15" height="15" fill="#000"/>
-            <rect x="50" y="80" width="25" height="25" fill="#000"/>
-            <rect x="85" y="85" width="20" height="10" fill="#000"/>
-          </svg>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=ethereum:0xB01543453cF31052c769d79e9C755E3b035d796f" alt="Deposit QR Code" width="140" height="140" style="display:block; border-radius:6px;" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'140\' height=\'140\' viewBox=\'0 0 140 140\'><rect width=\'140\' height=\'140\' fill=\'white\'/><rect x=\'10\' y=\'10\' width=\'40\' height=\'40\' fill=\'black\'/><rect x=\'20\' y=\'20\' width=\'20\' height=\'20\' fill=\'white\'/><rect x=\'90\' y=\'10\' width=\'40\' height=\'40\' fill=\'black\'/><rect x=\'100\' y=\'20\' width=\'20\' height=\'20\' fill=\'white\'/><rect x=\'10\' y=\'90\' width=\'40\' height=\'40\' fill=\'black\'/><rect x=\'20\' y=\'100\' width=\'20\' height=\'20\' fill=\'white\'/><rect x=\'60\' y=\'60\' width=\'20\' height=\'20\' fill=\'black\'/></svg>'">
         </div>
         
-        <div class="address-copy-bar" style="display:flex; flex-direction:column; gap:8px; padding:12px; background:var(--bg-hover); border-radius:10px; border:1px solid var(--border-light);">
-          <span id="modalReceiveAddress" style="font-size:12px; font-weight:700; font-family:var(--font-mono); word-break:break-all; color:var(--text-primary);">0xB01543453cF31052c769d79e9C755E3b035d796f</span>
-          <button class="copy-btn" id="modalCopyBtn" style="background:var(--accent-blue); color:#FFF; padding:8px 16px; border-radius:6px; font-size:12px; font-weight:700; border:none; cursor:pointer;">Copy Address</button>
+        <div class="address-copy-bar" style="display:flex; flex-direction:column; gap:10px; padding:12px; background:var(--bg-hover); border-radius:12px; border:1px solid var(--border-light); margin-top:8px;">
+          <span id="modalReceiveAddress" style="font-size:12px; font-weight:700; font-family:var(--font-mono); word-break:break-all; color:var(--text-primary); text-align:center;">0xB01543453cF31052c769d79e9C755E3b035d796f</span>
+          <button class="copy-btn glass-btn" id="modalCopyBtn" style="padding:10px 18px; font-size:13px; font-weight:600; width:100%; justify-content:center;">
+            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            <span id="modalCopyBtnText">Copy Address</span>
+          </button>
         </div>
 
-        <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="display:inline-block; margin-top:12px; font-size:12px; font-weight:600; color:#0052FF; text-decoration:none;">
-          View on BaseScan Explorer ↗
+        <a href="https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f" target="_blank" style="display:inline-block; margin-top:12px; font-size:12px; font-weight:600; color:#60A5FA; text-decoration:none;">
+          View on BaseScan Explorer <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
         </a>
       </div>
     </div>
 
     <!-- Add / Import Custom Asset Modal -->
     <div class="modal-overlay" id="addAssetModal">
-      <div class="modal-content" style="max-width:440px;">
+      <div class="modal-content" style="max-width:460px;">
         <button class="modal-close" id="closeAddAssetModal">&times;</button>
         <h3 style="font-family:var(--font-heading); font-size:20px; font-weight:800; color:var(--text-primary);">Add / Import Token</h3>
         <p style="font-size:13px; color:var(--text-secondary); margin-top:4px; margin-bottom:16px;">Track custom ERC-20 tokens or testnet assets in your Haptix portfolio.</p>
         
         <div style="font-size:11.5px; font-weight:700; color:var(--text-secondary); margin-bottom:6px;">Popular Testnet Presets</div>
         <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px;">
-          <button class="asset-preset-chip" data-name="Dai Stablecoin" data-symbol="DAI" data-addr="0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb" data-icon="$" data-color="#F59E0B" style="padding:5px 10px; border-radius:6px; border:1px solid var(--border-light); background:var(--bg-hover); font-size:12px; font-weight:600; cursor:pointer;">+ DAI</button>
-          <button class="asset-preset-chip" data-name="Chainlink Token" data-symbol="LINK" data-addr="0xE4aB69C077896252FAFBD49EFD26B5D171A32410" data-icon="⬡" data-color="#0052FF" style="padding:5px 10px; border-radius:6px; border:1px solid var(--border-light); background:var(--bg-hover); font-size:12px; font-weight:600; cursor:pointer;">+ LINK</button>
-          <button class="asset-preset-chip" data-name="Wrapped BTC" data-symbol="WBTC" data-addr="0x0555E30da8f98308EdB960aa94C0Db47230d2B9c" data-icon="₿" data-color="#F97316" style="padding:5px 10px; border-radius:6px; border:1px solid var(--border-light); background:var(--bg-hover); font-size:12px; font-weight:600; cursor:pointer;">+ WBTC</button>
-          <button class="asset-preset-chip" data-name="Euro Coin" data-symbol="EURC" data-addr="0x808456652fdb59e496380c3b016f49633e9d8995" data-icon="€" data-color="#10B981" style="padding:5px 10px; border-radius:6px; border:1px solid var(--border-light); background:var(--bg-hover); font-size:12px; font-weight:600; cursor:pointer;">+ EURC</button>
+          <button class="asset-preset-chip" data-name="Dai Stablecoin" data-symbol="DAI" data-addr="0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb" data-img="assets/dai.svg" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border-light); background:var(--bg-hover); font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+            <img src="assets/dai.svg" width="16" height="16" style="border-radius:50%;" alt="DAI"> + DAI
+          </button>
+          <button class="asset-preset-chip" data-name="Chainlink Token" data-symbol="LINK" data-addr="0xE4aB69C077896252FAFBD49EFD26B5D171A32410" data-img="assets/chainlink.svg" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border-light); background:var(--bg-hover); font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+            <img src="assets/chainlink.svg" width="16" height="16" style="border-radius:50%;" alt="LINK"> + LINK
+          </button>
+          <button class="asset-preset-chip" data-name="Wrapped BTC" data-symbol="WBTC" data-addr="0x0555E30da8f98308EdB960aa94C0Db47230d2B9c" data-img="assets/bitcoin.svg" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border-light); background:var(--bg-hover); font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+            <img src="assets/bitcoin.svg" width="16" height="16" style="border-radius:50%;" alt="WBTC"> + WBTC
+          </button>
+          <button class="asset-preset-chip" data-name="Euro Coin" data-symbol="EURC" data-addr="0x808456652fdb59e496380c3b016f49633e9d8995" data-img="assets/eurc.svg" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border-light); background:var(--bg-hover); font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+            <img src="assets/eurc.svg" width="16" height="16" style="border-radius:50%;" alt="EURC"> + EURC
+          </button>
+          <button class="asset-preset-chip" data-name="Arbitrum" data-symbol="ARB" data-addr="0x912CE59144191C1204E64559FE8253a0e49E6548" data-img="assets/arbitrum.svg" style="padding:6px 10px; border-radius:8px; border:1px solid var(--border-light); background:var(--bg-hover); font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+            <img src="assets/arbitrum.svg" width="16" height="16" style="border-radius:50%;" alt="ARB"> + ARB
+          </button>
         </div>
 
         <div class="form-group" style="margin-bottom:12px;">
@@ -2489,46 +3052,54 @@ Copy Keys for Contract Deployment
         <div style="display:flex; flex-direction:column; gap:10px;">
           <a href="https://app.uniswap.org" target="_blank" class="dapp-item" style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--border-light); border-radius:10px; text-decoration:none; background:var(--bg-hover); transition:all 0.15s ease;">
             <div style="display:flex; align-items:center; gap:12px;">
-              <div style="width:36px; height:36px; border-radius:8px; background:#FF007A; color:#FFF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;">🦄</div>
+              <div style="width:36px; height:36px; border-radius:8px; background:rgba(245, 13, 180, 0.12); display:flex; align-items:center; justify-content:center; padding:4px;">
+                <img src="assets/uniswap.svg" width="24" height="24" alt="Uniswap">
+              </div>
               <div>
                 <div style="font-weight:700; color:var(--text-primary); font-size:14px;">Uniswap V3</div>
                 <div style="font-size:11.5px; color:var(--text-secondary);">Decentralized trading protocol on Base</div>
               </div>
             </div>
-            <span style="color:#0052FF; font-weight:700; font-size:12px;">Launch ↗</span>
+            <span class="ext-label" style="color:var(--text-muted); font-weight:600; font-size:12px;">Launch <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span>
           </a>
 
           <a href="https://app.aave.com" target="_blank" class="dapp-item" style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--border-light); border-radius:10px; text-decoration:none; background:var(--bg-hover); transition:all 0.15s ease;">
             <div style="display:flex; align-items:center; gap:12px;">
-              <div style="width:36px; height:36px; border-radius:8px; background:#2EBAC6; color:#FFF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;">👻</div>
+              <div style="width:36px; height:36px; border-radius:8px; background:rgba(147, 145, 247, 0.15); display:flex; align-items:center; justify-content:center; padding:4px;">
+                <img src="assets/aave.svg" width="24" height="24" alt="Aave">
+              </div>
               <div>
                 <div style="font-weight:700; color:var(--text-primary); font-size:14px;">Aave V3</div>
                 <div style="font-size:11.5px; color:var(--text-secondary);">Non-custodial liquidity protocol</div>
               </div>
             </div>
-            <span style="color:#0052FF; font-weight:700; font-size:12px;">Launch ↗</span>
+            <span class="ext-label" style="color:var(--text-muted); font-weight:600; font-size:12px;">Launch <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span>
           </a>
 
           <a href="https://testnets.opensea.io" target="_blank" class="dapp-item" style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--border-light); border-radius:10px; text-decoration:none; background:var(--bg-hover); transition:all 0.15s ease;">
             <div style="display:flex; align-items:center; gap:12px;">
-              <div style="width:36px; height:36px; border-radius:8px; background:#2081E2; color:#FFF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;">⛵</div>
+              <div style="width:36px; height:36px; border-radius:8px; background:rgba(32, 129, 226, 0.12); display:flex; align-items:center; justify-content:center; padding:4px;">
+                <img src="assets/opensea.svg" width="24" height="24" alt="OpenSea">
+              </div>
               <div>
                 <div style="font-weight:700; color:var(--text-primary); font-size:14px;">OpenSea (Base Testnet)</div>
                 <div style="font-size:11.5px; color:var(--text-secondary);">NFT &amp; on-chain digital assets</div>
               </div>
             </div>
-            <span style="color:#0052FF; font-weight:700; font-size:12px;">Launch ↗</span>
+            <span class="ext-label" style="color:var(--text-muted); font-weight:600; font-size:12px;">Launch <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span>
           </a>
 
           <a href="/test-dapp.html" class="dapp-item" style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; border:1px solid var(--border-light); border-radius:10px; text-decoration:none; background:var(--bg-hover); transition:all 0.15s ease;">
             <div style="display:flex; align-items:center; gap:12px;">
-              <div style="width:36px; height:36px; border-radius:8px; background:#0052FF; color:#FFF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;">⚡</div>
+              <div style="width:36px; height:36px; border-radius:8px; background:rgba(0, 82, 255, 0.15); border:1px solid rgba(0, 82, 255, 0.3); color:#60A5FA; display:flex; align-items:center; justify-content:center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
               <div>
                 <div style="font-weight:700; color:var(--text-primary); font-size:14px;">Haptix Test dApp Sandbox</div>
                 <div style="font-size:11.5px; color:var(--text-secondary);">EIP-1193 provider &amp; UserOp policy testbed</div>
               </div>
             </div>
-            <span style="color:#0052FF; font-weight:700; font-size:12px;">Run Tests ↗</span>
+            <span class="ext-label" style="color:var(--text-muted); font-weight:600; font-size:12px;">Run Tests <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></span>
           </a>
         </div>
       </div>
@@ -2539,10 +3110,10 @@ Copy Keys for Contract Deployment
       <div class="modal-content" style="max-width:460px;">
         <button class="modal-close" id="closeTxModal">&times;</button>
         <div style="text-align:center; padding:8px 0 14px;">
-          <div style="width:48px; height:48px; border-radius:50%; background:var(--bg-hover); display:inline-flex; align-items:center; justify-content:center; font-size:22px; margin-bottom:8px;" id="txModalIcon">↗</div>
+          <div style="width:48px; height:48px; border-radius:50%; background:var(--bg-hover); display:inline-flex; align-items:center; justify-content:center; margin-bottom:8px; color:var(--text-primary);" id="txModalIcon"><svg class="i" width="20" height="20" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></div>
           <div style="font-family:var(--font-heading); font-size:24px; font-weight:800; color:var(--text-primary);" id="txModalAmount">0.05 ETH</div>
           <div style="font-size:13px; color:var(--text-secondary);" id="txModalFiat">≈ $160.00 USD</div>
-          <span id="txModalBadge" style="display:inline-block; margin-top:8px; font-size:11px; font-weight:700; padding:2px 10px; border-radius:999px; background:rgba(16,185,129,0.15); color:var(--accent-green);">Confirmed</span>
+          <span id="txModalBadge" style="display:inline-block; margin-top:8px; font-size:11px; font-weight:700; padding:2px 10px; border-radius:999px; background:rgba(16,185,129,0.15); color:var(--accent-emerald);">Confirmed</span>
         </div>
 
         <div style="background:var(--bg-hover); border:1px solid var(--border-light); border-radius:10px; padding:14px; display:flex; flex-direction:column; gap:8px; font-size:12.5px;">
@@ -2554,27 +3125,27 @@ Copy Keys for Contract Deployment
             <span style="color:var(--text-secondary);">Target / Counterparty:</span>
             <span style="font-family:var(--font-mono); font-weight:600; color:var(--text-primary);" id="txModalTarget">0x22db...913D</span>
           </div>
-          <div style="display:flex; justify-content:space-between;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="color:var(--text-secondary);">Network:</span>
-            <span style="font-weight:600; color:#0052FF;">Base Sepolia (84532)</span>
+            <span style="font-weight:600; color:var(--text-primary); display:inline-flex; align-items:center; gap:5px;"><img src="assets/base_logo.svg" width="14" height="14" style="border-radius:50%;" alt="Base"> Base Sepolia (84532)</span>
           </div>
           <div style="display:flex; justify-content:space-between;">
             <span style="color:var(--text-secondary);">Timestamp:</span>
             <span style="color:var(--text-secondary);" id="txModalTime">Sep 2, 2026 · 10:18 PM</span>
           </div>
-          <div style="display:flex; justify-content:space-between;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="color:var(--text-secondary);">Gas Verification:</span>
-            <span style="color:var(--accent-green); font-weight:700;">84,210 gas (RIP-7212 Precompile)</span>
+            <span style="color:var(--text-primary); font-weight:600; display:inline-flex; align-items:center; gap:5px;"><span style="width:6px; height:6px; border-radius:50%; background:#10B981; display:inline-block; box-shadow:0 0 6px #10B981;"></span> 84,210 gas (RIP-7212 Precompile)</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-light); padding-top:6px; margin-top:4px;">
             <span style="color:var(--text-secondary);">UserOp Hash:</span>
-            <span style="font-family:var(--font-mono); font-size:11px; color:#60A5FA; cursor:pointer;" id="txModalHash" title="Click to copy">0x7f4a...31b2 ❐</span>
+            <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted); cursor:pointer; display:inline-flex; align-items:center; gap:5px;" id="txModalHash" title="Click to copy">0x7f4a...31b2 <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-copy"/></svg></span>
           </div>
         </div>
 
         <a href="#" id="txModalExplorerLink" target="_blank" class="btn-action-primary" style="margin-top:16px; width:100%; padding:12px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; font-size:13.5px; border-radius:8px;">
           <span>View on BaseScan Explorer</span>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          <svg class="i" width="14" height="14" aria-hidden="true"><use href="#i-arrow-up-right"/></svg>
         </a>
       </div>
     </div>
@@ -2637,8 +3208,16 @@ if (closeReceiveModal) {
 if (modalCopyBtn) {
   modalCopyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(accountAddr);
-    modalCopyBtn.textContent = 'Copied!';
-    setTimeout(() => modalCopyBtn.textContent = 'Copy', 2000);
+    const txt = document.getElementById('modalCopyBtnText');
+    const icon = modalCopyBtn.querySelector('.icon');
+    if (txt) txt.textContent = 'Copied!';
+    modalCopyBtn.classList.add('copied-text');
+    if (icon) icon.classList.add('copied-icon');
+    setTimeout(() => {
+      if (txt) txt.textContent = 'Copy Address';
+      modalCopyBtn.classList.remove('copied-text');
+      if (icon) icon.classList.remove('copied-icon');
+    }, 2000);
   });
 }
 
@@ -2730,7 +3309,7 @@ async function fetchRecentTransactions() {
             </td>
             <td>${badgeStr}</td>
             <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);">
-              <a href="https://sepolia.basescan.org/tx/${tx.hash}" target="_blank" style="color:#60A5FA;text-decoration:none;">${tx.hash.slice(0,8)}...${tx.hash.slice(-6)} ↗</a>
+              <a class="hash-link" href="https://sepolia.basescan.org/tx/${tx.hash}" target="_blank" rel="noopener">${tx.hash.slice(0,8)}...${tx.hash.slice(-6)} <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-arrow-up-right"/></svg></a>
             </td>
             <td style="text-align:right;font-weight:700;color:var(--text-primary);">
               ${isOut ? '-' : '+'}${valEth} ETH
@@ -2875,7 +3454,7 @@ function refreshAllowlistView() {
   container.innerHTML = allowedAddresses.map(addr => `
     <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg-hover);border:1px solid var(--border-light);padding:10px 14px;border-radius:8px;font-family:var(--font-mono);font-size:12px;">
       <span>${addr}</span>
-      <span style="color:var(--accent-emerald);font-weight:700;">● Allowed</span>
+      <span style="color:var(--accent-emerald);font-weight:700;display:inline-flex;align-items:center;gap:6px;"><span class="status-dot"></span> Allowed</span>
     </div>
   `).join('');
 }
@@ -2921,26 +3500,26 @@ function refreshAgentView() {
 
   if (agentSession.active) {
     if (badge) {
-      badge.textContent = '● Active';
+      badge.innerHTML = '<span class="status-dot"></span> Active';
       badge.style.background = 'var(--accent-emerald-light)';
       badge.style.color = 'var(--accent-emerald)';
       badge.style.borderColor = 'rgba(16,185,129,0.3)';
     }
     if (tabBadge) {
-      tabBadge.textContent = '● Session Active';
+      tabBadge.innerHTML = '<span class="status-dot"></span> Session Active';
       tabBadge.style.background = 'var(--accent-emerald-light)';
       tabBadge.style.color = 'var(--accent-emerald)';
     }
     if (desc) desc.textContent = 'Active session • Trading Agent';
   } else {
     if (badge) {
-      badge.textContent = '○ Revoked';
+      badge.innerHTML = '<span class="status-dot"></span> Revoked';
       badge.style.background = 'var(--accent-rose-light)';
       badge.style.color = 'var(--accent-rose)';
       badge.style.borderColor = 'rgba(244,63,94,0.3)';
     }
     if (tabBadge) {
-      tabBadge.textContent = '○ Session Revoked';
+      tabBadge.innerHTML = '<span class="status-dot"></span> Session Revoked';
       tabBadge.style.background = 'var(--accent-rose-light)';
       tabBadge.style.color = 'var(--accent-rose)';
     }
@@ -2960,8 +3539,16 @@ refreshAgentView();
 
 $('btnCopyAgentKey').onclick = () => {
   navigator.clipboard.writeText(agentSession.agentKey);
-  $('btnCopyAgentKey').textContent = 'Copied!';
-  setTimeout(() => $('btnCopyAgentKey').textContent = 'Copy Key', 1500);
+  const txt = document.getElementById('copyAgentKeyText');
+  const icon = $('btnCopyAgentKey').querySelector('.icon');
+  if (txt) txt.textContent = 'Copied!';
+  $('btnCopyAgentKey').classList.add('copied-text');
+  if (icon) icon.classList.add('copied-icon');
+  setTimeout(() => {
+    if (txt) txt.textContent = 'Copy Key';
+    $('btnCopyAgentKey').classList.remove('copied-text');
+    if (icon) icon.classList.remove('copied-icon');
+  }, 1500);
 };
 
 $('btnToggleGrantForm').onclick = () => {
@@ -3416,7 +4003,7 @@ function evalFirewall() {
 
   if (isQuorum) {
     $('appFirewallBox').className = 'firewall-live-box firewall-box-quorum';
-    $('appFirewallTitle').textContent = '● Policy Check: 2-of-2 Hardware Quorum Enforced';
+    $('appFirewallTitle').innerHTML = '<span class="status-dot"></span> Policy Check: 2-of-2 Hardware Quorum Enforced';
     $('appFirewallTitle').style.color = 'var(--accent-amber)';
     $('appFirewallBadge').textContent = '2-of-2 Quorum';
     $('appFirewallBadge').style.background = 'var(--accent-amber-light)';
@@ -3428,7 +4015,7 @@ function evalFirewall() {
     $('appSignSubmitBtn').style.color = '#000';
   } else {
     $('appFirewallBox').className = 'firewall-live-box firewall-box-single';
-    $('appFirewallTitle').textContent = '● Policy Check: Single Biometric Passkey';
+    $('appFirewallTitle').innerHTML = '<span class="status-dot"></span> Policy Check: Single Biometric Passkey';
     $('appFirewallTitle').style.color = 'var(--accent-emerald)';
     $('appFirewallBadge').textContent = '1-Signature';
     $('appFirewallBadge').style.background = 'var(--accent-emerald-light)';
@@ -3598,8 +4185,11 @@ $('appSignSubmitBtn').onclick = () => {
   // Populate Modal
   document.getElementById('pkModalAmount').textContent = `Send ${amt.toFixed(2)} ${selectedAsset}`;
   document.getElementById('pkModalDest').textContent = recipient.slice(0, 6) + '...' + recipient.slice(-4);
-  document.getElementById('pkModalTokenIcon').textContent = selectedAsset === 'ETH' ? 'Ξ' : '$';
-  document.getElementById('pkModalTokenIcon').style.color = selectedAsset === 'ETH' ? '#627EEA' : '#2775CA';
+  const pkImg = document.getElementById('pkModalTokenIconImg');
+  if (pkImg) {
+    pkImg.src = selectedAsset === 'ETH' ? 'assets/ethereum.svg' : 'assets/usdc.svg';
+    pkImg.alt = selectedAsset;
+  }
   
   document.getElementById('passkeyModal').classList.add('active');
 };
@@ -3758,7 +4348,7 @@ function updateSwapBalances() {
 
 // Evaluate Swap SpendPolicy Firewall
 function evalSwapFirewall() {
-  const amt = parseFloat(swapInputAmt.value) || 0;
+  const amt = parseFloat(String(swapInputAmt.value).replace(',', '.')) || 0;
   const firewallBox = $('swapFirewallBox');
   const title = $('swapFirewallTitle');
   const badge = $('swapFirewallBadge');
@@ -3779,7 +4369,7 @@ function evalSwapFirewall() {
         swapSignSubmitBtn.textContent = 'Authorize Swap with Passkey Quorum (2 Keys)';
       }
     } else {
-      if (title) title.textContent = '● Policy Check: Single Biometric Passkey';
+      if (title) title.innerHTML = '<span class="status-dot"></span> Policy Check: Single Biometric Passkey';
       if (title) title.style.color = 'var(--accent-emerald)';
       if (badge) {
         badge.textContent = '1-Signature';
@@ -3807,7 +4397,7 @@ function evalSwapFirewall() {
         swapSignSubmitBtn.textContent = 'Authorize Swap with Passkey Quorum (2 Keys)';
       }
     } else {
-      if (title) title.textContent = '● Policy Check: Single Biometric Passkey';
+      if (title) title.innerHTML = '<span class="status-dot"></span> Policy Check: Single Biometric Passkey';
       if (title) title.style.color = 'var(--accent-emerald)';
       if (badge) {
         badge.textContent = '1-Signature';
@@ -3824,7 +4414,7 @@ function evalSwapFirewall() {
 
 // Fetch Live Quote from Uniswap V3 QuoterV2
 async function updateSwapQuote() {
-  const amt = parseFloat(swapInputAmt.value) || 0;
+  const amt = parseFloat(String(swapInputAmt.value).replace(',', '.')) || 0;
   if (amt <= 0) {
     if (swapOutputAmt) swapOutputAmt.value = '0.00';
     if (swapExchangeRate) swapExchangeRate.textContent = '--';
@@ -3912,7 +4502,6 @@ if (btnFlipSwapTokens) {
       if (swapRecvTokenSymbol) swapRecvTokenSymbol.textContent = 'USDC';
       if (swapInputAmt) {
         swapInputAmt.value = '0.001';
-        swapInputAmt.step = '0.0005';
       }
     } else {
       if (swapPayTokenImg) swapPayTokenImg.src = 'assets/usdc_logo.svg';
@@ -3921,7 +4510,6 @@ if (btnFlipSwapTokens) {
       if (swapRecvTokenSymbol) swapRecvTokenSymbol.textContent = 'ETH';
       if (swapInputAmt) {
         swapInputAmt.value = '5.00';
-        swapInputAmt.step = '1';
       }
     }
     updateSwapBalances();
@@ -3940,7 +4528,7 @@ if (swapSignSubmitBtn) {
       swapSignSubmitBtn.disabled = true;
       swapSignSubmitBtn.textContent = 'Preparing Live Swap UserOp...';
 
-      const amt = parseFloat(swapInputAmt.value) || 0;
+      const amt = parseFloat(String(swapInputAmt.value).replace(',', '.')) || 0;
       if (amt <= 0) throw new Error('Please enter a valid swap amount.');
 
       const key0Id = storedKeys[0]?.id;
@@ -4264,9 +4852,17 @@ if (profileBtn && profileMenu) {
     menuCopyBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       navigator.clipboard.writeText(accountAddr);
-      menuCopyBtn.textContent = 'Copied!';
-      setTimeout(() => menuCopyBtn.textContent = 'Copy', 1800);
+      const txt = document.getElementById('menuCopyText');
+      const icon = menuCopyBtn.querySelector('.icon');
+      if (txt) txt.textContent = 'Copied!';
+      menuCopyBtn.classList.add('copied-text');
+      if (icon) icon.classList.add('copied-icon');
       showToast('Address copied to clipboard!', 'success');
+      setTimeout(() => {
+        if (txt) txt.textContent = 'Copy';
+        menuCopyBtn.classList.remove('copied-text');
+        if (icon) icon.classList.remove('copied-icon');
+      }, 1800);
     });
   }
 
@@ -4380,13 +4976,28 @@ if (confirmAddBtn) {
       return;
     }
 
+    const tokenIconMap = {
+      'DAI': 'assets/dai.svg',
+      'LINK': 'assets/chainlink.svg',
+      'WBTC': 'assets/bitcoin.svg',
+      'BTC': 'assets/bitcoin.svg',
+      'EURC': 'assets/eurc.svg',
+      'ARB': 'assets/arbitrum.svg',
+      'ETH': 'assets/ethereum.svg',
+      'USDC': 'assets/usdc.svg',
+      'USDT': 'assets/usdc.svg'
+    };
+    const iconSrc = tokenIconMap[sym] || 'assets/circle.svg';
+
     // Append to Assets Row on Home Tab
     const assetsRow = document.querySelector('.assets-row');
     if (assetsRow) {
       const newItem = document.createElement('div');
       newItem.className = 'asset-item';
       newItem.innerHTML = `
-        <div class="asset-icon base-asset-icon"><span style="color:#0052FF; font-weight:800;">★</span></div>
+        <div class="asset-icon">
+          <img src="${iconSrc}" alt="${sym}" width="34" height="34" style="width:100%; height:100%; object-fit:contain; border-radius:50%;">
+        </div>
         <div class="asset-info">
           <h4>${sym}</h4>
           <div class="val">$0.00</div>
@@ -4403,22 +5014,29 @@ if (confirmAddBtn) {
       newRow.innerHTML = `
         <td>
           <div style="display:flex; align-items:center; gap:10px;">
-            <div class="asset-icon" style="background:#EFF6FF; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><span style="color:#0052FF; font-weight:800;">★</span></div>
+            <div class="asset-icon" style="width:34px; height:34px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <img src="${iconSrc}" alt="${sym}" width="34" height="34" style="width:100%; height:100%; object-fit:contain; border-radius:50%;">
+            </div>
             <div>
               <div style="font-weight:700; color:var(--text-primary);">${sym} Token</div>
               <div style="font-size:11px; color:var(--text-secondary);">${sym}</div>
             </div>
           </div>
         </td>
-        <td><span style="font-size:12px; font-weight:600; color:#0052FF;">Base Sepolia</span></td>
+        <td>
+          <span class="network-badge">
+            <img src="assets/base_logo.svg" width="14" height="14" style="border-radius:50%;" alt="Base"> Base Sepolia
+          </span>
+        </td>
         <td style="font-family:var(--font-mono); font-weight:600;">$0.00</td>
         <td style="font-family:var(--font-mono); font-weight:700;">0.00 ${sym}</td>
         <td style="font-family:var(--font-mono); font-weight:700;">$0.00</td>
-        <td style="color:var(--text-secondary); font-weight:700;">0.0%</td>
+        <td><span style="color:var(--text-muted); font-weight:500; font-family:var(--font-mono); font-size:12px;">0.0%</span></td>
         <td>
           <div style="display:flex; gap:6px;">
-            <button class="btn-action-primary" onclick="switchTab('tab-send', document.querySelectorAll('.nav-item')[1])" style="padding:4px 10px; font-size:11px;">Send</button>
-            <button class="btn-action-secondary" onclick="document.getElementById('openReceiveBtn').click()" style="padding:4px 10px; font-size:11px;">Receive</button>
+            <button class="table-action-btn primary" onclick="switchTab('tab-send', document.querySelectorAll('.nav-item')[1])">Send</button>
+            <button class="table-action-btn" onclick="document.getElementById('openReceiveBtn').click()">Receive</button>
+            <button class="table-action-btn" onclick="switchTab('tab-swap', null)">Swap</button>
           </div>
         </td>
       `;
@@ -4522,7 +5140,7 @@ document.querySelectorAll('.clickable-tx-row').forEach(row => {
     document.getElementById('txModalType').textContent = type;
     document.getElementById('txModalTarget').textContent = `${target.slice(0, 8)}...${target.slice(-6)}`;
     document.getElementById('txModalTime').textContent = time;
-    document.getElementById('txModalHash').textContent = `${hash.slice(0, 10)}...${hash.slice(-8)} ❐`;
+    document.getElementById('txModalHash').innerHTML = `${hash.slice(0, 10)}...${hash.slice(-8)} <svg class="i" width="12" height="12" aria-hidden="true"><use href="#i-copy"/></svg>`;
     document.getElementById('txModalExplorerLink').href = `https://sepolia.basescan.org/tx/${hash}`;
 
     txModal.classList.add('active');

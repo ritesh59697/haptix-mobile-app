@@ -125,26 +125,83 @@
       box-shadow: 0 0 6px currentColor;
     }
 
+    /* Precision Obsidian Secondary & Glass Button (ReactBits Style) */
+    .glass-btn {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 10px;
+      color: #E4E4E7;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.25);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      text-decoration: none;
+      font-family: var(--font-main);
+    }
+
+    .glass-btn:hover {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: #FFFFFF;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .glass-btn:active {
+      transform: translateY(0);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .glass-btn .icon, .glass-btn svg {
+      width: 15px;
+      height: 15px;
+      transition: all 0.2s ease;
+    }
+
+    .copied-text {
+      color: #10B981 !important;
+    }
+
+    .copied-icon {
+      stroke: #10B981 !important;
+    }
+
     .btn-nav-dashboard {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 6px 14px;
-      border-radius: var(--radius-sm);
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
+      padding: 7px 16px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      color: #D4D4D8;
       font-size: 12px;
       font-weight: 600;
       text-decoration: none;
-      transition: all 0.15s ease;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 1px 2px rgba(0, 0, 0, 0.25);
     }
 
     .btn-nav-dashboard:hover {
-      background: var(--bg-hover);
-      border-color: var(--border-focus);
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(255, 255, 255, 0.18);
       color: #FFFFFF;
       transform: translateY(-1px);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.35);
+    }
+
+    .btn-nav-dashboard svg {
+      transition: all 0.2s ease;
     }
 
     /* Main Container */
@@ -555,7 +612,7 @@
           <button class="test-card" id="btnSmallTx">
             <div class="test-card-left">
               <div class="test-icon icon-emerald">
-                <img src="assets/eth_logo.svg" width="13" height="18" alt="ETH" />
+                <img src="assets/ethereum.svg" width="20" height="20" alt="ETH" style="border-radius:50%;" />
               </div>
               <div class="test-info">
                 <span class="test-title">Send Micro ETH (0.001 ETH)</span>
@@ -569,7 +626,7 @@
           <button class="test-card" id="btnUsdcTx">
             <div class="test-card-left">
               <div class="test-icon icon-blue">
-                <img src="assets/usdc_logo.svg" width="16" height="16" alt="USDC" style="border-radius:50%;" />
+                <img src="assets/usdc.svg" width="20" height="20" alt="USDC" style="border-radius:50%;" />
               </div>
               <div class="test-info">
                 <span class="test-title">Autonomous Agent ($20.00 USDC)</span>
@@ -583,7 +640,7 @@
           <button class="test-card" id="btnLargeTx">
             <div class="test-card-left">
               <div class="test-icon icon-amber">
-                <img src="assets/eth_logo.svg" width="13" height="18" alt="ETH" />
+                <img src="assets/ethereum.svg" width="20" height="20" alt="ETH" style="border-radius:50%;" />
               </div>
               <div class="test-info">
                 <span class="test-title">Send Large Transfer (0.05 ETH)</span>
@@ -597,7 +654,7 @@
           <button class="test-card" id="btnCeilingTx" style="border-color: rgba(244,63,94,0.2);">
             <div class="test-card-left">
               <div class="test-icon icon-rose">
-                <img src="assets/usdc_logo.svg" width="16" height="16" alt="USDC" style="border-radius:50%;" />
+                <img src="assets/usdc.svg" width="20" height="20" alt="USDC" style="border-radius:50%;" />
               </div>
               <div class="test-info">
                 <span class="test-title">Over Ceiling Transfer ($350 USDC)</span>

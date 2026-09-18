@@ -40,3 +40,4 @@ tools/vectors.json
 node_modules/
 npm-debug.log*
 dist/
+.gstack/

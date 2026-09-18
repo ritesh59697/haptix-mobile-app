@@ -190,6 +190,57 @@
       line-height: 1.5;
     }
     .success-banner a { color: #6EE7B7; text-decoration: underline; font-weight: 700; }
+    /* From Uiverse.io by like_9276 - Glass Button */
+    .glass-btn {
+      padding: 8px 18px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 12px;
+      color: #F8FAFC;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .glass-btn:hover {
+      transform: scale(1.05);
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.28);
+      color: #FFFFFF;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .glass-btn:active {
+      transform: scale(0.95);
+    }
+
+    .glass-btn .icon, .glass-btn svg {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.3s ease;
+    }
+
+    .glass-btn:hover .icon, .glass-btn:hover svg {
+      transform: rotate(12deg);
+    }
+
+    .copied-text {
+      color: #10B981 !important;
+    }
+
+    .copied-icon {
+      stroke: #10B981 !important;
+    }
+
     pre {
       background: rgba(0, 0, 0, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -242,7 +293,7 @@
     <div class="card">
       <div class="card-title">
         <span>Safe Session Policy Configuration</span>
-        <button id="btnGenKey" style="background:rgba(255,255,255,0.06);color:#93C5FD;border:1px solid var(--card-border);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;">
+        <button id="btnGenKey" class="glass-btn" style="padding:4px 10px; font-size:11px; border-radius:6px; box-shadow:none;">
           Generate New Key
         </button>
       </div>
