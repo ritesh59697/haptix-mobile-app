@@ -1,6 +1,6 @@
 # Grant Application & Technical Proposal: Haptix Protocol
 
-> **Target Grant Programs:** Arbitrum Foundation / Buildathons · Base Ecosystem Grants · Optimism Superchain Grants · Ethereum Foundation / 4337 Core Grants  
+> **Target Grant Programs:** Circle Developer Grants (Arc) · Arbitrum Foundation / Buildathons · Movement (Moove Dev Program) · Base Ecosystem Grants · Optimism Superchain Grants  
 > **Project Name:** Haptix (`passkey-wallet`)  
 > **Tagline:** The Biometric Hardware Enclave Layer for EVM & Autonomous AI Agents  
 > **Repository:** [https://github.com/ritesh59697/haptix](https://github.com/ritesh59697/haptix)  
@@ -123,6 +123,14 @@ Haptix is not an idea or mock-up—it is an end-to-end engineered, battle-tested
 - **Canonical EntryPoint**: [`0x0000000071727De22E5E9d8BAf0edAc6f37da032`](https://sepolia.arbiscan.io/address/0x0000000071727De22E5E9d8BAf0edAc6f37da032) (ERC-4337 v0.7)
 - **Supported Assets & Stablecoins**: Native ETH, USDC ([`0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`](https://sepolia.arbiscan.io/address/0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d)), and Paxos USDG Global Dollar ([`0xDDF7d873F5738c2A191624b1ba1Aba7042621E43`](https://sepolia.arbiscan.io/address/0xDDF7d873F5738c2A191624b1ba1Aba7042621E43)).
 
+#### Arc Testnet (Chain ID: `5042002`)
+- **PasskeyAccountFactory**: [`0x60319237e8dd2D661eBcF8E6933458BD78Ce146d`](https://testnet.arcscan.app/address/0x60319237e8dd2D661eBcF8E6933458BD78Ce146d) (CREATE2 Minimal Proxy Factory)
+  - Deployment Tx: [`0xfb49b60c72b721d1ddcd47d37c2e0a47aacc523e28b082261e7b9d1ec2fa92a4`](https://testnet.arcscan.app/tx/0xfb49b60c72b721d1ddcd47d37c2e0a47aacc523e28b082261e7b9d1ec2fa92a4)
+- **PasskeyAccount Implementation**: [`0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3`](https://testnet.arcscan.app/address/0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3)
+  - Deployment Tx: [`0xb132a12b4171fce54b7e02e3d9dac596d1e62299b5a728d2b24ff56cbdd07923`](https://testnet.arcscan.app/tx/0xb132a12b4171fce54b7e02e3d9dac596d1e62299b5a728d2b24ff56cbdd07923)
+- **Canonical EntryPoint**: [`0x0000000071727De22E5E9d8BAf0edAc6f37da032`](https://testnet.arcscan.app/address/0x0000000071727De22E5E9d8BAf0edAc6f37da032) (ERC-4337 v0.7)
+- **Native Gas Asset**: Native USDC (gas fees paid directly in USDC)
+
 ### 5. Reproducible Terminal Demo Commands
 ```bash
 npm run demo        # Complete unified 3-step security lifecycle
@@ -138,9 +146,9 @@ Grant funding will be utilized strictly for security hardening, mainnet infrastr
 
 ```
 [Milestone 1: Security Audit] ───> [Milestone 2: Mainnet & Gas Tank] ───> [Milestone 3: Chrome Store & AI SDKs]
-  - External Smart Contract Audit    - Base & Arbitrum Mainnet Deploy    - Chrome Web Store Launch
+  - External Smart Contract Audit    - Base, Arbitrum & Arc Mainnet Deploy- Chrome Web Store Launch
   - Cantina / Code4rena Review       - Pimlico Paymaster Gas Pool        - Eliza / LangChain / Goat Adapters
-  - Formal Verification of Windows   - Multi-Chain (OP / Arbitrum)       - Developer Documentation Hub
+  - Formal Verification of Windows   - Multi-Chain (OP / Arbitrum / Arc) - Developer Documentation Hub
 ```
 
 ### Milestone Breakdown
@@ -148,13 +156,18 @@ Grant funding will be utilized strictly for security hardening, mainnet infrastr
 | Milestone | Deliverables | Target Completion | Earmarked Budget |
 |---|---|:---:|:---:|
 | **Milestone 1: Security Audit & Bug Bounty** | External tier-1 audit of `PasskeyAccount.sol`, `SpendPolicy.sol`, `SpendWindow.sol`, and `Recovery`. Launch Immunefi bug bounty. | 6–8 weeks | $25,000 |
-| **Milestone 2: Mainnet Deployment & Paymaster Pool** | Deploy factory and canonical accounts to Base Mainnet & Arbitrum One. Fund initial Pimlico/Alchemy paymaster gas sponsorship tank for early adopters. | 3–4 weeks | $15,000 |
+| **Milestone 2: Mainnet Deployment & Paymaster Pool** | Deploy factory and canonical accounts to Base Mainnet, Arbitrum One, and Arc Mainnet. Fund initial paymaster gas sponsorship tank. | 3–4 weeks | $15,000 |
 | **Milestone 3: Chrome Web Store & AI Framework Integrations** | Public Chrome Web Store listing. Pre-built plugins for popular AI agent frameworks (ElizaOS, LangChain, Virtuals, Goat SDK). | 4–6 weeks | $10,000 |
 | **Total Requested** | | | **$50,000** |
 
 ---
 
 ## 6. Alignment with Grant Foundations
+
+### Why Arc & Circle Developer Grants?
+- **Native USDC Gas Currency**: Arc is Circle's flagship Layer-1 blockchain where USDC is the native gas asset, making programmable micro-payments and agent session keys natively dollar-denominated.
+- **#1 Priority Track Alignment**: Circle's grants program explicitly prioritizes *"Agentic economic activity: Enable autonomous AI agents to coordinate, contract, and settle value in real time with programmable, stablecoin-native infrastructure."* Haptix was designed specifically to fulfill this mission.
+- **DoraHacks Microgrants Stepping Stone**: Deployed directly on Arc to qualify for the DoraHacks Arc Microgrants and bridge into the $100k Circle Developer Grant.
 
 ### Why Arbitrum?
 - **RIP-7212 Precompile Execution**: Arbitrum Nitro provides high-throughput, low-latency execution with native P-256 curve verification, making WebAuthn biometrics gas-efficient (~109k gas).

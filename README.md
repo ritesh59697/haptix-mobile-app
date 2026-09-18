@@ -42,6 +42,17 @@ An ERC-4337 smart account architecture that enforces **autonomous spending polic
 | **Arbitrum Sepolia USDC** | [`0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`](https://sepolia.arbiscan.io/address/0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d) (6 decimals) |
 | **Paxos Global Dollar (USDG)** | [`0xDDF7d873F5738c2A191624b1ba1Aba7042621E43`](https://sepolia.arbiscan.io/address/0xDDF7d873F5738c2A191624b1ba1Aba7042621E43) (6 decimals) · Mainnet: [`0x004B506865409877C9fA29bfb1ebA929984B9bbC`](https://arbiscan.io/address/0x004B506865409877C9fA29bfb1ebA929984B9bbC) |
 
+### Arc Testnet (Chain ID: `5042002`)
+
+| Parameter | Value |
+|---|---|
+| **PasskeyAccountFactory** | [`0x60319237e8dd2D661eBcF8E6933458BD78Ce146d`](https://testnet.arcscan.app/address/0x60319237e8dd2D661eBcF8E6933458BD78Ce146d) |
+| **Factory Deployment Tx** | [`0xfb49b60c72b721d1ddcd47d37c2e0a47aacc523e28b082261e7b9d1ec2fa92a4`](https://testnet.arcscan.app/tx/0xfb49b60c72b721d1ddcd47d37c2e0a47aacc523e28b082261e7b9d1ec2fa92a4) |
+| **PasskeyAccount Implementation** | [`0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3`](https://testnet.arcscan.app/address/0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3) |
+| **Implementation Deployment Tx** | [`0xb132a12b4171fce54b7e02e3d9dac596d1e62299b5a728d2b24ff56cbdd07923`](https://testnet.arcscan.app/tx/0xb132a12b4171fce54b7e02e3d9dac596d1e62299b5a728d2b24ff56cbdd07923) |
+| **Canonical EntryPoint** | [`0x0000000071727De22E5E9d8BAf0edAc6f37da032`](https://testnet.arcscan.app/address/0x0000000071727De22E5E9d8BAf0edAc6f37da032) (ERC-4337 v0.7) |
+| **Native Gas Currency** | **Native USDC** (18 decimals at protocol layer) |
+
 ---
 
 ## Quick Start & Demo Flow

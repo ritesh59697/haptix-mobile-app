@@ -122,6 +122,8 @@ export const SUPPORTED_NETWORKS = {
     chainId: 5042002,
     name: 'Arc Testnet',
     entryPoint: CANONICAL_ENTRYPOINT_V07,
+    factory: '0x60319237e8dd2D661eBcF8E6933458BD78Ce146d' as Address,
+    implementation: '0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3' as Address,
     tokens: {
       USDC: { address: '0x0000000000000000000000000000000000000000' as Address, decimals: 18, symbol: 'USDC' }
     }

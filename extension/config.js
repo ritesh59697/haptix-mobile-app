@@ -151,6 +151,8 @@ export const NETWORKS = {
     rpcUrl: 'https://rpc.testnet.arc.network',
     explorerUrl: 'https://testnet.arcscan.app',
     entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
+    factoryAddress: '0x60319237e8dd2D661eBcF8E6933458BD78Ce146d',
+    implementationAddress: '0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3',
     isTestnet: true,
     nativeCurrency: { name: 'USD Coin', symbol: 'USDC', decimals: 18 },
     tokens: {
