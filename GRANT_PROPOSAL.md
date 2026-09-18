@@ -2,7 +2,7 @@
 
 > **Target Grant Programs:** Circle Developer Grants (Arc) · Arbitrum Foundation / Buildathons · Movement (Moove Dev Program) · Base Ecosystem Grants · Optimism Superchain Grants  
 > **Project Name:** Haptix (`passkey-wallet`)  
-> **Tagline:** The Biometric Hardware Enclave Layer for EVM & Autonomous AI Agents  
+> **Tagline:** Haptix gives humans and AI agents different levels of financial authority, enforced by the wallet itself.  
 > **Repository:** [https://github.com/ritesh59697/haptix](https://github.com/ritesh59697/haptix)  
 > **Live Smart Account (Base Sepolia):** [`0xB01543453cF31052c769d79e9C755E3b035d796f`](https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f)  
 > **Canonical EntryPoint:** [`0x0000000071727De22E5E9d8BAf0edAc6f37da032`](https://sepolia.basescan.org/address/0x0000000071727De22E5E9d8BAf0edAc6f37da032) (ERC-4337 v0.7)  
@@ -37,49 +37,43 @@ As AI trading agents, autonomous bots, and automated solvers become ubiquitous o
 
 ---
 
-## 3. Technical Architecture & Innovation
+## 3. Technical Architecture: The 4-Layer Authority Model
 
-```
-                      +------------------------------------------+
-                      |         ERC-4337 PackedUserOperation     |
-                      +------------------------------------------+
-                                           |
-                                           v
-                       +----------------------------------------+
-                       |   validateUserOp (PasskeyAccount.sol)  |
-                       +----------------------------------------+
-                                           |
-                    +----------------------+----------------------+
-                    |                                             |
-            [0x00 Human Passkey]                          [0x01 / 0x02 Agent]
-                    |                                             |
-         +----------+----------+                        +---------+---------+
-         |                     |                        |                   |
-    [< Threshold]       [>= Threshold]           [<= $50 Micro]       [$50-$200 Limit]
-         |                     |                        |                   |
-         v                     v                        v                   v
-   1 Hardware Sig       2-of-2 Hardware          Autonomous ECDSA     Agent ECDSA +
-   (~109k gas)          Passkey Quorum           Session Key          2-Passkey Quorum
-         |                     |                        |                   |
-         +----------+----------+                        +---------+---------+
-                    |                                             |
-                    +----------------------+----------------------+
-                                           |
-                                           v
-                        +-------------------------------------+
-                        |   RIP-7212 P-256 Precompile (0x100) |
-                        +-------------------------------------+
-                                           |
-                                           v
-                        +-------------------------------------+
-                        |         execute() On-Chain          |
-                        +-------------------------------------+
+Standard smart wallets treat keys and devices as identical concepts. Haptix separates the **authentication credential** from the **interface**, routing all intents through a centralized on-chain policy engine:
+
+```text
+                 HAPTIX SMART ACCOUNT
+                          │
+        ┌─────────────────┴─────────────────┐
+        │                                   │
+   HUMAN AUTHORITY                   AGENT AUTHORITY
+        │                                   │
+   Passkeys (P-256)                  Session Keys (secp256k1)
+        │                                   │
+        └─────────────────┬─────────────────┘
+                          ↓
+               ON-CHAIN POLICY ENGINE
+                          │
+        ┌─────────────────┼─────────────────┐
+        ↓                 ↓                 ↓
+      ALLOW            ESCALATE           REJECT
+        │                 │                 │
+        ↓                 ↓                 ↓
+     Execute       Require Quorum       Fail-Closed
+                   (Agent + Passkeys)
 ```
 
 ### On-Chain Calldata Policy Engine (`SpendPolicy.sol`)
 - **Inspection**: Calldata is decoded and classified during `validateUserOp` before state is touched.
+- **Dynamic Thresholds**: Configurable USD/ETH thresholds dictate whether an agent can execute autonomously (e.g. < $50), must escalate to a 2-of-2 biometric quorum (e.g. $50 - $200), or is hard-blocked (> $200).
 - **DeFi Guardrails**: Restricts autonomous agents to audited protocols (e.g. Uniswap V3 `SwapRouter02`). Enforces `recipient == address(this)` to prevent fund redirection and `amountOutMinimum > 0` to prevent zero-slippage sandwich attacks.
 - **Anti-Drain Blanket**: Persistent approvals (`approve`, `increaseAllowance`, `setApprovalForAll`) and gasless permits (`permit`, `permit2`) are blocked for autonomous agents and strictly demand a 2-of-2 human passkey quorum.
+
+### Transparent Recovery Model
+Guardians are strictly scoped for recovery, never for everyday spending:
+- **Guardian Can**: Initiate a 48-hour timelocked recovery process.
+- **Guardian Cannot**: Send funds, trade, or change policies.
+- **Owner Override**: A single passkey signature can instantly cancel a malicious recovery attempt during the timelock window.
 
 ---
 

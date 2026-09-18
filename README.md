@@ -1,9 +1,9 @@
 <div align="center">
   <img src="assets/haptix_official_logo.jpg" alt="Haptix Logo" width="720px" style="border-radius: 14px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);" />
-  <p><strong>The Biometric Hardware Enclave Layer for EVM & Autonomous AI Agents.</strong></p>
+  <h2>Haptix gives humans and AI agents different levels of financial authority, enforced by the wallet itself.</h2>
 </div>
 
-An ERC-4337 smart account architecture that enforces **autonomous spending policies on-chain**, authorized by **WebAuthn passkeys** (P-256 / secp256r1), verified through the RIP-7212 hardware precompile on Base, and featuring **scoped session key delegation for AI agents** with hardware-enforced escalation ceilings.
+An ERC-4337 smart account architecture that enforces **autonomous spending policies on-chain**. The biometric hardware (WebAuthn passkeys) secures the **human authority**, while scoped session keys delegate **agent authority**. The on-chain policy engine sits in the middle, keeping the agent within strict boundaries and escalating to the human for high-risk actions.
 
 ---
 
@@ -100,48 +100,34 @@ Open [http://localhost:5199/grant-session.html](http://localhost:5199/grant-sess
 
 ---
 
-## Core Security Model: Moving Enforcement to Code
+## Core Security Model: The 4-Layer Authority Architecture
 
-The instinct *"require a second factor for high-value transfers"* is universally correct. However, standard wallet implementations fail because a software private key has no login gate:
-- An attacker who extracts a private key or seed phrase imports it directly into MetaMask or scripts a broadcast via public RPC.
-- Software 2FA (TOTP, SMS) lives in the wallet client, which the attacker simply bypasses.
+The instinct *"require a second factor for high-value transfers"* is universally correct. However, standard wallet implementations fail because a software private key has no login gate. Haptix moves enforcement entirely on-chain through a clean 4-layer architecture:
+
+```text
+                 HAPTIX SMART ACCOUNT
+                          │
+        ┌─────────────────┴─────────────────┐
+        │                                   │
+   HUMAN AUTHORITY                   AGENT AUTHORITY
+        │                                   │
+   Passkeys (P-256)                  Session Keys (secp256k1)
+        │                                   │
+        └─────────────────┬─────────────────┘
+                          ↓
+               ON-CHAIN POLICY ENGINE
+                          │
+        ┌─────────────────┼─────────────────┐
+        ↓                 ↓                 ↓
+      ALLOW            ESCALATE           REJECT
+        │                 │                 │
+        ↓                 ↓                 ↓
+     Execute       Require Quorum       Fail-Closed
+                   (Agent + Passkeys)
+```
 
 **Haptix moves enforcement to the smart contract itself:**
-`validateUserOp` in `PasskeyAccount.sol` intercepts every operation before execution. If a transfer or DeFi swap exceeds the configured safety threshold, the contract will **revert on-chain** unless signed by a full 2-of-2 hardware passkey quorum.
-
-```
-                  +----------------------------------------------+
-                  |         Incoming ERC-4337 UserOperation      |
-                  +----------------------------------------------+
-                                         |
-                                         v
-                         +-------------------------------+
-                         |   validateUserOp (On-Chain)   |
-                         +-------------------------------+
-                                         |
-                       +-----------------+-----------------+
-                       |                                   |
-              [Under Safe Limit]                  [Exceeds Threshold]
-                       |                                   |
-                       v                                   v
-             +--------------------+              +--------------------+
-             |  1-Sig Passkey     |              |  2-of-2 Hardware   |
-             |  Touch ID / FaceID |              |  Passkey Quorum    |
-             |  (~109k gas)       |              |  (Enclave + Key)   |
-             +--------------------+              +--------------------+
-                       |                                   |
-                       +-----------------+-----------------+
-                                         |
-                                         v
-                      +-------------------------------------+
-                      |   RIP-7212 P-256 Precompile (0x100) |
-                      +-------------------------------------+
-                                         |
-                                         v
-                      +-------------------------------------+
-                      |     execute() On-Chain Execution    |
-                      +-------------------------------------+
-```
+`validateUserOp` intercepts every operation before execution. If an agent's transfer or DeFi swap exceeds the configured safety threshold, the contract will **revert on-chain** unless signed by a full 2-of-2 hardware passkey quorum.
 
 ---
 
@@ -159,18 +145,20 @@ Phase 3 introduces **autonomous session keys** (`executeByAgent` and `executeBat
 
 ### 3-Tier Security Policy Firewall
 
+*Note: Dollar values below are examples. Thresholds are dynamically configured in the smart contract's policy.*
+
 ```
  Spend Amount
       ^
-      |   [Tier 3: BLOCKED] > $200
+      |   [Tier 3: BLOCKED] > Configured Ceiling (e.g. $200)
       |   ------------------------------------------------------------
       |   Hard Ceiling Violation: Immediate Fail-Closed Revert
       |
-      |   [Tier 2: ESCALATED] $50 - $200
+      |   [Tier 2: ESCALATED] Dynamic Threshold (e.g. $50 - $200)
       |   ------------------------------------------------------------
       |   Agent Signature + 2-of-2 Biometric Passkey Quorum (Touch ID)
       |
-      |   [Tier 1: AUTONOMOUS] < $50
+      |   [Tier 1: AUTONOMOUS] < Configured Limit (e.g. $50)
       |   ------------------------------------------------------------
       |   Agent Key Only: Instant On-Chain Micro-Execution
       +--------------------------------------------------------------> Time
@@ -219,11 +207,25 @@ The on-chain policy engine inspects calldata directly during ERC-4337 validation
 | Unfreeze (`unfreeze`) | **2 Passkeys (Quorum)** |
 
 ### Timelocked Guardian Social Recovery
-To eliminate the single-point-of-failure risk where a user loses physical hardware devices, `PasskeyAccount` features an on-chain **Guardian Recovery** mechanism:
+To eliminate the single-point-of-failure risk where a user loses their physical hardware devices, `PasskeyAccount` features an on-chain **Guardian Recovery** mechanism with a strict and transparent trust model.
+
+**The Trust Model:**
+```text
+GUARDIAN
+━━━━━━━━━━━━━━━━
+Can:
+✓ Initiate 48h timelocked recovery
+
+Cannot:
+✕ Send funds or trade
+✕ Change spending limits
+✕ Approve transactions
+```
+
 - **Designation**: The owner configures a `guardian` address (cold wallet, trusted delegate, or multisig) and a security timelock (minimum 24h, default 48h) via a 2-of-2 passkey quorum.
 - **Proposal**: If passkeys are lost, the guardian calls `initiateRecovery(PublicKey[] newSigners)`. The replacement set must strictly contain at least 2 distinct, valid P-256 keys.
 - **Timelock Delay**: An on-chain timelock begins (`executeAfter = block.timestamp + timelock`). After expiry, `completeRecovery()` wipes old signers and installs the replacement set.
-- **Fast-Path Dispute**: If an unauthorized recovery is initiated by a compromised guardian, the account owner can abort it immediately with a **single passkey signature UserOp** (`cancelRecovery`) or trigger emergency `freeze()`.
+- **Fast-Path Cancellation**: If an unauthorized recovery is initiated by a compromised guardian, the account owner can abort it immediately with a **single passkey signature UserOp** (`cancelRecovery`) or trigger an emergency `freeze()`.
 
 ### Per-Asset Rolling Spend Windows (`SpendWindow.sol`)
 To prevent "slow-drain" attacks (e.g. 20 consecutive $40 transfers), `SpendWindow` enforces cumulative spending caps over rolling 24-hour periods.
