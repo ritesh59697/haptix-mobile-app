@@ -96,6 +96,13 @@ export const NETWORKS = {
         address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
         decimals: 6,
         defaultThreshold: '50'
+      },
+      USDG: {
+        symbol: 'USDG',
+        name: 'Global Dollar (Paxos)',
+        address: '0x004B506865409877C9fA29bfb1ebA929984B9bbC',
+        decimals: 6,
+        defaultThreshold: '50'
       }
     }
   },
@@ -107,8 +114,8 @@ export const NETWORKS = {
     rpcUrl: 'https://sepolia-rollup.arbitrum.io/rpc',
     explorerUrl: 'https://sepolia.arbiscan.io',
     entryPoint: '0x0000000071727De22E5E9d8BAf0edAc6f37da032',
-    factoryAddress: '0x1bB7cCf96cB211045982fC8a0069D9C0d718B83b',
-    implementationAddress: '0x9B553dF98bbC1c7152698c4739A93281F0FBB110',
+    factoryAddress: '0x60319237e8dd2D661eBcF8E6933458BD78Ce146d',
+    implementationAddress: '0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3',
     bundlerUrl: 'https://api.pimlico.io/v2/421614/rpc?apikey=pim_hkKhRbcJfLUYSzezx8ofPd',
     isTestnet: true,
     nativeCurrency: { name: 'Sepolia Ether', symbol: 'ETH', decimals: 18 },
@@ -119,6 +126,20 @@ export const NETWORKS = {
         address: '0x0000000000000000000000000000000000000000',
         decimals: 18,
         defaultThreshold: '0.01'
+      },
+      USDC: {
+        symbol: 'USDC',
+        name: 'USD Coin',
+        address: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
+        decimals: 6,
+        defaultThreshold: '25'
+      },
+      USDG: {
+        symbol: 'USDG',
+        name: 'Global Dollar (Paxos)',
+        address: '0xDDF7d873F5738c2A191624b1ba1Aba7042621E43',
+        decimals: 6,
+        defaultThreshold: '25'
       }
     }
   },

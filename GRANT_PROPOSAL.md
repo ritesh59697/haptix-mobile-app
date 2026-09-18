@@ -1,6 +1,6 @@
 # Grant Application & Technical Proposal: Haptix Protocol
 
-> **Target Grant Programs:** Base Ecosystem Grants · Optimism Superchain Grants · Ethereum Foundation / 4337 Core Grants · Gitcoin Grants  
+> **Target Grant Programs:** Arbitrum Foundation / Buildathons · Base Ecosystem Grants · Optimism Superchain Grants · Ethereum Foundation / 4337 Core Grants  
 > **Project Name:** Haptix (`passkey-wallet`)  
 > **Tagline:** The Biometric Hardware Enclave Layer for EVM & Autonomous AI Agents  
 > **Repository:** [https://github.com/ritesh59697/haptix](https://github.com/ritesh59697/haptix)  
@@ -102,7 +102,9 @@ Haptix is not an idea or mock-up—it is an end-to-end engineered, battle-tested
 - **Chrome Extension (Manifest V3)**: Production-ready sidebar and popup UI with full WebAuthn enclave enrollment.
 - **Interactive Web App**: Standalone harness for 2-of-2 passkey quorum enrollment and 1-click autonomous execution / policy firewall simulation (`http://localhost:5199/grant-session.html`).
 
-### 4. Verified On-Chain Deployments & Receipts (Base Sepolia)
+### 4. Verified On-Chain Deployments & Receipts
+
+#### Base Sepolia (Chain ID: `84532`)
 - **PasskeyAccountFactory**: [`0x1bB7cCf96cB211045982fC8a0069D9C0d718B83b`](https://sepolia.basescan.org/address/0x1bB7cCf96cB211045982fC8a0069D9C0d718B83b) (Counterfactual CREATE2 factory)
 - **PasskeyAccount Implementation**: [`0x9B553dF98bbC1c7152698c4739A93281F0FBB110`](https://sepolia.basescan.org/address/0x9B553dF98bbC1c7152698c4739A93281F0FBB110)
 - **Live Passkey Smart Account**: [`0xB01543453cF31052c769d79e9C755E3b035d796f`](https://sepolia.basescan.org/address/0xB01543453cF31052c769d79e9C755E3b035d796f)
@@ -112,6 +114,14 @@ Haptix is not an idea or mock-up—it is an end-to-end engineered, battle-tested
 - **On-Chain Policy Firewall Enforcement**: 0.005 ETH over-limit transfer rejected on-chain (`SIG_VALIDATION_FAILED (1)` and EntryPoint `AA24` signature error).
 - **Live Biometric Touch ID UserOp**: Verified on Base Sepolia scan ([Tx `0x5c4c413d…404d`](https://sepolia.basescan.org/tx/0x5c4c413d486754cf8098d4ca4dd2f82a17a72aabc9680174a0bc583bffeb404d)).
 - **dApp EIP-1193 Extension UserOp**: Verified on Base Sepolia scan ([Tx `0x428fe58b…1d11`](https://sepolia.basescan.org/tx/0x428fe58b08360238c33bfc6a92264e977283aab0b05965d3abe0f034b5d21d11)).
+
+#### Arbitrum Sepolia (Chain ID: `421614`)
+- **PasskeyAccountFactory**: [`0x60319237e8dd2D661eBcF8E6933458BD78Ce146d`](https://sepolia.arbiscan.io/address/0x60319237e8dd2D661eBcF8E6933458BD78Ce146d) (CREATE2 Minimal Proxy Factory)
+  - Deployment Tx: [`0xe2acbad9d20e1cdfbb9b4a0a329684ab92727dc904025974f9e0a5c23b98cda0`](https://sepolia.arbiscan.io/tx/0xe2acbad9d20e1cdfbb9b4a0a329684ab92727dc904025974f9e0a5c23b98cda0)
+- **PasskeyAccount Implementation**: [`0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3`](https://sepolia.arbiscan.io/address/0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3)
+  - Deployment Tx: [`0xe87b7b21a1da1837304e0156418a29f5ef6765f93a3fc7b09f6fb7ae39988f10`](https://sepolia.arbiscan.io/tx/0xe87b7b21a1da1837304e0156418a29f5ef6765f93a3fc7b09f6fb7ae39988f10)
+- **Canonical EntryPoint**: [`0x0000000071727De22E5E9d8BAf0edAc6f37da032`](https://sepolia.arbiscan.io/address/0x0000000071727De22E5E9d8BAf0edAc6f37da032) (ERC-4337 v0.7)
+- **Supported Assets & Stablecoins**: Native ETH, USDC ([`0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`](https://sepolia.arbiscan.io/address/0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d)), and Paxos USDG Global Dollar ([`0xDDF7d873F5738c2A191624b1ba1Aba7042621E43`](https://sepolia.arbiscan.io/address/0xDDF7d873F5738c2A191624b1ba1Aba7042621E43)).
 
 ### 5. Reproducible Terminal Demo Commands
 ```bash
@@ -128,7 +138,7 @@ Grant funding will be utilized strictly for security hardening, mainnet infrastr
 
 ```
 [Milestone 1: Security Audit] ───> [Milestone 2: Mainnet & Gas Tank] ───> [Milestone 3: Chrome Store & AI SDKs]
-  - External Smart Contract Audit    - Base Mainnet Deployment           - Chrome Web Store Launch
+  - External Smart Contract Audit    - Base & Arbitrum Mainnet Deploy    - Chrome Web Store Launch
   - Cantina / Code4rena Review       - Pimlico Paymaster Gas Pool        - Eliza / LangChain / Goat Adapters
   - Formal Verification of Windows   - Multi-Chain (OP / Arbitrum)       - Developer Documentation Hub
 ```
@@ -138,13 +148,18 @@ Grant funding will be utilized strictly for security hardening, mainnet infrastr
 | Milestone | Deliverables | Target Completion | Earmarked Budget |
 |---|---|:---:|:---:|
 | **Milestone 1: Security Audit & Bug Bounty** | External tier-1 audit of `PasskeyAccount.sol`, `SpendPolicy.sol`, `SpendWindow.sol`, and `Recovery`. Launch Immunefi bug bounty. | 6–8 weeks | $25,000 |
-| **Milestone 2: Mainnet Deployment & Paymaster Pool** | Deploy factory and canonical accounts to Base Mainnet & Optimism. Fund initial Pimlico/Alchemy paymaster gas sponsorship tank for early adopters. | 3–4 weeks | $15,000 |
+| **Milestone 2: Mainnet Deployment & Paymaster Pool** | Deploy factory and canonical accounts to Base Mainnet & Arbitrum One. Fund initial Pimlico/Alchemy paymaster gas sponsorship tank for early adopters. | 3–4 weeks | $15,000 |
 | **Milestone 3: Chrome Web Store & AI Framework Integrations** | Public Chrome Web Store listing. Pre-built plugins for popular AI agent frameworks (ElizaOS, LangChain, Virtuals, Goat SDK). | 4–6 weeks | $10,000 |
 | **Total Requested** | | | **$50,000** |
 
 ---
 
 ## 6. Alignment with Grant Foundations
+
+### Why Arbitrum?
+- **RIP-7212 Precompile Execution**: Arbitrum Nitro provides high-throughput, low-latency execution with native P-256 curve verification, making WebAuthn biometrics gas-efficient (~109k gas).
+- **DeFi & AI Agent Capital Efficiency**: Arbitrum's deep liquidity and active automated trading ecosystem makes autonomous session keys with on-chain hardware escalation ceilings essential infrastructure.
+- **Paxos USDG Synergy**: Direct support for the Paxos Global Dollar (USDG) stablecoin and Arbitrum Open House Singapore Buildathon initiatives.
 
 ### Why Base?
 - Base natively supports the Osaka RIP-7212 precompile (`0x100`), making it the premier L2 for low-cost biometric passkeys.

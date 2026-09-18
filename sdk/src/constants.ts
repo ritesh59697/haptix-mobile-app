@@ -97,6 +97,26 @@ export const SUPPORTED_NETWORKS = {
       USDC: { address: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as Address, decimals: 6, symbol: 'USDC' },
       WETH: { address: '0x4200000000000000000000000000000000000006' as Address, decimals: 18, symbol: 'WETH' }
     }
+  },
+  ARBITRUM_SEPOLIA: {
+    chainId: 421614,
+    name: 'Arbitrum Sepolia',
+    entryPoint: CANONICAL_ENTRYPOINT_V07,
+    factory: '0x60319237e8dd2D661eBcF8E6933458BD78Ce146d' as Address,
+    implementation: '0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3' as Address,
+    tokens: {
+      USDC: { address: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d' as Address, decimals: 6, symbol: 'USDC' },
+      USDG: { address: '0xDDF7d873F5738c2A191624b1ba1Aba7042621E43' as Address, decimals: 6, symbol: 'USDG' }
+    }
+  },
+  ARBITRUM_ONE: {
+    chainId: 42161,
+    name: 'Arbitrum One',
+    entryPoint: CANONICAL_ENTRYPOINT_V07,
+    tokens: {
+      USDC: { address: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as Address, decimals: 6, symbol: 'USDC' },
+      USDG: { address: '0x004B506865409877C9fA29bfb1ebA929984B9bbC' as Address, decimals: 6, symbol: 'USDG' }
+    }
   }
 } as const;
 

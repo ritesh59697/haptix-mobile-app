@@ -7,7 +7,9 @@ An ERC-4337 smart account architecture that enforces **autonomous spending polic
 
 ---
 
-## Live on Base Sepolia
+## Live Deployments & Receipts
+
+### Base Sepolia (Chain ID: `84532`)
 
 | Parameter | Value |
 |---|---|
@@ -26,6 +28,19 @@ An ERC-4337 smart account architecture that enforces **autonomous spending polic
 | **Active Session Key Address** | [`0x093F8575a87cdb2919E5B3f1677eD8d7815c9461`](https://sepolia.basescan.org/address/0x093F8575a87cdb2919E5B3f1677eD8d7815c9461) (0.001 ETH limit, active on-chain) |
 | **Base Sepolia USDC** | [`0x036CbD53842c5426634e7929541eC2318f3dCF7e`](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) (6 decimals) |
 | **On-Chain Policy Engine** | 0.001 ETH per-op session limit · 24h rolling budget · Emergency Panic Freeze · Timelocked Guardian Recovery |
+
+### Arbitrum Sepolia (Chain ID: `421614`)
+
+| Parameter | Value |
+|---|---|
+| **PasskeyAccountFactory** | [`0x60319237e8dd2D661eBcF8E6933458BD78Ce146d`](https://sepolia.arbiscan.io/address/0x60319237e8dd2D661eBcF8E6933458BD78Ce146d) |
+| **Factory Deployment Tx** | [`0xe2acbad9d20e1cdfbb9b4a0a329684ab92727dc904025974f9e0a5c23b98cda0`](https://sepolia.arbiscan.io/tx/0xe2acbad9d20e1cdfbb9b4a0a329684ab92727dc904025974f9e0a5c23b98cda0) |
+| **PasskeyAccount Implementation** | [`0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3`](https://sepolia.arbiscan.io/address/0xd5e179970f8aBA0CB049b95c2A4D4dcC64F1a0A3) |
+| **Implementation Deployment Tx** | [`0xe87b7b21a1da1837304e0156418a29f5ef6765f93a3fc7b09f6fb7ae39988f10`](https://sepolia.arbiscan.io/tx/0xe87b7b21a1da1837304e0156418a29f5ef6765f93a3fc7b09f6fb7ae39988f10) |
+| **Canonical EntryPoint** | [`0x0000000071727De22E5E9d8BAf0edAc6f37da032`](https://sepolia.arbiscan.io/address/0x0000000071727De22E5E9d8BAf0edAc6f37da032) (ERC-4337 v0.7) |
+| **RIP-7212 Precompile** | `0x0000000000000000000000000000000000000100` (Native Arbitrum Nitro P-256 Curve Verification) |
+| **Arbitrum Sepolia USDC** | [`0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d`](https://sepolia.arbiscan.io/address/0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d) (6 decimals) |
+| **Paxos Global Dollar (USDG)** | [`0xDDF7d873F5738c2A191624b1ba1Aba7042621E43`](https://sepolia.arbiscan.io/address/0xDDF7d873F5738c2A191624b1ba1Aba7042621E43) (6 decimals) · Mainnet: [`0x004B506865409877C9fA29bfb1ebA929984B9bbC`](https://arbiscan.io/address/0x004B506865409877C9fA29bfb1ebA929984B9bbC) |
 
 ---
 
