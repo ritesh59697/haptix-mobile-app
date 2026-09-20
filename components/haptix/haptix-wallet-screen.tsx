@@ -13,6 +13,8 @@ import {
   Linking,
   Pressable,
   Platform,
+  StatusBar as RNStatusBar,
+  KeyboardAvoidingView,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -42,11 +44,13 @@ import {
   CopyActionButton,
   ThemeToggleButton,
   HoldToConfirmButton,
+  AnimatedCounter,
 } from '@/components/ui'
 import {
   fetchHaptixWallet,
   getTransferSignedMessage,
   createExecuteTransferInstruction,
+  createInitializeWalletInstruction,
   getGrantAgentSignedMessage,
   createGrantAgentSessionInstruction,
   createAgentExecuteInstruction,
@@ -54,7 +58,7 @@ import {
   createUnfreezeInstruction,
   WalletState,
 } from '@/utils/haptix-client'
-import { getFundedDevnetPayer, airdropToWalletPda } from '@/utils/haptix-funder'
+import { getFundedDevnetPayer } from '@/utils/haptix-funder'
 import {
   HaptixBrandMark,
   SolanaTokenLogo,
@@ -62,11 +66,31 @@ import {
   ActionSendIcon,
   ActionReceiveIcon,
   ActionSwapIcon,
+  DockHomeIcon,
+  DockMarketsIcon,
+  DockSwapIcon,
+  DockAgentIcon,
+  DockSecurityIcon,
+  EyeShowIcon,
+  EyeHideIcon,
+  DepositActionIcon,
+  WithdrawActionIcon,
+  CopyChipIcon,
 } from './haptix-icons'
+import { HaptixFloatingDock, DockTabId } from './haptix-floating-dock'
+import { HaptixIosTabs } from './haptix-ios-tabs'
 
 const DEVNET_RPC = 'https://api.devnet.solana.com'
 const MAINNET_RPC = 'https://api.mainnet-beta.solana.com'
 const SOL_PRICE_USD = 150.0 // Market reference rate for portfolio valuation
+
+const MARKET_TOKENS = [
+  { symbol: 'SOL', name: 'Solana', price: '$150.00', change: '+4.82%', isPositive: true },
+  { symbol: 'USDC', name: 'USD Coin', price: '$1.00', change: '+0.01%', isPositive: true },
+  { symbol: 'JUP', name: 'Jupiter', price: '$0.84', change: '+7.15%', isPositive: true },
+  { symbol: 'RAY', name: 'Raydium', price: '$1.92', change: '+3.40%', isPositive: true },
+  { symbol: 'BONK', name: 'Bonk', price: '$0.000021', change: '-1.85%', isPositive: false },
+]
 
 interface TransactionRecord {
   signature: string
@@ -76,6 +100,12 @@ interface TransactionRecord {
   recipientOrSender: string
   timestamp: number
   status: 'confirmed' | 'finalized'
+}
+
+function isValidSolanaAddress(addr: string): boolean {
+  if (!addr) return false
+  const trimmed = addr.trim()
+  return trimmed.length >= 32 && trimmed.length <= 44 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(trimmed)
 }
 
 export function HaptixWalletScreen() {
@@ -107,7 +137,6 @@ export function HaptixWalletScreen() {
   const [refreshing, setRefreshing] = useState(false)
 
   // Loading States
-  const [isAirdropping, setIsAirdropping] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [isSwapping, setIsSwapping] = useState(false)
   const [isUnlocking, setIsUnlocking] = useState(false)
@@ -135,12 +164,40 @@ export function HaptixWalletScreen() {
   // Transactions History
   const [transactions, setTransactions] = useState<TransactionRecord[]>([])
 
-  // Active Connection depending on selected network (with rate-limit retry disabled to avoid 429 loops)
+  // Elevated Dock & Home View Controls
+  const [dockTab, setDockTab] = useState<DockTabId>('home')
+  const [isBalanceHidden, setIsBalanceHidden] = useState(false)
+  const [segmentedTab, setSegmentedTab] = useState<'assets' | 'markets' | 'activity'>('assets')
+  const [hasCopiedAddress, setHasCopiedAddress] = useState(false)
+
+  const handleCopyWalletAddress = async () => {
+    if (!activeWallet?.address) return
+    await Clipboard.setString(activeWallet.address)
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    setHasCopiedAddress(true)
+    setTimeout(() => setHasCopiedAddress(false), 2000)
+  }
+
+  const handleDockSelect = (tab: DockTabId) => {
+    setDockTab(tab)
+    if (tab === 'home') {
+      setSegmentedTab('assets')
+    } else if (tab === 'markets') {
+      setSegmentedTab('markets')
+    } else if (tab === 'swap') {
+      setShowSwapModal(true)
+    } else if (tab === 'agent') {
+      setShowAgentsModal(true)
+    } else if (tab === 'security') {
+      setShowSecurityModal(true)
+    }
+  }
+
+  // Active Connection depending on selected network
   const connection = useMemo(
     () =>
       new Connection(network === 'devnet' ? DEVNET_RPC : MAINNET_RPC, {
         commitment: 'confirmed',
-        disableRetryOnRateLimit: true,
       }),
     [network]
   )
@@ -215,57 +272,6 @@ export function HaptixWalletScreen() {
     setRefreshing(false)
   }
 
-  // Request Devnet Airdrop for testing
-  const handleRequestAirdrop = async () => {
-    if (!activeWallet?.address) return
-    if (network !== 'devnet') {
-      Alert.alert('Notice', 'Airdrops are only available on Solana Devnet.')
-      return
-    }
-
-    try {
-      setIsAirdropping(true)
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-
-      const pubkey = new PublicKey(activeWallet.address)
-      const airdropSig = await airdropToWalletPda(connection, pubkey, 0.25)
-
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      await fetchRealBalance()
-
-      setTransactions((prev) => [
-        {
-          signature: airdropSig,
-          type: 'airdrop',
-          amount: 0.25,
-          tokenSymbol: 'SOL',
-          recipientOrSender: 'Solana Devnet Faucet',
-          timestamp: Date.now(),
-          status: 'confirmed',
-        },
-        ...prev,
-      ])
-
-      Alert.alert(
-        'Devnet Airdrop Received',
-        `0.25 SOL credited to your Haptix Smart Wallet PDA.\n\nTx: ${ellipsify(airdropSig, 8)}`,
-        [
-          {
-            text: 'View on Explorer',
-            onPress: () => Linking.openURL(`https://explorer.solana.com/tx/${airdropSig}?cluster=devnet`),
-          },
-          { text: 'Done', style: 'cancel' },
-        ]
-      )
-    } catch (err: any) {
-      Alert.alert(
-        'Airdrop Notice',
-        err?.message || 'Devnet faucet rate limit reached. Please try again shortly.'
-      )
-    } finally {
-      setIsAirdropping(false)
-    }
-  }
 
   // On-chain Send Transaction via Haptix Anchor Program & Secp256r1 Precompile
   const handleSendTransaction = async () => {
@@ -324,7 +330,31 @@ export function HaptixWalletScreen() {
         message,
       })
 
-      let instructions = []
+      // Sponsor transaction network fee on Devnet via persistent funded relayer
+      const payer = await getFundedDevnetPayer(connection)
+
+      // Check if counterfactual PDA is already initialized on-chain
+      const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
+      const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
+
+      let txInstructions = []
+
+      // If wallet is not yet on-chain, atomically initialize it first in the SAME transaction
+      if (needsInit) {
+        const primaryPasskey = new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex'))
+        const secondaryPasskey = new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex'))
+        const initIx = createInitializeWalletInstruction({
+          payer: payer.publicKey,
+          walletPda,
+          primaryPasskey,
+          secondaryPasskey,
+          spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
+        })
+        txInstructions.push(initIx)
+      }
+
+      const primarySigIxIndex = needsInit ? 1 : 0
+      const secondarySigIxIndex = needsInit ? (isHighRiskQuorum ? 2 : undefined) : (isHighRiskQuorum ? 1 : undefined)
 
       if (isHighRiskQuorum) {
         // 2. High-Risk: 2-of-2 Hardware Passkey Quorum required
@@ -344,32 +374,49 @@ export function HaptixWalletScreen() {
           walletPda,
           recipient: toPubkey,
           amountLamports,
-          primarySigIxIndex: 0,
-          secondarySigIxIndex: 1,
+          primarySigIxIndex,
+          secondarySigIxIndex,
         })
 
-        instructions = [precompilePrimary, precompileSecondary, transferIx]
+        txInstructions.push(precompilePrimary, precompileSecondary, transferIx)
       } else {
         // Low-Risk: 1-tap passkey verification
         const transferIx = createExecuteTransferInstruction({
           walletPda,
           recipient: toPubkey,
           amountLamports,
-          primarySigIxIndex: 0,
+          primarySigIxIndex,
           secondarySigIxIndex: undefined,
         })
 
-        instructions = [precompilePrimary, transferIx]
+        txInstructions.push(precompilePrimary, transferIx)
       }
 
-      // Sponsor transaction network fee on Devnet
-      const payer = await getFundedDevnetPayer(connection, 0.01)
-      if (!payer) {
-        throw new Error('Solana Devnet faucet rate-limit reached. Please retry shortly.')
-      }
-      const tx = new Transaction().add(...instructions)
+      const latestBlockhash = await connection.getLatestBlockhash('confirmed')
+      const tx = new Transaction({
+        feePayer: payer.publicKey,
+        recentBlockhash: latestBlockhash.blockhash,
+      }).add(...txInstructions)
 
-      const sig = await sendAndConfirmTransaction(connection, tx, [payer])
+      tx.sign(payer)
+
+      const rawTx = tx.serialize()
+      const sig = await connection.sendRawTransaction(rawTx, {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      })
+
+      // Non-blocking confirmation (transaction is already broadcast to cluster)
+      connection
+        .confirmTransaction(
+          {
+            signature: sig,
+            blockhash: latestBlockhash.blockhash,
+            lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+          },
+          'confirmed'
+        )
+        .catch(() => null)
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       await fetchRealBalance()
@@ -477,14 +524,51 @@ export function HaptixWalletScreen() {
         amountLamports: tradeAmountLamports,
       })
 
-      const payer = await getFundedDevnetPayer(connection, 0.02)
-      if (!payer) {
-        throw new Error('Solana Devnet faucet rate-limit reached. Please retry shortly.')
-      }
-      const tx = new Transaction().add(precompile1, precompile2, grantIx, execIx)
+      const payer = await getFundedDevnetPayer(connection)
+      const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
+      const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
 
-      // Payer + agentKeypair sign (NO passkey prompts needed for autonomous execution!)
-      const sig = await sendAndConfirmTransaction(connection, tx, [payer, agentKeypair])
+      let txInstructions = []
+
+      if (needsInit) {
+        const primaryPasskey = new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex'))
+        const secondaryPasskey = new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex'))
+        const initIx = createInitializeWalletInstruction({
+          payer: payer.publicKey,
+          walletPda,
+          primaryPasskey,
+          secondaryPasskey,
+          spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
+        })
+        txInstructions.push(initIx)
+      }
+
+      txInstructions.push(precompile1, precompile2, grantIx, execIx)
+
+      const latestBlockhash = await connection.getLatestBlockhash('confirmed')
+      const tx = new Transaction({
+        feePayer: payer.publicKey,
+        recentBlockhash: latestBlockhash.blockhash,
+      }).add(...txInstructions)
+
+      tx.sign(payer, agentKeypair)
+
+      const rawTx = tx.serialize()
+      const sig = await connection.sendRawTransaction(rawTx, {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      })
+
+      connection
+        .confirmTransaction(
+          {
+            signature: sig,
+            blockhash: latestBlockhash.blockhash,
+            lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+          },
+          'confirmed'
+        )
+        .catch(() => null)
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       await fetchRealBalance()
@@ -529,16 +613,19 @@ export function HaptixWalletScreen() {
 
       if (!isFrozen) {
         // Freeze on-chain via guardian/payer
-        const payer = await getFundedDevnetPayer(connection, 0.01)
-        if (!payer) {
-          throw new Error('Solana Devnet faucet rate-limit reached. Please retry shortly.')
-        }
+        const payer = await getFundedDevnetPayer(connection)
+        const latestBlockhash = await connection.getLatestBlockhash('confirmed')
         const freezeIx = createPanicFreezeInstruction({
           walletPda,
           guardianSigner: payer.publicKey,
         })
-        const tx = new Transaction().add(freezeIx)
-        const sig = await sendAndConfirmTransaction(connection, tx, [payer])
+        const tx = new Transaction({
+          feePayer: payer.publicKey,
+          recentBlockhash: latestBlockhash.blockhash,
+        }).add(freezeIx)
+        const sig = await sendAndConfirmTransaction(connection, tx, [payer], {
+          commitment: 'confirmed',
+        })
         setIsFrozen(true)
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
         Alert.alert(
@@ -568,12 +655,15 @@ export function HaptixWalletScreen() {
           secondarySigIxIndex: 1,
         })
 
-        const payer = await getFundedDevnetPayer(connection, 0.01)
-        if (!payer) {
-          throw new Error('Solana Devnet faucet rate-limit reached. Please retry shortly.')
-        }
-        const tx = new Transaction().add(precompilePrimary, precompileSecondary, unfreezeIx)
-        const sig = await sendAndConfirmTransaction(connection, tx, [payer])
+        const payer = await getFundedDevnetPayer(connection)
+        const latestBlockhash = await connection.getLatestBlockhash('confirmed')
+        const tx = new Transaction({
+          feePayer: payer.publicKey,
+          recentBlockhash: latestBlockhash.blockhash,
+        }).add(precompilePrimary, precompileSecondary, unfreezeIx)
+        const sig = await sendAndConfirmTransaction(connection, tx, [payer], {
+          commitment: 'confirmed',
+        })
 
         setIsFrozen(false)
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
@@ -605,69 +695,70 @@ export function HaptixWalletScreen() {
   const sendAmountNum = parseFloat(sendAmountText) || 0
   const isSendQuorumRequired = sendAmountNum > spendThreshold
 
-  return (
+    const statusBarHeight = RNStatusBar.currentHeight ?? insets.top ?? 0
+    const headerPaddingTop = Math.max(insets.top, statusBarHeight) + (Platform.OS === 'android' ? 12 : 6)
+
+    return (
     <View style={[styles.container, s.container]}>
       {/* ==================================================================== */}
-      {/* 1. MINIMAL CONSUMER HOME HEADER                                      */}
+      {/* 1. ELEVATED CONSUMER HOME HEADER                                     */}
       {/* ==================================================================== */}
-      <View style={[styles.header, s.header, { paddingTop: Math.max(insets.top + 6, 44) }]}>
-        <TouchableOpacity
-          style={styles.headerIdentityRow}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            setShowSecurityModal(true)
-          }}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.brandIconContainer, s.card]}>
-            <HaptixBrandMark size={18} color={theme.textPrimary} />
-          </View>
-          <View style={styles.identityTextGroup}>
-            <Text style={[styles.headerWalletName, s.textPrimary]} numberOfLines={1}>
-              {activeWallet?.name || 'My Haptix Wallet'}
-            </Text>
-            <TouchableOpacity
-              style={styles.networkSubRow}
-              onPress={() => {
-                Haptics.selectionAsync()
-                setNetwork((prev) => (prev === 'devnet' ? 'mainnet' : 'devnet'))
-              }}
-              activeOpacity={0.7}
-            >
-              <View
-                style={[
-                  styles.networkDot,
-                  network === 'mainnet' && { backgroundColor: '#10B981' },
-                ]}
-              />
-              <Text style={[styles.networkLabel, s.textSecondary]}>
-                {network === 'devnet' ? 'Solana Devnet' : 'Solana Mainnet'}
-              </Text>
-              <MaterialIcons name="arrow-drop-down" size={14} color={theme.textMuted} />
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-
-        <View style={styles.headerRight}>
-          {/* Quick Light/Dark Mode Switcher */}
-          <ThemeToggleButton size="compact" showLabel={false} />
-
-          {/* Security Area Button */}
+      <View style={[styles.header, s.header, { paddingTop: headerPaddingTop }]}>
+        <View style={styles.headerLeftGroup}>
           <TouchableOpacity
-            style={[styles.headerIconBtn, s.iconBtn, isFrozen && styles.headerIconBtnAlert]}
+            style={styles.avatarButton}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
               setShowSecurityModal(true)
             }}
-            accessibilityRole="button"
-            accessibilityLabel="Security and Protection Controls"
+            activeOpacity={0.75}
           >
-            <MaterialIcons
-              name={isFrozen ? 'error-outline' : 'shield'}
-              size={18}
-              color={isFrozen ? '#FDA4AF' : theme.textPrimary}
-            />
+            <View style={[styles.avatarCircle, s.card, isFrozen && styles.avatarCircleAlert]}>
+              <HaptixBrandMark size={16} color={isFrozen ? '#FDA4AF' : theme.textPrimary} />
+            </View>
           </TouchableOpacity>
+
+          <View style={styles.identityTextGroup}>
+            <Text style={[styles.headerWalletName, s.textPrimary]} numberOfLines={1}>
+              {activeWallet?.name || 'Haptix Wallet'}
+            </Text>
+            <TouchableOpacity
+              style={[styles.addressCopyChip, s.card]}
+              onPress={handleCopyWalletAddress}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.addressCopyText, s.textMuted]}>
+                {hasCopiedAddress ? 'Copied!' : ellipsify(activeWallet?.address || '', 4)}
+              </Text>
+              <CopyChipIcon size={11} color={hasCopiedAddress ? '#FFFFFF' : theme.textMuted} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.headerRight}>
+          {/* Network Switcher Pill */}
+          <TouchableOpacity
+            style={[styles.networkPill, s.card]}
+            onPress={() => {
+              Haptics.selectionAsync()
+              setNetwork((prev) => (prev === 'devnet' ? 'mainnet' : 'devnet'))
+            }}
+            activeOpacity={0.7}
+          >
+            <View
+              style={[
+                styles.networkDot,
+                network === 'mainnet' && { backgroundColor: '#10B981' },
+              ]}
+            />
+            <Text style={[styles.networkPillText, s.textSecondary]}>
+              {network === 'devnet' ? 'Devnet' : 'Mainnet'}
+            </Text>
+            <MaterialIcons name="keyboard-arrow-down" size={13} color={theme.textMuted} />
+          </TouchableOpacity>
+
+          {/* Quick Light/Dark Mode Switcher */}
+          <ThemeToggleButton size="compact" showLabel={false} />
 
           {/* Overflow Menu Button */}
           <TouchableOpacity
@@ -679,7 +770,7 @@ export function HaptixWalletScreen() {
             accessibilityRole="button"
             accessibilityLabel="More Options"
           >
-            <MaterialIcons name="more-horiz" size={20} color={theme.textPrimary} />
+            <MaterialIcons name="more-horiz" size={18} color={theme.textPrimary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -700,86 +791,185 @@ export function HaptixWalletScreen() {
       {/* ==================================================================== */}
       <ScrollView
         style={[styles.scrollArea, s.container]}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 36 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 24) + 95 }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />
         }
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.dashboardContainer}>
-          {/* TOTAL BALANCE SECTION */}
-          <View style={styles.balanceSection}>
-            <Text style={[styles.balanceLabel, s.textSecondary]}>Total balance</Text>
-            <Text style={[styles.balancePrimaryNumber, s.textPrimary]}>
-              ${totalUsdBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </Text>
-            <Text style={[styles.balanceSecondaryNumber, s.textMuted]}>
-              {balance.toFixed(4)} SOL
-            </Text>
+          {/* HERO BALANCE CARD */}
+          <View style={[styles.heroCard, s.card]}>
+            <View style={styles.heroTopRow}>
+              <View style={styles.heroBalanceLabelRow}>
+                <Text style={[styles.heroBalanceLabel, s.textSecondary]}>Total balance</Text>
+                <TouchableOpacity
+                  style={styles.eyeToggleButton}
+                  onPress={() => {
+                    Haptics.selectionAsync()
+                    setIsBalanceHidden((prev) => !prev)
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  {isBalanceHidden ? (
+                    <EyeHideIcon size={16} color={theme.textMuted} />
+                  ) : (
+                    <EyeShowIcon size={16} color={theme.textMuted} />
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.heroBadgePill}>
+                <Text style={styles.heroBadgeText}>
+                  {network === 'devnet' ? 'Devnet Testnet' : 'Hardware Quorum'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.heroBalanceContent}>
+              {isBalanceHidden ? (
+                <Text style={[styles.heroPrimaryBalance, s.textPrimary]}>$ ••••••</Text>
+              ) : (
+                <AnimatedCounter
+                  value={totalUsdBalance}
+                  decimals={2}
+                  prefix="$"
+                  textStyle={[styles.heroPrimaryBalance, s.textPrimary]}
+                />
+              )}
+              {isBalanceHidden ? (
+                <Text style={[styles.heroSecondaryBalance, s.textMuted]}>•••• SOL</Text>
+              ) : (
+                <AnimatedCounter
+                  value={balance}
+                  decimals={4}
+                  suffix=" SOL"
+                  textStyle={[styles.heroSecondaryBalance, s.textMuted]}
+                />
+              )}
+            </View>
+
+            {/* Inline Hero Action Pills */}
+            <View style={styles.heroActionsRow}>
+              {/* Deposit */}
+              <TouchableOpacity
+                style={styles.heroDepositBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                  setShowReceiveModal(true)
+                }}
+                activeOpacity={0.82}
+              >
+                <DepositActionIcon size={14} color="#000000" />
+                <Text style={styles.heroDepositBtnText}>Deposit</Text>
+              </TouchableOpacity>
+
+              {/* Withdraw */}
+              <TouchableOpacity
+                style={[styles.heroOutlineBtn, s.card]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                  setShowSendModal(true)
+                }}
+                activeOpacity={0.82}
+              >
+                <WithdrawActionIcon size={14} color={theme.textPrimary} />
+                <Text style={[styles.heroOutlineBtnText, s.textPrimary]}>Withdraw</Text>
+              </TouchableOpacity>
+
+              {/* Swap */}
+              <TouchableOpacity
+                style={[styles.heroOutlineBtn, s.card]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                  setShowSwapModal(true)
+                }}
+                activeOpacity={0.82}
+              >
+                <ActionSwapIcon size={14} color={theme.textPrimary} />
+                <Text style={[styles.heroOutlineBtnText, s.textPrimary]}>Swap</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* QUICK ACTIONS ROW: SEND · RECEIVE · SWAP */}
-          <View style={styles.quickActionsRow}>
+          {/* QUICK ACTIONS SQUIRCLES GRID */}
+          <View style={styles.quickActionsGrid}>
             {/* Send */}
             <TouchableOpacity
-              style={styles.quickActionBtn}
+              style={[styles.quickSquircleCard, s.card]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
                 setShowSendModal(true)
               }}
               activeOpacity={0.78}
             >
-              <View style={[styles.actionIconCircle, s.card]}>
-                <ActionSendIcon size={18} color={theme.textPrimary} />
+              <View style={styles.squircleIconWrap}>
+                <ActionSendIcon size={20} color={theme.textPrimary} />
               </View>
-              <Text style={[styles.quickActionLabel, s.textPrimary]}>Send</Text>
+              <Text style={[styles.squircleLabel, s.textPrimary]}>Send</Text>
             </TouchableOpacity>
 
             {/* Receive */}
             <TouchableOpacity
-              style={styles.quickActionBtn}
+              style={[styles.quickSquircleCard, s.card]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
                 setShowReceiveModal(true)
               }}
               activeOpacity={0.78}
             >
-              <View style={[styles.actionIconCircle, s.card]}>
-                <ActionReceiveIcon size={18} color={theme.textPrimary} />
+              <View style={styles.squircleIconWrap}>
+                <ActionReceiveIcon size={20} color={theme.textPrimary} />
               </View>
-              <Text style={[styles.quickActionLabel, s.textPrimary]}>Receive</Text>
+              <Text style={[styles.squircleLabel, s.textPrimary]}>Receive</Text>
             </TouchableOpacity>
 
             {/* Swap */}
             <TouchableOpacity
-              style={styles.quickActionBtn}
+              style={[styles.quickSquircleCard, s.card]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
                 setShowSwapModal(true)
               }}
               activeOpacity={0.78}
             >
-              <View style={[styles.actionIconCircle, s.card]}>
-                <ActionSwapIcon size={18} color={theme.textPrimary} />
+              <View style={styles.squircleIconWrap}>
+                <ActionSwapIcon size={20} color={theme.textPrimary} />
               </View>
-              <Text style={[styles.quickActionLabel, s.textPrimary]}>Swap</Text>
+              <Text style={[styles.squircleLabel, s.textPrimary]}>Swap</Text>
+            </TouchableOpacity>
+
+            {/* AI Agent */}
+            <TouchableOpacity
+              style={[styles.quickSquircleCard, s.card]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                setShowAgentsModal(true)
+              }}
+              activeOpacity={0.78}
+            >
+              <View style={styles.squircleIconWrap}>
+                <DockAgentIcon size={20} color={theme.textPrimary} />
+              </View>
+              <Text style={[styles.squircleLabel, s.textPrimary]}>Agent</Text>
             </TouchableOpacity>
           </View>
 
-          {/* ASSETS SECTION (CLEAN LIST) */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionHeading, s.textPrimary]}>Assets</Text>
-              <TouchableOpacity
-                onPress={() => {
-                  Haptics.selectionAsync()
-                  setShowReceiveModal(true)
-                }}
-              >
-                <Text style={[styles.sectionActionText, { color: theme.accent }]}>View all</Text>
-              </TouchableOpacity>
-            </View>
+          {/* SEGMENTED FILTER BAR (.cc-ios-tabs from Uiverse) */}
+          <View style={styles.segmentedContainer}>
+            <HaptixIosTabs<'assets' | 'markets' | 'activity'>
+              tabs={[
+                { id: 'assets', label: 'Assets' },
+                { id: 'markets', label: 'Markets' },
+                { id: 'activity', label: 'Activity' },
+              ]}
+              activeTab={segmentedTab}
+              onChange={(tab) => setSegmentedTab(tab)}
+            />
+          </View>
 
+          {/* TAB CONTENT: ASSETS */}
+          {segmentedTab === 'assets' && (
             <View style={[styles.assetList, s.card]}>
               {/* Solana Row */}
               <TouchableOpacity
@@ -792,8 +982,13 @@ export function HaptixWalletScreen() {
                     <SolanaTokenLogo size={24} />
                   </View>
                   <View>
-                    <Text style={[styles.assetPrimaryName, s.textPrimary]}>Solana</Text>
-                    <Text style={[styles.assetSecondaryTag, s.textMuted]}>Solana</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={[styles.assetPrimaryName, s.textPrimary]}>Solana</Text>
+                      <View style={styles.trendBadge}>
+                        <Text style={[styles.trendBadgeText, styles.trendPositive]}>+4.82%</Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.assetSecondaryTag, s.textMuted]}>SOL · Solana</Text>
                   </View>
                 </View>
                 <View style={styles.assetRight}>
@@ -817,8 +1012,13 @@ export function HaptixWalletScreen() {
                     <UsdcTokenLogo size={28} />
                   </View>
                   <View>
-                    <Text style={[styles.assetPrimaryName, s.textPrimary]}>USD Coin</Text>
-                    <Text style={[styles.assetSecondaryTag, s.textMuted]}>Circle</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={[styles.assetPrimaryName, s.textPrimary]}>USD Coin</Text>
+                      <View style={styles.trendBadge}>
+                        <Text style={[styles.trendBadgeText, styles.trendPositive]}>+0.01%</Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.assetSecondaryTag, s.textMuted]}>USDC · Circle</Text>
                   </View>
                 </View>
                 <View style={styles.assetRight}>
@@ -827,7 +1027,131 @@ export function HaptixWalletScreen() {
                 </View>
               </TouchableOpacity>
             </View>
-          </View>
+          )}
+
+          {/* TAB CONTENT: MARKETS WATCHLIST */}
+          {segmentedTab === 'markets' && (
+            <View style={[styles.assetList, s.card]}>
+              {MARKET_TOKENS.map((token, idx) => (
+                <React.Fragment key={token.symbol}>
+                  <TouchableOpacity
+                    style={styles.assetRow}
+                    onPress={() => {
+                      Haptics.selectionAsync()
+                      setShowSwapModal(true)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.assetLeft}>
+                      <View style={styles.assetLogoWrap}>
+                        {token.symbol === 'SOL' ? (
+                          <SolanaTokenLogo size={24} />
+                        ) : token.symbol === 'USDC' ? (
+                          <UsdcTokenLogo size={28} />
+                        ) : (
+                          <MaterialIcons name="monetization-on" size={20} color={theme.textPrimary} />
+                        )}
+                      </View>
+                      <View>
+                        <Text style={[styles.assetPrimaryName, s.textPrimary]}>{token.name}</Text>
+                        <Text style={[styles.assetSecondaryTag, s.textMuted]}>{token.symbol}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.assetRight}>
+                      <Text style={[styles.assetCryptoAmount, s.textPrimary]}>{token.price}</Text>
+                      <View style={styles.trendBadge}>
+                        <Text
+                          style={[
+                            styles.trendBadgeText,
+                            token.isPositive ? styles.trendPositive : styles.trendNegative,
+                          ]}
+                        >
+                          {token.change}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                  {idx < MARKET_TOKENS.length - 1 && (
+                    <View style={[styles.assetDivider, s.divider]} />
+                  )}
+                </React.Fragment>
+              ))}
+            </View>
+          )}
+
+          {/* TAB CONTENT: RECENT ACTIVITY */}
+          {segmentedTab === 'activity' && (
+            <View>
+              {transactions.length === 0 ? (
+                <View style={[styles.emptyActivityCard, s.card]}>
+                  <MaterialIcons name="receipt-long" size={26} color={theme.textMuted} />
+                  <Text style={[styles.emptyActivityTitle, s.textPrimary]}>No transactions yet</Text>
+                  <Text style={[styles.emptyActivitySubtitle, s.textMuted]}>
+                    Your confirmed transactions will appear here.
+                  </Text>
+                </View>
+              ) : (
+                <View style={[styles.activityList, s.card]}>
+                  {transactions.slice(0, 5).map((tx, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      style={styles.activityRow}
+                      onPress={() =>
+                        Linking.openURL(
+                          `https://explorer.solana.com/tx/${tx.signature}?cluster=${
+                            network === 'devnet' ? 'devnet' : 'mainnet-beta'
+                          }`
+                        )
+                      }
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.activityLeft}>
+                        <View style={[styles.activityIconCircle, { backgroundColor: isDark ? '#0E1628' : '#F1F5F9', borderColor: theme.borderDefault }]}>
+                          <MaterialIcons
+                            name={
+                              tx.type === 'agent_trade'
+                                ? 'smart-toy'
+                                : tx.type === 'swap'
+                                ? 'swap-horiz'
+                                : 'arrow-outward'
+                            }
+                            size={16}
+                            color={
+                              tx.type === 'agent_trade'
+                                ? theme.accent
+                                : theme.textPrimary
+                            }
+                          />
+                        </View>
+                        <View>
+                          <Text style={[styles.activityItemTitle, s.textPrimary]}>
+                            {tx.type === 'agent_trade'
+                              ? 'AI Agent Trade'
+                              : tx.type === 'swap'
+                              ? 'Token Swap'
+                              : 'SOL Transfer'}
+                          </Text>
+                          <Text style={[styles.activityItemDate, s.textMuted]}>
+                            {new Date(tx.timestamp).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.activityRight}>
+                        <Text style={[styles.activityAmount, s.textPrimary]}>
+                          -{tx.amount.toFixed(4)} {tx.tokenSymbol || 'SOL'}
+                        </Text>
+                        <Text style={[styles.activityConfirmedLabel, s.textMuted]}>Confirmed</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
 
           {/* DEDICATED AI AGENTS SECTION */}
           <View style={styles.sectionBlock}>
@@ -906,129 +1230,6 @@ export function HaptixWalletScreen() {
             </View>
           </View>
 
-          {/* RECENT ACTIVITY SECTION */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionHeading, s.textPrimary]}>Recent Activity</Text>
-              {transactions.length > 0 && (
-                <TouchableOpacity
-                  onPress={() =>
-                    Linking.openURL(
-                      `https://explorer.solana.com/address/${activeWallet?.address}?cluster=${
-                        network === 'devnet' ? 'devnet' : 'mainnet-beta'
-                      }`
-                    )
-                  }
-                >
-                  <Text style={[styles.sectionActionText, { color: theme.textSecondary }]}>View on Explorer ↗</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {transactions.length === 0 ? (
-              <View style={[styles.emptyActivityCard, s.card]}>
-                <MaterialIcons name="receipt-long" size={26} color={theme.textMuted} />
-                <Text style={[styles.emptyActivityTitle, s.textPrimary]}>No transactions yet</Text>
-                <Text style={[styles.emptyActivitySubtitle, s.textMuted]}>
-                  Your wallet activity will appear here.
-                </Text>
-              </View>
-            ) : (
-              <View style={[styles.activityList, s.card]}>
-                {transactions.slice(0, 5).map((tx, idx) => (
-                  <TouchableOpacity
-                    key={idx}
-                    style={styles.activityRow}
-                    onPress={() =>
-                      Linking.openURL(
-                        `https://explorer.solana.com/tx/${tx.signature}?cluster=${
-                          network === 'devnet' ? 'devnet' : 'mainnet-beta'
-                        }`
-                      )
-                    }
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.activityLeft}>
-                      <View style={[styles.activityIconCircle, { backgroundColor: isDark ? '#0E1628' : '#F1F5F9', borderColor: theme.borderDefault }]}>
-                        <MaterialIcons
-                          name={
-                            tx.type === 'airdrop'
-                              ? 'call-received'
-                              : tx.type === 'agent_trade'
-                              ? 'smart-toy'
-                              : tx.type === 'swap'
-                              ? 'swap-horiz'
-                              : 'arrow-outward'
-                          }
-                          size={16}
-                          color={
-                            tx.type === 'airdrop'
-                              ? theme.emerald
-                              : tx.type === 'agent_trade'
-                              ? theme.accent
-                              : theme.textPrimary
-                          }
-                        />
-                      </View>
-                      <View>
-                        <Text style={[styles.activityItemTitle, s.textPrimary]}>
-                          {tx.type === 'airdrop'
-                            ? 'Devnet Airdrop'
-                            : tx.type === 'agent_trade'
-                            ? 'AI Agent Trade'
-                            : tx.type === 'swap'
-                            ? 'Token Swap'
-                            : 'SOL Transfer'}
-                        </Text>
-                        <Text style={[styles.activityItemDate, s.textMuted]}>
-                          {new Date(tx.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.activityRight}>
-                      <Text
-                        style={[
-                          styles.activityAmount,
-                          s.textPrimary,
-                          tx.type === 'airdrop' && { color: theme.emerald },
-                        ]}
-                      >
-                        {tx.type === 'airdrop' ? '+' : '-'}
-                        {tx.amount.toFixed(4)} {tx.tokenSymbol || 'SOL'}
-                      </Text>
-                      <Text style={[styles.activityConfirmedLabel, s.textMuted]}>Confirmed</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
-
-          {/* SUBTLE DEVELOPMENT/TESTNET FAUCET BAR (DEVNET ONLY) */}
-          {network === 'devnet' && (
-            <View style={[styles.devnetSection, s.card]}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.devnetTitle, s.textPrimary]}>Solana Devnet</Text>
-                <Text style={[styles.devnetDesc, s.textSecondary]}>Development test funds</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.faucetCompactBtn, { backgroundColor: isDark ? '#0E1628' : '#F1F5F9', borderColor: theme.borderDefault }]}
-                onPress={handleRequestAirdrop}
-                disabled={isAirdropping}
-                activeOpacity={0.8}
-              >
-                {isAirdropping ? (
-                  <ActivityIndicator size="small" color={theme.accent} />
-                ) : (
-                  <Text style={[styles.faucetCompactBtnText, { color: theme.accent }]}>Request 1 SOL</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
       </ScrollView>
 
@@ -1204,81 +1405,251 @@ export function HaptixWalletScreen() {
       </Modal>
 
       {/* ==================================================================== */}
-      {/* 4. SEND MODAL                                                        */}
+      {/* 4. EXPANDED SEND TRANSACTION & PREVIEW MODAL                         */}
       {/* ==================================================================== */}
       <Modal visible={showSendModal} transparent animationType="slide">
-        <View style={styles.modalBackdrop}>
-          <View style={[styles.modalSheet, s.modalSheet, { paddingBottom: insets.bottom + 24 }]}>
+        <KeyboardAvoidingView
+          style={styles.expandedModalBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={[styles.expandedSendSheet, s.modalSheet, { paddingBottom: insets.bottom + 20 }]}>
             <View style={[styles.modalDragHandle, { backgroundColor: theme.borderDefault }]} />
 
+            {/* Modal Header */}
             <View style={styles.modalSheetHeader}>
-              <Text style={[styles.modalSheetTitle, s.textPrimary]}>Send Solana</Text>
-              <TouchableOpacity onPress={() => setShowSendModal(false)}>
-                <MaterialIcons name="close" size={22} color={theme.textMuted} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={[styles.inputLabel, s.textMuted]}>RECIPIENT ADDRESS</Text>
-            <View style={[styles.inputBoxRow, s.input]}>
-              <TextInput
-                style={[styles.modalInput, s.textPrimary]}
-                value={sendRecipient}
-                onChangeText={setSendRecipient}
-                placeholder="Paste Solana address"
-                placeholderTextColor={theme.textMuted}
-                selectionColor={theme.accent}
-                autoCapitalize="none"
-              />
+              <View>
+                <Text style={[styles.modalSheetTitle, s.textPrimary]}>Send Solana</Text>
+                <Text style={[styles.modalSheetSubtitle, s.textMuted]}>Instant on-chain transfer via passkey</Text>
+              </View>
               <TouchableOpacity
-                style={[styles.pasteActionBtn, { backgroundColor: isDark ? '#131E34' : '#EEF2F6' }]}
-                onPress={async () => {
-                  const text = await Clipboard.getString()
-                  if (text) setSendRecipient(text.trim())
-                }}
+                onPress={() => setShowSendModal(false)}
+                style={styles.modalCloseBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={[styles.pasteActionText, { color: theme.accent }]}>Paste</Text>
+                <MaterialIcons name="close" size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <View style={[styles.inputLabelRow, { marginTop: 14 }]}>
-              <Text style={[styles.inputLabel, s.textMuted]}>AMOUNT (SOL)</Text>
-              <TouchableOpacity onPress={() => setSendAmountText(balance.toString())}>
-                <Text style={[styles.maxLinkText, { color: theme.accent }]}>Balance: {balance.toFixed(4)} SOL</Text>
-              </TouchableOpacity>
-            </View>
-            <TextInput
-              style={[styles.modalInputStandalone, s.input, s.textPrimary]}
-              value={sendAmountText}
-              onChangeText={setSendAmountText}
-              keyboardType="decimal-pad"
-              placeholder="0.05"
-              placeholderTextColor={theme.textMuted}
-              selectionColor={theme.accent}
-            />
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 16 }}
+            >
+              {/* HERO AMOUNT INPUT SECTION */}
+              <View style={[styles.sendHeroCard, s.card]}>
+                <View style={styles.sendTokenHeaderRow}>
+                  <View style={styles.sendTokenPill}>
+                    <Text style={styles.sendTokenSymbol}>SOL</Text>
+                    <Text style={styles.sendTokenName}>Solana</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Haptics.selectionAsync()
+                      setSendAmountText(balance.toString())
+                    }}
+                    style={styles.sendBalanceChip}
+                  >
+                    <Text style={styles.sendBalanceLabel}>Available: </Text>
+                    <Text style={[styles.sendBalanceValue, { color: theme.accent }]}>{balance.toFixed(4)} SOL</Text>
+                  </TouchableOpacity>
+                </View>
 
-            {/* Risk / Quorum Notice */}
-            <View style={[styles.riskCardNotice, s.card, isSendQuorumRequired && styles.riskCardNoticeQuorum]}>
-              <MaterialIcons
-                name={isSendQuorumRequired ? 'shield' : 'verified-user'}
-                size={16}
-                color={isSendQuorumRequired ? '#F59E0B' : theme.accent}
-              />
-              <Text style={[styles.riskNoticeText, s.textSecondary]}>
-                {isSendQuorumRequired
-                  ? `Amount exceeds ${spendThreshold} SOL: 2-of-2 hardware passkey approval required.`
-                  : 'Fast-lane approval: 1-tap device biometric passkey.'}
-              </Text>
-            </View>
+                {/* Big Amount Input */}
+                <View style={styles.sendInputRow}>
+                  <TextInput
+                    style={[styles.sendBigInput, s.textPrimary]}
+                    value={sendAmountText}
+                    onChangeText={setSendAmountText}
+                    keyboardType="decimal-pad"
+                    placeholder="0.00"
+                    placeholderTextColor="#475569"
+                    selectionColor={theme.accent}
+                    autoFocus={false}
+                  />
+                  <Text style={[styles.sendCurrencySuffix, s.textSecondary]}>SOL</Text>
+                </View>
 
-            <PrismDepthButton
-              size="large"
-              title={isSendQuorumRequired ? 'Authorize 2-of-2 Quorum' : 'Sign with Passkey'}
-              onPress={handleSendTransaction}
-              loading={isSending}
-              disabled={isSending}
-            />
+                {/* Live USD Counter using swamimalode07/rare-ui/animated-counter */}
+                <View style={styles.sendUsdEstimateRow}>
+                  <Text style={[styles.sendUsdApprox, s.textMuted]}>≈ </Text>
+                  <AnimatedCounter
+                    value={sendAmountNum * SOL_PRICE_USD}
+                    decimals={2}
+                    prefix="$"
+                    suffix=" USD"
+                    textStyle={[styles.sendUsdCounter, s.textMuted]}
+                  />
+                </View>
+
+                {/* Quick Percentage Chips */}
+                <View style={styles.percentageChipsRow}>
+                  {[
+                    { label: '25%', fraction: 0.25 },
+                    { label: '50%', fraction: 0.5 },
+                    { label: '75%', fraction: 0.75 },
+                    { label: 'MAX', fraction: 1 },
+                  ].map((chip) => (
+                    <TouchableOpacity
+                      key={chip.label}
+                      style={[styles.percentChip, s.input]}
+                      onPress={() => {
+                        Haptics.selectionAsync()
+                        const val = Math.max(0, balance * chip.fraction)
+                        setSendAmountText(val > 0 ? val.toFixed(4) : '0')
+                      }}
+                    >
+                      <Text style={[styles.percentChipText, s.textSecondary]}>{chip.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* RECIPIENT INPUT SECTION */}
+              <View style={styles.inputSection}>
+                <View style={styles.inputLabelRow}>
+                  <Text style={[styles.inputLabel, s.textMuted]}>RECIPIENT SOLANA ADDRESS</Text>
+                  {isValidSolanaAddress(sendRecipient) && (
+                    <View style={styles.validBadge}>
+                      <MaterialIcons name="check-circle" size={12} color="#10B981" />
+                      <Text style={styles.validBadgeText}>Valid Address</Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={[styles.inputBoxRow, s.input]}>
+                  <TextInput
+                    style={[styles.modalInput, s.textPrimary]}
+                    value={sendRecipient}
+                    onChangeText={setSendRecipient}
+                    placeholder="Enter recipient base58 address"
+                    placeholderTextColor={theme.textMuted}
+                    selectionColor={theme.accent}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {sendRecipient ? (
+                    <TouchableOpacity
+                      style={styles.clearActionBtn}
+                      onPress={() => setSendRecipient('')}
+                    >
+                      <MaterialIcons name="cancel" size={16} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  ) : null}
+                  <TouchableOpacity
+                    style={[styles.pasteActionBtn, { backgroundColor: isDark ? '#1F1F23' : '#EEF2F6' }]}
+                    onPress={async () => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                      const text = await Clipboard.getString()
+                      if (text) setSendRecipient(text.trim())
+                    }}
+                  >
+                    <Text style={[styles.pasteActionText, { color: theme.accent }]}>Paste</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* EXPANDED TRANSACTION PREVIEW SECTION */}
+              <View style={styles.previewSection}>
+                <Text style={[styles.inputLabel, s.textMuted, { marginBottom: 8 }]}>TRANSACTION PREVIEW</Text>
+                <View style={[styles.previewCard, s.card]}>
+                  {/* Recipient Item */}
+                  <View style={styles.previewRow}>
+                    <Text style={[styles.previewLabel, s.textMuted]}>Recipient</Text>
+                    <View style={styles.previewValueRow}>
+                      <View style={styles.recipientAvatarSmall}>
+                        <MaterialIcons name="account-balance-wallet" size={12} color={theme.textPrimary} />
+                      </View>
+                      <Text style={[styles.previewValueText, s.textPrimary]}>
+                        {sendRecipient ? ellipsify(sendRecipient, 4) : 'Not specified'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.previewDivider, s.divider]} />
+
+                  {/* Transfer Value */}
+                  <View style={styles.previewRow}>
+                    <Text style={[styles.previewLabel, s.textMuted]}>Transfer Amount</Text>
+                    <Text style={[styles.previewValueBold, s.textPrimary]}>
+                      {sendAmountNum.toFixed(4)} SOL
+                    </Text>
+                  </View>
+
+                  <View style={[styles.previewDivider, s.divider]} />
+
+                  {/* Network & Speed */}
+                  <View style={styles.previewRow}>
+                    <Text style={[styles.previewLabel, s.textMuted]}>Network</Text>
+                    <View style={styles.previewValueRow}>
+                      <View style={styles.networkDotSmall} />
+                      <Text style={[styles.previewValueText, s.textSecondary]}>
+                        {network === 'devnet' ? 'Solana Devnet (Sub-second)' : 'Solana Mainnet'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.previewDivider, s.divider]} />
+
+                  {/* Network Fee */}
+                  <View style={styles.previewRow}>
+                    <Text style={[styles.previewLabel, s.textMuted]}>Estimated Fee</Text>
+                    <Text style={[styles.previewValueText, s.textSecondary]}>0.000005 SOL (~$0.0007)</Text>
+                  </View>
+
+                  <View style={[styles.previewDivider, s.divider]} />
+
+                  {/* Security Clearance */}
+                  <View style={styles.previewRow}>
+                    <Text style={[styles.previewLabel, s.textMuted]}>Authorization</Text>
+                    <View style={styles.securityBadgeRow}>
+                      <MaterialIcons
+                        name={isSendQuorumRequired ? 'security' : 'fingerprint'}
+                        size={14}
+                        color={isSendQuorumRequired ? '#F59E0B' : '#10B981'}
+                      />
+                      <Text
+                        style={[
+                          styles.securityBadgeText,
+                          { color: isSendQuorumRequired ? '#F59E0B' : '#10B981' },
+                        ]}
+                      >
+                        {isSendQuorumRequired ? '2-of-2 Hardware Quorum' : '1-Tap Biometric Passkey'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={[styles.previewDivider, s.divider]} />
+
+                  {/* Total Deduction with AnimatedCounter */}
+                  <View style={styles.previewRow}>
+                    <Text style={[styles.previewLabelBold, s.textPrimary]}>Total Outflow</Text>
+                    <AnimatedCounter
+                      value={sendAmountNum > 0 ? sendAmountNum + 0.000005 : 0}
+                      decimals={4}
+                      suffix=" SOL"
+                      textStyle={[styles.previewTotalValue, s.textPrimary]}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* ACTION BUTTON */}
+              <View style={{ marginTop: 14 }}>
+                <PrismDepthButton
+                  size="large"
+                  title={
+                    isSendQuorumRequired
+                      ? 'Authorize 2-of-2 Hardware Quorum'
+                      : 'Sign & Send with Passkey'
+                  }
+                  onPress={handleSendTransaction}
+                  loading={isSending}
+                  disabled={isSending || sendAmountNum <= 0 || sendAmountNum > balance}
+                />
+              </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* ==================================================================== */}
@@ -1559,16 +1930,6 @@ export function HaptixWalletScreen() {
               <Text style={[styles.overflowRowText, s.textPrimary]}>Security & Protection</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.overflowRow}
-              onPress={() => {
-                setShowOverflowMenu(false)
-                handleRequestAirdrop()
-              }}
-            >
-              <MaterialIcons name="paid" size={18} color={theme.textPrimary} />
-              <Text style={[styles.overflowRowText, s.textPrimary]}>Request Devnet Faucet (0.25 SOL)</Text>
-            </TouchableOpacity>
 
             <View style={[styles.overflowDivider, s.divider]} />
 
@@ -1672,6 +2033,14 @@ export function HaptixWalletScreen() {
           </View>
         </Modal>
       )}
+
+      {/* FLOATING PILL DOCK NAVIGATION */}
+      {!isLocked && (
+        <HaptixFloatingDock
+          activeTab={dockTab}
+          onSelectTab={handleDockSelect}
+        />
+      )}
     </View>
   )
 }
@@ -1682,29 +2051,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
   },
 
-  /* 1. MINIMAL HEADER */
+  /* 1. ELEVATED CONSUMER HEADER */
   header: {
-    paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#000000',
   },
-  headerIdentityRow: {
+  headerLeftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    flexShrink: 1,
   },
-  brandIconContainer: {
+  avatarButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarCircle: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: 18,
     backgroundColor: '#0D0D0D',
     borderWidth: 1,
     borderColor: '#262626',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarCircleAlert: {
+    borderColor: '#FDA4AF',
+    backgroundColor: 'rgba(244, 63, 94, 0.15)',
   },
   identityTextGroup: {
     justifyContent: 'center',
@@ -1712,15 +2090,43 @@ const styles = StyleSheet.create({
   headerWalletName: {
     color: '#F8FAFC',
     fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: 0.1,
-    maxWidth: 180,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    maxWidth: 140,
   },
-  networkSubRow: {
+  addressCopyChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: '#111111',
+    borderWidth: 1,
+    borderColor: '#262626',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
     marginTop: 2,
+    alignSelf: 'flex-start',
+  },
+  addressCopyText: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  networkPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#0D0D0D',
+    borderWidth: 1,
+    borderColor: '#262626',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   networkDot: {
     width: 6,
@@ -1728,20 +2134,15 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: '#F59E0B',
   },
-  networkLabel: {
-    color: '#64748B',
+  networkPillText: {
+    color: '#94A3B8',
     fontSize: 11,
-    fontWeight: '500',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    fontWeight: '600',
   },
   headerIconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     backgroundColor: '#0D0D0D',
     borderWidth: 1,
     borderColor: '#262626',
@@ -1783,7 +2184,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 6,
+    paddingTop: 8,
   },
   dashboardContainer: {
     maxWidth: 440,
@@ -1791,57 +2192,175 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 
-  /* TOTAL BALANCE */
-  balanceSection: {
-    alignItems: 'center',
-    paddingVertical: 18,
+  /* HERO BALANCE CARD */
+  heroCard: {
+    backgroundColor: '#0C0C0C',
+    borderWidth: 1,
+    borderColor: '#222222',
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 14,
   },
-  balanceLabel: {
-    color: '#94A3B8',
-    fontSize: 14,
-    fontWeight: '400',
-    letterSpacing: 0.1,
-    marginBottom: 4,
-  },
-  balancePrimaryNumber: {
-    color: '#F8FAFC',
-    fontSize: 40,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  balanceSecondaryNumber: {
-    color: '#64748B',
-    fontSize: 15,
-    fontWeight: '500',
-    marginTop: 4,
-  },
-
-  /* QUICK ACTIONS ROW */
-  quickActionsRow: {
+  heroTopRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 36,
-    paddingVertical: 14,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  quickActionBtn: {
+  heroBalanceLabelRow: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  actionIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#111111',
-    borderWidth: 1,
-    borderColor: '#262626',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quickActionLabel: {
+  heroBalanceLabel: {
     color: '#94A3B8',
     fontSize: 13,
     fontWeight: '500',
+  },
+  eyeToggleButton: {
+    padding: 2,
+  },
+  heroBadgePill: {
+    backgroundColor: '#161616',
+    borderWidth: 1,
+    borderColor: '#262626',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  heroBadgeText: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  heroBalanceContent: {
+    marginBottom: 16,
+  },
+  heroPrimaryBalance: {
+    color: '#FFFFFF',
+    fontSize: 34,
+    fontWeight: '700',
+    letterSpacing: -0.6,
+  },
+  heroSecondaryBalance: {
+    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 3,
+  },
+  heroActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  heroDepositBtn: {
+    flex: 1,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroDepositBtnText: {
+    color: '#000000',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  heroOutlineBtn: {
+    flex: 1,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#141414',
+    borderWidth: 1,
+    borderColor: '#262626',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroOutlineBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+
+  /* QUICK ACTIONS GRID */
+  quickActionsGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  quickSquircleCard: {
+    flex: 1,
+    backgroundColor: '#0C0C0C',
+    borderWidth: 1,
+    borderColor: '#222222',
+    borderRadius: 18,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  squircleIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    backgroundColor: '#161616',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  squircleLabel: {
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+
+  /* SEGMENTED FILTER BAR */
+  segmentedContainer: {
+    marginBottom: 14,
+  },
+  segmentTab: {
+    flex: 1,
+    paddingVertical: 7,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentTabActive: {
+    backgroundColor: '#1F1F1F',
+  },
+  segmentTabText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  segmentTabTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+
+  /* TREND BADGE */
+  trendBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  trendBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.1,
+  },
+  trendPositive: {
+    color: '#10B981',
+  },
+  trendNegative: {
+    color: '#EF4444',
   },
 
   /* SECTION BLOCKS */
@@ -2073,47 +2592,7 @@ const styles = StyleSheet.create({
   activityConfirmedLabel: {
     color: '#475569',
     fontSize: 10.5,
-    marginTop: 2,
   },
-
-  /* DEVNET UTILITY BAR */
-  devnetSection: {
-    marginTop: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#0D0D0D',
-    borderWidth: 1,
-    borderColor: '#262626',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  devnetTitle: {
-    color: '#64748B',
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  devnetDesc: {
-    color: '#475569',
-    fontSize: 11,
-    marginTop: 1,
-  },
-  faucetCompactBtn: {
-    backgroundColor: '#141414',
-    borderWidth: 1,
-    borderColor: '#262626',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  faucetCompactBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-
   /* MODAL COMMON STYLES */
   modalBackdrop: {
     flex: 1,
@@ -2152,6 +2631,224 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontSize: 12,
     marginTop: 2,
+  },
+  modalCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#1A1A1A',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  /* EXPANDED SEND TRANSACTION & PREVIEW STYLES */
+  expandedModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.78)',
+    justifyContent: 'flex-end',
+  },
+  expandedSendSheet: {
+    backgroundColor: '#0D0D0D',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
+    borderColor: '#262626',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    maxHeight: '92%',
+  },
+  sendHeroCard: {
+    backgroundColor: '#111111',
+    borderWidth: 1,
+    borderColor: '#262626',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  sendTokenHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 12,
+  },
+  sendTokenPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#1A1A1A',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  sendTokenSymbol: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  sendTokenName: {
+    color: '#94A3B8',
+    fontSize: 12,
+  },
+  sendBalanceChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sendBalanceLabel: {
+    color: '#64748B',
+    fontSize: 12,
+  },
+  sendBalanceValue: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  sendInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  sendBigInput: {
+    fontSize: 38,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    textAlign: 'center',
+    minWidth: 120,
+    padding: 0,
+    includeFontPadding: false,
+  },
+  sendCurrencySuffix: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginLeft: 6,
+    color: '#64748B',
+  },
+  sendUsdEstimateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  sendUsdApprox: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  sendUsdCounter: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748B',
+  },
+  percentageChipsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 8,
+  },
+  percentChip: {
+    flex: 1,
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: '#1A1A1A',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#262626',
+  },
+  percentChipText: {
+    color: '#F8FAFC',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  inputSection: {
+    marginBottom: 16,
+  },
+  validBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  validBadgeText: {
+    color: '#10B981',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  clearActionBtn: {
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+  },
+  previewSection: {
+    marginBottom: 14,
+  },
+  previewCard: {
+    backgroundColor: '#111111',
+    borderWidth: 1,
+    borderColor: '#262626',
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+  },
+  previewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  previewLabel: {
+    color: '#64748B',
+    fontSize: 12.5,
+  },
+  previewLabelBold: {
+    color: '#F8FAFC',
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  previewValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  previewValueText: {
+    color: '#CBD5E1',
+    fontSize: 12.5,
+    fontWeight: '500',
+  },
+  previewValueBold: {
+    color: '#F8FAFC',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  previewTotalValue: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  previewDivider: {
+    height: 1,
+    backgroundColor: '#1F1F1F',
+  },
+  recipientAvatarSmall: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#262626',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  networkDotSmall: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  securityBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  securityBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 
   /* SECURITY MODAL */
