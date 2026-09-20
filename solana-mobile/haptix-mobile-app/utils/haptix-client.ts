@@ -55,7 +55,12 @@ export async function fetchHaptixWallet(
 ): Promise<WalletState | null> {
   try {
     const accountInfo = await connection.getAccountInfo(walletPda)
-    if (!accountInfo) return null
+    if (!accountInfo || !accountInfo.data || accountInfo.data.length < 150) {
+      return null
+    }
+    if (!accountInfo.owner.equals(HAPTIX_PROGRAM_ID)) {
+      return null
+    }
 
     const data = accountInfo.data
     // 8 bytes Anchor discriminator

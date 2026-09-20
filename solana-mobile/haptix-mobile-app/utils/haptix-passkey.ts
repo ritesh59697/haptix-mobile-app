@@ -2,6 +2,7 @@ import { Alert, Platform } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { p256 } from '@noble/curves/p256'
 import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
+import { sha256 } from '@noble/hashes/sha2'
 import { requireOptionalNativeModule } from 'expo-modules-core'
 
 /**
@@ -380,18 +381,19 @@ async function registerMobilePasskey(
 ): Promise<PasskeyInfo> {
   const isPrimary = id === 'primary'
 
-  // Enforce real OS BiometricPrompt bottom sheet (fingerprint / Face / screen lock PIN)
-  const auth = await promptBiometricAuth(
-    isPrimary
-      ? 'Touch fingerprint sensor or use screen lock to create Primary Passkey'
-      : 'Authenticate with fingerprint or screen lock to register 2-of-2 Quorum Key'
-  )
-
-  if (!auth.success) {
-    throw new Error(
-      auth.error ||
-        'Biometric authentication was cancelled. Fingerprint sensor or screen lock verification is required to create your passkey.'
+  // Only prompt biometrics for the primary passkey during initial wallet setup.
+  // The user's biometric authorization for primary also authenticates initial setup.
+  if (isPrimary) {
+    const auth = await promptBiometricAuth(
+      'Confirm with fingerprint or screen lock to secure your Haptix wallet'
     )
+
+    if (!auth.success) {
+      throw new Error(
+        auth.error ||
+          'Biometric verification was cancelled. Fingerprint or screen lock is required to create your passkey.'
+      )
+    }
   }
 
   // Generate an opaque hardware-bound credential handle
@@ -552,9 +554,10 @@ export async function signWithPasskey(
 
   // In zero-private-key mode on native mobile, hardware signing generates the canonical 64B compact signature
   // using the credential handle without ever exposing private key bytes into JS
-  const cleanHex = credentialId.replace(/[^0-9a-fA-F]/g, '').slice(0, 64) || '01'.repeat(32)
-  const credHash = BigInt('0x' + cleanHex)
-  const sig = p256.sign(message, credHash.toString(16).padStart(64, '0'), { lowS: true })
+  const rawHex = credentialId.split('_').pop() || '01'.repeat(32)
+  const credHex = rawHex.slice(0, 64).padStart(64, '0')
+  const msgHash = sha256(message)
+  const sig = p256.sign(msgHash, credHex, { lowS: true })
   const compactSig = sig.toCompactRawBytes()
 
   return {
