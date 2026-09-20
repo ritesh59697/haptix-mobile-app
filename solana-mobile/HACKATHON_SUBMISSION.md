@@ -1,0 +1,116 @@
+# HAPTIX: Next-Gen Passkey Smart Wallet for Solana Mobile
+**Solana Mobile Hackathon (Radiant) Submission**
+
+---
+
+## 🚀 Executive Summary
+**Haptix** is a high-security, consumer-grade smart wallet designed specifically for **Solana Mobile (Saga / Chapter 2)**. 
+
+Traditional crypto wallets force users to manage seed phrases or endure annoying biometric popups for every trivial interaction. Haptix solves this with a **4-Layer Security Engine** backed by Solana's native **Secp256r1 (P-256) precompile** and **Solana Mobile Stack (SMS)**:
+
+1. **Low-Risk Fast Lane**: Small transfers (e.g. ≤ 0.1 SOL) authorize with a single, frictionless Face ID / Touch ID hardware passkey.
+2. **2-of-2 Hardware Quorum**: High-value transfers or policy alterations mathematically require two distinct hardware passkeys (e.g. Phone Secure Enclave + Backup YubiKey).
+3. **Autonomous Agent Sessions**: AI trading agents execute swaps and micro-transactions within a pre-approved budget using scoped session keys—**zero biometric prompts required**.
+4. **Guardian Social Recovery & Panic Freeze**: Designated recovery guardians can initiate timelocked passkey recovery if hardware is lost, and immediately trigger an on-chain **Panic Freeze** in emergencies.
+
+---
+
+## 🏛️ Architecture Breakdown
+
+### 1. On-Chain Smart Program (`haptix_program`)
+- **Framework**: Anchor 0.31 / Solana Agave client (v3.1.13)
+- **Program ID**: `YTdPGhiX7wgA9mQPJpUXqXRFzRvMBLwRAJBWdTVUHWL`
+- **Native Elliptic Curve**: Secp256r1 (P-256 / WebAuthn) verified directly on-chain via precompile instruction introspection.
+- **PDA Seeds**: `[b"haptix_wallet", &primary_passkey[1..33]]`
+
+#### Core Instructions:
+- `initialize_wallet`: Registers primary biometric passkey, secondary backup hardware key, and spend policy limits.
+- `execute_transfer`: Evaluates spend policy. If `amount <= threshold`, 1-passkey verification is accepted. If `amount > threshold`, requires 2-of-2 Hardware Quorum.
+- `grant_agent_session`: Grants a scoped Ed25519/Secp256k1 session key with expiry and spending ceiling (requires 2-of-2 passkey quorum).
+- `agent_execute`: Autonomous execution signed by the agent key. Deducts from allowance on-chain with zero user interruption.
+- `set_guardian` & `set_spend_threshold`: High-security governance actions requiring 2-of-2 Hardware Quorum.
+- `panic_freeze` & `unfreeze`: Instant account freezing in emergencies.
+- `initiate_recovery` & `execute_recovery`: Social recovery with 24-hour timelock.
+
+### 2. Mobile Client (`haptix-mobile-app`)
+- **Framework**: React Native 0.83 + Expo 55 + Solana Mobile Wallet Adapter (`@wallet-ui/react-native-web3js`)
+- **Target OS**: Android (APK build)
+- **Design System**: Glassmorphic cyber-minimalist dark mode (`#070a10` surface with neon teal `#00ffa3` and amber quorum indicators).
+- **Haptic Feedback**: Rich tactile feedback (`expo-haptics`) mapped to security events (light tap for 1-passkey, heavy alert pulse for quorum escalation).
+
+---
+
+## 🧪 Verification & Test Results
+The on-chain program has been compiled and validated on the Solana local validator:
+```bash
+$ anchor test
+  haptix_program tests
+Wallet initialized. Tx: 39UDjDwmHgJFcLfv5hwmB5AxFom81kGFrEqd6VW3euoToBcfbT7kHGTtK7WxdoGnMqjvmMnuh2vLFe3Cz9F7sqNQ
+    ✔ Initializes a Haptix Passkey Account (535ms)
+Wallet panic frozen. Tx: JinXN1BRdPN7DRgs7KPDkwoeybz14fCQDhWwnnyTRKvsoPc6voVnwZ45WwsBGyjJEti9cKEi2ErKqH7j7xaaBRW
+    ✔ Guardian triggers Panic Freeze (509ms)
+Recovery initiated. Tx: HUHaV9WtKs1esevcaJdgbuD4A6WfFN88CczqkfUVU6fVqvpfq4yEC43aXfUbwrW8Lm4L4feULcx5ZXrVFmuRQyP
+    ✔ Guardian initiates Social Recovery (510ms)
+
+  3 passing (2s)
+```
+
+TypeScript client type checks:
+```bash
+$ npx tsc --noEmit
+# 0 errors
+```
+
+Android prebuild:
+```bash
+$ npx expo prebuild -p android
+# Native Android project generated with Gradle and AndroidManifest.xml
+```
+
+---
+
+## 📱 How to Build the Android APK
+
+### Option A: Local Build (Requires Android Studio / Java 17+)
+```bash
+cd solana-mobile/haptix-mobile-app
+npm run android:build
+cd android && ./gradlew assembleRelease
+# Output APK: android/app/build/outputs/apk/release/app-release.apk
+```
+
+### Option B: Expo EAS Cloud Build (Pre-Built Binary Ready!)
+- **Live EAS Build Receipt**: [https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/2229f1ae-40a9-468e-a11e-42d9aba0dd0f](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/2229f1ae-40a9-468e-a11e-42d9aba0dd0f)
+- **Direct APK Download Link**: [Download haptix-wallet.apk (Expo CDN)](https://expo.dev/artifacts/eas/87Q9THZikUdtFiCe41nZNSSyRl1BPJTqk6LYayDM3ZI.apk)
+- **Local Workspace Binary**: `solana-mobile/haptix-wallet.apk` (130 MB, extension-matched UI, ready for sideloading/installation)
+
+
+---
+
+## 🎬 3-Minute Demo Video Script
+
+### 0:00 - 0:30: The Problem
+- Show the painful UX of modern mobile wallets: seed phrases, security fatigue, and constant interruptions for small on-chain actions.
+- Introduce **Haptix**: The first risk-adaptive passkey smart wallet built from the ground up for Solana Mobile.
+
+### 0:30 - 1:15: Low-Risk Fast Lane (1 Passkey)
+- Open Haptix on Android.
+- Enter a small transfer of 0.05 SOL.
+- App immediately identifies: `🟢 LOW RISK: 1-Tap Biometric Approval`.
+- Tap once with Fingerprint/Face ID. Transaction confirms on-chain in 400ms!
+
+### 1:15 - 2:00: High-Value Escalation (2-of-2 Hardware Quorum)
+- Change amount to 1.5 SOL (exceeding the 0.1 SOL threshold).
+- Watch the UI dynamically switch in real time to: `🟡 HIGH RISK: 2-of-2 Hardware Quorum Required`.
+- Tap Send: App prompts for Passkey #1 (biometrics) + Passkey #2 (backup hardware key). Show the mathematical quorum enforced by the smart contract.
+
+### 2:00 - 2:30: Autonomous AI Agent Execution
+- Switch to the Agent tab.
+- Show an active trading agent session with a 0.25 SOL budget.
+- Tap "Execute Autonomous Trade".
+- The agent signs and transfers funds on-chain instantly—**zero biometric popups**!
+
+### 2:30 - 3:00: Emergency Freeze & Guardian Recovery
+- Demonstrate the instant "Panic Freeze" button locking the wallet.
+- Show how the designated Guardian can initiate a 24-hour timelocked recovery if hardware is lost.
+- Wrap up with vision: Haptix brings frictionless consumer crypto to the Solana dApp Store.
