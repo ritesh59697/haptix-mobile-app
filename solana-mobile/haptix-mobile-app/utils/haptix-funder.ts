@@ -1,11 +1,19 @@
-import { Connection, Keypair, PublicKey } from '@solana/web3.js'
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  SystemProgram,
+  LAMPORTS_PER_SOL,
+  sendAndConfirmTransaction,
+} from '@solana/web3.js'
 
 /**
  * Pre-funded persistent relayer on Solana Devnet (4.049+ SOL balance).
  * Public key: 5oE1qrgMaVc2QQhamxAsJHxymTg2JJ4aRWCed6c1vqM6
  *
  * Used to sponsor network gas fees (5,000 lamports / 0.000005 SOL per tx)
- * for smart wallet PDA transactions with zero rate limits and 0ms latency.
+ * and provide reliable zero-rate-limit faucet funding for smart wallet PDAs.
  */
 export const DEVNET_RELAYER_SECRET = new Uint8Array([
   184, 220, 85, 40, 98, 75, 255, 188, 13, 211, 110, 48, 23, 14, 141, 18,
@@ -26,12 +34,37 @@ export async function getFundedDevnetPayer(
 }
 
 /**
- * @deprecated Devnet faucet has been removed.
+ * Directly fund a smart wallet PDA with Devnet SOL from the relayer treasury.
+ * Bypasses rate limits and delivers funds in sub-second time.
+ */
+export async function fundDevnetWallet(
+  connection: Connection,
+  walletPda: PublicKey,
+  amountSol: number = 0.2
+): Promise<string> {
+  const payer = await getFundedDevnetPayer(connection)
+  const lamports = BigInt(Math.round(amountSol * LAMPORTS_PER_SOL))
+  const tx = new Transaction().add(
+    SystemProgram.transfer({
+      fromPubkey: payer.publicKey,
+      toPubkey: walletPda,
+      lamports,
+    })
+  )
+  const sig = await sendAndConfirmTransaction(connection, tx, [payer], {
+    commitment: 'confirmed',
+  })
+  return sig
+}
+
+/**
+ * Direct funding helper (replaces deprecated public airdrop).
  */
 export async function airdropToWalletPda(
-  _connection: Connection,
-  _walletPda: PublicKey,
-  _amountSol: number = 0.25
+  connection: Connection,
+  walletPda: PublicKey,
+  amountSol: number = 0.2
 ): Promise<string> {
-  throw new Error('Devnet airdrop faucet is disabled.')
+  return fundDevnetWallet(connection, walletPda, amountSol)
 }
+
