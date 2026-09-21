@@ -41,3 +41,5 @@ node_modules/
 npm-debug.log*
 dist/
 .gstack/
+*.apk
+solana-mobile/haptix-wallet.apk

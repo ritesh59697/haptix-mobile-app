@@ -24,6 +24,8 @@ export interface ThemeTokens {
   rose: string
   roseBg: string
   roseText: string
+  roseSurface: string
+  scrim: string
   shadowColor: string
   cardShadow: {
     shadowColor: string
@@ -60,6 +62,8 @@ export const darkTokens: ThemeTokens = {
   rose: '#F43F5E',
   roseBg: 'rgba(244, 63, 94, 0.10)',
   roseText: '#FB7185',
+  roseSurface: 'rgba(244, 63, 94, 0.18)',
+  scrim: 'rgba(8, 8, 10, 0.94)',
   shadowColor: '#000000',
   cardShadow: {
     shadowColor: '#000000',
@@ -96,6 +100,8 @@ export const lightTokens: ThemeTokens = {
   rose: '#E11D48',
   roseBg: '#FFE4E6',
   roseText: '#9F1239',
+  roseSurface: '#FECDD3',
+  scrim: 'rgba(250, 250, 250, 0.94)',
   shadowColor: '#000000',
   cardShadow: {
     shadowColor: '#000000',
