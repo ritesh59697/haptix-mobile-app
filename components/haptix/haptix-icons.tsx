@@ -134,6 +134,25 @@ export function CpuSettingBold({ size = 24, color = '#FFFFFF' }: IconProps) {
  * MX Icons: ActivityBold
  * Used for: Dock Activity tab & On-Chain History
  */
+export function CpuChipBold({ size = 24, color = '#FFFFFF' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M9.2 6.5h5.6c1.49 0 2.7 1.21 2.7 2.7v5.6c0 1.49-1.21 2.7-2.7 2.7H9.2c-1.49 0-2.7-1.21-2.7-2.7V9.2c0-1.49 1.21-2.7 2.7-2.7Zm1.5 4.2v2.6h2.6v-2.6h-2.6Z"
+        fill={color}
+      />
+      <Path d="M9.9 3.2h1.1v3.3H9.9zM13 3.2h1.1v3.3H13z" fill={color} />
+      <Path d="M9.9 17.5h1.1v3.3H9.9zM13 17.5h1.1v3.3H13z" fill={color} />
+      <Path d="M3.2 9.9h3.3v1.1H3.2zM3.2 13h3.3v1.1H3.2z" fill={color} />
+      <Path d="M17.5 9.9h3.3v1.1h-3.3zM17.5 13h3.3v1.1h-3.3z" fill={color} />
+    </Svg>
+  )
+}
+
+/**
+ * MX Icons: ActivityBold
+ * Used for: Dock Activity tab & On-Chain History
+ */
 export function ActivityBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -370,7 +389,7 @@ export function WithdrawActionIcon({ size = 16, color = '#FFFFFF' }: IconProps) 
 // ============================================================================
 
 export const DockHomeIcon = Wallet2Bold
-export const DockAgentIcon = CpuSettingBold
+export const DockAgentIcon = CpuChipBold
 export const DockActivityIcon = ActivityBold
 export const DockSecurityIcon = ShieldSecurityBold
 export const DockMarketsIcon = ActivityBold
@@ -380,7 +399,7 @@ export const ActionSendIcon = Send2Bold
 export const ActionReceiveIcon = CardReceiveBold
 export const ActionSwapIcon = Refresh2Bold
 export const ActionFreezeIcon = Lock1Bold
-export const ActionAgentsIcon = CpuSettingBold
+export const ActionAgentsIcon = CpuChipBold
 
 export const EyeShowIcon = EyeBold
 export const EyeHideIcon = EyeSlashBold

@@ -30,7 +30,7 @@ export function HaptixTooltip({
   tip,
   position = 'top',
   children,
-  iconSize = 14,
+  iconSize = 18,
   iconColor,
 }: HaptixTooltipProps) {
   const { isDark, theme } = useAppTheme()
@@ -72,7 +72,8 @@ export function HaptixTooltip({
   }
 
   const isTop = position === 'top'
-  const bubbleBg = isDark ? '#1E293B' : '#0F172A'
+  // Zinc, to match the neutral scale the rest of the theme is built on.
+  const bubbleBg = isDark ? '#27272A' : '#18181B'
   const textColor = '#F8FAFC'
   const arrowBorderColor = bubbleBg
 
@@ -153,7 +154,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   infoBadge: {
-    padding: 2,
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },

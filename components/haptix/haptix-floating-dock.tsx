@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
 } from 'react-native'
 import { BlurView } from 'expo-blur'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -48,7 +49,7 @@ const DOCK_TABS: DockTabDef[] = [
  */
 export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDockProps) {
   const insets = useSafeAreaInsets()
-  const { isDark } = useAppTheme()
+  const { theme, isDark } = useAppTheme()
   const { width: windowWidth } = useWindowDimensions()
 
   // Calculate pixel-perfect compressed dock width (300-320px)
@@ -105,11 +106,12 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
   })
 
   // Theme-aware colors matching .cc-ios-tabs specification
-  const controlBg = isDark ? 'rgba(16, 16, 20, 0.82)' : 'rgba(255, 255, 255, 0.78)'
+  // Near-opaque: at 0.82 alpha, scrolled list text used to ghost straight through the dock.
+  const controlBg = theme.scrim
   const controlBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.08)'
   const thumbBg = isDark ? '#FFFFFF' : '#0B1220'
   const activeTextColor = isDark ? '#000000' : '#FFFFFF'
-  const inactiveTextColor = isDark ? '#8E8E93' : '#6B7280'
+  const inactiveTextColor = isDark ? '#9CA3AF' : '#6B7280'
 
   // Elevated bottom offset so it floats comfortably above Android gesture bar / iOS home indicator
   const bottomOffset = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + 8
@@ -122,6 +124,12 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
       ]}
       pointerEvents="box-none"
     >
+      {/* Fade band: dissolves scrolled content into the dock instead of bleeding through it */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={['transparent', theme.bgApp]}
+        style={styles.dockFade}
+      />
       {/* Outer shadow container (prevents Android/iOS shadow clipping from overflow:hidden) */}
       <View style={[{ width: dockWidth }, isDark ? styles.darkShadow : styles.lightShadow]}>
         <BlurView
@@ -166,18 +174,16 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
                 activeOpacity={0.8}
               >
                 <tab.Icon size={18} color={itemColor} />
-                {isActive && (
-                  <Text
-                    style={[
-                      styles.dockItemText,
-                      { color: itemColor },
-                      styles.dockItemTextActive,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {tab.label}
-                  </Text>
-                )}
+                <Text
+                  style={[
+                    styles.dockItemText,
+                    { color: itemColor },
+                    isActive && styles.dockItemTextActive,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {tab.label}
+                </Text>
               </TouchableOpacity>
             )
           })}
@@ -194,6 +200,14 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     zIndex: 100,
+  },
+
+  dockFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: '100%',
+    height: 36,
   },
 
   lightShadow: {
@@ -239,7 +253,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     left: 4,
-    height: 38,
+    height: 48,
     borderRadius: 999,
     zIndex: 0,
   },
@@ -274,19 +288,18 @@ const styles = StyleSheet.create({
   dockItem: {
     position: 'relative',
     zIndex: 1,
-    height: 38,
+    height: 48,
     borderRadius: 999,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: 2,
     backgroundColor: 'transparent',
   },
 
   dockItemText: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: -0.2,
+    fontSize: 9.5,
+    fontWeight: '500',
+    letterSpacing: -0.1,
   },
 
   dockItemTextActive: {

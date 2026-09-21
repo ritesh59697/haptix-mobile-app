@@ -86,8 +86,20 @@ export function HoldToConfirmButton({
     outputRange: ['0%', '100%'],
   })
 
-  let fillColor = variant === 'danger' ? theme.rose : theme.accent
-  let borderColor = isDark ? '#334155' : '#CBD5E1'
+  const isDanger = variant === 'danger'
+  const isWarning = variant === 'warning'
+
+  const variantColor = isDanger ? theme.rose : isWarning ? theme.amber : theme.accent
+  const fillColor = variantColor
+  const borderColor = isDanger || isWarning ? variantColor : theme.borderDefault
+  const surfaceColor = isDanger
+    ? theme.roseSurface
+    : isWarning
+      ? theme.amberBg
+      : theme.bgElevated
+  // Text colour once the fill has swept under it. A white fill needs dark text,
+  // otherwise the label vanishes mid-hold — exactly when it must stay readable.
+  const fillForeground = isDanger || isWarning ? '#FFFFFF' : theme.accentForeground
 
   return (
     <View style={[styles.wrapper, style]}>
@@ -99,7 +111,7 @@ export function HoldToConfirmButton({
         style={[
           styles.container,
           {
-            backgroundColor: isDark ? '#0F172A' : '#F8FAFC',
+            backgroundColor: surfaceColor,
             borderColor,
           },
           Platform.OS === 'web'
@@ -125,15 +137,23 @@ export function HoldToConfirmButton({
         {/* Text and Icon */}
         <View style={styles.content}>
           <MaterialIcons
-            name={isCompleted ? 'check-circle' : variant === 'danger' ? 'warning' : 'lock'}
+            name={isCompleted ? 'check-circle' : isDanger || isWarning ? 'warning' : 'lock'}
             size={18}
-            color={isCompleted ? '#FFFFFF' : isHolding ? '#FFFFFF' : variant === 'danger' ? theme.rose : theme.textPrimary}
+            color={
+              isCompleted || isHolding
+                ? fillForeground
+                : isDanger
+                  ? theme.rose
+                  : isWarning
+                    ? theme.amber
+                    : theme.textPrimary
+            }
           />
           <Text
             style={[
               styles.label,
               {
-                color: isHolding || isCompleted ? '#FFFFFF' : theme.textPrimary,
+                color: isHolding || isCompleted ? fillForeground : theme.textPrimary,
               },
             ]}
           >
