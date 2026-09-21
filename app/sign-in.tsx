@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { router } from 'expo-router'
 import { useAuth } from '@/components/auth/auth-provider'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -27,6 +27,7 @@ import {
   getOrCreatePrimaryPasskey,
   getOrCreateSecondaryPasskey,
   promptBiometricAuth,
+  authenticatePasskey,
 } from '@/utils/haptix-passkey'
 import {
   getWalletPda,
@@ -34,7 +35,7 @@ import {
   fetchHaptixWallet,
 } from '@/utils/haptix-client'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
-import { HaptixBrandMark, CopyChipIcon } from '@/components/haptix/haptix-icons'
+import { HaptixBrandMark, CopyChipIcon, FingerScanBold } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { useAppTheme } from '@/components/theme/theme-context'
 import {
@@ -87,8 +88,16 @@ export default function SignIn() {
   const [hasCopiedAddress, setHasCopiedAddress] = useState(false)
 
   // Sign In / Restore States
+  const [savedWallet, setSavedWallet] = useState<HaptixWalletAccount | null>(null)
+  const [signInError, setSignInError] = useState<string | null>(null)
   const [restoreAddress, setRestoreAddress] = useState('')
   const [showAddressInput, setShowAddressInput] = useState(false)
+
+  useEffect(() => {
+    getSavedWallet().then((w) => {
+      if (w) setSavedWallet(w)
+    }).catch(() => {})
+  }, [currentScreen])
 
   // --------------------------------------------------------------------------
   // Creation Flow Handlers
@@ -178,15 +187,15 @@ export default function SignIn() {
       setIsSigningIn(true)
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
-      const auth = await promptBiometricAuth('Authenticate with biometric passkey to sign in')
-      if (!auth.success) {
-        Alert.alert('Authentication Failed', auth.error || 'Biometric verification was not completed.')
-        return
-      }
-
-      // 1. Check if we already have a saved wallet in storage
+      // 1. Check if we already have a saved wallet in storage (Normal Sign In)
       const saved = await getSavedWallet()
       if (saved) {
+        const auth = await promptBiometricAuth('Authenticate with biometric passkey to sign in')
+        if (!auth.success) {
+          Alert.alert('Authentication Failed', auth.error || 'Biometric verification was not completed.')
+          return
+        }
+
         if (showAddressInput && restoreAddress.trim()) {
           saved.address = restoreAddress.trim()
           await saveWallet(saved)
@@ -197,25 +206,52 @@ export default function SignIn() {
         return
       }
 
-      // 2. Otherwise derive directly from authentic hardware enclave passkeys
-      const primary = await getOrCreatePrimaryPasskey('My Haptix Wallet')
-      const secondary = await getOrCreateSecondaryPasskey()
-      const [walletPda] = getWalletPda(primary.publicKey)
+      // 2. Otherwise, we are RESTORING a wallet on a new device/browser
+      const primaryAuth = await authenticatePasskey('Select your Haptix passkey to restore your wallet')
+      
+      const targetAddress = showAddressInput && restoreAddress.trim() ? restoreAddress.trim() : ''
+      if (!targetAddress) {
+        Alert.alert(
+          'Address Required',
+          'Since this is a new device/browser, we need your Solana smart wallet address to restore your account. Please enter it below.'
+        )
+        setShowAddressInput(true)
+        return
+      }
 
-      const targetAddress = showAddressInput && restoreAddress.trim()
-        ? restoreAddress.trim()
-        : walletPda.toBase58()
+      // Fetch on-chain state to get the public keys
+      const connection = new Connection('https://api.devnet.solana.com', { commitment: 'confirmed' })
+      let pda: any
+      try {
+        const { PublicKey } = require('@solana/web3.js')
+        pda = new PublicKey(targetAddress)
+      } catch {
+        Alert.alert('Invalid Address', 'Please enter a valid Solana address.')
+        return
+      }
+
+      const onchainState = await fetchHaptixWallet(connection, pda)
+      if (!onchainState) {
+        Alert.alert('Wallet Not Found', 'Could not find a Haptix smart wallet at this address on Devnet.')
+        return
+      }
 
       const restored = await createSmartWalletRecord({
         name: 'My Haptix Wallet',
-        primaryPasskeyHex: primary.publicKeyHex,
-        secondaryPasskeyHex: secondary.publicKeyHex,
-        primaryLabel: primary.label,
-        secondaryLabel: secondary.label,
+        primaryPasskeyHex: Buffer.from(onchainState.primaryPasskey).toString('hex'),
+        secondaryPasskeyHex: Buffer.from(onchainState.secondaryPasskey).toString('hex'),
+        primaryLabel: primaryAuth.label,
+        secondaryLabel: 'Hardware Security Key (2-of-2 Quorum)',
         spendThreshold: 0.1,
         network: 'devnet',
       })
       restored.address = targetAddress
+      restored.isInitializedOnChain = true
+
+      // Save credential ID for future sign-ins
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default
+      await AsyncStorage.setItem('@haptix_passkey_credential_primary', primaryAuth.credentialId)
+      await AsyncStorage.setItem('@haptix_passkey_pubkey_primary', restored.primaryPasskeyHex)
 
       await saveWallet(restored)
       await updateWallet(restored)

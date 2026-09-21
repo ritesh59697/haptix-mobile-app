@@ -15,13 +15,12 @@ import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
 import {
   DockHomeIcon,
-  DockMarketsIcon,
-  DockSwapIcon,
   DockAgentIcon,
+  DockActivityIcon,
   DockSecurityIcon,
 } from './haptix-icons'
 
-export type DockTabId = 'home' | 'markets' | 'swap' | 'agent' | 'security'
+export type DockTabId = 'home' | 'agent' | 'activity' | 'security'
 
 interface HaptixFloatingDockProps {
   activeTab: DockTabId
@@ -35,29 +34,25 @@ interface DockTabDef {
 }
 
 const DOCK_TABS: DockTabDef[] = [
-  { id: 'home', label: 'Home', Icon: DockHomeIcon },
-  { id: 'markets', label: 'Markets', Icon: DockMarketsIcon },
-  { id: 'swap', label: 'Swap', Icon: DockSwapIcon },
-  { id: 'agent', label: 'Agent', Icon: DockAgentIcon },
-  { id: 'security', label: 'Shield', Icon: DockSecurityIcon },
+  { id: 'home', label: 'Wallet', Icon: DockHomeIcon },
+  { id: 'agent', label: 'Agents', Icon: DockAgentIcon },
+  { id: 'activity', label: 'Activity', Icon: DockActivityIcon },
+  { id: 'security', label: 'Security', Icon: DockSecurityIcon },
 ]
 
 /**
  * HaptixFloatingDock
- * Styled from Uiverse.io by lawson_5090 (.cc-ios-tabs)
- * - 420ms cubic-bezier(0.22, 1, 0.36, 1) sliding thumb transition
- * - BlurView glassmorphism (backdrop-filter: blur(12px))
- * - Synchronous window-width calculation (zero layout delay / flicker on Android)
- * - Elevated bottom floating offset above gesture bar
- * - Tactile squish & snap scale micro-interaction
+ * Compressed 4-tab floating navigation dock
+ * - Synchronous window-width calculation (clean, centered, balanced)
+ * - Fluid sliding thumb transition with tactile haptic feedback
  */
 export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDockProps) {
   const insets = useSafeAreaInsets()
   const { isDark } = useAppTheme()
   const { width: windowWidth } = useWindowDimensions()
 
-  // Calculate pixel-perfect dock and tab dimensions synchronously
-  const dockWidth = Math.min(Math.max(windowWidth * 0.92, 310), 356)
+  // Calculate pixel-perfect compressed dock width (300-320px)
+  const dockWidth = Math.min(Math.max(windowWidth * 0.86, 280), 320)
   const PADDING = 4
   const availableWidth = dockWidth - PADDING * 2
   const tabWidth = availableWidth / DOCK_TABS.length
@@ -170,17 +165,19 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
                 onPress={() => handlePress(tab.id)}
                 activeOpacity={0.8}
               >
-                <tab.Icon size={15} color={itemColor} />
-                <Text
-                  style={[
-                    styles.dockItemText,
-                    { color: itemColor },
-                    isActive && styles.dockItemTextActive,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {tab.label}
-                </Text>
+                <tab.Icon size={18} color={itemColor} />
+                {isActive && (
+                  <Text
+                    style={[
+                      styles.dockItemText,
+                      { color: itemColor },
+                      styles.dockItemTextActive,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {tab.label}
+                  </Text>
+                )}
               </TouchableOpacity>
             )
           })}

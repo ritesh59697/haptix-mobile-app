@@ -1,12 +1,24 @@
 import React from 'react'
-import Svg, { Path, Rect, Line, Polyline, Defs, LinearGradient, Stop } from 'react-native-svg'
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg'
 
-interface IconProps {
-  size?: number
+/**
+ * Haptix Design System Icons
+ * Featuring official icons from MX Icons (https://mxicons.vercel.app/)
+ * Supports both React Native Web and React Native Native.
+ */
+
+export interface IconProps {
+  size?: number | string
   color?: string
+  fill?: string
+  className?: string
 }
 
-// 1. Official Haptix White Dual-Pill Brand Mark
+// ============================================================================
+// 1. BRAND & TOKEN LOGOS (Haptix, USDC, Solana)
+// ============================================================================
+
+// Official Haptix White Dual-Pill Brand Mark
 export function HaptixBrandMark({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
@@ -22,7 +34,7 @@ export function HaptixBrandMark({ size = 24, color = '#FFFFFF' }: IconProps) {
   )
 }
 
-// 2. Official Circle USDC Vector Logo
+// Official Circle USDC Vector Logo
 export function UsdcTokenLogo({ size = 28 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 2000 2000">
@@ -42,7 +54,7 @@ export function UsdcTokenLogo({ size = 28 }: { size?: number }) {
   )
 }
 
-// 3. Official Solana 3-Bar Gradient Logo
+// Official Solana 3-Bar Gradient Logo
 export function SolanaTokenLogo({ size = 26 }: { size?: number }) {
   return (
     <Svg width={size} height={(size * 312) / 398} viewBox="0 0 398 312" fill="none">
@@ -68,313 +80,308 @@ export function SolanaTokenLogo({ size = 26 }: { size?: number }) {
   )
 }
 
-// 4. Send Arrow Icon (Diagonal Up-Right from Extension)
-export function ActionSendIcon({ size = 18, color = '#F8FAFC' }: IconProps) {
+// ============================================================================
+// 2. OFFICIAL MX ICONS (https://mxicons.vercel.app/)
+// ============================================================================
+
+/**
+ * MX Icons: Wallet2Bold
+ * Used for: Dock Home / Main Wallet tab
+ */
+export function Wallet2Bold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Line
-        x1="7"
-        y1="17"
-        x2="17"
-        y2="7"
-        stroke={color}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      <Path
+        d="M22.0002 10.9692V13.0292C22.0002 13.5792 21.5602 14.0292 21.0002 14.0492H19.0402C17.9602 14.0492 16.9702 13.2592 16.8802 12.1792C16.8202 11.5492 17.0602 10.9592 17.4802 10.5492C17.8502 10.1692 18.3602 9.94922 18.9202 9.94922H21.0002C21.5602 9.96922 22.0002 10.4192 22.0002 10.9692Z"
+        fill={color}
       />
-      <Polyline
-        points="7 7 17 7 17 17"
-        stroke={color}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      <Path
+        d="M20.47 15.55H19.04C17.14 15.55 15.54 14.12 15.38 12.3C15.29 11.26 15.67 10.22 16.43 9.48C17.07 8.82 17.96 8.45 18.92 8.45H20.47C20.76 8.45 21 8.21 20.97 7.92C20.75 5.49 19.14 3.83 16.75 3.55C16.51 3.51 16.26 3.5 16 3.5H7C6.72 3.5 6.45 3.52 6.19 3.56C3.64 3.88 2 5.78 2 8.5V15.5C2 18.26 4.24 20.5 7 20.5H16C18.8 20.5 20.73 18.75 20.97 16.08C21 15.79 20.76 15.55 20.47 15.55ZM13 9.75H7C6.59 9.75 6.25 9.41 6.25 9C6.25 8.59 6.59 8.25 7 8.25H13C13.41 8.25 13.75 8.59 13.75 9C13.75 9.41 13.41 9.75 13 9.75Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 5. Receive Arrow Icon (Diagonal Down-Left / Down-Arrow from Extension)
-export function ActionReceiveIcon({ size = 18, color = '#F8FAFC' }: IconProps) {
+/**
+ * MX Icons: CpuSettingBold
+ * Used for: Dock Agents tab & Autonomous AI Agent controls
+ */
+export function CpuSettingBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Line
-        x1="12"
-        y1="5"
-        x2="12"
-        y2="19"
-        stroke={color}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      <Path
+        d="M4.09 8.08C4.04 8.38 4 8.68 4 9C4 8.69 4.04 8.38 4.09 8.08ZM4 15C4 15.32 4.04 15.62 4.09 15.92C4.04 15.62 4 15.31 4 15ZM8.09 19.91C8.38 19.96 8.69 20 9 20C8.69 20 8.39 19.96 8.09 19.91ZM8.09 4.09C8.39 4.04 8.69 4 9 4C8.69 4 8.38 4.04 8.09 4.09ZM15.92 4.09C15.62 4.04 15.32 4 15 4C15.31 4 15.62 4.04 15.92 4.09ZM19.91 8.08C19.96 8.38 20 8.69 20 9C20 8.68 19.96 8.38 19.91 8.08Z"
+        fill={color}
       />
-      <Polyline
-        points="19 12 12 19 5 12"
-        stroke={color}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      <Path
+        d="M22 8.3C22 8.72 21.67 9.05 21.25 9.05H20V10.8871C20 11.2207 19.638 11.4284 19.35 11.26C18.92 11.01 18.42 10.93 17.94 11.06C17.6321 11.1339 17.26 10.9349 17.26 10.6183V9.74C17.26 8.09 15.91 6.74 14.26 6.74H9.74C8.09 6.74 6.74 8.09 6.74 9.74V14.26C6.74 15.91 8.09 17.26 9.74 17.26H10.19C10.306 17.26 10.4 17.354 10.4 17.47C10.4 18.4335 11.0982 19.2436 12.0175 19.4298C12.1904 19.4648 12.3073 19.6716 12.25 19.8383C12.2172 19.9337 12.1302 20 12.0293 20H9.06V21.25C9.06 21.66 8.72 22 8.31 22C7.89 22 7.56 21.66 7.56 21.25V19.78C5.96 19.29 4.71 18.04 4.23 16.45H2.75C2.34 16.45 2 16.11 2 15.7C2 15.28 2.34 14.95 2.75 14.95H4V12.75H2.75C2.34 12.75 2 12.41 2 12C2 11.58 2.34 11.25 2.75 11.25H4V9.05H2.75C2.34 9.05 2 8.72 2 8.3C2 7.89 2.34 7.55 2.75 7.55H4.23C4.71 5.96 5.96 4.71 7.56 4.22V2.75C7.56 2.34 7.89 2 8.31 2C8.72 2 9.06 2.34 9.06 2.75V4H11.25V2.75C11.25 2.34 11.59 2 12 2C12.41 2 12.75 2.34 12.75 2.75V4H14.95V2.75C14.95 2.34 15.29 2 15.7 2C16.11 2 16.45 2.34 16.45 2.75V4.23C18.04 4.71 19.29 5.96 19.77 7.55H21.25C21.67 7.55 22 7.89 22 8.3Z"
+        fill={color}
+      />
+      <Path
+        d="M20.9904 15.5315C20.3104 15.5315 19.9204 15.1915 19.9204 14.6915C19.9204 14.4915 19.9804 14.2615 20.1204 14.0215C20.4004 13.5415 20.2304 12.9215 19.7504 12.6515L18.8404 12.1215C18.4204 11.8715 17.8804 12.0215 17.6304 12.4415L17.5704 12.5415C17.0904 13.3715 16.3104 13.3715 15.8304 12.5415L15.7704 12.4415C15.5304 12.0215 14.9804 11.8715 14.5704 12.1215L13.6504 12.6515C13.3304 12.8315 13.1404 13.1715 13.1404 13.5215C13.1404 13.6915 13.1904 13.8615 13.2804 14.0215C13.4204 14.2615 13.4904 14.4915 13.4904 14.6915C13.4904 15.1915 13.0904 15.5315 12.4104 15.5315C11.8604 15.5315 11.4004 15.9815 11.4004 16.5315V17.4715C11.4004 18.0215 11.8604 18.4715 12.4104 18.4715C13.0904 18.4715 13.4904 18.8115 13.4904 19.3115C13.4904 19.5115 13.4204 19.7415 13.2804 19.9815C13.0004 20.4615 13.1704 21.0815 13.6504 21.3515L14.5704 21.8815C14.9804 22.1315 15.5304 21.9815 15.7704 21.5615L15.8304 21.4615C16.3104 20.6315 17.0904 20.6315 17.5704 21.4615L17.6304 21.5615C17.8804 21.9815 18.4204 22.1315 18.8404 21.8815L19.7504 21.3515C20.0704 21.1715 20.2604 20.8315 20.2604 20.4815C20.2604 20.3115 20.2104 20.1415 20.1204 19.9815C19.9804 19.7415 19.9204 19.5115 19.9204 19.3115C19.9204 18.8115 20.3104 18.4715 20.9904 18.4715C21.5504 18.4715 22.0004 18.0215 22.0004 17.4715V16.5315C22.0004 15.9815 21.5504 15.5315 20.9904 15.5315ZM16.7004 18.7215C15.7504 18.7215 14.9804 17.9515 14.9804 17.0015C14.9804 16.0515 15.7504 15.2815 16.7004 15.2815C17.6504 15.2815 18.4204 16.0515 18.4204 17.0015C18.4204 17.9515 17.6504 18.7215 16.7004 18.7215Z"
+        fill={color}
+      />
+      <Path
+        d="M16.25 10.02V10.5925C16.25 10.9266 15.8047 11.1384 15.48 11.06C14.98 10.93 14.48 11 14.07 11.25L13.16 11.78C12.53 12.13 12.14 12.8 12.14 13.52C12.14 13.5796 12.1425 13.6396 12.1475 13.6996C12.1803 14.0858 11.9103 14.5545 11.5593 14.7191C11.0767 14.9454 10.6979 15.3577 10.5165 15.8624C10.4389 16.0785 10.2496 16.25 10.02 16.25C8.76 16.25 7.75 15.24 7.75 13.98V10.02C7.75 8.76 8.76 7.75 10.02 7.75H13.98C15.24 7.75 16.25 8.76 16.25 10.02Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 6. AI Agents Starburst Sparkle Icon (from Extension)
-export function ActionAgentsIcon({ size = 18, color = '#FFFFFF' }: IconProps) {
+/**
+ * MX Icons: ActivityBold
+ * Used for: Dock Activity tab & On-Chain History
+ */
+export function ActivityBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
-        stroke={color}
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M16.19 2H7.81C4.17 2 2 4.17 2 7.81V16.18C2 19.83 4.17 22 7.81 22H16.18C19.82 22 21.99 19.83 21.99 16.19V7.81C22 4.17 19.83 2 16.19 2ZM17.26 9.96L14.95 12.94C14.66 13.31 14.25 13.55 13.78 13.6C13.31 13.66 12.85 13.53 12.48 13.24L10.65 11.8C10.58 11.74 10.5 11.74 10.46 11.75C10.42 11.75 10.35 11.77 10.29 11.85L7.91 14.94C7.76 15.13 7.54 15.23 7.32 15.23C7.16 15.23 7 15.18 6.86 15.07C6.53 14.82 6.47 14.35 6.72 14.02L9.1 10.93C9.39 10.56 9.8 10.32 10.27 10.26C10.73 10.2 11.2 10.33 11.57 10.62L13.4 12.06C13.47 12.12 13.54 12.12 13.59 12.11C13.63 12.11 13.7 12.09 13.76 12.01L16.07 9.03C16.32 8.7 16.8 8.64 17.12 8.9C17.45 9.17 17.51 9.64 17.26 9.96Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 7. Freeze Padlock Icon (from Extension)
-export function ActionFreezeIcon({ size = 18, color = '#F43F5E' }: IconProps) {
+/**
+ * MX Icons: ShieldSecurityBold
+ * Used for: Dock Security tab & Hardware Firewall
+ */
+export function ShieldSecurityBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Rect
-        width="18"
-        height="11"
-        x="3"
-        y="11"
-        rx="2"
-        ry="2"
-        stroke={color}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
       <Path
-        d="M7 11V7a5 5 0 0 1 10 0v4"
-        stroke={color}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M18.5408 4.17063L13.0408 2.11062C12.4708 1.90063 11.5408 1.90063 10.9708 2.11062L5.47078 4.17063C4.41078 4.57063 3.55078 5.81063 3.55078 6.94063V15.0406C3.55078 15.8506 4.08078 16.9206 4.73078 17.4006L10.2308 21.5106C11.2008 22.2406 12.7908 22.2406 13.7608 21.5106L19.2608 17.4006C19.9108 16.9106 20.4408 15.8506 20.4408 15.0406V6.94063C20.4508 5.81063 19.5908 4.57063 18.5408 4.17063ZM12.7508 12.8706V15.5006C12.7508 15.9106 12.4108 16.2506 12.0008 16.2506C11.5908 16.2506 11.2508 15.9106 11.2508 15.5006V12.8706C10.2408 12.5506 9.50078 11.6106 9.50078 10.5006C9.50078 9.12062 10.6208 8.00063 12.0008 8.00063C13.3808 8.00063 14.5008 9.12062 14.5008 10.5006C14.5008 11.6206 13.7608 12.5506 12.7508 12.8706Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 8. Swap Arrows Icon (Horizontal Exchange)
-export function ActionSwapIcon({ size = 18, color = '#F8FAFC' }: IconProps) {
+/**
+ * MX Icons: Send2Bold
+ * Used for: Action Send button
+ */
+export function Send2Bold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M20 7H4M4 7l4-4M4 7l4 4M4 17h16M20 17l-4-4M20 17l4 4"
-        stroke={color}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M16.1391 2.95907L7.10914 5.95907C1.03914 7.98907 1.03914 11.2991 7.10914 13.3191L9.78914 14.2091L10.6791 16.8891C12.6991 22.9591 16.0191 22.9591 18.0391 16.8891L21.0491 7.86907C22.3891 3.81907 20.1891 1.60907 16.1391 2.95907ZM16.4591 8.33907L12.6591 12.1591C12.5091 12.3091 12.3191 12.3791 12.1291 12.3791C11.9391 12.3791 11.7491 12.3091 11.5991 12.1591C11.3091 11.8691 11.3091 11.3891 11.5991 11.0991L15.3991 7.27907C15.6891 6.98907 16.1691 6.98907 16.4591 7.27907C16.7491 7.56907 16.7491 8.04907 16.4591 8.33907Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 9. Floating Dock: Home Icon
-export function DockHomeIcon({ size = 20, color = '#FFFFFF' }: IconProps) {
+/**
+ * MX Icons: CardReceiveBold
+ * Used for: Action Receive button
+ */
+export function CardReceiveBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M3 10.5L12 3l9 7.5V20a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 20v-9.5z"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M19.97 8.75H17.03C15.76 8.75 15 7.99 15 6.72V3.78C15 2.51 15.76 1.75 17.03 1.75H19.97C21.24 1.75 22 2.51 22 3.78V6.72C22 7.99 21.24 8.75 19.97 8.75ZM20.19 5.44C20.07 5.32 19.91 5.26 19.75 5.26C19.59 5.26 19.43 5.32 19.31 5.44L19.13 5.62V3.38C19.13 3.03 18.85 2.75 18.5 2.75C18.15 2.75 17.87 3.03 17.87 3.38V5.62L17.69 5.44C17.45 5.2 17.05 5.2 16.81 5.44C16.57 5.68 16.57 6.08 16.81 6.32L18.06 7.57C18.11 7.62 18.18 7.66 18.25 7.69C18.27 7.7 18.29 7.7 18.31 7.71C18.36 7.73 18.41 7.74 18.47 7.74C18.49 7.74 18.51 7.74 18.53 7.74C18.6 7.74 18.66 7.73 18.73 7.7C18.74 7.7 18.74 7.7 18.75 7.7C18.82 7.67 18.88 7.63 18.93 7.58C18.94 7.57 18.94 7.57 18.95 7.57L20.2 6.32C20.44 6.08 20.44 5.68 20.19 5.44Z"
+        fill={color}
       />
       <Path
-        d="M9 21.5v-7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M2 11.46V16.46C2 18.75 3.85 20.6 6.14 20.6H17.85C20.14 20.6 22 18.74 22 16.45V11.46C22 10.79 21.46 10.25 20.79 10.25H3.21C2.54 10.25 2 10.79 2 11.46ZM8 17.25H6C5.59 17.25 5.25 16.91 5.25 16.5C5.25 16.09 5.59 15.75 6 15.75H8C8.41 15.75 8.75 16.09 8.75 16.5C8.75 16.91 8.41 17.25 8 17.25ZM14.5 17.25H10.5C10.09 17.25 9.75 16.91 9.75 16.5C9.75 16.09 10.09 15.75 10.5 15.75H14.5C14.91 15.75 15.25 16.09 15.25 16.5C15.25 16.91 14.91 17.25 14.5 17.25Z"
+        fill={color}
+      />
+      <Path
+        d="M13.5 4.60844V7.53844C13.5 8.20844 12.96 8.74844 12.29 8.74844H3.21C2.53 8.74844 2 8.18844 2 7.51844C2.01 6.38844 2.46 5.35844 3.21 4.60844C3.96 3.85844 5 3.39844 6.14 3.39844H12.29C12.96 3.39844 13.5 3.93844 13.5 4.60844Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 10. Floating Dock: Markets / Chart Icon
-export function DockMarketsIcon({ size = 20, color = '#FFFFFF' }: IconProps) {
+/**
+ * MX Icons: Refresh2Bold
+ * Used for: Action Swap button
+ */
+export function Refresh2Bold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M3 3v18h18"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M7 15l4-5 4 3 5-7"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Polyline
-        points="16 6 20 6 20 10"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M16.19 2H7.81C4.17 2 2 4.17 2 7.81V16.18C2 19.83 4.17 22 7.81 22H16.18C19.82 22 21.99 19.83 21.99 16.19V7.81C22 4.17 19.83 2 16.19 2ZM12 18.25C10.21 18.25 8.81 17.36 7.86 16.48V17.19C7.86 17.6 7.52 17.94 7.11 17.94C6.7 17.94 6.36 17.6 6.36 17.19V14.44C6.36 14.03 6.7 13.69 7.11 13.69H9.59C10 13.69 10.34 14.03 10.34 14.44C10.34 14.85 10 15.19 9.59 15.19H8.69C9.43 15.93 10.58 16.75 12 16.75C14.62 16.75 16.75 14.62 16.75 12C16.75 11.59 17.09 11.25 17.5 11.25C17.91 11.25 18.25 11.59 18.25 12C18.25 15.45 15.45 18.25 12 18.25ZM18.25 9.54C18.25 9.57 18.25 9.6 18.25 9.62C18.24 9.73 18.21 9.83 18.16 9.92C18.11 10.01 18.04 10.09 17.95 10.16C17.88 10.21 17.8 10.25 17.71 10.28C17.64 10.3 17.57 10.31 17.5 10.31H15.07C14.66 10.31 14.32 9.97 14.32 9.56C14.32 9.15 14.66 8.81 15.07 8.81H15.9C15.1 8.07 13.81 7.25 12.02 7.25C9.4 7.25 7.27 9.38 7.27 12C7.27 12.41 6.93 12.75 6.52 12.75C6.11 12.75 5.75 12.41 5.75 12C5.75 8.55 8.55 5.75 12 5.75C14.15 5.75 15.73 6.68 16.75 7.57V6.81C16.75 6.4 17.09 6.06 17.5 6.06C17.91 6.06 18.25 6.4 18.25 6.81V9.54Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 11. Floating Dock: Swap Loop Icon
-export function DockSwapIcon({ size = 20, color = '#FFFFFF' }: IconProps) {
+/**
+ * MX Icons: FingerScanBold
+ * Used for: Secure Enclave Primary Passkey / Biometrics
+ */
+export function FingerScanBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M17 4v6m0 0h-6m6 0L10 3"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M22 9.75C21.59 9.75 21.25 9.41 21.25 9V7C21.25 4.42 19.58 2.75 17 2.75H15C14.59 2.75 14.25 2.41 14.25 2C14.25 1.59 14.59 1.25 15 1.25H17C20.44 1.25 22.75 3.56 22.75 7V9C22.75 9.41 22.41 9.75 22 9.75Z"
+        fill={color}
       />
       <Path
-        d="M7 20v-6m0 0h6m-6 0l7 7"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M2 9.75C1.59 9.75 1.25 9.41 1.25 9V7C1.25 3.56 3.56 1.25 7 1.25H9C9.41 1.25 9.75 1.59 9.75 2C9.75 2.41 9.41 2.75 9 2.75H7C4.42 2.75 2.75 4.42 2.75 7V9C2.75 9.41 2.41 9.75 2 9.75Z"
+        fill={color}
+      />
+      <Path
+        d="M17 22.75H15C14.59 22.75 14.25 22.41 14.25 22C14.25 21.59 14.59 21.25 15 21.25H17C19.58 21.25 21.25 19.58 21.25 17V15C21.25 14.59 21.59 14.25 22 14.25C22.41 14.25 22.75 14.59 22.75 15V17C22.75 20.44 20.44 22.75 17 22.75Z"
+        fill={color}
+      />
+      <Path
+        d="M9 22.75H7C3.56 22.75 1.25 20.44 1.25 17V15C1.25 14.59 1.59 14.25 2 14.25C2.41 14.25 2.75 14.59 2.75 15V17C2.75 19.58 4.42 21.25 7 21.25H9C9.41 21.25 9.75 21.59 9.75 22C9.75 22.41 9.41 22.75 9 22.75Z"
+        fill={color}
+      />
+      <Path
+        d="M12.0016 9.87109C11.5116 9.87109 11.1016 10.2711 11.1016 10.7711V13.2411C11.1016 13.7411 11.5016 14.1411 12.0016 14.1411C12.5016 14.1411 12.9016 13.7411 12.9016 13.2411V10.7711C12.9016 10.2711 12.4916 9.87109 12.0016 9.87109Z"
+        fill={color}
+      />
+      <Path
+        d="M15.5317 7.39969C15.1917 7.05969 14.8017 6.76969 14.3817 6.52969C14.2417 6.45969 14.0917 6.38969 13.9417 6.31969C13.7917 6.25969 13.6417 6.19969 13.4817 6.15969C13.3217 6.10969 13.1617 6.06969 13.0017 6.02969C12.9917 6.02969 12.9717 6.02969 12.9617 6.01969C12.6517 5.95969 12.3317 5.92969 12.0117 5.92969H11.9917C11.6717 5.92969 11.3617 5.95969 11.0517 6.01969C11.0117 6.02969 10.9717 6.02969 10.9417 6.04969C10.8017 6.07969 10.6617 6.10969 10.5217 6.15969C10.3517 6.19969 10.1817 6.26969 10.0117 6.33969C9.88172 6.39969 9.75172 6.46969 9.63172 6.52969C9.48172 6.60969 9.35172 6.69969 9.21172 6.78969C8.95172 6.96969 8.70172 7.16969 8.47172 7.39969C8.36172 7.50969 8.25172 7.62969 8.15172 7.74969C8.05172 7.87969 7.95172 7.99969 7.86172 8.13969C7.77172 8.26969 7.69172 8.40969 7.61172 8.54969C7.23172 9.25969 7.01172 10.0697 7.01172 10.9297V13.0697C7.01172 14.7997 7.89172 16.3197 9.21172 17.2097C9.33172 17.2997 9.46172 17.3697 9.59172 17.4497L10.1417 17.7097C10.4217 17.8197 10.7117 17.9097 11.0017 17.9697C11.3217 18.0297 11.6517 18.0697 11.9917 18.0697C12.0017 18.0697 12.0017 18.0697 12.0117 18.0697C12.3517 18.0697 12.6817 18.0297 13.0017 17.9697C13.3017 17.9097 13.5917 17.8197 13.8717 17.7097C14.0617 17.6297 14.2417 17.5397 14.4117 17.4497C15.9517 16.5997 16.9917 14.9497 16.9917 13.0697V10.9297C16.9917 9.54969 16.4317 8.29969 15.5317 7.39969ZM14.4017 13.2397C14.4017 14.5597 13.3217 15.6397 12.0017 15.6397C10.6817 15.6397 9.60172 14.5597 9.60172 13.2397V10.7697C9.60172 9.44969 10.6817 8.36969 12.0017 8.36969C13.3217 8.36969 14.4017 9.44969 14.4017 10.7697V13.2397Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 12. Floating Dock: AI Agent Icon
-export function DockAgentIcon({ size = 20, color = '#FFFFFF' }: IconProps) {
+/**
+ * MX Icons: KeySquareBold
+ * Used for: Hardware Backup Key / YubiKey Quorum
+ */
+export function KeySquareBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M12 2L14.5 7.5L20 9L15.5 13L17 19L12 16L7 19L8.5 13L4 9L9.5 7.5L12 2Z"
-        stroke={color}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M13.25 12C13.9404 12 14.5 11.4404 14.5 10.75C14.5 10.0596 13.9404 9.5 13.25 9.5C12.5596 9.5 12 10.0596 12 10.75C12 11.4404 12.5596 12 13.25 12Z"
+        fill={color}
+      />
+      <Path
+        d="M16.19 2H7.81C4.17 2 2 4.17 2 7.81V16.18C2 19.83 4.17 22 7.81 22H16.18C19.82 22 21.99 19.83 21.99 16.19V7.81C22 4.17 19.83 2 16.19 2ZM15.89 13.47C14.86 14.49 13.39 14.81 12.09 14.4L11.03 15.45C10.94 15.54 10.78 15.54 10.68 15.45L9.71 14.48C9.57 14.34 9.33 14.34 9.18 14.48C9.03 14.62 9.04 14.86 9.18 15.01L10.15 15.98C10.25 16.08 10.25 16.24 10.15 16.33L9.74 16.74C9.57 16.92 9.24 17.03 9 17L7.91 16.85C7.55 16.8 7.22 16.46 7.16 16.1L7.01 15.01C6.97 14.77 7.09 14.44 7.25 14.27L9.6 11.92C9.2 10.62 9.51 9.15 10.54 8.12C12.01 6.65 14.41 6.65 15.89 8.12C17.37 9.59 17.37 11.99 15.89 13.47Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 13. Floating Dock: Security Shield Icon
-export function DockSecurityIcon({ size = 20, color = '#FFFFFF' }: IconProps) {
+/**
+ * MX Icons: Lock1Bold
+ * Used for: Panic Freeze & Security Lock
+ */
+export function Lock1Bold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M12 2L3 6v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V6l-9-4z"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M18.75 8V10.1C18.31 10.04 17.81 10.01 17.25 10V8C17.25 4.85 16.36 2.75 12 2.75C7.64 2.75 6.75 4.85 6.75 8V10C6.19 10.01 5.69 10.04 5.25 10.1V8C5.25 5.1 5.95 1.25 12 1.25C18.05 1.25 18.75 5.1 18.75 8Z"
+        fill={color}
       />
       <Path
-        d="M9 12l2 2 4-4"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M18.75 10.1C18.31 10.04 17.81 10.01 17.25 10H6.75C6.19 10.01 5.69 10.04 5.25 10.1C2.7 10.41 2 11.66 2 15V17C2 21 3 22 7 22H17C21 22 22 21 22 17V15C22 11.66 21.3 10.41 18.75 10.1ZM8.71 16.71C8.52 16.89 8.26 17 8 17C7.87 17 7.74 16.97 7.62 16.92C7.49 16.87 7.39 16.8 7.29 16.71C7.11 16.52 7 16.26 7 16C7 15.87 7.03 15.74 7.08 15.62C7.13 15.5 7.2 15.39 7.29 15.29C7.39 15.2 7.49 15.13 7.62 15.08C7.99 14.92 8.43 15.01 8.71 15.29C8.8 15.39 8.87 15.5 8.92 15.62C8.97 15.74 9 15.87 9 16C9 16.26 8.89 16.52 8.71 16.71ZM12.92 16.38C12.87 16.5 12.8 16.61 12.71 16.71C12.52 16.89 12.26 17 12 17C11.73 17 11.48 16.89 11.29 16.71C11.2 16.61 11.13 16.5 11.08 16.38C11.03 16.26 11 16.13 11 16C11 15.73 11.11 15.48 11.29 15.29C11.66 14.92 12.33 14.92 12.71 15.29C12.89 15.48 13 15.73 13 16C13 16.13 12.97 16.26 12.92 16.38ZM16.71 16.71C16.52 16.89 16.26 17 16 17C15.74 17 15.48 16.89 15.29 16.71C15.11 16.52 15 16.27 15 16C15 15.73 15.11 15.48 15.29 15.29C15.67 14.92 16.34 14.92 16.71 15.29C16.75 15.34 16.79 15.39 16.83 15.45C16.87 15.5 16.9 15.56 16.92 15.62C16.95 15.68 16.97 15.74 16.98 15.8C16.99 15.87 17 15.94 17 16C17 16.26 16.89 16.52 16.71 16.71Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 14. Eye Show / Hide Icons (Balance privacy)
-export function EyeShowIcon({ size = 18, color = '#94A3B8' }: IconProps) {
+/**
+ * MX Icons: CopyBold
+ * Used for: One-tap copy address and credentials
+ */
+export function CopyBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M16 12.9V17.1C16 20.6 14.6 22 11.1 22H6.9C3.4 22 2 20.6 2 17.1V12.9C2 9.4 3.4 8 6.9 8H11.1C14.6 8 16 9.4 16 12.9Z"
+        fill={color}
       />
       <Path
-        d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M17.0998 2H12.8998C9.81668 2 8.37074 3.09409 8.06951 5.73901C8.00649 6.29235 8.46476 6.75 9.02167 6.75H11.0998C15.2998 6.75 17.2498 8.7 17.2498 12.9V14.9781C17.2498 15.535 17.7074 15.9933 18.2608 15.9303C20.9057 15.629 21.9998 14.1831 21.9998 11.1V6.9C21.9998 3.4 20.5998 2 17.0998 2Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-export function EyeHideIcon({ size = 18, color = '#94A3B8' }: IconProps) {
+/**
+ * MX Icons: EyeBold
+ * Used for: Balance privacy reveal
+ */
+export function EyeBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M21.25 9.14969C18.94 5.51969 15.56 3.42969 12 3.42969C10.22 3.42969 8.49 3.94969 6.91 4.91969C5.33 5.89969 3.91 7.32969 2.75 9.14969C1.75 10.7197 1.75 13.2697 2.75 14.8397C5.06 18.4797 8.44 20.5597 12 20.5597C13.78 20.5597 15.51 20.0397 17.09 19.0697C18.67 18.0897 20.09 16.6597 21.25 14.8397C22.25 13.2797 22.25 10.7197 21.25 9.14969ZM12 16.0397C9.76 16.0397 7.96 14.2297 7.96 11.9997C7.96 9.76969 9.76 7.95969 12 7.95969C14.24 7.95969 16.04 9.76969 16.04 11.9997C16.04 14.2297 14.24 16.0397 12 16.0397Z"
+        fill={color}
+      />
+      <Path
+        d="M11.9984 9.14062C10.4284 9.14062 9.14844 10.4206 9.14844 12.0006C9.14844 13.5706 10.4284 14.8506 11.9984 14.8506C13.5684 14.8506 14.8584 13.5706 14.8584 12.0006C14.8584 10.4306 13.5684 9.14062 11.9984 9.14062Z"
+        fill={color}
       />
     </Svg>
   )
 }
 
-// 15. Inline Deposit (Arrow Down inside Circle)
+/**
+ * MX Icons: EyeSlashBold
+ * Used for: Balance privacy hide
+ */
+export function EyeSlashBold({ size = 24, color = '#FFFFFF' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M21.2714 9.17834C20.9814 8.71834 20.6714 8.28834 20.3514 7.88834C19.9814 7.41834 19.2814 7.37834 18.8614 7.79834L15.8614 10.7983C16.0814 11.4583 16.1214 12.2183 15.9214 13.0083C15.5714 14.4183 14.4314 15.5583 13.0214 15.9083C12.2314 16.1083 11.4714 16.0683 10.8114 15.8483C10.8114 15.8483 9.38141 17.2783 8.35141 18.3083C7.85141 18.8083 8.01141 19.6883 8.68141 19.9483C9.75141 20.3583 10.8614 20.5683 12.0014 20.5683C13.7814 20.5683 15.5114 20.0483 17.0914 19.0783C18.7014 18.0783 20.1514 16.6083 21.3214 14.7383C22.2714 13.2283 22.2214 10.6883 21.2714 9.17834Z"
+        fill={color}
+      />
+      <Path
+        d="M14.0206 9.98062L9.98062 14.0206C9.47062 13.5006 9.14062 12.7806 9.14062 12.0006C9.14062 10.4306 10.4206 9.14062 12.0006 9.14062C12.7806 9.14062 13.5006 9.47062 14.0206 9.98062Z"
+        fill={color}
+      />
+      <Path
+        d="M18.25 5.74969L14.86 9.13969C14.13 8.39969 13.12 7.95969 12 7.95969C9.76 7.95969 7.96 9.76969 7.96 11.9997C7.96 13.1197 8.41 14.1297 9.14 14.8597L5.76 18.2497H5.75C4.64 17.3497 3.62 16.1997 2.75 14.8397C1.75 13.2697 1.75 10.7197 2.75 9.14969C3.91 7.32969 5.33 5.89969 6.91 4.91969C8.49 3.95969 10.22 3.42969 12 3.42969C14.23 3.42969 16.39 4.24969 18.25 5.74969Z"
+        fill={color}
+      />
+      <Path
+        d="M14.8581 11.9981C14.8581 13.5681 13.5781 14.8581 11.9981 14.8581C11.9381 14.8581 11.8881 14.8581 11.8281 14.8381L14.8381 11.8281C14.8581 11.8881 14.8581 11.9381 14.8581 11.9981Z"
+        fill={color}
+      />
+      <Path
+        d="M21.7689 2.22891C21.4689 1.92891 20.9789 1.92891 20.6789 2.22891L2.22891 20.6889C1.92891 20.9889 1.92891 21.4789 2.22891 21.7789C2.37891 21.9189 2.56891 21.9989 2.76891 21.9989C2.96891 21.9989 3.15891 21.9189 3.30891 21.7689L21.7689 3.30891C22.0789 3.00891 22.0789 2.52891 21.7689 2.22891Z"
+        fill={color}
+      />
+    </Svg>
+  )
+}
+
+// Inline Deposit micro-icon
 export function DepositActionIcon({ size = 16, color = '#000000' }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"
-        stroke={color}
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  )
+  return <CardReceiveBold size={size} color={color} />
 }
 
-// 16. Inline Withdraw (Arrow Up inside Circle)
+// Inline Withdraw micro-icon
 export function WithdrawActionIcon({ size = 16, color = '#FFFFFF' }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 20V8m0 0l-4 4m4-4l4 4M4 4h16"
-        stroke={color}
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  )
+  return <Send2Bold size={size} color={color} />
 }
 
-// 17. Copy Micro-Icon
-export function CopyChipIcon({ size = 14, color = '#71717A' }: IconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Rect
-        x="9"
-        y="9"
-        width="13"
-        height="13"
-        rx="2"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  )
-}
+// ============================================================================
+// 3. RETRO-COMPATIBILITY / SEMANTIC DOCK & ACTION EXPORTS
+// ============================================================================
 
+export const DockHomeIcon = Wallet2Bold
+export const DockAgentIcon = CpuSettingBold
+export const DockActivityIcon = ActivityBold
+export const DockSecurityIcon = ShieldSecurityBold
+export const DockMarketsIcon = ActivityBold
+export const DockSwapIcon = Refresh2Bold
 
+export const ActionSendIcon = Send2Bold
+export const ActionReceiveIcon = CardReceiveBold
+export const ActionSwapIcon = Refresh2Bold
+export const ActionFreezeIcon = Lock1Bold
+export const ActionAgentsIcon = CpuSettingBold
+
+export const EyeShowIcon = EyeBold
+export const EyeHideIcon = EyeSlashBold
+export const CopyChipIcon = CopyBold
