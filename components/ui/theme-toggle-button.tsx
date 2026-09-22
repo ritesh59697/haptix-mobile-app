@@ -61,7 +61,9 @@ export function ThemeToggleButton({ style, showLabel = false, size = 'default' }
   })
 
   const isCompact = size === 'compact'
-  const dimension = isCompact ? 32 : 38
+  // Compact matches the other header controls (avatar / network chip / overflow menu)
+  // so the header reads as one row of equal chips.
+  const dimension = isCompact ? 36 : 38
 
   return (
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
@@ -77,8 +79,10 @@ export function ThemeToggleButton({ style, showLabel = false, size = 'default' }
             height: dimension,
             minWidth: dimension,
             borderRadius: dimension / 2,
-            backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
-            borderColor: isDark ? '#1E293B' : '#E2E8F0',
+            // Was a hand-rolled navy/slate/amber palette that clashed with the rest of
+            // the header; now uses the shared surface tokens like every other chip.
+            backgroundColor: theme.bgElevated,
+            borderColor: theme.borderDefault,
           },
           Platform.OS === 'web'
             ? {
@@ -93,7 +97,7 @@ export function ThemeToggleButton({ style, showLabel = false, size = 'default' }
           <MaterialIcons
             name={isDark ? 'light-mode' : 'dark-mode'}
             size={isCompact ? 16 : 18}
-            color={isDark ? '#F59E0B' : '#0F172A'}
+            color={theme.textPrimary}
           />
         </Animated.View>
 

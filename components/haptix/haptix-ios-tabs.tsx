@@ -31,7 +31,7 @@ export function HaptixIosTabs<T extends string = string>({
   onChange,
   containerStyle,
 }: HaptixIosTabsProps<T>) {
-  const { isDark } = useAppTheme()
+  const { theme, isDark } = useAppTheme()
   const [controlWidth, setControlWidth] = useState(0)
 
   const activeIndex = Math.max(
@@ -88,12 +88,13 @@ export function HaptixIosTabs<T extends string = string>({
     outputRange: tabs.map((_, i) => i * tabWidth),
   })
 
-  // Theme colors matching Uiverse specification
-  const controlBg = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.72)'
-  const controlBorder = isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(15, 23, 42, 0.05)'
-  const thumbBg = isDark ? '#FFFFFF' : '#0B1220'
-  const activeColor = isDark ? '#000000' : '#FFFFFF'
-  const inactiveColor = isDark ? '#8E8E93' : '#6B7280'
+  // Shared surface tokens instead of the hand-rolled iOS grey ramp. The old light track
+  // was rgba(255,255,255,0.72), which was invisible on the white app background.
+  const controlBg = theme.bgElevated
+  const controlBorder = theme.borderSubtle
+  const thumbBg = theme.accent
+  const activeColor = theme.accentForeground
+  const inactiveColor = theme.textSecondary
 
   return (
     <View
@@ -138,18 +139,8 @@ export function HaptixIosTabs<T extends string = string>({
               {tab.label}
             </Text>
             {tab.badge !== undefined && (
-              <View
-                style={[
-                  styles.badge,
-                  { backgroundColor: isActive ? (isDark ? '#000000' : '#FFFFFF') : isDark ? '#333333' : '#E2E8F0' },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.badgeText,
-                    { color: isActive ? (isDark ? '#FFFFFF' : '#000000') : isDark ? '#AAAAAA' : '#64748B' },
-                  ]}
-                >
+              <View style={[styles.badge, { backgroundColor: isActive ? theme.accentForeground : theme.borderSubtle }]}>
+                <Text style={[styles.badgeText, { color: isActive ? theme.accent : theme.textSecondary }]}>
                   {tab.badge}
                 </Text>
               </View>
