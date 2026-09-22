@@ -486,13 +486,11 @@ export function HaptixWalletScreen() {
       const secondarySig = await signWithPasskey('secondary', grantMsg, `2-of-2 Quorum for Agent Delegation`)
 
       const precompile1 = createSecp256r1Instruction({
-        signature: primarySig.signature,
-        publicKey: primarySig.publicKey,
+        ...primarySig,
         message: grantMsg,
       })
       const precompile2 = createSecp256r1Instruction({
-        signature: secondarySig.signature,
-        publicKey: secondarySig.publicKey,
+        ...secondarySig,
         message: grantMsg,
       })
       const grantIx = createGrantAgentSessionInstruction({
@@ -632,8 +630,7 @@ export function HaptixWalletScreen() {
       )
 
       const precompilePrimary = createSecp256r1Instruction({
-        signature: primarySig.signature,
-        publicKey: primarySig.publicKey,
+        ...primarySig,
         message,
       })
 
@@ -672,8 +669,7 @@ export function HaptixWalletScreen() {
         )
 
         const precompileSecondary = createSecp256r1Instruction({
-          signature: secondarySig.signature,
-          publicKey: secondarySig.publicKey,
+          ...secondarySig,
           message,
         })
 
@@ -805,13 +801,11 @@ export function HaptixWalletScreen() {
       const secondarySig = await signWithPasskey('secondary', grantMsg, '2-of-2 Quorum for AI Agent Session')
 
       const precompile1 = createSecp256r1Instruction({
-        signature: primarySig.signature,
-        publicKey: primarySig.publicKey,
+        ...primarySig,
         message: grantMsg,
       })
       const precompile2 = createSecp256r1Instruction({
-        signature: secondarySig.signature,
-        publicKey: secondarySig.publicKey,
+        ...secondarySig,
         message: grantMsg,
       })
       const grantIx = createGrantAgentSessionInstruction({
@@ -968,13 +962,11 @@ export function HaptixWalletScreen() {
       const secondarySig = await signWithPasskey('secondary', message, '2-of-2 Quorum: Revoke Agent Session')
 
       const precompilePrimary = createSecp256r1Instruction({
-        signature: primarySig.signature,
-        publicKey: primarySig.publicKey,
+        ...primarySig,
         message,
       })
       const precompileSecondary = createSecp256r1Instruction({
-        signature: secondarySig.signature,
-        publicKey: secondarySig.publicKey,
+        ...secondarySig,
         message,
       })
       const revokeIx = createRevokeAgentSessionInstruction({
@@ -1102,13 +1094,11 @@ export function HaptixWalletScreen() {
         // Swallowing it and still reporting "Wallet Unfrozen" asserted an on-chain
         // state change that never happened, and cleared the local freeze flag.
         const precompilePrimary = createSecp256r1Instruction({
-          signature: primarySig.signature,
-          publicKey: primarySig.publicKey,
+          ...primarySig,
           message: unfreezeMsg,
         })
         const precompileSecondary = createSecp256r1Instruction({
-          signature: secondarySig.signature,
-          publicKey: secondarySig.publicKey,
+          ...secondarySig,
           message: unfreezeMsg,
         })
         const unfreezeIx = createUnfreezeInstruction({

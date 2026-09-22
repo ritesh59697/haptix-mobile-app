@@ -14,7 +14,7 @@
     "lint:check": "expo lint",
     "reset-project": "node ./scripts/reset-project.js",
     "start": "expo start",
-    "test": "npx -y tsx tests/integration-test.ts",
+    "test": "npx -y tsx tests/secp256r1-layout.test.ts && npx -y tsx tests/integration-test.ts",
     "web": "expo start --web"
   },
   "displayName": "Mobile Expo Boilerplate",
@@ -77,6 +77,7 @@
     "react-native": "0.83.6",
     "react-native-gesture-handler": "~2.30.0",
     "react-native-get-random-values": "^2.0.0",
+    "react-native-passkey": "^3.6.2",
     "react-native-reanimated": "~4.2.1",
     "react-native-safe-area-context": "5.6.2",
     "react-native-screens": "~4.23.0",
