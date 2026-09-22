@@ -78,7 +78,7 @@ const MODE_KEY_SECONDARY = '@haptix_passkey_mode_secondary'
  * `programs/haptix_program/src/webauthn.rs` and the domain published in
  * `.well-known/assetlinks.json`. See PASSKEY_SETUP.md.
  */
-export const PASSKEY_RP_ID = 'haptix.io'
+export const PASSKEY_RP_ID = 'haptix-passkeys.vercel.app'
 export const PASSKEY_RP_NAME = 'Haptix Wallet'
 
 export type PasskeyMode = 'software' | 'hardware'
@@ -975,7 +975,7 @@ function describePasskeyError(err: unknown, action: 'create' | 'get'): string {
       return 'Passkeys are not supported on this device (Android 9 / iOS 15 or newer is required).'
     case 'BadConfiguration':
       return (
-        'This app is not correctly associated with the haptix.io relying party. The domain must ' +
+        'This app is not correctly associated with the haptix-passkeys.vercel.app relying party. The domain must ' +
         "serve .well-known/assetlinks.json with this app's signing certificate — see PASSKEY_SETUP.md."
       )
     default:

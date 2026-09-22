@@ -108,7 +108,9 @@ export function PrismDepthButton({
             borderRadius,
             backgroundColor: disabled ? (isDark ? '#1F1F1F' : '#E2E8F0') : mainBg,
             borderColor: disabled
-              ? (isDark ? '#262626' : '#CBD5E1')
+              ? isDark
+                ? '#262626'
+                : '#CBD5E1'
               : isDark
                 ? 'rgba(255, 255, 255, 0.22)'
                 : 'rgba(0, 0, 0, 0.15)',
@@ -143,16 +145,12 @@ export function PrismDepthButton({
             {icon && <View style={styles.iconContainer}>{icon}</View>}
             {children ? (
               typeof children === 'string' ? (
-                <Text style={[styles.title, { color: textColor }, textStyle]}>
-                  {children}
-                </Text>
+                <Text style={[styles.title, { color: textColor }, textStyle]}>{children}</Text>
               ) : (
                 children
               )
             ) : title ? (
-              <Text style={[styles.title, { color: textColor }, textStyle]}>
-                {title}
-              </Text>
+              <Text style={[styles.title, { color: textColor }, textStyle]}>{title}</Text>
             ) : null}
           </View>
         )}

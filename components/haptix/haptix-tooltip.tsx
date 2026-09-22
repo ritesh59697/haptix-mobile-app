@@ -1,12 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Platform,
-  Pressable,
-} from 'react-native'
+import { View, Text, StyleSheet, Animated, Platform, Pressable } from 'react-native'
 import { MaterialIcons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -27,13 +20,7 @@ export interface HaptixTooltipProps {
  * - Built-in triangle pointer arrow
  * - Accessible info icon default when no children supplied
  */
-export function HaptixTooltip({
-  tip,
-  position = 'top',
-  children,
-  iconSize = 18,
-  iconColor,
-}: HaptixTooltipProps) {
+export function HaptixTooltip({ tip, position = 'top', children, iconSize = 18, iconColor }: HaptixTooltipProps) {
   const { isDark, theme } = useAppTheme()
   const [visible, setVisible] = useState(false)
   const anim = useRef(new Animated.Value(0)).current
@@ -134,7 +121,10 @@ export function HaptixTooltip({
             style={[
               styles.triangleArrow,
               isTop ? styles.arrowBottom : styles.arrowTop,
-              { borderTopColor: isTop ? arrowBorderColor : 'transparent', borderBottomColor: !isTop ? arrowBorderColor : 'transparent' },
+              {
+                borderTopColor: isTop ? arrowBorderColor : 'transparent',
+                borderBottomColor: !isTop ? arrowBorderColor : 'transparent',
+              },
             ]}
           />
         </Animated.View>

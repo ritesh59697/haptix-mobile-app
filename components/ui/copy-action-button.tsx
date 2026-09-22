@@ -1,14 +1,5 @@
 import React, { useState, useRef } from 'react'
-import {
-  Pressable,
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Platform,
-  StyleProp,
-  ViewStyle,
-} from 'react-native'
+import { Pressable, View, Text, StyleSheet, Animated, Platform, StyleProp, ViewStyle } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Clipboard from '@/utils/clipboard'
@@ -87,19 +78,9 @@ export function CopyActionButton({
     }).start()
   }
 
-  const bgColor = copied
-    ? theme.emeraldBg
-    : isDark
-      ? '#0F172A'
-      : '#F1F5F9'
+  const bgColor = copied ? theme.emeraldBg : isDark ? '#0F172A' : '#F1F5F9'
 
-  const borderColor = copied
-    ? isDark
-      ? 'rgba(16, 185, 129, 0.4)'
-      : '#A7F3D0'
-    : isDark
-      ? '#1E293B'
-      : '#E2E8F0'
+  const borderColor = copied ? (isDark ? 'rgba(16, 185, 129, 0.4)' : '#A7F3D0') : isDark ? '#1E293B' : '#E2E8F0'
 
   const iconColor = copied ? theme.emerald : theme.textSecondary
   const textColor = copied ? theme.emeraldText : theme.textSecondary
@@ -130,21 +111,11 @@ export function CopyActionButton({
         ]}
       >
         <Animated.View style={{ transform: [{ scale: iconScaleAnim }] }}>
-          <MaterialIcons
-            name={copied ? 'check' : 'content-copy'}
-            size={compact ? 14 : 16}
-            color={iconColor}
-          />
+          <MaterialIcons name={copied ? 'check' : 'content-copy'} size={compact ? 14 : 16} color={iconColor} />
         </Animated.View>
 
         {showLabel && (
-          <Text
-            style={[
-              styles.label,
-              compact && styles.labelCompact,
-              { color: textColor },
-            ]}
-          >
+          <Text style={[styles.label, compact && styles.labelCompact, { color: textColor }]}>
             {copied ? copiedLabel : label}
           </Text>
         )}

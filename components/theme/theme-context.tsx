@@ -30,19 +30,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themePreference, setThemePreferenceState] = useState<ThemeMode>('dark')
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((saved) => {
-      if (saved === 'system' || saved === 'light' || saved === 'dark') {
-        setThemePreferenceState(saved)
-      }
-    }).catch(() => {})
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((saved) => {
+        if (saved === 'system' || saved === 'light' || saved === 'dark') {
+          setThemePreferenceState(saved)
+        }
+      })
+      .catch(() => {})
   }, [])
 
   const activeColorScheme: 'light' | 'dark' =
-    themePreference === 'system'
-      ? deviceColorScheme === 'light'
-        ? 'light'
-        : 'dark'
-      : themePreference
+    themePreference === 'system' ? (deviceColorScheme === 'light' ? 'light' : 'dark') : themePreference
 
   const theme = activeColorScheme === 'light' ? lightTokens : darkTokens
 

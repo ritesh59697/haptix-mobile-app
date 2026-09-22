@@ -1,15 +1,6 @@
 import React from 'react'
 import { View, StyleSheet } from 'react-native'
-import Svg, {
-  Path,
-  Rect,
-  Circle,
-  Defs,
-  LinearGradient,
-  RadialGradient,
-  Stop,
-  G,
-} from 'react-native-svg'
+import Svg, { Path, Rect, Circle, Ellipse, Defs, LinearGradient, RadialGradient, Stop, G } from 'react-native-svg'
 
 // ============================================================================
 // 1. HERO SPLASH ART (SCREEN 1)
@@ -55,6 +46,84 @@ export function HeroSplashArt({ size = 300 }: { size?: number }) {
 
         {/* Top-Right Soft Highlight Orb */}
         <Circle cx="195" cy="85" r="28" fill="#FFFFFF" fillOpacity="0.12" />
+      </Svg>
+    </View>
+  )
+}
+
+// ============================================================================
+// 1b. LIGHT HERO ORB (SIGN-IN HERO, LIGHT THEME)
+// Glossy indigo sphere with a cyan core, a tilted orbital ring and a small
+// translucent moon. Drawn for the light hero background, so every colour is
+// explicit rather than inherited from the dark theme tokens.
+// ============================================================================
+export function HeroOrbLight({ size = 300 }: { size?: number }) {
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size} viewBox="0 0 320 320" fill="none">
+        <Defs>
+          <RadialGradient id="orbLightBase" cx="34%" cy="27%" r="80%">
+            <Stop offset="0%" stopColor="#9A79FF" />
+            <Stop offset="30%" stopColor="#7451EC" />
+            <Stop offset="58%" stopColor="#3E2697" />
+            <Stop offset="84%" stopColor="#241566" />
+            <Stop offset="100%" stopColor="#150C38" />
+          </RadialGradient>
+          <RadialGradient id="orbLightCore" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#E6F9FF" stopOpacity="1" />
+            <Stop offset="24%" stopColor="#74CCFF" stopOpacity="1" />
+            <Stop offset="48%" stopColor="#3F73F2" stopOpacity="0.46" />
+            <Stop offset="100%" stopColor="#3F73F2" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id="orbLightSpec" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.26" />
+            <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id="orbLightDarken" cx="78%" cy="80%" r="66%">
+            <Stop offset="0%" stopColor="#0C0528" stopOpacity="0" />
+            <Stop offset="54%" stopColor="#0C0528" stopOpacity="0" />
+            <Stop offset="100%" stopColor="#0C0528" stopOpacity="0.58" />
+          </RadialGradient>
+          <RadialGradient id="orbLightMoon" cx="32%" cy="27%" r="80%">
+            <Stop offset="0%" stopColor="#EAE6FF" stopOpacity="0.8" />
+            <Stop offset="50%" stopColor="#BAB2EC" stopOpacity="0.54" />
+            <Stop offset="100%" stopColor="#8F87DA" stopOpacity="0.28" />
+          </RadialGradient>
+          <RadialGradient id="orbLightShadow" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#4A3A8C" stopOpacity="0.4" />
+            <Stop offset="55%" stopColor="#4A3A8C" stopOpacity="0.15" />
+            <Stop offset="100%" stopColor="#4A3A8C" stopOpacity="0" />
+          </RadialGradient>
+          <LinearGradient id="orbLightRing" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor="#B9AEF0" stopOpacity="0.1" />
+            <Stop offset="30%" stopColor="#C7BEF5" stopOpacity="0.85" />
+            <Stop offset="60%" stopColor="#EDE9FD" stopOpacity="1" />
+            <Stop offset="100%" stopColor="#B9AEF0" stopOpacity="0.16" />
+          </LinearGradient>
+        </Defs>
+
+        {/* Ground shadow */}
+        <Ellipse cx="160" cy="274" rx="96" ry="15" fill="url(#orbLightShadow)" />
+
+        {/* Back half of the orbital ring */}
+        <G transform="rotate(-18 160 150)">
+          <Path d="M 298 150 A 138 38 0 0 0 22 150" stroke="url(#orbLightRing)" strokeWidth="2.5" fill="none" />
+        </G>
+
+        {/* Sphere: base, core glow, edge darkening, specular */}
+        <Circle cx="160" cy="150" r="95" fill="url(#orbLightBase)" />
+        <Circle cx="145" cy="142" r="56" fill="url(#orbLightCore)" />
+        <Circle cx="160" cy="150" r="95" fill="url(#orbLightDarken)" />
+        <Ellipse cx="123" cy="106" rx="28" ry="18" fill="url(#orbLightSpec)" />
+
+        {/* Translucent moon */}
+        <Circle cx="212" cy="116" r="31" fill="url(#orbLightMoon)" />
+        <Ellipse cx="202" cy="105" rx="9" ry="6.5" fill="#FFFFFF" opacity="0.2" />
+
+        {/* Front half of the orbital ring */}
+        <G transform="rotate(-18 160 150)">
+          <Path d="M 22 150 A 138 38 0 0 1 298 150" stroke="url(#orbLightRing)" strokeWidth="2.5" fill="none" />
+        </G>
       </Svg>
     </View>
   )
@@ -274,14 +343,17 @@ export function MultiChainArt({ size = 260 }: { size?: number }) {
 // 5. BIOMETRIC SCAN GRAPHIC (SCREEN 6)
 // Large scanner badge with Face ID / fingerprint brackets
 // ============================================================================
-export function BiometricScanGraphic({ size = 88 }: { size?: number }) {
+export function BiometricScanGraphic({ size = 88, dark = false }: { size?: number; dark?: boolean }) {
+  const badgeFrom = dark ? 'rgba(108,140,255,0.20)' : '#EFF6FF'
+  const badgeTo = dark ? 'rgba(108,140,255,0.10)' : '#DBEAFE'
+  const stroke = dark ? '#8FA8FF' : '#2563EB'
   return (
     <View style={styles.scannerContainer}>
       <Svg width={size} height={size} viewBox="0 0 88 88" fill="none">
         <Defs>
           <LinearGradient id="scanBg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor="#EFF6FF" />
-            <Stop offset="100%" stopColor="#DBEAFE" />
+            <Stop offset="0%" stopColor={badgeFrom} />
+            <Stop offset="100%" stopColor={badgeTo} />
           </LinearGradient>
         </Defs>
 
@@ -290,23 +362,49 @@ export function BiometricScanGraphic({ size = 88 }: { size?: number }) {
 
         {/* 4 Outer Scan Brackets */}
         {/* Top-Left */}
-        <Path d="M 24 34 L 24 26 C 24 24, 26 22, 28 22 L 36 22" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" />
+        <Path
+          d="M 24 34 L 24 26 C 24 24, 26 22, 28 22 L 36 22"
+          stroke={stroke}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
         {/* Top-Right */}
-        <Path d="M 52 22 L 60 22 C 62 22, 64 24, 64 26 L 64 34" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" />
+        <Path
+          d="M 52 22 L 60 22 C 62 22, 64 24, 64 26 L 64 34"
+          stroke={stroke}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
         {/* Bottom-Left */}
-        <Path d="M 24 54 L 24 62 C 24 64, 26 66, 28 66 L 36 66" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" />
+        <Path
+          d="M 24 54 L 24 62 C 24 64, 26 66, 28 66 L 36 66"
+          stroke={stroke}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
         {/* Bottom-Right */}
-        <Path d="M 52 66 L 60 66 C 62 66, 64 64, 64 62 L 64 54" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" />
+        <Path
+          d="M 52 66 L 60 66 C 62 66, 64 64, 64 62 L 64 54"
+          stroke={stroke}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
 
         {/* Center Face ID Features */}
         {/* Left Eye */}
-        <Circle cx="35" cy="40" r="2.5" fill="#2563EB" />
+        <Circle cx="35" cy="40" r="2.5" fill={stroke} />
         {/* Right Eye */}
-        <Circle cx="53" cy="40" r="2.5" fill="#2563EB" />
+        <Circle cx="53" cy="40" r="2.5" fill={stroke} />
         {/* Nose */}
-        <Path d="M 44 40 L 44 47 L 47 47" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <Path
+          d="M 44 40 L 44 47 L 47 47"
+          stroke={stroke}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
         {/* Smile Arc */}
-        <Path d="M 36 53 C 40 57, 48 57, 52 53" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" fill="none" />
+        <Path d="M 36 53 C 40 57, 48 57, 52 53" stroke={stroke} strokeWidth="2" strokeLinecap="round" fill="none" />
       </Svg>
     </View>
   )
@@ -316,14 +414,14 @@ export function BiometricScanGraphic({ size = 88 }: { size?: number }) {
 // 6. WALLET SUCCESS CHECKMARK (SCREEN 7)
 // Elegant soft blue circular badge with verified checkmark
 // ============================================================================
-export function WalletSuccessGraphic({ size = 72 }: { size?: number }) {
+export function WalletSuccessGraphic({ size = 72, dark = false }: { size?: number; dark?: boolean }) {
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} viewBox="0 0 72 72" fill="none">
-        <Circle cx="36" cy="36" r="34" fill="#EFF6FF" />
+        <Circle cx="36" cy="36" r="34" fill={dark ? 'rgba(108,140,255,0.16)' : '#EFF6FF'} />
         <Path
           d="M 25 36 L 32 43 L 47 28"
-          stroke="#2563EB"
+          stroke={dark ? '#8FA8FF' : '#2563EB'}
           strokeWidth="3.5"
           strokeLinecap="round"
           strokeLinejoin="round"

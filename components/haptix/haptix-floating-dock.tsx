@@ -1,25 +1,11 @@
 import React, { useEffect, useRef } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  Easing,
-  Platform,
-  useWindowDimensions,
-} from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Platform, useWindowDimensions } from 'react-native'
 import { BlurView } from 'expo-blur'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
-import {
-  DockHomeIcon,
-  DockAgentIcon,
-  DockActivityIcon,
-  DockSecurityIcon,
-} from './haptix-icons'
+import { DockHomeIcon, DockAgentIcon, DockActivityIcon, DockSecurityIcon } from './haptix-icons'
 import { radius, typeScale } from '@/theme/tokens'
 
 export type DockTabId = 'home' | 'agent' | 'activity' | 'security'
@@ -62,7 +48,7 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
   // Find index of current active tab
   const activeIndex = Math.max(
     0,
-    DOCK_TABS.findIndex((t) => t.id === activeTab)
+    DOCK_TABS.findIndex((t) => t.id === activeTab),
   )
 
   // Fluid sliding thumb position animated with cubic-bezier(0.22, 1, 0.36, 1) over 420ms
@@ -118,19 +104,9 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
   const bottomOffset = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + 8
 
   return (
-    <View
-      style={[
-        styles.dockOuterWrapper,
-        { bottom: bottomOffset },
-      ]}
-      pointerEvents="box-none"
-    >
+    <View style={[styles.dockOuterWrapper, { bottom: bottomOffset }]} pointerEvents="box-none">
       {/* Fade band: dissolves scrolled content into the dock instead of bleeding through it */}
-      <LinearGradient
-        pointerEvents="none"
-        colors={['transparent', theme.bgApp]}
-        style={styles.dockFade}
-      />
+      <LinearGradient pointerEvents="none" colors={['transparent', theme.bgApp]} style={styles.dockFade} />
       {/* Outer shadow container (prevents Android/iOS shadow clipping from overflow:hidden) */}
       <View style={[{ width: dockWidth }, isDark ? styles.darkShadow : styles.lightShadow]}>
         <BlurView
@@ -152,10 +128,7 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
                 {
                   width: tabWidth,
                   backgroundColor: thumbBg,
-                  transform: [
-                    { translateX },
-                    { scale: scaleAnim },
-                  ],
+                  transform: [{ translateX }, { scale: scaleAnim }],
                 },
                 isDark ? styles.darkThumbShadow : styles.lightThumbShadow,
               ]}
@@ -176,11 +149,7 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
               >
                 <tab.Icon size={18} color={itemColor} />
                 <Text
-                  style={[
-                    styles.dockItemText,
-                    { color: itemColor },
-                    isActive && styles.dockItemTextActive,
-                  ]}
+                  style={[styles.dockItemText, { color: itemColor }, isActive && styles.dockItemTextActive]}
                   numberOfLines={1}
                 >
                   {tab.label}

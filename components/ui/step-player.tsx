@@ -1,12 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
-import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Easing,
-  Platform,
-} from 'react-native'
+import { View, TouchableOpacity, StyleSheet, Animated, Easing, Platform } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -59,7 +52,7 @@ export function StepPlayer({
 
   const items = useMemo<StepPlayerStep[]>(
     () => (typeof steps === 'number' ? Array.from({ length: Math.max(1, steps) }, () => ({})) : steps),
-    [steps]
+    [steps],
   )
   const count = items.length
 
@@ -173,12 +166,7 @@ export function StepPlayer({
   const barFill = isDark ? '#FFFFFF' : '#0B1220'
 
   return (
-    <View
-      style={[
-        styles.container,
-        controlPosition === 'right' && styles.rowReverse,
-      ]}
-    >
+    <View style={[styles.container, controlPosition === 'right' && styles.rowReverse]}>
       {/* Control Button: Play / Pause / Replay */}
       {showControl && (
         <TouchableOpacity
@@ -225,12 +213,7 @@ export function StepPlayer({
           })
 
           return (
-            <TouchableOpacity
-              key={i}
-              onPress={() => handleStepPress(i)}
-              disabled={!seekable}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity key={i} onPress={() => handleStepPress(i)} disabled={!seekable} activeOpacity={0.8}>
               <Animated.View
                 style={[
                   styles.step,

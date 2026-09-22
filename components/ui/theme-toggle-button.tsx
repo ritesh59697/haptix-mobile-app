@@ -1,14 +1,5 @@
 import React, { useRef } from 'react'
-import {
-  Pressable,
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Platform,
-  StyleProp,
-  ViewStyle,
-} from 'react-native'
+import { Pressable, View, Text, StyleSheet, Animated, Platform, StyleProp, ViewStyle } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -23,11 +14,7 @@ export interface ThemeToggleButtonProps {
  * Tactile Theme Toggle Button
  * Switches smoothly between Dark and Light mode.
  */
-export function ThemeToggleButton({
-  style,
-  showLabel = false,
-  size = 'default',
-}: ThemeToggleButtonProps) {
+export function ThemeToggleButton({ style, showLabel = false, size = 'default' }: ThemeToggleButtonProps) {
   const { theme, isDark, toggleTheme } = useAppTheme()
   const scaleAnim = useRef(new Animated.Value(1)).current
   const rotateAnim = useRef(new Animated.Value(0)).current
@@ -110,16 +97,7 @@ export function ThemeToggleButton({
           />
         </Animated.View>
 
-        {showLabel && (
-          <Text
-            style={[
-              styles.label,
-              { color: theme.textSecondary },
-            ]}
-          >
-            {isDark ? 'Light' : 'Dark'}
-          </Text>
-        )}
+        {showLabel && <Text style={[styles.label, { color: theme.textSecondary }]}>{isDark ? 'Light' : 'Dark'}</Text>}
       </Pressable>
     </Animated.View>
   )
