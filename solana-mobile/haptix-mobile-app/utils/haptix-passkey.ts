@@ -606,8 +606,13 @@ export async function signWithPasskey(
     isPrimary ? promptReason : `Authorize 2-of-2 Hardware Quorum (${promptReason})`
   )
 
+  // Fail closed: a declined, cancelled, or unavailable biometric prompt must abort
+  // signing. Proceeding here would let anyone holding the device authorize a
+  // transaction by simply dismissing the prompt.
   if (!auth.success) {
-    console.warn(`[Haptix Passkey] Biometric authorization notice for ${passkeyId}:`, auth.error)
+    throw new Error(
+      auth.error || 'Biometric authorization was cancelled or unavailable. Transaction aborted.'
+    )
   }
 
   // 3. Hardware Enclave / KeyStore canonical Secp256r1 signing
