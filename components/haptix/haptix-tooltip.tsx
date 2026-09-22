@@ -10,6 +10,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
+import { radius, typeScale } from '@/theme/tokens'
 
 export interface HaptixTooltipProps {
   tip: string
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
   bubbleContent: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   bubbleText: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     lineHeight: 16,
     fontWeight: '500',
     textAlign: 'center',

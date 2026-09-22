@@ -111,3 +111,34 @@ export const lightTokens: ThemeTokens = {
     elevation: 2,
   },
 }
+
+// ── Shape scale ──────────────────────────────────────────────────────────────
+// Surfaces use six steps only. Anything meant to read as a circle or capsule
+// uses `pill` rather than a hand-tuned half-dimension, so it stays round when
+// the element is resized.
+export const radius = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  pill: 999,
+} as const
+
+// ── Type scale ───────────────────────────────────────────────────────────────
+// Whole numbers only: fractional sizes render blurry on Android and read as
+// accidents rather than decisions.
+export const typeScale = {
+  micro: 10,
+  caption: 11,
+  footnote: 12,
+  body: 13,
+  bodyLg: 14,
+  title: 15,
+  heading: 18,
+  displaySm: 20,
+  display: 22,
+  displayLg: 26,
+  hero: 34,
+  heroXl: 38,
+} as const

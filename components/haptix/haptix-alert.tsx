@@ -11,6 +11,7 @@ import {
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
+import { radius, typeScale } from '@/theme/tokens'
 
 export type AlertStatus = 'info' | 'success' | 'warning' | 'error' | 'neutral'
 
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     borderWidth: 1,
     gap: 12,
     marginBottom: 14,
@@ -172,25 +173,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   alertTitle: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '700',
     letterSpacing: -0.1,
     marginBottom: 2,
   },
   alertMessage: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     lineHeight: 16,
     fontWeight: '500',
   },
   actionButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionButtonText: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '700',
   },
 })
