@@ -28,4 +28,6 @@ pub enum HaptixError {
     DuplicatePasskeys,
     #[msg("Invalid public key length (must be 33-byte compressed secp256r1).")]
     InvalidPubkeyLength,
+    #[msg("Malformed or untrusted WebAuthn assertion.")]
+    InvalidWebAuthnAssertion,
 }

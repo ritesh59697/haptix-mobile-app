@@ -8,7 +8,9 @@
     "scheme": "haptix",
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "io.haptix.wallet",
+      "associatedDomains": ["webcredentials:haptix.io"]
     },
     "android": {
       "adaptiveIcon": {

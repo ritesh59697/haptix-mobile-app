@@ -3,6 +3,7 @@ pub mod error;
 pub mod instructions;
 pub mod secp256r1;
 pub mod state;
+pub mod webauthn;
 
 use anchor_lang::prelude::*;
 
