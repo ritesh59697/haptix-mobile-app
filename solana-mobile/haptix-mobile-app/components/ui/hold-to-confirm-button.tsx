@@ -12,6 +12,7 @@ import {
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useAppTheme } from '@/components/theme/theme-context'
+import { radius, typeScale } from '@/theme/tokens'
 
 export interface HoldToConfirmButtonProps {
   label?: string
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
   },
   container: {
     height: 48,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     overflow: 'hidden',
     position: 'relative',
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   label: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '700',
     letterSpacing: 0.2,
   },

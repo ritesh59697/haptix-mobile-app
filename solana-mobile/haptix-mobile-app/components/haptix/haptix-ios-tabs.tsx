@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
+import { radius, typeScale } from '@/theme/tokens'
 
 export interface IosTabItem<T extends string = string> {
   id: T
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     padding: 4,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
     top: 4,
     left: 4,
     height: 36,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     zIndex: 0,
   },
   lightThumbShadow: {
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 1,
     height: 36,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   itemText: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '600',
     letterSpacing: -0.1,
   },
@@ -246,10 +247,10 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 999,
+    borderRadius: radius.pill,
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: typeScale.micro,
     fontWeight: '700',
   },
 })

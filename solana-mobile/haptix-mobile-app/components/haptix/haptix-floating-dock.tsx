@@ -20,6 +20,7 @@ import {
   DockActivityIcon,
   DockSecurityIcon,
 } from './haptix-icons'
+import { radius, typeScale } from '@/theme/tokens'
 
 export type DockTabId = 'home' | 'agent' | 'activity' | 'security'
 
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 4,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
     top: 4,
     left: 4,
     height: 48,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     zIndex: 0,
   },
   lightThumbShadow: {
@@ -289,7 +290,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     zIndex: 1,
     height: 48,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
   },
 
   dockItemText: {
-    fontSize: 9.5,
+    fontSize: typeScale.micro,
     fontWeight: '500',
     letterSpacing: -0.1,
   },

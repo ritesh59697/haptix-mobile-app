@@ -81,8 +81,9 @@ import {
 } from './haptix-icons'
 import { HaptixFloatingDock, DockTabId } from './haptix-floating-dock'
 import { HaptixIosTabs } from './haptix-ios-tabs'
-import { HaptixTooltip } from './haptix-tooltip'
+import { HaptixPolicySheet, PolicyTopic } from './haptix-policy-sheet'
 import { HaptixAlert } from './haptix-alert'
+import { radius, typeScale } from '@/theme/tokens'
 
 const DEVNET_RPC = 'https://api.devnet.solana.com'
 const MAINNET_RPC = 'https://api.mainnet-beta.solana.com'
@@ -165,6 +166,7 @@ export function HaptixWalletScreen() {
   const [showOverflowMenu, setShowOverflowMenu] = useState(false)
   const [showTxDetailModal, setShowTxDetailModal] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionRecord | null>(null)
+  const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
 
   // Form Inputs
   const [sendRecipient, setSendRecipient] = useState('')
@@ -311,7 +313,7 @@ export function HaptixWalletScreen() {
 
       Alert.alert(
         'Devnet SOL Received!',
-        `Transferred +0.20 SOL from the Haptix Relayer Treasury to your Smart Account PDA.\n\nSignature: ${ellipsify(sig, 8)}`,
+        `Sent 0.20 SOL to your smart account from the Devnet relayer.\n\nSignature: ${ellipsify(sig, 8)}`,
         [
           {
             text: 'View on Explorer',
@@ -387,7 +389,7 @@ export function HaptixWalletScreen() {
         type: 'init',
         amount: 0,
         tokenSymbol: 'SOL',
-        recipientOrSender: 'Haptix Anchor Program',
+        recipientOrSender: 'Haptix Policy Program',
         timestamp: Date.now(),
         status: 'confirmed',
         securityType: '2-of-2 Hardware Quorum',
@@ -395,8 +397,8 @@ export function HaptixWalletScreen() {
       setTransactions((prev) => [newTx, ...prev])
 
       Alert.alert(
-        'Smart Account Initialized on Anchor',
-        `Successfully initialized your Smart Account PDA on Solana Devnet!\nProgram: YTdPGhiX7wgA9mQPJpUXqXRFzRvMBLwRAJBWdTVUHWL\n\nSignature: ${ellipsify(sig, 8)}`,
+        'Smart Account Ready',
+        `Your spending limits are now enforced by the on-chain program on Solana Devnet.\n\nSignature: ${ellipsify(sig, 8)}`,
         [
           {
             text: 'View on Explorer',
@@ -701,7 +703,7 @@ export function HaptixWalletScreen() {
 
       Alert.alert(
         'Transfer Confirmed On-Chain',
-        `Transferred ${amt} SOL via Haptix Anchor Program.\n\n${
+        `Sent ${amt} SOL.\n\n${
           isHighRiskQuorum ? 'Verified: 2-of-2 Hardware Passkey Quorum' : 'Verified: 1-Tap Secp256r1 Passkey'
         }\n\nSignature: ${ellipsify(sig, 8)}`,
         [
@@ -852,7 +854,7 @@ export function HaptixWalletScreen() {
 
       Alert.alert(
         'Autonomous Agent Trade Executed On-Chain',
-        `Agent executed 0.02 SOL transfer on-chain via Haptix Anchor Program.\n\nZero biometric prompts required for execution!\nAllowance deducted on-chain.\n\nTx: ${ellipsify(sig, 8)}`,
+        `The agent sent 0.02 SOL, signed by its own session key with no prompt at execution time.\nThe amount came out of its daily allowance.\n\nTx: ${ellipsify(sig, 8)}`,
         [
           {
             text: 'View on Explorer',
@@ -1018,7 +1020,7 @@ export function HaptixWalletScreen() {
   const activityTitleFor = (tx: TransactionRecord) => {
     if (tx.type === 'freeze') return 'Emergency Freeze'
     if (tx.type === 'unfreeze') return 'Smart Wallet Unlocked'
-    if (tx.type === 'init') return 'Account Initialized'
+    if (tx.type === 'init') return 'On-Chain Setup'
     if (tx.type === 'airdrop') return 'Devnet Faucet'
     if (tx.type === 'agent_trade') return 'Agent Auto-Trade'
     return 'Transfer SOL'
@@ -1148,7 +1150,7 @@ export function HaptixWalletScreen() {
                 ]}
               />
               <Text style={[styles.onChainStatusText, { color: onChainWallet ? '#10B981' : '#F59E0B' }]}>
-                {onChainWallet ? 'Anchor Program Account Initialized' : 'Counterfactual Smart Account (PDA)'}
+                {onChainWallet ? 'Spending policy live on-chain' : 'Spending policy not on-chain yet'}
               </Text>
             </View>
             {!onChainWallet && (
@@ -1160,7 +1162,7 @@ export function HaptixWalletScreen() {
                 {isInitializingWallet ? (
                   <ActivityIndicator size="small" color={theme.accentForeground} />
                 ) : (
-                  <Text style={[styles.deployPdaButtonText, { color: theme.accentForeground }]}>Deploy on Anchor</Text>
+                  <Text style={[styles.deployPdaButtonText, { color: theme.accentForeground }]}>Activate on-chain</Text>
                 )}
               </TouchableOpacity>
             )}
@@ -1190,12 +1192,7 @@ export function HaptixWalletScreen() {
                 <SolanaTokenLogo size={24} />
               </View>
               <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.assetPrimaryName, s.textPrimary]}>Solana</Text>
-                  <View style={[styles.trendBadge, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }]}>
-                    <Text style={[styles.trendBadgeText, styles.trendPositive]}>+4.82%</Text>
-                  </View>
-                </View>
+                <Text style={[styles.assetPrimaryName, s.textPrimary]}>Solana</Text>
                 <Text style={[styles.assetSecondaryTag, s.textMuted]}>SOL · Solana</Text>
               </View>
             </View>
@@ -1216,12 +1213,7 @@ export function HaptixWalletScreen() {
                 <UsdcTokenLogo size={24} />
               </View>
               <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.assetPrimaryName, s.textPrimary]}>USD Coin</Text>
-                  <View style={[styles.trendBadge, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }]}>
-                    <Text style={[styles.trendBadgeText, styles.trendPositive]}>+0.01%</Text>
-                  </View>
-                </View>
+                <Text style={[styles.assetPrimaryName, s.textPrimary]}>USD Coin</Text>
                 <Text style={[styles.assetSecondaryTag, s.textMuted]}>USDC · Circle</Text>
               </View>
             </View>
@@ -1375,8 +1367,9 @@ export function HaptixWalletScreen() {
   const renderAgentsPage = () => (
     <>
       <View style={styles.pageHeader}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={styles.pageTitleRow}>
           <Text style={[styles.pageTitle, s.textPrimary]}>AI Agents</Text>
+          <PolicyLinkButton onPress={() => setPolicyTopic('agents')} />
         </View>
       </View>
 
@@ -1392,12 +1385,7 @@ export function HaptixWalletScreen() {
               />
             </View>
             <View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <Text style={[styles.agentHeroTitle, s.textPrimary]}>Spending Firewall</Text>
-                <HaptixTooltip
-                  tip={`24h Budget & Fast-Lane Policy. Trades up to ${spendThreshold} SOL execute automatically; anything above requires 2-of-2 Hardware Passkeys.`}
-                />
-              </View>
+              <Text style={[styles.agentHeroTitle, s.textPrimary]}>Spending Firewall</Text>
             </View>
           </View>
 
@@ -1436,10 +1424,7 @@ export function HaptixWalletScreen() {
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={[styles.agentBudgetLabel, s.textMuted]}>Daily Limit</Text>
-              <HaptixTooltip tip="Maximum budget delegated to autonomous agents in a 24-hour window." />
-            </View>
+            <Text style={[styles.agentBudgetLabel, s.textMuted]}>Daily Limit</Text>
             <Text style={[styles.agentBudgetNumber, s.textSecondary]}>
               ${agentDailyBudgetUsd.toFixed(2)} USD
             </Text>
@@ -1464,13 +1449,11 @@ export function HaptixWalletScreen() {
           <View style={[styles.agentPolicyPill, s.elevatedCard]}>
             <MaterialIcons name="bolt" size={14} color="#10B981" />
             <Text style={[styles.agentPolicyPillText, s.textSecondary]}>Fast-Lane: ≤ {spendThreshold} SOL</Text>
-            <HaptixTooltip tip={`Single trades up to ${spendThreshold} SOL execute with zero biometric prompts.`} />
           </View>
 
           <View style={[styles.agentPolicyPill, s.elevatedCard]}>
             <MaterialIcons name="shield" size={14} color="#F59E0B" />
             <Text style={[styles.agentPolicyPillText, s.textSecondary]}>Quorum: &gt; {spendThreshold} SOL</Text>
-            <HaptixTooltip tip={`Trades exceeding ${spendThreshold} SOL require 2-of-2 Hardware Passkeys.`} />
           </View>
         </View>
       </View>
@@ -1484,7 +1467,6 @@ export function HaptixWalletScreen() {
               <Text style={[styles.agentCountText, { color: theme.accent }]}>2 Active</Text>
             </View>
           </View>
-          <HaptixTooltip tip="On-chain delegated bots authorized to transact within your policy limits." />
         </View>
 
         {/* Agent 1: Jupiter */}
@@ -1493,10 +1475,7 @@ export function HaptixWalletScreen() {
             <MaterialIcons name="auto-graph" size={18} color="#3B82F6" />
           </View>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={[styles.agentCompactName, s.textPrimary]}>Jupiter Auto-DCA</Text>
-              <HaptixTooltip tip="Automated dollar-cost averaging into SOL & USDC via Jupiter DEX pools." />
-            </View>
+            <Text style={[styles.agentCompactName, s.textPrimary]}>Jupiter Auto-DCA</Text>
             <Text style={[styles.agentCompactSub, s.textMuted]}>0.15 SOL / 24h · Auto-compounding</Text>
           </View>
           <View style={styles.agentActiveChip}>
@@ -1512,10 +1491,7 @@ export function HaptixWalletScreen() {
             <MaterialIcons name="account-balance" size={18} color="#10B981" />
           </View>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={[styles.agentCompactName, s.textPrimary]}>Kamino Yield</Text>
-              <HaptixTooltip tip="Dynamically rebalances concentrated liquidity positions to maximize APY." />
-            </View>
+            <Text style={[styles.agentCompactName, s.textPrimary]}>Kamino Yield</Text>
             <Text style={[styles.agentCompactSub, s.textMuted]}>0.10 SOL / 24h · Liquidity rebalancer</Text>
           </View>
           <View style={styles.agentActiveChip}>
@@ -1527,12 +1503,9 @@ export function HaptixWalletScreen() {
       {/* 3. GRANT SESSION KEY CARD */}
       <View style={[styles.agentSectionCard, s.card]}>
         <View style={styles.agentSectionHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.agentSectionHeading, s.textPrimary]}>Grant Session Key</Text>
-            <HaptixTooltip tip="Delegates a scoped cryptographic session key to an external bot. Requires 2-of-2 Hardware Passkeys." />
-          </View>
+          <Text style={[styles.agentSectionHeading, s.textPrimary]}>Grant Session Key</Text>
           <View style={[styles.quorumBadgeSmall, { backgroundColor: 'rgba(245,158,11,0.12)' }]}>
-            <Text style={{ color: '#F59E0B', fontSize: 11, fontWeight: '600' }}>2-of-2 Quorum</Text>
+            <Text style={{ color: '#F59E0B', fontSize: typeScale.caption, fontWeight: '600' }}>2-of-2 Quorum</Text>
           </View>
         </View>
 
@@ -1580,10 +1553,7 @@ export function HaptixWalletScreen() {
       <View style={[styles.agentActionCard, s.card]}>
         <View style={styles.agentActionRow}>
           <View style={{ flex: 1, marginRight: 8 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={[styles.agentActionTitle, s.textPrimary]}>Autonomous Agent Trade</Text>
-              <HaptixTooltip tip="Runs a real 0.02 SOL transfer on Solana Devnet, signed solely by the agent session key with zero prompts at execution time." />
-            </View>
+            <Text style={[styles.agentActionTitle, s.textPrimary]}>Autonomous Agent Trade</Text>
           </View>
           <TouchableOpacity
             style={[styles.agentFastLaneTestBtn, { backgroundColor: theme.accent }]}
@@ -1604,7 +1574,6 @@ export function HaptixWalletScreen() {
               <Text style={[styles.agentActionTitle, isFrozen ? { color: '#10B981' } : { color: '#FDA4AF' }]}>
                 {isFrozen ? 'Wallet Is Locked' : 'Emergency Circuit Breaker'}
               </Text>
-              <HaptixTooltip tip={isFrozen ? 'Unlock the wallet to resume agent trading.' : 'Instantly freeze and revoke all autonomous agent trading permissions on-chain.'} />
             </View>
             <Text style={[styles.emergencyTag, { color: isFrozen ? '#10B981' : '#FDA4AF' }]}>
               {isFrozen ? 'Frozen' : 'On-Chain Freeze'}
@@ -1835,8 +1804,9 @@ export function HaptixWalletScreen() {
   const renderSecurityPage = () => (
     <>
       <View style={styles.pageHeader}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={styles.pageTitleRow}>
           <Text style={[styles.pageTitle, s.textPrimary]}>Security & Protection</Text>
+          <PolicyLinkButton onPress={() => setPolicyTopic('security')} />
         </View>
         <Text style={[styles.pageSubtitle, s.textSecondary]}>
           Hardware credentials, on-chain policy firewall & emergency lock
@@ -1868,10 +1838,7 @@ export function HaptixWalletScreen() {
       {/* 2. Hardware Credentials Card */}
       <View style={[styles.securitySectionCard, s.card]}>
         <View style={styles.securitySectionHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.securitySectionHeading, s.textPrimary]}>Hardware Credentials</Text>
-            <HaptixTooltip tip="Secp256r1 cryptographic keys generated within isolated hardware secure chips. Keys cannot be extracted." />
-          </View>
+          <Text style={[styles.securitySectionHeading, s.textPrimary]}>Hardware Credentials</Text>
           <View style={styles.securityCountBadge}>
             <Text style={styles.securityCountText}>2 Enrolled</Text>
           </View>
@@ -1883,10 +1850,7 @@ export function HaptixWalletScreen() {
             <FingerScanBold size={18} color="#10B981" />
           </View>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={[styles.credentialName, s.textPrimary]}>Primary Device Passkey</Text>
-              <HaptixTooltip tip="Hardware biometric key on Apple Secure Enclave / Android StrongBox using NIST P-256 curve." />
-            </View>
+            <Text style={[styles.credentialName, s.textPrimary]}>Primary Device Passkey</Text>
             <Text style={[styles.credentialSub, s.textMuted]}>Biometric Secure Enclave · Instant</Text>
           </View>
           <View style={styles.activeTag}>
@@ -1902,10 +1866,7 @@ export function HaptixWalletScreen() {
             <KeySquareBold size={18} color="#F59E0B" />
           </View>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={[styles.credentialName, s.textPrimary]}>Hardware Backup Key</Text>
-              <HaptixTooltip tip="Physical FIDO2 / WebAuthn security key (e.g. YubiKey 5) required for 2-of-2 escalation." />
-            </View>
+            <Text style={[styles.credentialName, s.textPrimary]}>Hardware Backup Key</Text>
             <Text style={[styles.credentialSub, s.textMuted]}>Physical FIDO2 / YubiKey · Quorum</Text>
           </View>
           <View style={styles.quorumTag}>
@@ -1917,10 +1878,7 @@ export function HaptixWalletScreen() {
       {/* 3. Spending Policy Firewall (Stat Grid) */}
       <View style={[styles.securitySectionCard, s.card]}>
         <View style={styles.securitySectionHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.securitySectionHeading, s.textPrimary]}>On-Chain Policy Firewall</Text>
-            <HaptixTooltip tip="Smart contract rules enforced directly on Solana. Non-compliant transactions are rejected by validator runtime." />
-          </View>
+          <Text style={[styles.securitySectionHeading, s.textPrimary]}>On-Chain Policy Firewall</Text>
           <View style={styles.policyProgramTag}>
             <Text style={styles.policyProgramTagText}>Solana Devnet</Text>
           </View>
@@ -1929,37 +1887,25 @@ export function HaptixWalletScreen() {
         <View style={styles.policyStatsGrid}>
           {/* Tile 1: Fast-lane limit */}
           <View style={[styles.policyStatTile, s.input]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={[styles.policyStatLabel, s.textSecondary]}>Fast-Lane Cap</Text>
-              <HaptixTooltip tip="Instant 1-signature execution for transactions up to this limit." />
-            </View>
+            <Text style={[styles.policyStatLabel, s.textSecondary]}>Fast-Lane Cap</Text>
             <Text style={[styles.policyStatValue, s.textPrimary]}>≤ {spendThreshold} SOL</Text>
           </View>
 
           {/* Tile 2: High-value quorum */}
           <View style={[styles.policyStatTile, s.input]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={[styles.policyStatLabel, s.textSecondary]}>Quorum Escalation</Text>
-              <HaptixTooltip tip="Transfers above fast-lane limit require both Biometric and Physical Passkeys." />
-            </View>
+            <Text style={[styles.policyStatLabel, s.textSecondary]}>Quorum Escalation</Text>
             <Text style={[styles.policyStatValue, s.textPrimary]}>2-of-2 Keys</Text>
           </View>
 
           {/* Tile 3: Velocity circuit breaker */}
           <View style={[styles.policyStatTile, s.input]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={[styles.policyStatLabel, s.textSecondary]}>Velocity Breaker</Text>
-              <HaptixTooltip tip="Prevents drain attacks by capping transaction frequency to 5 per hour." />
-            </View>
+            <Text style={[styles.policyStatLabel, s.textSecondary]}>Velocity Breaker</Text>
             <Text style={[styles.policyStatValue, s.textPrimary]}>5 tx / hr</Text>
           </View>
 
           {/* Tile 4: Agent spending cap */}
           <View style={[styles.policyStatTile, s.input]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={[styles.policyStatLabel, s.textSecondary]}>Agent Limit</Text>
-              <HaptixTooltip tip="Sub-account session key daily budget restricted exclusively to Jupiter DEX." />
-            </View>
+            <Text style={[styles.policyStatLabel, s.textSecondary]}>Agent Limit</Text>
             <Text style={[styles.policyStatValue, s.textPrimary]}>${(agentAllowance * SOL_PRICE_USD).toFixed(0)} / 24h</Text>
           </View>
         </View>
@@ -1968,40 +1914,59 @@ export function HaptixWalletScreen() {
       {/* 4. Guardian Social Recovery */}
       <View style={[styles.securitySectionCard, s.card]}>
         <View style={styles.securitySectionHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.securitySectionHeading, s.textPrimary]}>Guardian Social Recovery</Text>
-            <HaptixTooltip tip="Recover smart wallet control without seed phrases through trusted guardian consensus." />
-          </View>
-          <View style={[styles.activeTag, { backgroundColor: isDark ? 'rgba(59,130,246,0.12)' : '#EFF6FF', borderColor: isDark ? 'rgba(59,130,246,0.3)' : '#BFDBFE' }]}>
-            <Text style={[styles.activeTagText, { color: '#3B82F6' }]}>Configured</Text>
+          <Text style={[styles.securitySectionHeading, s.textPrimary]}>Guardian Social Recovery</Text>
+          <View
+            style={[
+              styles.activeTag,
+              onChainWallet
+                ? {
+                    backgroundColor: isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5',
+                    borderColor: isDark ? 'rgba(16,185,129,0.3)' : '#A7F3D0',
+                  }
+                : {
+                    backgroundColor: isDark ? 'rgba(245,158,11,0.12)' : '#FFFBEB',
+                    borderColor: isDark ? 'rgba(245,158,11,0.3)' : '#FDE68A',
+                  },
+            ]}
+          >
+            <Text style={[styles.activeTagText, { color: onChainWallet ? '#10B981' : '#F59E0B' }]}>
+              {onChainWallet ? 'Active' : 'Not on-chain yet'}
+            </Text>
           </View>
         </View>
 
         <View style={styles.recoveryDetailRow}>
           <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={[styles.recoveryDetailTitle, s.textPrimary]}>2-of-3 Guardians</Text>
-              <HaptixTooltip tip="Requires signatures from any 2 pre-authorized guardians to recover the wallet." />
-            </View>
-            <Text style={[styles.recoveryDetailDesc, s.textMuted]}>Consensus quorum threshold</Text>
+            <Text style={[styles.recoveryDetailTitle, s.textPrimary]}>1 Guardian</Text>
+            <Text style={[styles.recoveryDetailDesc, s.textMuted]}>Cannot spend funds</Text>
           </View>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={[styles.recoveryDetailTitle, s.textPrimary]}>24h Grace Period</Text>
-              <HaptixTooltip tip="Mandatory delay between recovery initiation and execution, allowing cancellation if compromised." />
-            </View>
-            <Text style={[styles.recoveryDetailDesc, s.textMuted]}>Timelock protection</Text>
+            <Text style={[styles.recoveryDetailTitle, s.textPrimary]}>24h Timelock</Text>
+            <Text style={[styles.recoveryDetailDesc, s.textMuted]}>You can veto with 2-of-2</Text>
           </View>
+        </View>
+
+        {/* The program stores exactly one guardian and gives it no spending
+            authority, so show who it actually is rather than a capability badge. */}
+        <View style={[styles.recoveryGuardianRow, s.input]}>
+          <Text style={[styles.recoveryGuardianLabel, s.textMuted]}>GUARDIAN</Text>
+          <Text
+            style={[styles.recoveryGuardianValue, s.textPrimary]}
+            numberOfLines={1}
+            ellipsizeMode="middle"
+          >
+            {onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'Set on first on-chain activation'}
+          </Text>
+          <Text style={[styles.recoveryGuardianNote, s.textMuted]}>
+            Can start a recovery and nothing else — it cannot move funds.
+          </Text>
         </View>
       </View>
 
       {/* 5. Emergency Panic Lock */}
       <View style={[styles.securitySectionCard, s.card]}>
         <View style={styles.securitySectionHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.securitySectionHeading, s.textPrimary]}>Emergency Panic Lock</Text>
-            <HaptixTooltip tip="Immediately revokes all delegated permissions and freezes account transfers on Solana." />
-          </View>
+          <Text style={[styles.securitySectionHeading, s.textPrimary]}>Emergency Panic Lock</Text>
         </View>
 
         {/* Body copy rather than an alert panel: the amber box used to be the
@@ -2024,10 +1989,7 @@ export function HaptixWalletScreen() {
       {/* 6. On-Chain Attestation Log */}
       <View style={[styles.securitySectionCard, s.card]}>
         <View style={styles.securitySectionHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.securitySectionHeading, s.textPrimary]}>On-Chain Attestations</Text>
-            <HaptixTooltip tip="Cryptographic proof of hardware enrollment and policy verification logged on Solana Devnet." />
-          </View>
+          <Text style={[styles.securitySectionHeading, s.textPrimary]}>On-Chain Attestations</Text>
           <View style={[styles.activeTag, { backgroundColor: isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5', borderColor: isDark ? 'rgba(16,185,129,0.3)' : '#A7F3D0' }]}>
             <Text style={styles.activeTagText}>2 Verified</Text>
           </View>
@@ -2040,7 +2002,6 @@ export function HaptixWalletScreen() {
               <Text style={[styles.auditLogText, s.textPrimary]}>
                 Biometric Passkey Enrolled
               </Text>
-              <HaptixTooltip tip="Hardware attestation verifying genuine Secure Enclave key generation." />
             </View>
             <Text style={[styles.auditLogTime, s.textMuted]}>Secp256r1 · Hardware Secure Enclave</Text>
           </View>
@@ -2055,7 +2016,6 @@ export function HaptixWalletScreen() {
               <Text style={[styles.auditLogText, s.textPrimary]}>
                 2-of-2 Spending Policy Active
               </Text>
-              <HaptixTooltip tip="Smart contract verified on Solana Devnet with multisig fallback." />
             </View>
             <Text style={[styles.auditLogTime, s.textMuted]}>Secp256r1 on-chain verification · Devnet</Text>
           </View>
@@ -2412,8 +2372,8 @@ export function HaptixWalletScreen() {
 
               {/* ERROR MESSAGE */}
               {sendErrorMsg ? (
-                <View style={{ marginTop: 12, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: theme.roseBg, borderRadius: 8 }}>
-                  <Text style={{ color: theme.roseText, fontSize: 13, textAlign: 'center' }}>
+                <View style={{ marginTop: 12, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: theme.roseBg, borderRadius: radius.sm }}>
+                  <Text style={{ color: theme.roseText, fontSize: typeScale.body, textAlign: 'center' }}>
                     {sendErrorMsg}
                   </Text>
                 </View>
@@ -2499,6 +2459,14 @@ export function HaptixWalletScreen() {
               </TouchableOpacity>
             </View>
 
+            <View style={[styles.swapDevnetNotice, s.input]}>
+              <MaterialIcons name="info-outline" size={14} color={theme.textMuted} />
+              <Text style={[styles.swapDevnetNoticeText, s.textMuted]}>
+                Devnet has no Jupiter liquidity pools, so this swap cannot be routed here. Switch to
+                Mainnet to swap for real — nothing is simulated.
+              </Text>
+            </View>
+
             {/* From Asset Box */}
             <View style={[styles.swapAssetCard, s.card]}>
               <View style={styles.swapCardRow}>
@@ -2565,7 +2533,7 @@ export function HaptixWalletScreen() {
 
             <View style={styles.swapDetailRow}>
               <Text style={[styles.swapDetailKey, s.textMuted]}>Route</Text>
-              <Text style={[styles.swapDetailVal, s.textSecondary]}>Jupiter DEX Aggregator</Text>
+              <Text style={[styles.swapDetailVal, s.textSecondary]}>Jupiter · Mainnet only</Text>
             </View>
 
             <PrismDepthButton
@@ -2641,7 +2609,7 @@ export function HaptixWalletScreen() {
 
                   <Text style={[styles.txDetailAmountText, s.textPrimary]}>
                     {selectedTransaction.type === 'freeze' || selectedTransaction.type === 'unfreeze' || selectedTransaction.type === 'init'
-                      ? 'Security Action'
+                      ? 'No funds moved'
                       : `${selectedTransaction.type === 'airdrop' ? '+' : '-'}${selectedTransaction.amount.toFixed(4)} ${selectedTransaction.tokenSymbol || 'SOL'}`}
                   </Text>
 
@@ -2659,23 +2627,18 @@ export function HaptixWalletScreen() {
 
                 {/* Cryptographic Clearance Details Card */}
                 <View style={[styles.securityGroupCard, s.card]}>
-                  <Text style={[styles.securityGroupLabel, s.textMuted]}>CRYPTOGRAPHIC CLEARANCE</Text>
+                  <Text style={[styles.securityGroupLabel, s.textMuted]}>HOW THIS WAS APPROVED</Text>
 
                   <View style={styles.specKeyValueRow}>
-                    <Text style={[styles.specKeyText, s.textSecondary]}>Security Level:</Text>
+                    <Text style={[styles.specKeyText, s.textSecondary]}>Approved by:</Text>
                     <Text style={[styles.specValueText, { color: theme.accent }]}>
                       {selectedTransaction.securityType || 'Secp256r1 Hardware Passkey'}
                     </Text>
                   </View>
 
                   <View style={styles.specKeyValueRow}>
-                    <Text style={[styles.specKeyText, s.textSecondary]}>Verification Curve:</Text>
+                    <Text style={[styles.specKeyText, s.textSecondary]}>Signature curve:</Text>
                     <Text style={[styles.specValueText, s.textPrimary]}>NIST P-256 (Secp256r1)</Text>
-                  </View>
-
-                  <View style={styles.specKeyValueRow}>
-                    <Text style={[styles.specKeyText, s.textSecondary]}>Precompile:</Text>
-                    <Text style={[styles.specValueText, s.textPrimary]}>Secp256r1SigVerify Precompile</Text>
                   </View>
 
                   <View style={styles.specKeyValueRow}>
@@ -2692,7 +2655,7 @@ export function HaptixWalletScreen() {
 
                   {/* Recipient / Program */}
                   <View style={{ marginBottom: 10 }}>
-                    <Text style={[styles.specKeyText, s.textMuted, { marginBottom: 4 }]}>Counterparty / Program</Text>
+                    <Text style={[styles.specKeyText, s.textMuted, { marginBottom: 4 }]}>Counterparty</Text>
                     <View style={[styles.addressCopyRow, s.input]}>
                       <Text style={[styles.addressCopyRowText, s.textPrimary]} numberOfLines={1}>
                         {selectedTransaction.recipientOrSender}
@@ -2862,6 +2825,15 @@ export function HaptixWalletScreen() {
       </Modal>
 
       {/* ==================================================================== */}
+      {/* UNIFIED POLICY / HELP SHEET                                          */}
+      {/* ==================================================================== */}
+      <HaptixPolicySheet
+        topic={policyTopic}
+        threshold={spendThreshold}
+        onClose={() => setPolicyTopic(null)}
+      />
+
+      {/* ==================================================================== */}
       {/* 9. SAFE LOCK FULLSCREEN OVERLAY                                      */}
       {/* ==================================================================== */}
       {isLocked && (
@@ -2937,7 +2909,7 @@ const styles = StyleSheet.create({
   avatarCircle: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.pill,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -2950,7 +2922,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerWalletName: {
-    fontSize: 15,
+    fontSize: typeScale.title,
     fontWeight: '700',
     letterSpacing: -0.2,
     maxWidth: 140,
@@ -2962,12 +2934,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     marginTop: 2,
     alignSelf: 'flex-start',
   },
   addressCopyText: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '500',
   },
   headerRight: {
@@ -2982,22 +2954,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 5,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   networkDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: radius.pill,
     backgroundColor: '#F59E0B',
   },
   networkPillText: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
   },
   headerIconBtn: {
     width: 34,
     height: 34,
-    borderRadius: 11,
+    borderRadius: radius.md,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -3020,13 +2992,13 @@ const styles = StyleSheet.create({
   },
   freezeAlertText: {
     color: '#FDA4AF',
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
   freezeAlertAction: {
     color: '#FDA4AF',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
@@ -3051,20 +3023,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     marginTop: 4,
   },
+  pageTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
   pageTitle: {
-    fontSize: 22,
+    fontSize: typeScale.display,
     fontWeight: '700',
     letterSpacing: -0.4,
-    marginBottom: 4,
   },
   pageSubtitle: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     lineHeight: 18,
+    marginTop: 4,
+  },
+  policyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  policyLinkText: {
+    fontSize: typeScale.caption,
+    fontWeight: '600',
   },
 
   /* HERO BALANCE CARD */
   heroCard: {
-    borderRadius: 22,
+    borderRadius: radius.xl,
     borderWidth: 1,
     padding: 18,
     marginBottom: 14,
@@ -3081,7 +3072,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   heroBalanceLabel: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '500',
   },
   eyeToggleButton: {
@@ -3090,11 +3081,11 @@ const styles = StyleSheet.create({
   heroBadgePill: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     borderWidth: 1,
   },
   heroBadgeText: {
-    fontSize: 10,
+    fontSize: typeScale.micro,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
@@ -3102,12 +3093,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   heroPrimaryBalance: {
-    fontSize: 34,
+    fontSize: typeScale.hero,
     fontWeight: '700',
     letterSpacing: -0.6,
   },
   heroSecondaryBalance: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '500',
     marginTop: 3,
   },
@@ -3119,7 +3110,7 @@ const styles = StyleSheet.create({
   heroActionBtn: {
     flex: 1,
     height: 44,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     flexDirection: 'row',
     justifyContent: 'center',
@@ -3127,7 +3118,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   heroActionBtnText: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '600',
     letterSpacing: -0.1,
     flexShrink: 1,
@@ -3145,7 +3136,7 @@ const styles = StyleSheet.create({
   },
 
   segmentNote: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '500',
     marginTop: -6,
     marginBottom: 10,
@@ -3153,7 +3144,7 @@ const styles = StyleSheet.create({
   },
 
   panicExplain: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     lineHeight: 19,
     marginBottom: 14,
   },
@@ -3167,13 +3158,13 @@ const styles = StyleSheet.create({
   },
 
   homeSectionTitle: {
-    fontSize: 15,
+    fontSize: typeScale.title,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
 
   homeSectionLink: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '600',
   },
 
@@ -3181,11 +3172,11 @@ const styles = StyleSheet.create({
   trendBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: radius.sm,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   trendBadgeText: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
     letterSpacing: 0.1,
   },
@@ -3198,7 +3189,7 @@ const styles = StyleSheet.create({
 
   /* ASSETS LIST (CLEAN LIST WITHOUT CARD CLUTTER) */
   assetList: {
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     paddingHorizontal: 16,
   },
@@ -3216,28 +3207,28 @@ const styles = StyleSheet.create({
   assetLogoWrap: {
     width: 38,
     height: 38,
-    borderRadius: 19,
+    borderRadius: radius.pill,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   assetPrimaryName: {
-    fontSize: 15,
+    fontSize: typeScale.title,
     fontWeight: '600',
   },
   assetSecondaryTag: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     marginTop: 2,
   },
   assetRight: {
     alignItems: 'flex-end',
   },
   assetCryptoAmount: {
-    fontSize: 15,
+    fontSize: typeScale.title,
     fontWeight: '600',
   },
   assetFiatAmount: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     marginTop: 2,
   },
   assetDivider: {
@@ -3247,7 +3238,7 @@ const styles = StyleSheet.create({
   /* AI AGENTS STYLES */
   agentHeroCard: {
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     padding: 16,
     marginBottom: 14,
   },
@@ -3260,17 +3251,17 @@ const styles = StyleSheet.create({
   agentFirewallIconCircle: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.pill,
     justifyContent: 'center',
     alignItems: 'center',
   },
   agentHeroTitle: {
-    fontSize: 15,
+    fontSize: typeScale.title,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
   agentHeroSubtitle: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     marginTop: 1,
   },
   agentHeroStatusBadge: {
@@ -3279,16 +3270,16 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 9,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
   agentStatusDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: radius.pill,
   },
   agentStatusText: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
   },
   agentBudgetStatRow: {
@@ -3298,24 +3289,24 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   agentBudgetLabel: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     fontWeight: '500',
   },
   agentBudgetNumber: {
-    fontSize: 20,
+    fontSize: typeScale.displaySm,
     fontWeight: '700',
     marginTop: 2,
     letterSpacing: -0.3,
   },
   agentProgressTrack: {
     height: 6,
-    borderRadius: 3,
+    borderRadius: radius.pill,
     overflow: 'hidden',
     marginBottom: 12,
   },
   agentProgressFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: radius.pill,
   },
   agentPolicyPillRow: {
     flexDirection: 'row',
@@ -3328,17 +3319,17 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingVertical: 7,
     paddingHorizontal: 8,
-    borderRadius: 10,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
   agentPolicyPillText: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
     flexShrink: 1,
   },
   agentSectionCard: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 16,
     marginBottom: 14,
   },
@@ -3349,17 +3340,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   agentSectionHeading: {
-    fontSize: 14.5,
+    fontSize: typeScale.title,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
   agentCountBadge: {
     paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   agentCountText: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '700',
   },
   agentCompactRow: {
@@ -3371,27 +3362,27 @@ const styles = StyleSheet.create({
   agentCompactIcon: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: radius.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   agentCompactName: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
   agentCompactSub: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     marginTop: 2,
   },
   agentActiveChip: {
     backgroundColor: 'rgba(16, 185, 129, 0.12)',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: radius.sm,
   },
   agentActiveChipText: {
     color: '#10B981',
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
   },
   agentRowDivider: {
@@ -3401,7 +3392,7 @@ const styles = StyleSheet.create({
   quorumBadgeSmall: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: radius.sm,
   },
   agentChipSelectorRow: {
     flexDirection: 'row',
@@ -3410,17 +3401,17 @@ const styles = StyleSheet.create({
   agentBudgetChip: {
     flex: 1,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: radius.md,
     borderWidth: 1,
     alignItems: 'center',
   },
   agentBudgetChipText: {
-    fontSize: 12.5,
+    fontSize: typeScale.body,
     fontWeight: '600',
   },
   agentActionCard: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 16,
     marginBottom: 14,
   },
@@ -3430,11 +3421,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   agentActionTitle: {
-    fontSize: 13.5,
+    fontSize: typeScale.bodyLg,
     fontWeight: '700',
   },
   agentActionSubtitle: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     marginTop: 2,
   },
   agentFastLaneTestBtn: {
@@ -3443,41 +3434,41 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
+    borderRadius: radius.md,
   },
   agentFastLaneTestBtnText: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '700',
   },
   emergencyTag: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
   },
 
   /* RECENT ACTIVITY */
   emptyActivityCard: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyActivityTitle: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
     marginTop: 8,
   },
   emptyActivitySubtitle: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     marginTop: 2,
   },
   activityList: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     paddingHorizontal: 16,
   },
   activityGroupLabel: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
     letterSpacing: 0.2,
     paddingTop: 12,
@@ -3497,30 +3488,30 @@ const styles = StyleSheet.create({
   activityIconCircle: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: radius.pill,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   activityItemTitle: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '500',
   },
   activityItemDate: {
     color: '#64748B',
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     marginTop: 2,
   },
   activityRight: {
     alignItems: 'flex-end',
   },
   activityAmount: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
   activityConfirmedLabel: {
     color: '#475569',
-    fontSize: 10.5,
+    fontSize: typeScale.caption,
   },
   /* MODAL COMMON STYLES */
   modalBackdrop: {
@@ -3529,8 +3520,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     borderWidth: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
@@ -3538,7 +3529,7 @@ const styles = StyleSheet.create({
   modalDragHandle: {
     width: 36,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.pill,
     alignSelf: 'center',
     marginBottom: 16,
   },
@@ -3549,18 +3540,18 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   modalSheetTitle: {
-    fontSize: 18,
+    fontSize: typeScale.heading,
     fontWeight: '700',
   },
   modalSheetSubtitle: {
     color: '#64748B',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     marginTop: 2,
   },
   modalCloseBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.pill,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3572,8 +3563,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   expandedSendSheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     borderWidth: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
@@ -3581,7 +3572,7 @@ const styles = StyleSheet.create({
   },
   sendHeroCard: {
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     padding: 16,
     marginBottom: 16,
     alignItems: 'center',
@@ -3599,15 +3590,15 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
   sendTokenSymbol: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '700',
   },
   sendTokenName: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
   },
   sendBalanceChip: {
     flexDirection: 'row',
@@ -3615,10 +3606,10 @@ const styles = StyleSheet.create({
   },
   sendBalanceLabel: {
     color: '#64748B',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
   },
   sendBalanceValue: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
   },
   sendInputRow: {
@@ -3629,7 +3620,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   sendBigInput: {
-    fontSize: 38,
+    fontSize: typeScale.heroXl,
     fontWeight: '700',
     textAlign: 'center',
     minWidth: 120,
@@ -3637,7 +3628,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   sendCurrencySuffix: {
-    fontSize: 20,
+    fontSize: typeScale.displaySm,
     fontWeight: '600',
     marginLeft: 6,
     color: '#64748B',
@@ -3648,11 +3639,11 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sendUsdApprox: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     color: '#64748B',
   },
   sendUsdCounter: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '500',
     color: '#64748B',
   },
@@ -3665,12 +3656,12 @@ const styles = StyleSheet.create({
   percentChip: {
     flex: 1,
     paddingVertical: 7,
-    borderRadius: 10,
+    borderRadius: radius.md,
     alignItems: 'center',
     borderWidth: 1,
   },
   percentChipText: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
   },
   inputSection: {
@@ -3683,7 +3674,7 @@ const styles = StyleSheet.create({
   },
   validBadgeText: {
     color: '#10B981',
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
   },
   clearActionBtn: {
@@ -3695,7 +3686,7 @@ const styles = StyleSheet.create({
   },
   previewCard: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 14,
     gap: 10,
   },
@@ -3706,10 +3697,10 @@ const styles = StyleSheet.create({
   },
   previewLabel: {
     color: '#64748B',
-    fontSize: 12.5,
+    fontSize: typeScale.body,
   },
   previewLabelBold: {
-    fontSize: 13.5,
+    fontSize: typeScale.bodyLg,
     fontWeight: '700',
   },
   previewValueRow: {
@@ -3719,15 +3710,15 @@ const styles = StyleSheet.create({
   },
   previewValueText: {
     color: '#CBD5E1',
-    fontSize: 12.5,
+    fontSize: typeScale.body,
     fontWeight: '500',
   },
   previewValueBold: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '700',
   },
   previewTotalValue: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '700',
   },
   previewDivider: {
@@ -3737,14 +3728,14 @@ const styles = StyleSheet.create({
   recipientAvatarSmall: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.pill,
     justifyContent: 'center',
     alignItems: 'center',
   },
   networkDotSmall: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: radius.pill,
     backgroundColor: '#10B981',
   },
   securityBadgeRow: {
@@ -3753,14 +3744,14 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   securityBadgeText: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
   },
 
   /* SECURITY SECTION REFRESH */
   securitySectionCard: {
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 16,
     marginBottom: 14,
   },
@@ -3771,18 +3762,18 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   securitySectionHeading: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
   securityCountBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: radius.sm,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   securityCountText: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
     color: '#94A3B8',
   },
@@ -3795,16 +3786,16 @@ const styles = StyleSheet.create({
   credentialIconWrap: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   credentialName: {
-    fontSize: 13.5,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
   credentialSub: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     marginTop: 2,
   },
   securityRowDivider: {
@@ -3814,14 +3805,14 @@ const styles = StyleSheet.create({
   policyProgramTag: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: radius.sm,
     backgroundColor: 'rgba(147, 51, 234, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(147, 51, 234, 0.28)',
   },
   policyProgramTagText: {
     color: '#A855F7',
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
   },
   policyStatsGrid: {
@@ -3833,16 +3824,16 @@ const styles = StyleSheet.create({
     width: '48%',
     flexGrow: 1,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: 12,
   },
   policyStatLabel: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '500',
     marginBottom: 4,
   },
   policyStatValue: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '700',
   },
   recoveryDetailRow: {
@@ -3852,12 +3843,34 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   recoveryDetailTitle: {
-    fontSize: 13.5,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
   recoveryDetailDesc: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     marginTop: 2,
+  },
+  recoveryGuardianRow: {
+    marginTop: 14,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  recoveryGuardianLabel: {
+    fontSize: typeScale.micro,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    marginBottom: 3,
+  },
+  recoveryGuardianValue: {
+    fontSize: typeScale.body,
+    fontWeight: '600',
+  },
+  recoveryGuardianNote: {
+    fontSize: typeScale.caption,
+    lineHeight: 15,
+    marginTop: 4,
   },
 
   /* LEGACY SECURITY COMPAT */
@@ -3866,37 +3879,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     padding: 14,
     marginBottom: 14,
   },
   securityCardIconWrap: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radius.pill,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   securityItemTitle: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
   securityItemDesc: {
     color: '#7E8FA6',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     lineHeight: 16,
     marginTop: 2,
   },
   securityGroupCard: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     padding: 16,
     marginBottom: 14,
   },
   securityGroupLabel: {
     color: '#64748B',
-    fontSize: 10.5,
+    fontSize: typeScale.caption,
     fontWeight: '700',
     letterSpacing: 0.8,
     marginBottom: 12,
@@ -3913,12 +3926,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   securitySpecTitle: {
-    fontSize: 13.5,
+    fontSize: typeScale.bodyLg,
     fontWeight: '500',
   },
   securitySpecSub: {
     color: '#64748B',
-    fontSize: 11,
+    fontSize: typeScale.caption,
     marginTop: 1,
   },
   activeTag: {
@@ -3927,11 +3940,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(16, 185, 129, 0.3)',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: radius.sm,
   },
   activeTagText: {
     color: '#10B981',
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
   },
   quorumTag: {
@@ -3940,11 +3953,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(245, 158, 11, 0.3)',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: radius.sm,
   },
   quorumTagText: {
     color: '#F59E0B',
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
   },
   specInnerDivider: {
@@ -3960,10 +3973,10 @@ const styles = StyleSheet.create({
   },
   specKeyText: {
     color: '#7E8FA6',
-    fontSize: 13,
+    fontSize: typeScale.body,
   },
   specValueText: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '600',
   },
   freezeSectionCard: {
@@ -3971,17 +3984,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     padding: 14,
     marginBottom: 14,
   },
   freezeTitle: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
   freezeDesc: {
     color: '#64748B',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     lineHeight: 16,
     marginTop: 2,
   },
@@ -3989,7 +4002,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A2338',
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   panicBtnActive: {
     backgroundColor: 'rgba(244, 63, 94, 0.2)',
@@ -3998,7 +4011,7 @@ const styles = StyleSheet.create({
   },
   panicBtnText: {
     color: '#FDA4AF',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
   },
   auditLogRow: {
@@ -4009,19 +4022,19 @@ const styles = StyleSheet.create({
   },
   auditLogText: {
     color: '#E2E8F0',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '500',
   },
   auditLogTime: {
     color: '#64748B',
-    fontSize: 11,
+    fontSize: typeScale.caption,
     marginTop: 2,
   },
 
   /* INPUTS & FORM MODALS */
   inputLabel: {
     color: '#64748B',
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '600',
     letterSpacing: 0.8,
     marginBottom: 8,
@@ -4033,37 +4046,37 @@ const styles = StyleSheet.create({
   },
   maxLinkText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '500',
   },
   inputBoxRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingHorizontal: 12,
   },
   modalInput: {
     flex: 1,
     paddingVertical: 12,
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
   },
   modalInputStandalone: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 15,
+    fontSize: typeScale.title,
   },
   pasteActionBtn: {
     backgroundColor: '#181818',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: radius.sm,
   },
   pasteActionText: {
     color: '#FFFFFF',
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
   },
   riskCardNotice: {
@@ -4073,7 +4086,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 10,
+    borderRadius: radius.md,
     padding: 12,
     marginTop: 14,
     marginBottom: 20,
@@ -4085,7 +4098,7 @@ const styles = StyleSheet.create({
   riskNoticeText: {
     flex: 1,
     color: '#94A3B8',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     lineHeight: 16,
   },
   modalPrimaryActionBtn: {
@@ -4095,18 +4108,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 15,
-    borderRadius: 14,
+    borderRadius: radius.lg,
   },
   modalPrimaryActionBtnText: {
     color: '#000000',
-    fontSize: 15.5,
+    fontSize: typeScale.title,
     fontWeight: '600',
   },
 
   /* RECEIVE MODAL */
   receiveExplainerText: {
     color: '#94A3B8',
-    fontSize: 13,
+    fontSize: typeScale.body,
     lineHeight: 18,
     marginBottom: 16,
   },
@@ -4114,20 +4127,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: radius.lg,
     padding: 16,
     alignSelf: 'center',
     marginBottom: 16,
   },
   addressDisplayBox: {
     borderWidth: 1,
-    borderRadius: 10,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 18,
   },
   addressDisplayText: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontFamily: 'SpaceMono',
     textAlign: 'center',
   },
@@ -4135,7 +4148,7 @@ const styles = StyleSheet.create({
   /* SWAP MODAL */
   swapAssetCard: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     padding: 14,
   },
   swapCardRow: {
@@ -4146,15 +4159,15 @@ const styles = StyleSheet.create({
   },
   swapLabelText: {
     color: '#64748B',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
   },
   swapBalanceText: {
     color: '#64748B',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
   },
   swapRateText: {
     color: '#A1A1AA',
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
   },
   swapCardInputRow: {
     flexDirection: 'row',
@@ -4163,23 +4176,23 @@ const styles = StyleSheet.create({
   },
   swapAmountInput: {
     flex: 1,
-    fontSize: 22,
+    fontSize: typeScale.display,
     fontWeight: '600',
     paddingVertical: 4,
   },
   swapAmountOutput: {
-    fontSize: 22,
+    fontSize: typeScale.display,
     fontWeight: '600',
     paddingVertical: 4,
   },
   tokenPill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
   tokenPillText: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '600',
   },
   swapSwitchRow: {
@@ -4190,10 +4203,25 @@ const styles = StyleSheet.create({
   swapSwitchCircle: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: radius.pill,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  swapDevnetNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  swapDevnetNoticeText: {
+    flex: 1,
+    fontSize: typeScale.caption,
+    lineHeight: 15,
   },
   swapDetailRow: {
     flexDirection: 'row',
@@ -4204,11 +4232,11 @@ const styles = StyleSheet.create({
   },
   swapDetailKey: {
     color: '#64748B',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
   },
   swapDetailVal: {
     color: '#94A3B8',
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '500',
   },
 
@@ -4220,13 +4248,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.md,
     marginTop: 4,
     marginBottom: 12,
   },
   agentExecuteTradeText: {
     color: '#000000',
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
   agentModalActionRow: {
@@ -4237,11 +4265,11 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: 'center',
   },
   modalSecondaryBtnText: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
   modalDangerBtn: {
@@ -4250,12 +4278,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(244, 63, 94, 0.3)',
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: 'center',
   },
   modalDangerBtnText: {
     color: '#FDA4AF',
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
 
@@ -4268,7 +4296,7 @@ const styles = StyleSheet.create({
   },
   overflowSheet: {
     borderWidth: 1,
-    borderRadius: 18,
+    borderRadius: radius.lg,
     padding: 8,
   },
   overflowRow: {
@@ -4279,7 +4307,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   overflowRowText: {
-    fontSize: 14.5,
+    fontSize: typeScale.title,
     fontWeight: '500',
   },
   overflowDivider: {
@@ -4298,7 +4326,7 @@ const styles = StyleSheet.create({
   safeLockCard: {
     width: '100%',
     maxWidth: 380,
-    borderRadius: 24,
+    borderRadius: radius.xl,
     borderWidth: 1,
     padding: 28,
     alignItems: 'center',
@@ -4306,41 +4334,41 @@ const styles = StyleSheet.create({
   safeLockIconWrap: {
     width: 64,
     height: 64,
-    borderRadius: 20,
+    borderRadius: radius.xl,
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
   },
   safeLockTitle: {
-    fontSize: 22,
+    fontSize: typeScale.display,
     fontWeight: '700',
     letterSpacing: -0.4,
     marginBottom: 8,
   },
   safeLockSubtitle: {
     color: '#94A3B8',
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     textAlign: 'center',
     marginBottom: 6,
   },
   safeLockWalletName: {
     color: '#A1A1AA',
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '600',
     marginBottom: 26,
   },
   unlockButton: {
     width: '100%',
     height: 52,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   unlockButtonText: {
     color: '#000000',
-    fontSize: 15,
+    fontSize: typeScale.title,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
@@ -4351,26 +4379,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 9,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     marginTop: 14,
   },
   onChainStatusDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.pill,
   },
   onChainStatusText: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
   },
   deployPdaButton: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 8,
+    borderRadius: radius.sm,
   },
   deployPdaButtonText: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '700',
   },
   // Activity Filters
@@ -4382,15 +4410,15 @@ const styles = StyleSheet.create({
   activityFilterChip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 20,
+    borderRadius: radius.xl,
     borderWidth: 1,
   },
   activityFilterChipText: {
-    fontSize: 12.5,
+    fontSize: typeScale.body,
     fontWeight: '500',
   },
   activitySecurityBadge: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '500',
   },
   confirmedBadgeRow: {
@@ -4401,7 +4429,7 @@ const styles = StyleSheet.create({
   },
   confirmedBadgeText: {
     color: '#10B981',
-    fontSize: 11,
+    fontSize: typeScale.caption,
     fontWeight: '500',
   },
   // Sub-Agent Details
@@ -4420,11 +4448,11 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   subAgentName: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
   subAgentDesc: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     lineHeight: 16,
     marginBottom: 6,
   },
@@ -4434,11 +4462,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   subAgentMetaText: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     fontWeight: '500',
   },
   sessionGrantExplainer: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     lineHeight: 16,
     marginBottom: 12,
   },
@@ -4448,20 +4476,20 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   sessionInputLabel: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     fontWeight: '500',
     marginBottom: 4,
   },
   sessionInputBox: {
     height: 42,
-    borderRadius: 10,
+    borderRadius: radius.md,
     borderWidth: 1,
     paddingHorizontal: 12,
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
   },
   zeroPromptBadgeText: {
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     textAlign: 'center',
     marginTop: 4,
   },
@@ -4474,19 +4502,19 @@ const styles = StyleSheet.create({
   txDetailIconCircle: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: radius.pill,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   txDetailAmountText: {
-    fontSize: 26,
+    fontSize: typeScale.displayLg,
     fontWeight: '800',
     letterSpacing: -0.5,
     marginBottom: 4,
   },
   txDetailFiatText: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     marginBottom: 10,
   },
   txDetailConfirmedPill: {
@@ -4496,11 +4524,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(16,185,129,0.12)',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: radius.xl,
   },
   txDetailConfirmedText: {
     color: '#10B981',
-    fontSize: 11.5,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
   },
   addressCopyRow: {
@@ -4509,18 +4537,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
   addressCopyRowText: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     flex: 1,
     marginRight: 8,
   },
   explorerButton: {
     height: 48,
-    borderRadius: 12,
+    borderRadius: radius.md,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -4528,7 +4556,28 @@ const styles = StyleSheet.create({
   },
   explorerButtonText: {
     color: '#000000',
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '700',
   },
 })
+
+function PolicyLinkButton({ onPress }: { onPress: () => void }) {
+  const { theme } = useAppTheme()
+  return (
+    <TouchableOpacity
+      style={[
+        styles.policyLink,
+        { borderColor: theme.borderDefault, backgroundColor: theme.accentLight },
+      ]}
+      onPress={() => {
+        Haptics.selectionAsync()
+        onPress()
+      }}
+      activeOpacity={0.7}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <MaterialIcons name="info-outline" size={12} color={theme.textSecondary} />
+      <Text style={[styles.policyLinkText, { color: theme.textSecondary }]}>How this works</Text>
+    </TouchableOpacity>
+  )
+}
