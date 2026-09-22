@@ -1,6 +1,5 @@
-import React from 'react'
-import { Redirect } from 'expo-router'
+import { HaptixWalletScreen } from '@/components/haptix/haptix-wallet-screen'
 
 export default function TabsIndexScreen() {
-  return <Redirect href="/(tabs)/account" />
+  return <HaptixWalletScreen />
 }

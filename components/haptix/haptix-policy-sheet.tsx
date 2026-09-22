@@ -34,15 +34,14 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
   return {
     agents: {
       title: 'Agents & the spending firewall',
-      intro:
-        'Two numbers govern every autonomous trade: a rolling 24-hour budget, and a per-trade fast-lane limit.',
+      intro: 'Two numbers govern every autonomous trade: a rolling 24-hour budget, and a per-trade fast-lane limit.',
       sections: [
         {
           heading: 'Daily budget',
           rows: [
             {
               term: 'Spending firewall',
-              detail: `Trades up to ${threshold} SOL execute automatically. Anything above requires 2-of-2 hardware passkeys.`,
+              detail: `Trades up to ${threshold} SOL execute automatically. Anything above requires both device passkeys.`,
             },
             {
               term: 'Daily limit',
@@ -60,7 +59,7 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
             },
             {
               term: 'Quorum',
-              detail: `Trades exceeding ${threshold} SOL require 2-of-2 hardware passkeys.`,
+              detail: `Trades exceeding ${threshold} SOL require both device passkeys.`,
             },
           ],
         },
@@ -86,8 +85,7 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
           rows: [
             {
               term: 'Grant session key',
-              detail:
-                'Delegates a scoped cryptographic session key to an external bot. Requires 2-of-2 hardware passkeys.',
+              detail: 'Delegates a scoped session key to an external bot. Requires both device passkeys to authorise.',
             },
             {
               term: 'Run Trade',
@@ -110,26 +108,24 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
     },
     security: {
       title: 'Security & recovery',
-      intro:
-        'What protects this wallet, what stops a drain, and how you get back in if a device is lost.',
+      intro: 'What protects this wallet, what stops a drain, and how you get back in if a device is lost.',
       sections: [
         {
-          heading: 'Hardware credentials',
+          heading: 'Device credentials',
           rows: [
             {
-              term: 'Hardware credentials',
+              term: 'Device credentials',
               detail:
-                'Secp256r1 cryptographic keys generated within isolated hardware secure chips. Keys cannot be extracted.',
+                'Secp256r1 keys generated on this device with the platform RNG and held in OS secure storage. These are software keys: a compromised device can extract them.',
             },
             {
               term: 'Primary device passkey',
               detail:
-                'Hardware biometric key on Apple Secure Enclave / Android StrongBox using the NIST P-256 curve.',
+                'NIST P-256 key in OS secure storage, unlocked with your device biometrics. Not sealed in a secure element.',
             },
             {
-              term: 'Hardware backup key',
-              detail:
-                'Physical FIDO2 / WebAuthn security key (e.g. YubiKey 5) required for 2-of-2 escalation.',
+              term: 'Backup quorum key',
+              detail: 'Physical FIDO2 / WebAuthn security key (e.g. YubiKey 5) required for 2-of-2 escalation.',
             },
           ],
         },
@@ -147,8 +143,7 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
             },
             {
               term: 'Quorum escalation',
-              detail:
-                'Transfers above the fast-lane limit require both the biometric and the physical passkey.',
+              detail: 'Transfers above the fast-lane limit require both the biometric and the physical passkey.',
             },
             {
               term: 'Velocity breaker',
@@ -170,13 +165,12 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
             },
             {
               term: 'Guardian',
-              detail:
-                'Holds one power only: starting a recovery. It can never move funds out of the wallet.',
+              detail: 'Holds one power only: starting a recovery. It can never move funds out of the wallet.',
             },
             {
               term: '24h grace period',
               detail:
-                'Starting a recovery freezes the wallet. You have 24 hours to cancel it with both hardware passkeys.',
+                'Starting a recovery freezes the wallet. You have 24 hours to cancel it with both device passkeys.',
             },
           ],
         },
@@ -185,17 +179,15 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
           rows: [
             {
               term: 'Emergency panic lock',
-              detail:
-                'Immediately revokes all delegated permissions and freezes account transfers on Solana.',
+              detail: 'Immediately revokes all delegated permissions and freezes account transfers on Solana.',
             },
             {
               term: 'On-chain attestations',
-              detail:
-                'Cryptographic proof of hardware enrollment and policy verification, logged on Solana Devnet.',
+              detail: 'Policy and session state written on-chain, verifiable on Solana Devnet.',
             },
             {
               term: 'Biometric passkey enrolled',
-              detail: 'Hardware attestation verifying genuine Secure Enclave key generation.',
+              detail: 'Keys created on this device and gated by biometrics. No hardware attestation is performed.',
             },
             {
               term: '2-of-2 spending policy active',
@@ -247,27 +239,17 @@ export function HaptixPolicySheet({ topic, threshold, onClose }: HaptixPolicyShe
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollBody}
-          >
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
             <Text style={[styles.intro, { color: theme.textSecondary }]}>{content?.intro}</Text>
 
             {content?.sections.map((section, sectionIndex) => (
-              <View
-                key={section.heading}
-                style={sectionIndex === 0 ? styles.sectionFirst : styles.section}
-              >
-                <Text style={[styles.sectionHeading, { color: theme.textMuted }]}>
-                  {section.heading}
-                </Text>
+              <View key={section.heading} style={sectionIndex === 0 ? styles.sectionFirst : styles.section}>
+                <Text style={[styles.sectionHeading, { color: theme.textMuted }]}>{section.heading}</Text>
                 {section.rows.map((row, rowIndex) => (
                   <View key={row.term}>
                     <View style={styles.row}>
                       <Text style={[styles.term, { color: theme.textPrimary }]}>{row.term}</Text>
-                      <Text style={[styles.detail, { color: theme.textSecondary }]}>
-                        {row.detail}
-                      </Text>
+                      <Text style={[styles.detail, { color: theme.textSecondary }]}>{row.detail}</Text>
                     </View>
                     {rowIndex < section.rows.length - 1 ? (
                       <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />

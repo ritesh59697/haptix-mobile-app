@@ -17,23 +17,14 @@ import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Clipboard from '@/utils/clipboard'
 import { Connection, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
-import {
-  HaptixWalletAccount,
-  saveWallet,
-  getSavedWallet,
-  createSmartWalletRecord,
-} from '@/utils/haptix-wallet-storage'
+import { HaptixWalletAccount, saveWallet, getSavedWallet, createSmartWalletRecord } from '@/utils/haptix-wallet-storage'
 import {
   getOrCreatePrimaryPasskey,
   getOrCreateSecondaryPasskey,
   promptBiometricAuth,
   authenticatePasskey,
 } from '@/utils/haptix-passkey'
-import {
-  getWalletPda,
-  createInitializeWalletInstruction,
-  fetchHaptixWallet,
-} from '@/utils/haptix-client'
+import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet } from '@/utils/haptix-client'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
 import { HaptixBrandMark, CopyChipIcon, FingerScanBold } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
@@ -58,26 +49,21 @@ import { StepPlayer } from '@/components/ui'
 // Screen 8: Connect / Import Existing Wallet
 // Screen 9: Sign In to Existing Wallet (Passkey / Address Restore)
 export type OnboardingScreen =
-  | 'slide_hero'       // Screen 1: Dark Glassmorphic Splash
-  | 'slide_passkey'    // Screen 2: No seed phrase. Just your passkey.
-  | 'slide_agents'     // Screen 3: Give agents spending power
+  | 'slide_hero' // Screen 1: Dark Glassmorphic Splash
+  | 'slide_passkey' // Screen 2: No seed phrase. Just your passkey.
+  | 'slide_agents' // Screen 3: Give agents spending power
   | 'slide_multichain' // Screen 4: One wallet. More possibilities.
-  | 'step_overview'    // Screen 5: Create your wallet (3-step overview)
-  | 'step_biometrics'  // Screen 6: Create a passkey (Face ID scanner)
-  | 'step_ready'       // Screen 7: Your wallet is ready! (PDA & checklist)
-  | 'step_connect'     // Screen 8: Or connect an existing wallet
-  | 'step_signin'      // Screen 9: Sign In to Existing Wallet with Passkey
+  | 'step_overview' // Screen 5: Create your wallet (3-step overview)
+  | 'step_biometrics' // Screen 6: Create a passkey (Face ID scanner)
+  | 'step_ready' // Screen 7: Your wallet is ready! (PDA & checklist)
+  | 'step_connect' // Screen 8: Or connect an existing wallet
+  | 'step_signin' // Screen 9: Sign In to Existing Wallet with Passkey
 
-const CAROUSEL_SLIDES: OnboardingScreen[] = [
-  'slide_hero',
-  'slide_passkey',
-  'slide_agents',
-  'slide_multichain',
-]
+const CAROUSEL_SLIDES: OnboardingScreen[] = ['slide_hero', 'slide_passkey', 'slide_agents', 'slide_multichain']
 
 export default function SignIn() {
   const insets = useSafeAreaInsets()
-  const { updateWallet, signIn } = useAuth()
+  const { updateWallet } = useAuth()
   const { theme, isDark } = useAppTheme()
 
   // Navigation state across screens
@@ -94,9 +80,11 @@ export default function SignIn() {
   const [showAddressInput, setShowAddressInput] = useState(false)
 
   useEffect(() => {
-    getSavedWallet().then((w) => {
-      if (w) setSavedWallet(w)
-    }).catch(() => {})
+    getSavedWallet()
+      .then((w) => {
+        if (w) setSavedWallet(w)
+      })
+      .catch(() => {})
   }, [currentScreen])
 
   // --------------------------------------------------------------------------
@@ -109,8 +97,8 @@ export default function SignIn() {
 
       const finalName = 'My Haptix Wallet'
 
-      // 1. Generate authentic Secp256r1 passkey in device hardware enclave
-      // Triggers native Android Biometric Prompt / Face ID / Fingerprint
+      // 1. Generate a device-bound Secp256r1 (P-256) key, held in OS secure
+      // storage behind a biometric prompt. Software key, not a secure element.
       const primary = await getOrCreatePrimaryPasskey(finalName)
 
       // 2. Derive real on-chain Anchor PDA from Secp256r1 public key
@@ -125,7 +113,7 @@ export default function SignIn() {
         primaryPasskeyHex: primary.publicKeyHex,
         secondaryPasskeyHex: secondary.publicKeyHex,
         primaryLabel: primary.label,
-        secondaryLabel: 'Hardware Security Key (2-of-2 Quorum)',
+        secondaryLabel: 'Backup quorum key (device secure storage)',
         spendThreshold: 0.1,
         network: 'devnet',
       })
@@ -172,7 +160,7 @@ export default function SignIn() {
       console.error('[Haptix Passkey] Setup error:', err)
       Alert.alert(
         'Passkey Setup Error',
-        err?.message || 'Biometric authentication was cancelled or failed. Please try again.'
+        err?.message || 'Biometric authentication was cancelled or failed. Please try again.',
       )
     } finally {
       setIsCreating(false)
@@ -202,18 +190,18 @@ export default function SignIn() {
         }
         await updateWallet(saved)
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        router.replace('/(tabs)/account')
+        router.replace('/(tabs)')
         return
       }
 
       // 2. Otherwise, we are RESTORING a wallet on a new device/browser
       const primaryAuth = await authenticatePasskey('Select your Haptix passkey to restore your wallet')
-      
+
       const targetAddress = showAddressInput && restoreAddress.trim() ? restoreAddress.trim() : ''
       if (!targetAddress) {
         Alert.alert(
           'Address Required',
-          'Since this is a new device/browser, we need your Solana smart wallet address to restore your account. Please enter it below.'
+          'Since this is a new device/browser, we need your Solana smart wallet address to restore your account. Please enter it below.',
         )
         setShowAddressInput(true)
         return
@@ -241,7 +229,7 @@ export default function SignIn() {
         primaryPasskeyHex: Buffer.from(onchainState.primaryPasskey).toString('hex'),
         secondaryPasskeyHex: Buffer.from(onchainState.secondaryPasskey).toString('hex'),
         primaryLabel: primaryAuth.label,
-        secondaryLabel: 'Hardware Security Key (2-of-2 Quorum)',
+        secondaryLabel: 'Backup quorum key (device secure storage)',
         spendThreshold: 0.1,
         network: 'devnet',
       })
@@ -257,7 +245,7 @@ export default function SignIn() {
       await updateWallet(restored)
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      router.replace('/(tabs)/account')
+      router.replace('/(tabs)')
     } catch (err: any) {
       console.error('[Haptix Passkey] Sign in error:', err)
       Alert.alert('Sign In Error', err?.message || 'Could not verify passkey account')
@@ -285,9 +273,9 @@ export default function SignIn() {
       if (createdWallet) {
         await updateWallet(createdWallet)
       }
-      router.replace('/(tabs)/account')
+      router.replace('/(tabs)')
     } catch (err: any) {
-      router.replace('/(tabs)/account')
+      router.replace('/(tabs)')
     }
   }
 
@@ -300,36 +288,21 @@ export default function SignIn() {
     setTimeout(() => setHasCopiedAddress(false), 2000)
   }
 
-  // External wallet provider connector (Phantom, Solflare, MetaMask)
+  // External wallet connectors. Wallet Standard / MWA deeplinking is not wired
+  // up in this build, so we say so instead of showing a success alert for a
+  // connection that never happened.
   const handleConnectProvider = async (provider: string) => {
-    try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-      await signIn().catch(() => null)
-      Alert.alert(
-        `${provider} Connected`,
-        `Successfully linked with ${provider}.\n\nYour external keys can now sign on Solana via Haptix.`,
-        [
-          {
-            text: 'Go to wallet',
-            onPress: () => router.replace('/(tabs)/account'),
-          },
-        ]
-      )
-    } catch (err: any) {
-      Alert.alert('Connection Notice', `Could not link ${provider} directly. You can create a native Haptix passkey wallet.`)
-    }
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    Alert.alert(
+      `${provider} Not Supported Yet`,
+      `${provider} connections are not wired up in this build. Haptix currently signs with device passkeys, so you can create or restore a passkey wallet instead.`,
+    )
   }
 
   // Helper for 4-segment progress bar on setup screens (5, 6, 7, 8)
   const renderProgressBar = (activeStep: 1 | 2 | 3 | 4) => (
     <View style={styles.progressTrackRow}>
-      <StepPlayer
-        steps={4}
-        value={activeStep - 1}
-        showControl={false}
-        seekable={false}
-        size={24}
-      />
+      <StepPlayer steps={4} value={activeStep - 1} showControl={false} seekable={false} size={24} />
     </View>
   )
 
@@ -338,7 +311,12 @@ export default function SignIn() {
   // --------------------------------------------------------------------------
   if (currentScreen === 'slide_hero') {
     return (
-      <View style={[styles.heroContainer, { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom + 16, 32) }]}>
+      <View
+        style={[
+          styles.heroContainer,
+          { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom + 16, 32) },
+        ]}
+      >
         <View style={styles.heroTopBar}>
           <HaptixBrandMark size={32} color="#FFFFFF" />
         </View>
@@ -350,9 +328,7 @@ export default function SignIn() {
         <View style={styles.heroBottomBlock}>
           <Text style={styles.heroBrandText}>HAPTIX</Text>
           <Text style={styles.heroTitleText}>A smarter way{'\n'}to own crypto</Text>
-          <Text style={styles.heroSubtitleText}>
-            Passkey-secured. Agent-ready.{'\n'}No seed phrase required.
-          </Text>
+          <Text style={styles.heroSubtitleText}>Passkey-secured. Agent-ready.{'\n'}No seed phrase required.</Text>
 
           {/* StepPlayer Interactive Stepped Progress (swamimalode07/rare-ui/step-player) */}
           <View style={styles.stepPlayerRow}>
@@ -425,7 +401,8 @@ export default function SignIn() {
           <Text style={styles.categoryBadgeText}>SECURE BY DESIGN</Text>
           <Text style={styles.carouselTitleText}>No seed phrase.{'\n'}Just your passkey.</Text>
           <Text style={styles.carouselBodyText}>
-            Your wallet is secured with your biometrics and device passkeys. Simple, safe, and built for the next generation.
+            Your wallet is secured with your biometrics and device passkeys. Simple, safe, and built for the next
+            generation.
           </Text>
 
           {/* StepPlayer Interactive Stepped Progress */}
@@ -482,7 +459,9 @@ export default function SignIn() {
 
         <View style={styles.carouselTextBlock}>
           <Text style={styles.categoryBadgeText}>BUILT FOR AI AGENTS</Text>
-          <Text style={styles.carouselTitleText}>Give agents{'\n'}spending power{'\n'}(within your rules).</Text>
+          <Text style={styles.carouselTitleText}>
+            Give agents{'\n'}spending power{'\n'}(within your rules).
+          </Text>
           <Text style={styles.carouselBodyText}>
             Set limits, approve actions, and keep control. Your agents work for you, not the other way around.
           </Text>
@@ -592,9 +571,7 @@ export default function SignIn() {
           >
             <MaterialIcons name="chevron-left" size={28} color="#0F172A" />
           </TouchableOpacity>
-          <View style={styles.stepProgressArea}>
-            {renderProgressBar(1)}
-          </View>
+          <View style={styles.stepProgressArea}>{renderProgressBar(1)}</View>
           <View style={{ width: 32 }} />
         </View>
 
@@ -632,7 +609,7 @@ export default function SignIn() {
                 <MaterialIcons name="check-circle" size={24} color="#2563EB" />
               </View>
               <View style={styles.featureTextGroup}>
-                <Text style={styles.featureCardTitle}>You're ready</Text>
+                <Text style={styles.featureCardTitle}>{"You're ready"}</Text>
                 <Text style={styles.featureCardSubtitle}>Start using your wallet in seconds.</Text>
               </View>
             </View>
@@ -686,9 +663,7 @@ export default function SignIn() {
           >
             <MaterialIcons name="chevron-left" size={28} color="#0F172A" />
           </TouchableOpacity>
-          <View style={styles.stepProgressArea}>
-            {renderProgressBar(2)}
-          </View>
+          <View style={styles.stepProgressArea}>{renderProgressBar(2)}</View>
           <View style={{ width: 32 }} />
         </View>
 
@@ -704,9 +679,7 @@ export default function SignIn() {
           {/* Privacy Note Callout */}
           <View style={styles.privacyCalloutCard}>
             <MaterialIcons name="lock" size={18} color="#475569" />
-            <Text style={styles.privacyCalloutText}>
-              Your passkey never leaves your device.
-            </Text>
+            <Text style={styles.privacyCalloutText}>Your passkey never leaves your device.</Text>
           </View>
         </View>
 
@@ -761,9 +734,7 @@ export default function SignIn() {
           >
             <MaterialIcons name="chevron-left" size={28} color="#0F172A" />
           </TouchableOpacity>
-          <View style={styles.stepProgressArea}>
-            {renderProgressBar(3)}
-          </View>
+          <View style={styles.stepProgressArea}>{renderProgressBar(3)}</View>
           <View style={{ width: 32 }} />
         </View>
 
@@ -817,11 +788,7 @@ export default function SignIn() {
         </ScrollView>
 
         <View style={styles.stepBottomBar}>
-          <TouchableOpacity
-            style={styles.primaryDarkButton}
-            onPress={handleFinishOnboarding}
-            activeOpacity={0.85}
-          >
+          <TouchableOpacity style={styles.primaryDarkButton} onPress={handleFinishOnboarding} activeOpacity={0.85}>
             <Text style={styles.primaryDarkButtonText}>Go to wallet →</Text>
           </TouchableOpacity>
         </View>
@@ -867,7 +834,9 @@ export default function SignIn() {
               <Text style={styles.signinCardTitle}>Passkey Authentication</Text>
             </View>
             <Text style={styles.signinCardDesc}>
-              No seed phrase required. Your private key is secured inside your hardware enclave and verified via Touch ID or Face ID.
+              {
+                "No seed phrase required. Your key is held in this device's secure storage, and every signature is confirmed with your biometrics."
+              }
             </Text>
           </View>
 
@@ -920,9 +889,7 @@ export default function SignIn() {
 
           <View style={[styles.privacyCalloutCard, { alignSelf: 'center', marginTop: 16 }]}>
             <MaterialIcons name="lock" size={18} color="#475569" />
-            <Text style={styles.privacyCalloutText}>
-              Your passkey never leaves your device.
-            </Text>
+            <Text style={styles.privacyCalloutText}>Your passkey never leaves your device.</Text>
           </View>
         </ScrollView>
 
@@ -950,7 +917,7 @@ export default function SignIn() {
               setCurrentScreen('step_overview')
             }}
           >
-            <Text style={styles.secondaryLinkText}>Don't have a wallet? Create one</Text>
+            <Text style={styles.secondaryLinkText}>{"Don't have a wallet? Create one"}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -973,9 +940,7 @@ export default function SignIn() {
         >
           <MaterialIcons name="chevron-left" size={28} color="#0F172A" />
         </TouchableOpacity>
-        <View style={styles.stepProgressArea}>
-          {renderProgressBar(4)}
-        </View>
+        <View style={styles.stepProgressArea}>{renderProgressBar(4)}</View>
         <View style={{ width: 32 }} />
       </View>
 

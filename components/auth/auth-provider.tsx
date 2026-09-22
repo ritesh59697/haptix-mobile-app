@@ -1,7 +1,5 @@
 import { createContext, type PropsWithChildren, use, useMemo, useState, useEffect } from 'react'
-import { SignInOutput, useMobileWallet } from '@wallet-ui/react-native-web3js'
-import { AppConfig } from '@/constants/app-config'
-import { useMutation } from '@tanstack/react-query'
+import { useMobileWallet } from '@wallet-ui/react-native-web3js'
 import {
   HaptixWalletAccount,
   getSavedWallet,
@@ -10,11 +8,7 @@ import {
   createSmartWalletRecord,
   setWalletLockState,
 } from '@/utils/haptix-wallet-storage'
-import {
-  getOrCreatePrimaryPasskey,
-  getOrCreateSecondaryPasskey,
-  promptBiometricAuth,
-} from '@/utils/haptix-passkey'
+import { getOrCreatePrimaryPasskey, getOrCreateSecondaryPasskey, promptBiometricAuth } from '@/utils/haptix-passkey'
 
 export interface AuthState {
   isAuthenticated: boolean
@@ -25,7 +19,6 @@ export interface AuthState {
   lockWallet: () => Promise<void>
   unlockWallet: () => Promise<boolean>
   updateWallet: (updated: HaptixWalletAccount) => Promise<void>
-  signIn: () => Promise<SignInOutput | void>
   signOut: () => Promise<void>
   isLoading: boolean
 }
@@ -40,20 +33,8 @@ export function useAuth() {
   return value
 }
 
-function useSignInMutation() {
-  const { signIn } = useMobileWallet()
-
-  return useMutation({
-    mutationFn: async () =>
-      await signIn({
-        uri: AppConfig.uri,
-      }),
-  })
-}
-
 export function AuthProvider({ children }: PropsWithChildren) {
-  const { accounts, disconnect } = useMobileWallet()
-  const signInMutation = useSignInMutation()
+  const { disconnect } = useMobileWallet()
   const [activeWallet, setActiveWallet] = useState<HaptixWalletAccount | null>(null)
   const [isLocked, setIsLocked] = useState(false)
   const [isInitializing, setIsInitializing] = useState(true)
@@ -73,7 +54,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [])
 
   const handleCreateWallet = async (name?: string): Promise<HaptixWalletAccount> => {
-    // Generate authentic Secp256r1 passkeys in device hardware enclave
+    // Generate device-bound Secp256r1 keys in OS secure storage
     const finalName = name || 'Personal Smart Wallet'
     const primary = await getOrCreatePrimaryPasskey(finalName)
     const secondary = await getOrCreateSecondaryPasskey(finalName)
@@ -144,7 +125,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const value: AuthState = useMemo(
     () => ({
-      isAuthenticated: Boolean(activeWallet || (accounts?.length ?? 0) > 0),
+      isAuthenticated: Boolean(activeWallet),
       isLocked,
       activeWallet,
       createWallet: handleCreateWallet,
@@ -152,18 +133,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
       lockWallet: handleLockWallet,
       unlockWallet: handleUnlockWallet,
       updateWallet: handleUpdateWallet,
-      signIn: async () => {
-        try {
-          return await signInMutation.mutateAsync()
-        } catch (e) {
-          console.warn('MWA SignIn failed:', e)
-          throw e
-        }
-      },
       signOut: handleSignOut,
-      isLoading: signInMutation.isPending || isInitializing,
+      isLoading: isInitializing,
     }),
-    [accounts, activeWallet, isInitializing, isLocked, signInMutation]
+    [activeWallet, isInitializing, isLocked],
   )
 
   return <Context value={value}>{children}</Context>
