@@ -144,6 +144,16 @@ function isValidSolanaAddress(addr: string): boolean {
   return trimmed.length >= 32 && trimmed.length <= 44 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(trimmed)
 }
 
+// Cards previously used three different horizontal insets (hero card 18, asset and
+// activity lists 16, empty state 24), so their inner text columns did not line up
+// down the page. Every card now shares this inset.
+const CARD_PADDING_X = 18
+
+// The four header controls (avatar, network chip, theme toggle, overflow menu) were
+// 36/27/32/34dp tall with three different radii, which read as four unrelated chips
+// rather than one control group. They all use this size now.
+const HEADER_CONTROL_SIZE = 36
+
 export function HaptixWalletScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
@@ -1257,7 +1267,9 @@ export function HaptixWalletScreen() {
                 Haptics.selectionAsync()
                 setIsBalanceHidden((prev) => !prev)
               }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel={isBalanceHidden ? 'Show balance' : 'Hide balance'}
             >
               {isBalanceHidden ? (
                 <EyeHideIcon size={16} color={theme.textMuted} />
@@ -1273,9 +1285,7 @@ export function HaptixWalletScreen() {
               { backgroundColor: isDark ? '#161616' : '#F4F4F5', borderColor: theme.borderDefault },
             ]}
           >
-            <Text style={[styles.heroBadgeText, s.textSecondary]}>
-              {network === 'devnet' ? 'Devnet Testnet' : 'Mainnet Beta'}
-            </Text>
+            <Text style={[styles.heroBadgeText, s.textSecondary]}>{network === 'devnet' ? 'Devnet' : 'Mainnet'}</Text>
           </View>
         </View>
 
@@ -1369,12 +1379,15 @@ export function HaptixWalletScreen() {
           <View
             style={[
               styles.onChainStatusBanner,
-              { backgroundColor: isDark ? '#101726' : '#F1F5F9', borderColor: theme.borderDefault },
+              { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
             ]}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
               <View style={[styles.onChainStatusDot, { backgroundColor: onChainWallet ? '#10B981' : '#F59E0B' }]} />
-              <Text style={[styles.onChainStatusText, { color: onChainWallet ? '#10B981' : '#F59E0B' }]}>
+              <Text
+                style={[styles.onChainStatusText, { color: onChainWallet ? '#10B981' : '#F59E0B' }]}
+                numberOfLines={2}
+              >
                 {onChainWallet ? 'Spending policy live on-chain' : 'Spending policy not on-chain yet'}
               </Text>
             </View>
@@ -2273,7 +2286,7 @@ export function HaptixWalletScreen() {
             }}
             activeOpacity={0.75}
           >
-            <View style={[styles.avatarCircle, s.card, isFrozen && styles.avatarCircleAlert]}>
+            <View style={[styles.avatarCircle, s.elevatedCard, isFrozen && styles.avatarCircleAlert]}>
               <HaptixBrandMark size={16} color={isFrozen ? '#FDA4AF' : theme.textPrimary} />
             </View>
           </TouchableOpacity>
@@ -2298,16 +2311,20 @@ export function HaptixWalletScreen() {
         <View style={styles.headerRight}>
           {/* Network Switcher Pill */}
           <TouchableOpacity
-            style={[styles.networkPill, s.card]}
+            style={[styles.networkPill, s.elevatedCard]}
             onPress={() => {
               Haptics.selectionAsync()
               setNetwork((prev) => (prev === 'devnet' ? 'mainnet' : 'devnet'))
             }}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Switch network, currently ${network === 'devnet' ? 'Devnet' : 'Mainnet'}`}
           >
             <View style={[styles.networkDot, network === 'mainnet' && { backgroundColor: '#10B981' }]} />
             <Text style={[styles.networkPillText, s.textSecondary]}>{network === 'devnet' ? 'Devnet' : 'Mainnet'}</Text>
-            <MaterialIcons name="keyboard-arrow-down" size={13} color={theme.textMuted} />
+            {/* swap-horiz, not a chevron: this tap toggles the network in place, it does
+                not open a menu, and the old keyboard-arrow-down promised one. */}
+            <MaterialIcons name="swap-horiz" size={13} color={theme.textMuted} />
           </TouchableOpacity>
 
           {/* Quick Light/Dark Mode Switcher */}
@@ -2983,7 +3000,8 @@ const styles = StyleSheet.create({
 
   /* 1. ELEVATED CONSUMER HEADER */
   header: {
-    paddingHorizontal: 16,
+    // Matches scrollContent so the brand chip lines up with the card edges below.
+    paddingHorizontal: 20,
     paddingBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -3043,10 +3061,11 @@ const styles = StyleSheet.create({
   networkPill: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
+    height: HEADER_CONTROL_SIZE,
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: radius.md,
   },
   networkDot: {
@@ -3060,8 +3079,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerIconBtn: {
-    width: 34,
-    height: 34,
+    width: HEADER_CONTROL_SIZE,
+    height: HEADER_CONTROL_SIZE,
     borderRadius: radius.md,
     borderWidth: 1,
     justifyContent: 'center',
@@ -3150,7 +3169,7 @@ const styles = StyleSheet.create({
   heroCard: {
     borderRadius: radius.xl,
     borderWidth: 1,
-    padding: 18,
+    padding: CARD_PADDING_X,
     marginBottom: 14,
   },
   heroTopRow: {
@@ -3169,7 +3188,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   eyeToggleButton: {
-    padding: 2,
+    padding: 4,
   },
   heroBadgePill: {
     paddingHorizontal: 8,
@@ -3217,9 +3236,16 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   heroActionSoonBtn: {
-    opacity: 0.55,
+    // Kept fully opaque: fading the whole button also faded its 1px border, which made
+    // the disabled Swap pill vanish out of the otherwise uniform four-button row. The
+    // disabled state is carried by the muted label colour and accessibilityState.
+    opacity: 1,
   },
   heroActionSoonText: {
+    // Deliberately one step below the sibling action labels. Measured on a 390dp-wide
+    // device: "Coming Soon" renders 65.8dp wide at 11px inside a 70.3dp pill, so at the
+    // siblings' 13px it would need 77.8dp and truncate to "Coming Soo...". The row is
+    // kept uniform through height, border and background colour instead.
     fontSize: typeScale.caption,
     fontWeight: '600',
     letterSpacing: -0.1,
@@ -3255,6 +3281,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    // The title stays on the card edge (like the segmented control above it) while the
+    // "See all" action is pulled in to the card's inner content column, so it lines up
+    // with the right-aligned amounts in the list below instead of the card's border.
+    paddingRight: CARD_PADDING_X,
     marginTop: 22,
     marginBottom: 10,
   },
@@ -3293,7 +3323,7 @@ const styles = StyleSheet.create({
   assetList: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: CARD_PADDING_X,
   },
   assetRow: {
     flexDirection: 'row',
@@ -3566,7 +3596,8 @@ const styles = StyleSheet.create({
   emptyActivityCard: {
     borderWidth: 1,
     borderRadius: radius.lg,
-    padding: 24,
+    paddingHorizontal: CARD_PADDING_X,
+    paddingVertical: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3574,15 +3605,17 @@ const styles = StyleSheet.create({
     fontSize: typeScale.bodyLg,
     fontWeight: '600',
     marginTop: 8,
+    textAlign: 'center',
   },
   emptyActivitySubtitle: {
     fontSize: typeScale.footnote,
     marginTop: 2,
+    textAlign: 'center',
   },
   activityList: {
     borderWidth: 1,
     borderRadius: radius.lg,
-    paddingHorizontal: 16,
+    paddingHorizontal: CARD_PADDING_X,
   },
   activityGroupLabel: {
     fontSize: typeScale.footnote,
@@ -4378,6 +4411,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
     paddingHorizontal: 12,
     paddingVertical: 9,
     borderRadius: radius.md,
@@ -4392,6 +4426,7 @@ const styles = StyleSheet.create({
   onChainStatusText: {
     fontSize: typeScale.footnote,
     fontWeight: '600',
+    flexShrink: 1,
   },
   deployPdaButton: {
     paddingHorizontal: 10,

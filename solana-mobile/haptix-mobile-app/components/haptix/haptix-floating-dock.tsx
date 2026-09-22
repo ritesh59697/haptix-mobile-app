@@ -28,6 +28,35 @@ const DOCK_TABS: DockTabDef[] = [
   { id: 'security', label: 'Security', Icon: DockSecurityIcon },
 ]
 
+// ── Dock geometry ───────────────────────────────────────────────────────────
+// Hoisted out of the StyleSheet so the fade band's gradient stops can be derived
+// from the dock's real height rather than a magic number that drifts when the
+// tab height changes. Verified against a device screenshot: the pill renders
+// 57.8dp tall, which is this sum.
+const DOCK_ITEM_HEIGHT = 48
+const DOCK_PADDING = 4
+const DOCK_BORDER = 1
+const DOCK_HEIGHT = DOCK_ITEM_HEIGHT + DOCK_PADDING * 2 + DOCK_BORDER * 2
+
+// The fade band used to stop dead 36dp above the dock and reach full bgApp
+// opacity at its own bottom edge. Anything continuing below that edge — a card,
+// a divider, a list row — snapped back to full strength along a dead straight
+// horizontal line sitting a few dp above the pill's rounded caps. Since the
+// dock's own surface is the same tone as a card, the two then merged into one
+// boxy shape and the pill lost its circular silhouette. The band now runs the
+// dock's whole height and ramps out below it, so the part of the band wide
+// enough to be noticed is the part hidden by the opaque pill, and the band
+// never terminates inside visible content.
+const DOCK_FADE_ABOVE = 36
+const DOCK_FADE_BELOW = 16
+const DOCK_FADE_HEIGHT = DOCK_FADE_ABOVE + DOCK_HEIGHT + DOCK_FADE_BELOW
+const DOCK_FADE_STOPS: readonly [number, number, ...number[]] = [
+  0,
+  DOCK_FADE_ABOVE / DOCK_FADE_HEIGHT,
+  (DOCK_FADE_ABOVE + DOCK_HEIGHT) / DOCK_FADE_HEIGHT,
+  1,
+]
+
 /**
  * HaptixFloatingDock
  * Compressed 4-tab floating navigation dock
@@ -41,8 +70,7 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
 
   // Calculate pixel-perfect compressed dock width (300-320px)
   const dockWidth = Math.min(Math.max(windowWidth * 0.86, 280), 320)
-  const PADDING = 4
-  const availableWidth = dockWidth - PADDING * 2
+  const availableWidth = dockWidth - DOCK_PADDING * 2
   const tabWidth = availableWidth / DOCK_TABS.length
 
   // Find index of current active tab
@@ -95,10 +123,12 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
   // Theme-aware colors matching .cc-ios-tabs specification
   // Near-opaque: at 0.82 alpha, scrolled list text used to ghost straight through the dock.
   const controlBg = theme.scrim
-  const controlBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(15, 23, 42, 0.08)'
-  const thumbBg = isDark ? '#FFFFFF' : '#0B1220'
-  const activeTextColor = isDark ? '#000000' : '#FFFFFF'
-  const inactiveTextColor = isDark ? '#9CA3AF' : '#6B7280'
+  const controlBorder = theme.borderDefault
+  const thumbBg = theme.accent
+  const activeTextColor = theme.accentForeground
+  // Was #9CA3AF / #6B7280, a second grey ramp that did not match the segmented control
+  // (#8E8E93) or the app's own tokens.
+  const inactiveTextColor = theme.textSecondary
 
   // Elevated bottom offset so it floats comfortably above Android gesture bar / iOS home indicator
   const bottomOffset = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16) + 8
@@ -106,9 +136,14 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
   return (
     <View style={[styles.dockOuterWrapper, { bottom: bottomOffset }]} pointerEvents="box-none">
       {/* Fade band: dissolves scrolled content into the dock instead of bleeding through it */}
-      <LinearGradient pointerEvents="none" colors={['transparent', theme.bgApp]} style={styles.dockFade} />
+      <LinearGradient
+        pointerEvents="none"
+        colors={['transparent', theme.bgApp, theme.bgApp, 'transparent']}
+        locations={DOCK_FADE_STOPS}
+        style={styles.dockFade}
+      />
       {/* Outer shadow container (prevents Android/iOS shadow clipping from overflow:hidden) */}
-      <View style={[{ width: dockWidth }, isDark ? styles.darkShadow : styles.lightShadow]}>
+      <View style={[styles.dockShadowContainer, { width: dockWidth }, isDark ? styles.darkShadow : styles.lightShadow]}>
         <BlurView
           intensity={isDark ? 36 : 60}
           tint={isDark ? 'dark' : 'light'}
@@ -176,8 +211,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: '100%',
-    height: 36,
+    top: -DOCK_FADE_ABOVE,
+    bottom: -DOCK_FADE_BELOW,
+  },
+
+  // The shadow lives on this wrapper, but the wrapper had no corner radius, so
+  // both platforms cast it from the view's rectangular bounds: iOS drew a soft
+  // black rectangle around the pill (opacity 0.5, radius 20) and Android's
+  // elevation outline was a plain rectangle. That is the square shoulder poking
+  // out from behind the dock's border. Matching the pill radius makes the
+  // shadow follow the capsule instead.
+  dockShadowContainer: {
+    borderRadius: radius.pill,
   },
 
   lightShadow: {
@@ -212,7 +257,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 4,
+    padding: DOCK_PADDING,
     borderRadius: radius.pill,
     borderWidth: 1,
     overflow: 'hidden',
@@ -221,9 +266,9 @@ const styles = StyleSheet.create({
   /* cc-ios-tabs__thumb */
   dockThumb: {
     position: 'absolute',
-    top: 4,
-    left: 4,
-    height: 48,
+    top: DOCK_PADDING,
+    left: DOCK_PADDING,
+    height: DOCK_ITEM_HEIGHT,
     borderRadius: radius.pill,
     zIndex: 0,
   },
@@ -258,7 +303,7 @@ const styles = StyleSheet.create({
   dockItem: {
     position: 'relative',
     zIndex: 1,
-    height: 48,
+    height: DOCK_ITEM_HEIGHT,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
