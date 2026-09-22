@@ -32,7 +32,7 @@ function loadFunderSecret(): Uint8Array {
       `Devnet fee sponsorship is not configured. Set ${FUNDER_KEY_ENV} in ` +
         'solana-mobile/haptix-mobile-app/.env (gitignored) to the JSON byte array held in ' +
         'your funder keypair file, for example the contents of ' +
-        '~/.config/solana/haptix-funder.json. See .env.example.'
+        '~/.config/solana/haptix-funder.json. See .env.example.',
     )
   }
 
@@ -40,9 +40,7 @@ function loadFunderSecret(): Uint8Array {
   try {
     parsed = JSON.parse(raw)
   } catch {
-    throw new Error(
-      `${FUNDER_KEY_ENV} must be a JSON byte array such as [12,34,...], not a base58 string.`
-    )
+    throw new Error(`${FUNDER_KEY_ENV} must be a JSON byte array such as [12,34,...], not a base58 string.`)
   }
 
   if (!Array.isArray(parsed) || parsed.length !== 64) {
@@ -64,7 +62,7 @@ function requireDevMode(feature: string): void {
   if (!AppConfig.devMode) {
     throw new Error(
       `${feature} is a development-only feature and is disabled in this build. ` +
-        'Set EXPO_PUBLIC_HAPTIX_DEV_MODE=true in a gitignored .env for local Devnet demos.'
+        'Set EXPO_PUBLIC_HAPTIX_DEV_MODE=true in a gitignored .env for local Devnet demos.',
     )
   }
 }
@@ -75,10 +73,7 @@ function requireDevMode(feature: string): void {
  * Gated behind dev mode, requires a funder key in the environment, and logs a
  * warning the first time it is handed out.
  */
-export async function getFundedDevnetPayer(
-  _connection?: Connection,
-  _minSol: number = 0.01
-): Promise<Keypair> {
+export async function getFundedDevnetPayer(_connection?: Connection, _minSol: number = 0.01): Promise<Keypair> {
   requireDevMode('Client-side Devnet fee sponsorship')
 
   if (!cachedFunder) {
@@ -88,7 +83,7 @@ export async function getFundedDevnetPayer(
       '[Haptix][DEV MODE] Paying network fees and airdropping Devnet SOL with a local ' +
         `funder keypair: ${funder.publicKey.toBase58()}. This key is embedded in the ` +
         'bundle, so it is only ever acceptable for Devnet demos -- use a server-side ' +
-        'relayer before shipping to mainnet or holding anything of value.'
+        'relayer before shipping to mainnet or holding anything of value.',
     )
 
     cachedFunder = funder
@@ -103,7 +98,7 @@ export async function getFundedDevnetPayer(
 export async function fundDevnetWallet(
   connection: Connection,
   walletPda: PublicKey,
-  amountSol: number = 0.2
+  amountSol: number = 0.2,
 ): Promise<string> {
   const payer = await getFundedDevnetPayer(connection)
   const lamports = BigInt(Math.round(amountSol * LAMPORTS_PER_SOL))
@@ -112,7 +107,7 @@ export async function fundDevnetWallet(
       fromPubkey: payer.publicKey,
       toPubkey: walletPda,
       lamports,
-    })
+    }),
   )
   const sig = await sendAndConfirmTransaction(connection, tx, [payer], {
     commitment: 'confirmed',
@@ -126,7 +121,7 @@ export async function fundDevnetWallet(
 export async function airdropToWalletPda(
   connection: Connection,
   walletPda: PublicKey,
-  amountSol: number = 0.2
+  amountSol: number = 0.2,
 ): Promise<string> {
   return fundDevnetWallet(connection, walletPda, amountSol)
 }

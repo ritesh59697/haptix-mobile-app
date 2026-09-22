@@ -9,19 +9,8 @@
   "instructions": [
     {
       "name": "agent_execute",
-      "docs": [
-        "Execute an autonomous transaction signed by an agent session key (zero passkey prompts)"
-      ],
-      "discriminator": [
-        133,
-        29,
-        92,
-        254,
-        69,
-        92,
-        252,
-        191
-      ],
+      "docs": ["Execute an autonomous transaction signed by an agent session key (zero passkey prompts)"],
+      "discriminator": [133, 29, 92, 254, 69, 92, 252, 191],
       "accounts": [
         {
           "name": "wallet",
@@ -29,9 +18,7 @@
         },
         {
           "name": "agent",
-          "docs": [
-            "The autonomous agent session key signer"
-          ],
+          "docs": ["The autonomous agent session key signer"],
           "signer": true
         },
         {
@@ -52,19 +39,8 @@
     },
     {
       "name": "cancel_recovery",
-      "docs": [
-        "Cancel an active recovery attempt (owner only, via 2-of-2 Hardware Passkeys)"
-      ],
-      "discriminator": [
-        176,
-        23,
-        203,
-        37,
-        121,
-        251,
-        227,
-        83
-      ],
+      "docs": ["Cancel an active recovery attempt (owner only, via 2-of-2 Hardware Passkeys)"],
+      "discriminator": [176, 23, 203, 37, 121, 251, 227, 83],
       "accounts": [
         {
           "name": "wallet",
@@ -88,19 +64,8 @@
     },
     {
       "name": "execute_recovery",
-      "docs": [
-        "Execute recovery after timelock duration has elapsed"
-      ],
-      "discriminator": [
-        203,
-        133,
-        133,
-        228,
-        153,
-        121,
-        182,
-        237
-      ],
+      "docs": ["Execute recovery after timelock duration has elapsed"],
+      "discriminator": [203, 133, 133, 228, 153, 121, 182, 237],
       "accounts": [
         {
           "name": "wallet",
@@ -116,16 +81,7 @@
         "- If amount <= spend_threshold: requires 1 passkey signature",
         "- If amount > spend_threshold: requires 2-of-2 hardware passkey quorum"
       ],
-      "discriminator": [
-        233,
-        126,
-        160,
-        184,
-        235,
-        206,
-        31,
-        119
-      ],
+      "discriminator": [233, 126, 160, 184, 235, 206, 31, 119],
       "accounts": [
         {
           "name": "wallet",
@@ -163,19 +119,8 @@
     },
     {
       "name": "grant_agent_session",
-      "docs": [
-        "Authorize an autonomous AI agent session key (requires 2-of-2 Hardware Passkey Quorum)"
-      ],
-      "discriminator": [
-        28,
-        3,
-        173,
-        47,
-        227,
-        192,
-        15,
-        76
-      ],
+      "docs": ["Authorize an autonomous AI agent session key (requires 2-of-2 Hardware Passkey Quorum)"],
+      "discriminator": [28, 3, 173, 47, 227, 192, 15, 76],
       "accounts": [
         {
           "name": "wallet",
@@ -215,19 +160,8 @@
     },
     {
       "name": "initialize_wallet",
-      "docs": [
-        "Initialize a new Passkey Account with primary biometric key, secondary backup key, and spend policy"
-      ],
-      "discriminator": [
-        213,
-        0,
-        239,
-        240,
-        73,
-        100,
-        188,
-        193
-      ],
+      "docs": ["Initialize a new Passkey Account with primary biometric key, secondary backup key, and spend policy"],
+      "discriminator": [213, 0, 239, 240, 73, 100, 188, 193],
       "accounts": [
         {
           "name": "payer",
@@ -247,19 +181,13 @@
         {
           "name": "primary_passkey",
           "type": {
-            "array": [
-              "u8",
-              33
-            ]
+            "array": ["u8", 33]
           }
         },
         {
           "name": "secondary_passkey",
           "type": {
-            "array": [
-              "u8",
-              33
-            ]
+            "array": ["u8", 33]
           }
         },
         {
@@ -278,19 +206,8 @@
     },
     {
       "name": "initiate_recovery",
-      "docs": [
-        "Initiate social recovery of passkeys (guardian only, activates timelock)"
-      ],
-      "discriminator": [
-        132,
-        148,
-        60,
-        74,
-        49,
-        178,
-        235,
-        187
-      ],
+      "docs": ["Initiate social recovery of passkeys (guardian only, activates timelock)"],
+      "discriminator": [132, 148, 60, 74, 49, 178, 235, 187],
       "accounts": [
         {
           "name": "wallet",
@@ -298,9 +215,7 @@
         },
         {
           "name": "guardian",
-          "docs": [
-            "The designated recovery guardian signer"
-          ],
+          "docs": ["The designated recovery guardian signer"],
           "signer": true
         }
       ],
@@ -308,38 +223,21 @@
         {
           "name": "new_primary_passkey",
           "type": {
-            "array": [
-              "u8",
-              33
-            ]
+            "array": ["u8", 33]
           }
         },
         {
           "name": "new_secondary_passkey",
           "type": {
-            "array": [
-              "u8",
-              33
-            ]
+            "array": ["u8", 33]
           }
         }
       ]
     },
     {
       "name": "panic_freeze",
-      "docs": [
-        "Emergency panic freeze (can be triggered immediately by guardian)"
-      ],
-      "discriminator": [
-        171,
-        11,
-        80,
-        253,
-        113,
-        173,
-        145,
-        2
-      ],
+      "docs": ["Emergency panic freeze (can be triggered immediately by guardian)"],
+      "discriminator": [171, 11, 80, 253, 113, 173, 145, 2],
       "accounts": [
         {
           "name": "wallet",
@@ -347,9 +245,7 @@
         },
         {
           "name": "signer",
-          "docs": [
-            "Signer triggering the freeze (can be guardian or user)"
-          ],
+          "docs": ["Signer triggering the freeze (can be guardian or user)"],
           "signer": true
         }
       ],
@@ -357,19 +253,8 @@
     },
     {
       "name": "set_guardian",
-      "docs": [
-        "Update the social recovery guardian address (requires 2-of-2 Hardware Passkey Quorum)"
-      ],
-      "discriminator": [
-        147,
-        243,
-        50,
-        121,
-        154,
-        164,
-        50,
-        30
-      ],
+      "docs": ["Update the social recovery guardian address (requires 2-of-2 Hardware Passkey Quorum)"],
+      "discriminator": [147, 243, 50, 121, 154, 164, 50, 30],
       "accounts": [
         {
           "name": "wallet",
@@ -397,19 +282,8 @@
     },
     {
       "name": "set_spend_threshold",
-      "docs": [
-        "Update the spend policy threshold (requires 2-of-2 Hardware Passkey Quorum)"
-      ],
-      "discriminator": [
-        174,
-        99,
-        85,
-        154,
-        250,
-        74,
-        170,
-        124
-      ],
+      "docs": ["Update the spend policy threshold (requires 2-of-2 Hardware Passkey Quorum)"],
+      "discriminator": [174, 99, 85, 154, 250, 74, 170, 124],
       "accounts": [
         {
           "name": "wallet",
@@ -437,19 +311,8 @@
     },
     {
       "name": "unfreeze",
-      "docs": [
-        "Unfreeze the wallet (requires 2-of-2 Hardware Passkey Quorum)"
-      ],
-      "discriminator": [
-        133,
-        160,
-        68,
-        253,
-        80,
-        232,
-        218,
-        247
-      ],
+      "docs": ["Unfreeze the wallet (requires 2-of-2 Hardware Passkey Quorum)"],
+      "discriminator": [133, 160, 68, 253, 80, 232, 218, 247],
       "accounts": [
         {
           "name": "wallet",
@@ -475,16 +338,7 @@
   "accounts": [
     {
       "name": "WalletAccount",
-      "discriminator": [
-        158,
-        98,
-        171,
-        153,
-        212,
-        64,
-        242,
-        213
-      ]
+      "discriminator": [158, 98, 171, 153, 212, 64, 242, 213]
     }
   ],
   "errors": [
@@ -562,30 +416,22 @@
         "fields": [
           {
             "name": "agent_pubkey",
-            "docs": [
-              "Agent Ed25519 signer pubkey"
-            ],
+            "docs": ["Agent Ed25519 signer pubkey"],
             "type": "pubkey"
           },
           {
             "name": "valid_until",
-            "docs": [
-              "Timestamp until session is valid"
-            ],
+            "docs": ["Timestamp until session is valid"],
             "type": "i64"
           },
           {
             "name": "allowance_lamports",
-            "docs": [
-              "Remaining allowance budget in lamports"
-            ],
+            "docs": ["Remaining allowance budget in lamports"],
             "type": "u64"
           },
           {
             "name": "allowed_program",
-            "docs": [
-              "Target program allowed (or Pubkey::default() for general)"
-            ],
+            "docs": ["Target program allowed (or Pubkey::default() for general)"],
             "type": "pubkey"
           }
         ]
@@ -598,99 +444,65 @@
         "fields": [
           {
             "name": "bump",
-            "docs": [
-              "Program bump"
-            ],
+            "docs": ["Program bump"],
             "type": "u8"
           },
           {
             "name": "primary_passkey",
-            "docs": [
-              "33-byte compressed secp256r1 public key of primary passkey (TouchID/FaceID)"
-            ],
+            "docs": ["33-byte compressed secp256r1 public key of primary passkey (TouchID/FaceID)"],
             "type": {
-              "array": [
-                "u8",
-                33
-              ]
+              "array": ["u8", 33]
             }
           },
           {
             "name": "secondary_passkey",
-            "docs": [
-              "33-byte compressed secp256r1 public key of secondary backup hardware passkey (Quorum)"
-            ],
+            "docs": ["33-byte compressed secp256r1 public key of secondary backup hardware passkey (Quorum)"],
             "type": {
-              "array": [
-                "u8",
-                33
-              ]
+              "array": ["u8", 33]
             }
           },
           {
             "name": "spend_threshold_lamports",
-            "docs": [
-              "Transactions exceeding this threshold require 2-of-2 hardware passkey quorum"
-            ],
+            "docs": ["Transactions exceeding this threshold require 2-of-2 hardware passkey quorum"],
             "type": "u64"
           },
           {
             "name": "guardian",
-            "docs": [
-              "Recovery guardian address (cannot spend funds, can only initiate timelocked recovery)"
-            ],
+            "docs": ["Recovery guardian address (cannot spend funds, can only initiate timelocked recovery)"],
             "type": "pubkey"
           },
           {
             "name": "recovery_timelock",
-            "docs": [
-              "Timelock delay in seconds required before recovery can be executed"
-            ],
+            "docs": ["Timelock delay in seconds required before recovery can be executed"],
             "type": "i64"
           },
           {
             "name": "recovery_initiated_at",
-            "docs": [
-              "Timestamp when current recovery was initiated (0 if none active)"
-            ],
+            "docs": ["Timestamp when current recovery was initiated (0 if none active)"],
             "type": "i64"
           },
           {
             "name": "pending_primary_passkey",
-            "docs": [
-              "Candidate new primary passkey proposed during recovery"
-            ],
+            "docs": ["Candidate new primary passkey proposed during recovery"],
             "type": {
-              "array": [
-                "u8",
-                33
-              ]
+              "array": ["u8", 33]
             }
           },
           {
             "name": "pending_secondary_passkey",
-            "docs": [
-              "Candidate new secondary passkey proposed during recovery"
-            ],
+            "docs": ["Candidate new secondary passkey proposed during recovery"],
             "type": {
-              "array": [
-                "u8",
-                33
-              ]
+              "array": ["u8", 33]
             }
           },
           {
             "name": "is_frozen",
-            "docs": [
-              "Emergency panic freeze flag"
-            ],
+            "docs": ["Emergency panic freeze flag"],
             "type": "bool"
           },
           {
             "name": "agents",
-            "docs": [
-              "Dynamic agent sessions authorized with scoped budgets"
-            ],
+            "docs": ["Dynamic agent sessions authorized with scoped budgets"],
             "type": {
               "vec": {
                 "defined": {

@@ -1,14 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  Easing,
-  Platform,
-  LayoutChangeEvent,
-} from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Platform, LayoutChangeEvent } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { radius, typeScale } from '@/theme/tokens'
@@ -45,7 +36,7 @@ export function HaptixIosTabs<T extends string = string>({
 
   const activeIndex = Math.max(
     0,
-    tabs.findIndex((t) => t.id === activeTab)
+    tabs.findIndex((t) => t.id === activeTab),
   )
 
   const thumbAnim = useRef(new Animated.Value(activeIndex)).current
@@ -124,10 +115,7 @@ export function HaptixIosTabs<T extends string = string>({
             {
               width: tabWidth,
               backgroundColor: thumbBg,
-              transform: [
-                { translateX },
-                { scale: scaleAnim },
-              ],
+              transform: [{ translateX }, { scale: scaleAnim }],
             },
             isDark ? styles.darkThumbShadow : styles.lightThumbShadow,
           ]}
@@ -146,27 +134,20 @@ export function HaptixIosTabs<T extends string = string>({
             onPress={() => handlePress(tab.id)}
             activeOpacity={0.8}
           >
-            <Text
-              style={[
-                styles.itemText,
-                { color },
-                isActive && styles.itemTextActive,
-              ]}
-              numberOfLines={1}
-            >
+            <Text style={[styles.itemText, { color }, isActive && styles.itemTextActive]} numberOfLines={1}>
               {tab.label}
             </Text>
             {tab.badge !== undefined && (
               <View
                 style={[
                   styles.badge,
-                  { backgroundColor: isActive ? (isDark ? '#000000' : '#FFFFFF') : (isDark ? '#333333' : '#E2E8F0') },
+                  { backgroundColor: isActive ? (isDark ? '#000000' : '#FFFFFF') : isDark ? '#333333' : '#E2E8F0' },
                 ]}
               >
                 <Text
                   style={[
                     styles.badgeText,
-                    { color: isActive ? (isDark ? '#FFFFFF' : '#000000') : (isDark ? '#AAAAAA' : '#64748B') },
+                    { color: isActive ? (isDark ? '#FFFFFF' : '#000000') : isDark ? '#AAAAAA' : '#64748B' },
                   ]}
                 >
                   {tab.badge}

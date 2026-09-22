@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { router } from 'expo-router'
 import { useAuth } from '@/components/auth/auth-provider'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
   ScrollView,
   Platform,
+  Modal,
+  Pressable,
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -30,48 +32,136 @@ import { HaptixBrandMark, CopyChipIcon, FingerScanBold } from '@/components/hapt
 import { ellipsify } from '@/utils/ellipsify'
 import { useAppTheme } from '@/components/theme/theme-context'
 import {
-  HeroSplashArt,
-  PasskeyCardsArt,
-  AgentStackArt,
-  MultiChainArt,
+  HeroOrbLight,
   BiometricScanGraphic,
   WalletSuccessGraphic,
-  PhantomLogo,
-  SolflareLogo,
-  MetaMaskLogo,
-  OtherWalletLogo,
 } from '@/components/haptix/haptix-onboarding-graphics'
-import { StepPlayer } from '@/components/ui'
+import { StatusBar } from 'expo-status-bar'
 
-// 8 Distinct Screens from the Approved Reference Design + Sign In Option:
-// Screens 1-4: Feature Carousel / Value Propositions
-// Screens 5-7: Passkey Smart Wallet Setup & Ready Confirmation
-// Screen 8: Connect / Import Existing Wallet
-// Screen 9: Sign In to Existing Wallet (Passkey / Address Restore)
-export type OnboardingScreen =
-  | 'slide_hero' // Screen 1: Dark Glassmorphic Splash
-  | 'slide_passkey' // Screen 2: No seed phrase. Just your passkey.
-  | 'slide_agents' // Screen 3: Give agents spending power
-  | 'slide_multichain' // Screen 4: One wallet. More possibilities.
-  | 'step_overview' // Screen 5: Create your wallet (3-step overview)
-  | 'step_biometrics' // Screen 6: Create a passkey (Face ID scanner)
-  | 'step_ready' // Screen 7: Your wallet is ready! (PDA & checklist)
-  | 'step_connect' // Screen 8: Or connect an existing wallet
-  | 'step_signin' // Screen 9: Sign In to Existing Wallet with Passkey
+/**
+ * Palette for the pre-auth flow.
+ *
+ * The hero keeps its own indigo identity rather than using the monochrome app
+ * tokens, but it is still driven by the appearance preference so light/dark
+ * both work: `useAppTheme().isDark` picks the palette, and every colour in the
+ * style sheet below comes from it.
+ */
+interface OnboardingPalette {
+  heroBg: string
+  heroInk: string
+  heroAccent: string
+  onPrimary: string
+  primaryBg: string
+  actionBg: string
+  secondaryBg: string
+  controlBg: string
+  decorGlow: string
+  decorArc: string
+  decorDotStrong: string
+  decorDotSoft: string
+  sheetBackdrop: string
+  sheetBg: string
+  screenBg: string
+  surface: string
+  surfaceAlt: string
+  border: string
+  ink: string
+  inkBody: string
+  inkSecondary: string
+  inkMuted: string
+  link: string
+  linkSoftBg: string
+  success: string
+  shadow: string
+}
 
-const CAROUSEL_SLIDES: OnboardingScreen[] = ['slide_hero', 'slide_passkey', 'slide_agents', 'slide_multichain']
+const lightPalette: OnboardingPalette = {
+  heroBg: '#F5F4F9',
+  heroInk: '#131217',
+  heroAccent: '#6C6AF3',
+  onPrimary: '#FFFFFF',
+  primaryBg: '#1B1A20',
+  actionBg: '#0F172A',
+  secondaryBg: '#E9E8EF',
+  controlBg: '#EBEAF0',
+  decorGlow: 'rgba(108,106,243,0.055)',
+  decorArc: 'rgba(108,106,243,0.10)',
+  decorDotStrong: 'rgba(108,106,243,0.16)',
+  decorDotSoft: 'rgba(108,106,243,0.13)',
+  sheetBackdrop: 'rgba(12,10,26,0.35)',
+  sheetBg: '#FFFFFF',
+  screenBg: '#FFFFFF',
+  surface: '#F8FAFC',
+  surfaceAlt: '#F1F5F9',
+  border: '#E2E8F0',
+  ink: '#0F172A',
+  inkBody: '#475569',
+  inkSecondary: '#64748B',
+  inkMuted: '#94A3B8',
+  link: '#2563EB',
+  linkSoftBg: '#EFF6FF',
+  success: '#10B981',
+  shadow: 'rgba(0,0,0,0.5)',
+}
+
+const darkPalette: OnboardingPalette = {
+  heroBg: '#08070F',
+  heroInk: '#F4F4F7',
+  heroAccent: '#9C93FF',
+  onPrimary: '#0A0A0F',
+  primaryBg: '#FFFFFF',
+  actionBg: '#FFFFFF',
+  secondaryBg: '#1C1B23',
+  controlBg: '#1C1B23',
+  decorGlow: 'rgba(140,130,255,0.06)',
+  decorArc: 'rgba(140,130,255,0.18)',
+  decorDotStrong: 'rgba(140,130,255,0.30)',
+  decorDotSoft: 'rgba(140,130,255,0.22)',
+  sheetBackdrop: 'rgba(0,0,0,0.6)',
+  sheetBg: '#141419',
+  screenBg: '#0A0A0F',
+  surface: '#141419',
+  surfaceAlt: '#18181F',
+  border: 'rgba(255,255,255,0.10)',
+  ink: '#F2F2F5',
+  inkBody: '#B4B4BE',
+  inkSecondary: '#A0A0AC',
+  inkMuted: '#74747F',
+  link: '#8FA8FF',
+  linkSoftBg: 'rgba(108,140,255,0.14)',
+  success: '#34D399',
+  shadow: 'rgba(0,0,0,0.6)',
+}
+
+// Four screens:
+// 1. slide_hero       - light hero splash (entry point)
+// 2. step_create_wallet - name the wallet + the two quorum passkeys
+// 3. step_ready       - wallet created confirmation
+// 4. step_signin      - sign in / restore an existing wallet
+export type OnboardingScreen = 'slide_hero' | 'step_create_wallet' | 'step_ready' | 'step_signin'
 
 export default function SignIn() {
   const insets = useSafeAreaInsets()
   const { updateWallet } = useAuth()
-  const { theme, isDark } = useAppTheme()
+  const { themePreference, setThemePreference, isDark } = useAppTheme()
+
+  // The onboarding flow follows the appearance preference: the light palette is
+  // the approved mock, the dark palette is its counterpart.
+  const p = isDark ? darkPalette : lightPalette
+  const styles = useMemo(() => createStyles(p), [p])
 
   // Navigation state across screens
   const [currentScreen, setCurrentScreen] = useState<OnboardingScreen>('slide_hero')
+  const [showThemeSheet, setShowThemeSheet] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [creationStep, setCreationStep] = useState<0 | 1 | 2 | 3>(0)
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [createdWallet, setCreatedWallet] = useState<HaptixWalletAccount | null>(null)
   const [hasCopiedAddress, setHasCopiedAddress] = useState(false)
+
+  const [walletName, setWalletName] = useState('My Haptix Wallet')
+  const [primaryKeyName, setPrimaryKeyName] = useState('Primary Passkey')
+  const [secondaryKeyName, setSecondaryKeyName] = useState('Backup Quorum Passkey')
 
   // Sign In / Restore States
   const [savedWallet, setSavedWallet] = useState<HaptixWalletAccount | null>(null)
@@ -93,19 +183,24 @@ export default function SignIn() {
   const handleExecutePasskeyCreation = async () => {
     try {
       setIsCreating(true)
+      setCreationStep(1)
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
-      const finalName = 'My Haptix Wallet'
+      const finalName = walletName.trim() || 'My Haptix Wallet'
 
-      // 1. Generate a device-bound Secp256r1 (P-256) key, held in OS secure
-      // storage behind a biometric prompt. Software key, not a secure element.
-      const primary = await getOrCreatePrimaryPasskey(finalName)
+      // 1. Generate a device-bound Secp256r1 (P-256) key
+      const primary = await getOrCreatePrimaryPasskey(primaryKeyName.trim() || 'Primary Passkey')
 
-      // 2. Derive real on-chain Anchor PDA from Secp256r1 public key
+      setCreationStep(2)
+      await new Promise((r) => setTimeout(r, 600)) // UI delay before next prompt blocks thread
+
+      // 2. Generate secondary quorum key
+      const secondary = await getOrCreateSecondaryPasskey(secondaryKeyName.trim() || 'Backup Quorum Passkey')
+
+      setCreationStep(3)
+
+      // 3. Derive real on-chain Anchor PDA from Secp256r1 public key
       const [walletPda] = getWalletPda(primary.publicKey)
-
-      // 3. Generate secondary quorum key
-      const secondary = await getOrCreateSecondaryPasskey()
 
       // 4. Create persistent record
       const newAccount = await createSmartWalletRecord({
@@ -113,7 +208,7 @@ export default function SignIn() {
         primaryPasskeyHex: primary.publicKeyHex,
         secondaryPasskeyHex: secondary.publicKeyHex,
         primaryLabel: primary.label,
-        secondaryLabel: 'Backup quorum key (device secure storage)',
+        secondaryLabel: secondary.label,
         spendThreshold: 0.1,
         network: 'devnet',
       })
@@ -154,7 +249,6 @@ export default function SignIn() {
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setCreatedWallet(newAccount)
-      // Advance to Screen 7: "Your wallet is ready!"
       setCurrentScreen('step_ready')
     } catch (err: any) {
       console.error('[Haptix Passkey] Setup error:', err)
@@ -164,6 +258,7 @@ export default function SignIn() {
       )
     } finally {
       setIsCreating(false)
+      setCreationStep(0)
     }
   }
 
@@ -288,26 +383,8 @@ export default function SignIn() {
     setTimeout(() => setHasCopiedAddress(false), 2000)
   }
 
-  // External wallet connectors. Wallet Standard / MWA deeplinking is not wired
-  // up in this build, so we say so instead of showing a success alert for a
-  // connection that never happened.
-  const handleConnectProvider = async (provider: string) => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    Alert.alert(
-      `${provider} Not Supported Yet`,
-      `${provider} connections are not wired up in this build. Haptix currently signs with device passkeys, so you can create or restore a passkey wallet instead.`,
-    )
-  }
-
-  // Helper for 4-segment progress bar on setup screens (5, 6, 7, 8)
-  const renderProgressBar = (activeStep: 1 | 2 | 3 | 4) => (
-    <View style={styles.progressTrackRow}>
-      <StepPlayer steps={4} value={activeStep - 1} showControl={false} seekable={false} size={24} />
-    </View>
-  )
-
   // --------------------------------------------------------------------------
-  // SCREEN 1: DARK GLASSMORPHIC HERO SPLASH
+  // SCREEN 1: LIGHT HERO
   // --------------------------------------------------------------------------
   if (currentScreen === 'slide_hero') {
     return (
@@ -317,444 +394,253 @@ export default function SignIn() {
           { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom + 16, 32) },
         ]}
       >
-        <View style={styles.heroTopBar}>
-          <HaptixBrandMark size={32} color="#FFFFFF" />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+
+        {/* Decorative background: soft glow, faint orbit arc, two satellites */}
+        <View pointerEvents="none" style={styles.heroDecor}>
+          <View style={styles.heroDecorGlow} />
+          <View style={styles.heroDecorArc} />
+          <View style={styles.heroDecorDotLeft} />
+          <View style={styles.heroDecorDotRight} />
+        </View>
+
+        <View style={styles.heroTopRow}>
+          <TouchableOpacity
+            style={styles.heroSettings}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+              setShowThemeSheet(true)
+            }}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Appearance settings"
+          >
+            <MaterialIcons name="settings" size={19} color={p.heroInk} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.heroLogoBlock}>
+          <HaptixBrandMark size={44} color={p.heroInk} />
+          <Text style={styles.heroWordmark}>HAPTIX</Text>
         </View>
 
         <View style={styles.heroCenterArt}>
-          <HeroSplashArt size={300} />
+          <HeroOrbLight size={316} />
         </View>
 
         <View style={styles.heroBottomBlock}>
-          <Text style={styles.heroBrandText}>HAPTIX</Text>
-          <Text style={styles.heroTitleText}>A smarter way{'\n'}to own crypto</Text>
-          <Text style={styles.heroSubtitleText}>Passkey-secured. Agent-ready.{'\n'}No seed phrase required.</Text>
+          <Text style={styles.heroTitleText}>
+            A smarter way{'\n'}to own <Text style={styles.heroTitleAccent}>crypto</Text>
+          </Text>
 
-          {/* StepPlayer Interactive Stepped Progress (swamimalode07/rare-ui/step-player) */}
-          <View style={styles.stepPlayerRow}>
-            <StepPlayer
-              steps={4}
-              value={0}
-              onValueChange={(idx) => setCurrentScreen(CAROUSEL_SLIDES[idx])}
-              duration={4000}
-              showControl={true}
-              seekable={true}
-              size={34}
-              onComplete={() => setCurrentScreen('step_overview')}
-            />
-          </View>
-
-          {/* CTA: Get started */}
           <TouchableOpacity
-            style={styles.heroButton}
+            style={[styles.heroButton, styles.heroButtonPrimary]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setCurrentScreen('slide_passkey')
+              setCurrentScreen('step_create_wallet')
             }}
-            activeOpacity={0.85}
+            activeOpacity={0.9}
           >
-            <Text style={styles.heroButtonText}>Get started →</Text>
+            <Text style={[styles.heroButtonText, { color: p.onPrimary }]}>Create New Wallet</Text>
+            <MaterialIcons name="arrow-forward" size={20} color={p.onPrimary} style={styles.heroButtonArrow} />
           </TouchableOpacity>
 
-          {/* Already have a wallet? Sign in */}
           <TouchableOpacity
-            style={styles.heroSecondaryLink}
+            style={[styles.heroButton, styles.heroButtonSecondary]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
               setCurrentScreen('step_signin')
             }}
-            activeOpacity={0.7}
+            activeOpacity={0.9}
           >
-            <Text style={styles.heroSecondaryLinkText}>
-              Already have a wallet? <Text style={styles.heroSecondaryLinkHighlight}>Sign in</Text>
-            </Text>
+            <Text style={[styles.heroButtonText, { color: p.heroInk }]}>Sign In to Existing Wallet</Text>
+            <MaterialIcons name="arrow-forward" size={20} color={p.heroInk} style={styles.heroButtonArrow} />
           </TouchableOpacity>
         </View>
+
+        <Modal
+          visible={showThemeSheet}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowThemeSheet(false)}
+        >
+          <Pressable style={styles.sheetBackdrop} onPress={() => setShowThemeSheet(false)}>
+            <Pressable style={[styles.sheetCard, { paddingBottom: Math.max(insets.bottom, 20) + 12 }]}>
+              <Text style={styles.sheetTitle}>Appearance</Text>
+              {(
+                [
+                  ['system', 'Match system'],
+                  ['light', 'Light'],
+                  ['dark', 'Dark'],
+                ] as const
+              ).map(([value, label]) => (
+                <TouchableOpacity
+                  key={value}
+                  style={styles.sheetRow}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                    setThemePreference(value)
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.sheetRowText}>{label}</Text>
+                  {themePreference === value && <MaterialIcons name="check" size={20} color={p.heroAccent} />}
+                </TouchableOpacity>
+              ))}
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     )
   }
 
   // --------------------------------------------------------------------------
-  // SCREEN 2: NO SEED PHRASE. JUST YOUR PASSKEY.
+  // SCREEN 2: SETUP & CREATE WALLET
   // --------------------------------------------------------------------------
-  if (currentScreen === 'slide_passkey') {
+  if (currentScreen === 'step_create_wallet') {
     return (
       <SafeAreaView style={styles.lightContainer}>
-        <View style={styles.carouselHeader}>
-          <HaptixBrandMark size={28} color="#0F172A" />
-          <TouchableOpacity
-            onPress={() => {
-              Haptics.selectionAsync()
-              setCurrentScreen('step_overview')
-            }}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Text style={styles.skipButtonText}>Skip</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.carouselArtArea}>
-          <PasskeyCardsArt size={260} />
-        </View>
-
-        <View style={styles.carouselTextBlock}>
-          <Text style={styles.categoryBadgeText}>SECURE BY DESIGN</Text>
-          <Text style={styles.carouselTitleText}>No seed phrase.{'\n'}Just your passkey.</Text>
-          <Text style={styles.carouselBodyText}>
-            Your wallet is secured with your biometrics and device passkeys. Simple, safe, and built for the next
-            generation.
-          </Text>
-
-          {/* StepPlayer Interactive Stepped Progress */}
-          <View style={styles.stepPlayerRow}>
-            <StepPlayer
-              steps={4}
-              value={1}
-              onValueChange={(idx) => setCurrentScreen(CAROUSEL_SLIDES[idx])}
-              duration={4000}
-              showControl={true}
-              seekable={true}
-              size={34}
-              onComplete={() => setCurrentScreen('step_overview')}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={styles.primaryDarkButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setCurrentScreen('slide_agents')
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.primaryDarkButtonText}>Next →</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    )
-  }
-
-  // --------------------------------------------------------------------------
-  // SCREEN 3: GIVE AGENTS SPENDING POWER (WITHIN YOUR RULES).
-  // --------------------------------------------------------------------------
-  if (currentScreen === 'slide_agents') {
-    return (
-      <SafeAreaView style={styles.lightContainer}>
-        <View style={styles.carouselHeader}>
-          <HaptixBrandMark size={28} color="#0F172A" />
-          <TouchableOpacity
-            onPress={() => {
-              Haptics.selectionAsync()
-              setCurrentScreen('step_overview')
-            }}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Text style={styles.skipButtonText}>Skip</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.carouselArtArea}>
-          <AgentStackArt size={260} />
-        </View>
-
-        <View style={styles.carouselTextBlock}>
-          <Text style={styles.categoryBadgeText}>BUILT FOR AI AGENTS</Text>
-          <Text style={styles.carouselTitleText}>
-            Give agents{'\n'}spending power{'\n'}(within your rules).
-          </Text>
-          <Text style={styles.carouselBodyText}>
-            Set limits, approve actions, and keep control. Your agents work for you, not the other way around.
-          </Text>
-
-          {/* StepPlayer Interactive Stepped Progress */}
-          <View style={styles.stepPlayerRow}>
-            <StepPlayer
-              steps={4}
-              value={2}
-              onValueChange={(idx) => setCurrentScreen(CAROUSEL_SLIDES[idx])}
-              duration={4000}
-              showControl={true}
-              seekable={true}
-              size={34}
-              onComplete={() => setCurrentScreen('step_overview')}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={styles.primaryDarkButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setCurrentScreen('slide_multichain')
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.primaryDarkButtonText}>Next →</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    )
-  }
-
-  // --------------------------------------------------------------------------
-  // SCREEN 4: ONE WALLET. MORE POSSIBILITIES.
-  // --------------------------------------------------------------------------
-  if (currentScreen === 'slide_multichain') {
-    return (
-      <SafeAreaView style={styles.lightContainer}>
-        <View style={styles.carouselHeader}>
-          <HaptixBrandMark size={28} color="#0F172A" />
-          <TouchableOpacity
-            onPress={() => {
-              Haptics.selectionAsync()
-              setCurrentScreen('step_overview')
-            }}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Text style={styles.skipButtonText}>Skip</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.carouselArtArea}>
-          <MultiChainArt size={260} />
-        </View>
-
-        <View style={styles.carouselTextBlock}>
-          <Text style={styles.categoryBadgeText}>MULTI-CHAIN READY</Text>
-          <Text style={styles.carouselTitleText}>One wallet.{'\n'}More possibilities.</Text>
-          <Text style={styles.carouselBodyText}>
-            Use Haptix across major chains, starting with Solana. More coming soon.
-          </Text>
-
-          {/* StepPlayer Interactive Stepped Progress */}
-          <View style={styles.stepPlayerRow}>
-            <StepPlayer
-              steps={4}
-              value={3}
-              onValueChange={(idx) => setCurrentScreen(CAROUSEL_SLIDES[idx])}
-              duration={4000}
-              showControl={true}
-              seekable={true}
-              size={34}
-              onComplete={() => setCurrentScreen('step_overview')}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={styles.primaryDarkButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setCurrentScreen('step_overview')
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.primaryDarkButtonText}>Next →</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    )
-  }
-
-  // --------------------------------------------------------------------------
-  // SCREEN 5: CREATE YOUR WALLET (3-STEP OVERVIEW)
-  // --------------------------------------------------------------------------
-  if (currentScreen === 'step_overview') {
-    return (
-      <SafeAreaView style={styles.lightContainer}>
-        {/* Top Header with Back and Progress Segment 1 */}
+        {/* Top Header */}
         <View style={styles.stepHeader}>
           <TouchableOpacity
             style={styles.stepBackButton}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setCurrentScreen('slide_multichain')
+              setCurrentScreen('slide_hero')
             }}
           >
-            <MaterialIcons name="chevron-left" size={28} color="#0F172A" />
+            <MaterialIcons name="chevron-left" size={28} color={p.ink} />
           </TouchableOpacity>
-          <View style={styles.stepProgressArea}>{renderProgressBar(1)}</View>
-          <View style={{ width: 32 }} />
+          <Text style={styles.headerTitleCentered}>Create Wallet</Text>
+          <View style={{ width: 36 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.stepScrollContent} showsVerticalScrollIndicator={false}>
-          <Text style={styles.stepMainTitle}>Create your wallet</Text>
-          <Text style={styles.stepMainSubtitle}>Set up your Haptix wallet with a passkey.</Text>
+          <Text style={styles.stepMainTitle}>Name your setup</Text>
+          <Text style={styles.stepMainSubtitle}>Customize your wallet and passkey names.</Text>
 
-          {/* 3 Step Cards */}
-          <View style={styles.cardsStack}>
-            {/* Step 1: Create a passkey */}
-            <View style={styles.featureRowCard}>
-              <View style={styles.featureIconWrap}>
-                <MaterialIcons name="fingerprint" size={24} color="#2563EB" />
-              </View>
-              <View style={styles.featureTextGroup}>
-                <Text style={styles.featureCardTitle}>Create a passkey</Text>
-                <Text style={styles.featureCardSubtitle}>Use Face ID, Touch ID or your device lock.</Text>
-              </View>
-            </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Wallet Name</Text>
+            <TextInput
+              style={styles.textInputField}
+              value={walletName}
+              onChangeText={setWalletName}
+              placeholder="e.g., My Haptix Wallet"
+              placeholderTextColor={p.inkMuted}
+              autoCorrect={false}
+            />
+          </View>
 
-            {/* Step 2: Secure your account */}
-            <View style={styles.featureRowCard}>
-              <View style={styles.featureIconWrap}>
-                <MaterialIcons name="security" size={24} color="#2563EB" />
-              </View>
-              <View style={styles.featureTextGroup}>
-                <Text style={styles.featureCardTitle}>Secure your account</Text>
-                <Text style={styles.featureCardSubtitle}>Protected by advanced encryption.</Text>
-              </View>
-            </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Passkey 1 Name (Device Auth)</Text>
+            <TextInput
+              style={styles.textInputField}
+              value={primaryKeyName}
+              onChangeText={setPrimaryKeyName}
+              placeholder="e.g., Primary Passkey"
+              placeholderTextColor={p.inkMuted}
+              autoCorrect={false}
+            />
+          </View>
 
-            {/* Step 3: You're ready */}
-            <View style={styles.featureRowCard}>
-              <View style={styles.featureIconWrap}>
-                <MaterialIcons name="check-circle" size={24} color="#2563EB" />
-              </View>
-              <View style={styles.featureTextGroup}>
-                <Text style={styles.featureCardTitle}>{"You're ready"}</Text>
-                <Text style={styles.featureCardSubtitle}>Start using your wallet in seconds.</Text>
-              </View>
-            </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Passkey 2 Name (Backup Auth)</Text>
+            <TextInput
+              style={styles.textInputField}
+              value={secondaryKeyName}
+              onChangeText={setSecondaryKeyName}
+              placeholder="e.g., Backup Quorum Passkey"
+              placeholderTextColor={p.inkMuted}
+              autoCorrect={false}
+            />
           </View>
         </ScrollView>
 
         <View style={styles.stepBottomBar}>
           <TouchableOpacity
             style={styles.primaryDarkButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setCurrentScreen('step_biometrics')
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.primaryDarkButtonText}>Create wallet →</Text>
-          </TouchableOpacity>
-
-          {/* Already have a wallet? Sign in */}
-          <TouchableOpacity
-            style={styles.stepSecondaryLink}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setCurrentScreen('step_signin')
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.stepSecondaryLinkText}>
-              Already have a wallet? <Text style={styles.stepSecondaryLinkHighlight}>Sign in</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    )
-  }
-
-  // --------------------------------------------------------------------------
-  // SCREEN 6: CREATE A PASSKEY (BIOMETRIC SCANNER HERO)
-  // --------------------------------------------------------------------------
-  if (currentScreen === 'step_biometrics') {
-    return (
-      <SafeAreaView style={styles.lightContainer}>
-        {/* Top Header with Back and Progress Segment 2 */}
-        <View style={styles.stepHeader}>
-          <TouchableOpacity
-            style={styles.stepBackButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setCurrentScreen('step_overview')
-            }}
-          >
-            <MaterialIcons name="chevron-left" size={28} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.stepProgressArea}>{renderProgressBar(2)}</View>
-          <View style={{ width: 32 }} />
-        </View>
-
-        <View style={styles.biometricsContent}>
-          {/* Centered Large Biometric Scan Graphic */}
-          <BiometricScanGraphic size={96} />
-
-          <Text style={styles.bioTitleText}>Create a passkey</Text>
-          <Text style={styles.bioSubtitleText}>
-            Use Face ID to create a secure passkey{'\n'}for your Haptix wallet.
-          </Text>
-
-          {/* Privacy Note Callout */}
-          <View style={styles.privacyCalloutCard}>
-            <MaterialIcons name="lock" size={18} color="#475569" />
-            <Text style={styles.privacyCalloutText}>Your passkey never leaves your device.</Text>
-          </View>
-        </View>
-
-        <View style={styles.stepBottomBar}>
-          {/* Continue with Face ID button */}
-          <TouchableOpacity
-            style={[styles.primaryDarkButton, isCreating && { opacity: 0.8 }]}
             onPress={handleExecutePasskeyCreation}
             disabled={isCreating}
             activeOpacity={0.85}
           >
-            {isCreating ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <MaterialIcons name="fingerprint" size={20} color="#FFFFFF" />
-                <Text style={styles.primaryDarkButtonText}>Continue with Face ID</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          {/* Link: Use another method */}
-          <TouchableOpacity
-            style={styles.secondaryLinkButton}
-            onPress={() => {
-              Haptics.selectionAsync()
-              setCurrentScreen('step_connect')
-            }}
-            hitSlop={{ top: 8, bottom: 8, left: 16, right: 16 }}
-          >
-            <Text style={styles.secondaryLinkText}>Use another method</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} />
+              <Text style={styles.primaryDarkButtonText}>Start Setup</Text>
+            </View>
           </TouchableOpacity>
         </View>
+
+        {/* Guided Creation Modal */}
+        <Modal visible={creationStep > 0} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ActivityIndicator size="large" color={p.link} style={{ marginBottom: 20 }} />
+              <Text style={styles.modalTitle}>Setting up your wallet</Text>
+
+              <View style={styles.modalStepRow}>
+                <MaterialIcons
+                  name={creationStep > 1 ? 'check-circle' : 'radio-button-unchecked'}
+                  size={24}
+                  color={creationStep > 1 ? p.success : p.inkMuted}
+                />
+                <Text style={styles.modalStepText}>Creating {primaryKeyName || 'Primary Passkey'}...</Text>
+              </View>
+
+              <View style={styles.modalStepRow}>
+                <MaterialIcons
+                  name={creationStep > 2 ? 'check-circle' : 'radio-button-unchecked'}
+                  size={24}
+                  color={creationStep > 2 ? p.success : p.inkMuted}
+                />
+                <Text style={styles.modalStepText}>Creating {secondaryKeyName || 'Backup Passkey'}...</Text>
+              </View>
+
+              <View style={styles.modalStepRow}>
+                <MaterialIcons
+                  name={creationStep > 2 ? 'check-circle' : 'radio-button-unchecked'}
+                  size={24}
+                  color={creationStep > 2 ? p.success : p.inkMuted}
+                />
+                <Text style={styles.modalStepText}>Finalizing Smart Account...</Text>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     )
   }
 
   // --------------------------------------------------------------------------
-  // SCREEN 7: YOUR WALLET IS READY!
+  // SCREEN 3: YOUR WALLET IS READY
   // --------------------------------------------------------------------------
   if (currentScreen === 'step_ready') {
     return (
       <SafeAreaView style={styles.lightContainer}>
-        {/* Top Header with Back and Progress Segment 3 */}
-        <View style={styles.stepHeader}>
-          <TouchableOpacity
-            style={styles.stepBackButton}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setCurrentScreen('step_biometrics')
-            }}
-          >
-            <MaterialIcons name="chevron-left" size={28} color="#0F172A" />
-          </TouchableOpacity>
-          <View style={styles.stepProgressArea}>{renderProgressBar(3)}</View>
-          <View style={{ width: 32 }} />
+        {/* Top Header */}
+        <View style={[styles.stepHeader, { justifyContent: 'center' }]}>
+          <Text style={styles.headerTitleCentered}>Success</Text>
         </View>
 
         <ScrollView contentContainerStyle={styles.stepScrollContent} showsVerticalScrollIndicator={false}>
           <View style={{ alignItems: 'center', marginTop: 12, marginBottom: 16 }}>
-            <WalletSuccessGraphic size={76} />
+            <WalletSuccessGraphic size={76} dark={isDark} />
           </View>
 
           <Text style={[styles.stepMainTitle, { textAlign: 'center' }]}>Your wallet is ready!</Text>
           <Text style={[styles.stepMainSubtitle, { textAlign: 'center', marginBottom: 28 }]}>
-            You can now send, receive, swap{'\n'}and manage AI agents.
+            You can now send, receive, swap
+            {`
+`}
+            and manage AI agents.
           </Text>
 
           {/* Wallet Address Display Card */}
           <View style={styles.walletReadyCard}>
             <View style={styles.walletReadyAvatar}>
-              <HaptixBrandMark size={20} color="#FFFFFF" />
+              <HaptixBrandMark size={20} color={p.onPrimary} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={styles.walletReadyName}>{createdWallet?.name || 'My Haptix Wallet'}</Text>
+              <Text style={styles.walletReadyName}>{createdWallet?.name || walletName || 'My Haptix Wallet'}</Text>
               <TouchableOpacity
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}
                 onPress={handleCopyAddress}
@@ -765,7 +651,7 @@ export default function SignIn() {
                     ? 'Copied to clipboard!'
                     : ellipsify(createdWallet?.address || '7xQp3a9FDevnetAddress', 4)}
                 </Text>
-                <CopyChipIcon size={12} color={hasCopiedAddress ? '#2563EB' : '#94A3B8'} />
+                <CopyChipIcon size={12} color={hasCopiedAddress ? p.link : p.inkMuted} />
               </TouchableOpacity>
             </View>
           </View>
@@ -773,15 +659,15 @@ export default function SignIn() {
           {/* Verification Checklist */}
           <View style={styles.checklistContainer}>
             <View style={styles.checklistItem}>
-              <MaterialIcons name="check-circle" size={20} color="#10B981" />
-              <Text style={styles.checklistItemText}>Passkey secured</Text>
+              <MaterialIcons name="check-circle" size={20} color={p.success} />
+              <Text style={styles.checklistItemText}>Passkeys secured</Text>
             </View>
             <View style={styles.checklistItem}>
-              <MaterialIcons name="check-circle" size={20} color="#10B981" />
+              <MaterialIcons name="check-circle" size={20} color={p.success} />
               <Text style={styles.checklistItemText}>Smart account ready</Text>
             </View>
             <View style={styles.checklistItem}>
-              <MaterialIcons name="check-circle" size={20} color="#10B981" />
+              <MaterialIcons name="check-circle" size={20} color={p.success} />
               <Text style={styles.checklistItemText}>AI agent controls enabled</Text>
             </View>
           </View>
@@ -797,7 +683,7 @@ export default function SignIn() {
   }
 
   // --------------------------------------------------------------------------
-  // SCREEN 9: SIGN IN / RESTORE WALLET WITH PASSKEY
+  // SCREEN 4: SIGN IN / RESTORE WALLET WITH PASSKEY
   // --------------------------------------------------------------------------
   if (currentScreen === 'step_signin') {
     return (
@@ -811,7 +697,7 @@ export default function SignIn() {
               setCurrentScreen('slide_hero')
             }}
           >
-            <MaterialIcons name="chevron-left" size={28} color="#0F172A" />
+            <MaterialIcons name="chevron-left" size={28} color={p.ink} />
           </TouchableOpacity>
           <Text style={styles.headerTitleCentered}>Sign In</Text>
           <View style={{ width: 36 }} />
@@ -819,7 +705,7 @@ export default function SignIn() {
 
         <ScrollView contentContainerStyle={styles.stepScrollContent} showsVerticalScrollIndicator={false}>
           <View style={{ alignItems: 'center', marginTop: 12, marginBottom: 16 }}>
-            <BiometricScanGraphic size={96} />
+            <BiometricScanGraphic size={96} dark={isDark} />
           </View>
 
           <Text style={[styles.stepMainTitle, { textAlign: 'center' }]}>Welcome back</Text>
@@ -830,7 +716,7 @@ export default function SignIn() {
           {/* Feature details card */}
           <View style={styles.signinCard}>
             <View style={styles.signinCardHeader}>
-              <MaterialIcons name="fingerprint" size={22} color="#2563EB" />
+              <MaterialIcons name="fingerprint" size={22} color={p.link} />
               <Text style={styles.signinCardTitle}>Passkey Authentication</Text>
             </View>
             <Text style={styles.signinCardDesc}>
@@ -854,7 +740,7 @@ export default function SignIn() {
             <MaterialIcons
               name={showAddressInput ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
               size={18}
-              color="#64748B"
+              color={p.inkSecondary}
             />
           </TouchableOpacity>
 
@@ -865,7 +751,7 @@ export default function SignIn() {
                 value={restoreAddress}
                 onChangeText={setRestoreAddress}
                 placeholder="Paste Solana smart wallet address"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={p.inkMuted}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
@@ -877,7 +763,7 @@ export default function SignIn() {
                   }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <MaterialIcons name="cancel" size={18} color="#94A3B8" />
+                  <MaterialIcons name="cancel" size={18} color={p.inkMuted} />
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={styles.pasteBadgeButton} onPress={handlePasteAddress}>
@@ -888,7 +774,7 @@ export default function SignIn() {
           )}
 
           <View style={[styles.privacyCalloutCard, { alignSelf: 'center', marginTop: 16 }]}>
-            <MaterialIcons name="lock" size={18} color="#475569" />
+            <MaterialIcons name="lock" size={18} color={p.inkBody} />
             <Text style={styles.privacyCalloutText}>Your passkey never leaves your device.</Text>
           </View>
         </ScrollView>
@@ -901,10 +787,10 @@ export default function SignIn() {
             activeOpacity={0.85}
           >
             {isSigningIn ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={p.onPrimary} />
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <MaterialIcons name="fingerprint" size={20} color="#FFFFFF" />
+                <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} />
                 <Text style={styles.primaryDarkButtonText}>Sign in with Biometrics</Text>
               </View>
             )}
@@ -914,7 +800,7 @@ export default function SignIn() {
             style={styles.secondaryLinkButton}
             onPress={() => {
               Haptics.selectionAsync()
-              setCurrentScreen('step_overview')
+              setCurrentScreen('step_create_wallet')
             }}
           >
             <Text style={styles.secondaryLinkText}>{"Don't have a wallet? Create one"}</Text>
@@ -924,634 +810,412 @@ export default function SignIn() {
     )
   }
 
-  // --------------------------------------------------------------------------
-  // SCREEN 8: OR CONNECT AN EXISTING WALLET
-  // --------------------------------------------------------------------------
-  return (
-    <SafeAreaView style={styles.lightContainer}>
-      {/* Top Header with Back and Progress Segment 4 */}
-      <View style={styles.stepHeader}>
-        <TouchableOpacity
-          style={styles.stepBackButton}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            setCurrentScreen('step_biometrics')
-          }}
-        >
-          <MaterialIcons name="chevron-left" size={28} color="#0F172A" />
-        </TouchableOpacity>
-        <View style={styles.stepProgressArea}>{renderProgressBar(4)}</View>
-        <View style={{ width: 32 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.stepScrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.stepMainTitle}>Or connect an existing wallet</Text>
-        <Text style={styles.stepMainSubtitle}>Import or link your wallet to use with Haptix.</Text>
-
-        {/* Provider List */}
-        <View style={styles.providerList}>
-          {/* Haptix Passkey (Biometrics) */}
-          <TouchableOpacity
-            style={[styles.providerRow, { borderColor: '#93C5FD', backgroundColor: '#EFF6FF' }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setCurrentScreen('step_signin')
-            }}
-            activeOpacity={0.75}
-          >
-            <View style={styles.providerLeft}>
-              <View style={styles.providerPasskeyBadge}>
-                <HaptixBrandMark size={20} color="#FFFFFF" />
-              </View>
-              <View>
-                <Text style={[styles.providerNameText, { color: '#1E40AF' }]}>Haptix Passkey</Text>
-                <Text style={styles.providerSubText}>Sign in with device biometrics</Text>
-              </View>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#2563EB" />
-          </TouchableOpacity>
-
-          {/* Phantom */}
-          <TouchableOpacity
-            style={styles.providerRow}
-            onPress={() => handleConnectProvider('Phantom')}
-            activeOpacity={0.75}
-          >
-            <View style={styles.providerLeft}>
-              <PhantomLogo size={36} />
-              <View>
-                <Text style={styles.providerNameText}>Phantom</Text>
-                <Text style={styles.providerSubText}>Solana wallet</Text>
-              </View>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#94A3B8" />
-          </TouchableOpacity>
-
-          {/* Solflare */}
-          <TouchableOpacity
-            style={styles.providerRow}
-            onPress={() => handleConnectProvider('Solflare')}
-            activeOpacity={0.75}
-          >
-            <View style={styles.providerLeft}>
-              <SolflareLogo size={36} />
-              <View>
-                <Text style={styles.providerNameText}>Solflare</Text>
-                <Text style={styles.providerSubText}>Solana native wallet</Text>
-              </View>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#94A3B8" />
-          </TouchableOpacity>
-
-          {/* MetaMask */}
-          <TouchableOpacity
-            style={styles.providerRow}
-            onPress={() => handleConnectProvider('MetaMask')}
-            activeOpacity={0.75}
-          >
-            <View style={styles.providerLeft}>
-              <MetaMaskLogo size={36} />
-              <View>
-                <Text style={styles.providerNameText}>MetaMask</Text>
-                <Text style={styles.providerSubText}>Multi-chain wallet</Text>
-              </View>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#94A3B8" />
-          </TouchableOpacity>
-
-          {/* Other wallet */}
-          <TouchableOpacity
-            style={styles.providerRow}
-            onPress={() => handleConnectProvider('Other Wallet')}
-            activeOpacity={0.75}
-          >
-            <View style={styles.providerLeft}>
-              <OtherWalletLogo size={36} />
-              <View>
-                <Text style={styles.providerNameText}>Other wallet</Text>
-                <Text style={styles.providerSubText}>Mobile Wallet Adapter</Text>
-              </View>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color="#94A3B8" />
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      <View style={styles.stepBottomBar}>
-        <TouchableOpacity
-          style={styles.secondaryLinkButton}
-          onPress={() => {
-            Haptics.selectionAsync()
-            setCurrentScreen('step_overview')
-          }}
-          hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
-        >
-          <Text style={styles.maybeLaterText}>Maybe later</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  )
+  return null
 }
 
 // ============================================================================
 // STYLES
 // ============================================================================
-const styles = StyleSheet.create({
-  // SCREEN 1: HERO DARK
-  heroContainer: {
-    flex: 1,
-    backgroundColor: '#07090E',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-  },
-  heroTopBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  heroCenterArt: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 10,
-  },
-  heroBottomBlock: {
-    width: '100%',
-  },
-  heroBrandText: {
-    color: '#FFFFFF',
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: 2.5,
-    marginBottom: 8,
-  },
-  heroTitleText: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '700',
-    lineHeight: 34,
-    letterSpacing: -0.5,
-    marginBottom: 8,
-  },
-  heroSubtitleText: {
-    color: '#94A3B8',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  heroButton: {
-    width: '100%',
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroButtonText: {
-    color: '#000000',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  heroSecondaryLink: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    marginTop: 4,
-  },
-  heroSecondaryLinkText: {
-    color: '#94A3B8',
-    fontSize: 14,
-  },
-  heroSecondaryLinkHighlight: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  stepPlayerRow: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 20,
-  },
-  dotPill: {
-    width: 22,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#334155',
-  },
-  dotPillActive: {
-    backgroundColor: '#FFFFFF',
-  },
-  dotCircle: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#334155',
-  },
+const createStyles = (p: OnboardingPalette) =>
+  StyleSheet.create({
+    // SCREEN 1: HERO (LIGHT)
+    heroContainer: {
+      flex: 1,
+      backgroundColor: p.heroBg,
+      paddingHorizontal: 24,
+    },
+    heroDecor: {
+      ...StyleSheet.absoluteFillObject,
+      overflow: 'hidden',
+    },
+    heroDecorGlow: {
+      position: 'absolute',
+      top: -70,
+      right: -130,
+      width: 380,
+      height: 380,
+      borderRadius: 190,
+      backgroundColor: p.decorGlow,
+    },
+    heroDecorArc: {
+      position: 'absolute',
+      top: 90,
+      left: -170,
+      width: 420,
+      height: 420,
+      borderRadius: 210,
+      borderWidth: 1.5,
+      borderColor: p.decorArc,
+    },
+    heroDecorDotLeft: {
+      position: 'absolute',
+      top: '25%',
+      left: 26,
+      width: 26,
+      height: 26,
+      borderRadius: 13,
+      backgroundColor: p.decorDotStrong,
+    },
+    heroDecorDotRight: {
+      position: 'absolute',
+      top: '31%',
+      right: 22,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: p.decorDotSoft,
+    },
+    heroTopRow: {
+      height: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+    },
+    heroSettings: {
+      width: 44,
+      height: 44,
+      borderRadius: 15,
+      backgroundColor: p.controlBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroLogoBlock: {
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    heroWordmark: {
+      color: p.heroInk,
+      fontSize: 15,
+      fontWeight: '700',
+      letterSpacing: 5,
+      marginTop: 12,
+    },
+    heroCenterArt: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroBottomBlock: {
+      width: '100%',
+    },
+    heroTitleText: {
+      color: p.heroInk,
+      fontSize: 34,
+      fontWeight: '700',
+      lineHeight: 41,
+      letterSpacing: -0.9,
+      marginBottom: 26,
+    },
+    heroTitleAccent: {
+      color: p.heroAccent,
+    },
+    heroButton: {
+      width: '100%',
+      height: 56,
+      borderRadius: 28,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 12,
+    },
+    heroButtonPrimary: {
+      backgroundColor: p.primaryBg,
+    },
+    heroButtonSecondary: {
+      backgroundColor: p.secondaryBg,
+    },
+    heroButtonText: {
+      fontSize: 16.5,
+      fontWeight: '600',
+      letterSpacing: -0.2,
+    },
+    heroButtonArrow: {
+      position: 'absolute',
+      right: 22,
+    },
+    sheetBackdrop: {
+      flex: 1,
+      backgroundColor: p.sheetBackdrop,
+      justifyContent: 'flex-end',
+    },
+    sheetCard: {
+      backgroundColor: p.sheetBg,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingHorizontal: 24,
+      paddingTop: 22,
+    },
+    sheetTitle: {
+      color: p.heroInk,
+      fontSize: 17,
+      fontWeight: '700',
+      marginBottom: 6,
+    },
+    sheetRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 15,
+    },
+    sheetRowText: {
+      color: p.heroInk,
+      fontSize: 16,
+    },
 
-  // SCREENS 2, 3, 4: CAROUSEL LIGHT
-  lightContainer: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'space-between',
-  },
-  carouselHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 12,
-  },
-  skipButtonText: {
-    color: '#64748B',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  carouselArtArea: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  carouselTextBlock: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  categoryBadgeText: {
-    color: '#2563EB',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
-  carouselTitleText: {
-    color: '#0F172A',
-    fontSize: 26,
-    fontWeight: '700',
-    lineHeight: 33,
-    letterSpacing: -0.4,
-    marginBottom: 10,
-  },
-  carouselBodyText: {
-    color: '#64748B',
-    fontSize: 14,
-    lineHeight: 21,
-    marginBottom: 24,
-  },
-  dotsRowLight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 20,
-  },
-  dotPillLight: {
-    width: 22,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#CBD5E1',
-  },
-  dotPillActiveLight: {
-    backgroundColor: '#0F172A',
-  },
-  dotCircleLight: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#CBD5E1',
-  },
-  primaryDarkButton: {
-    width: '100%',
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#0F172A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryDarkButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
+    // SCREENS 2-4: SHARED STEP LAYOUT (LIGHT)
+    lightContainer: {
+      flex: 1,
+      backgroundColor: p.screenBg,
+      justifyContent: 'space-between',
+    },
+    primaryDarkButton: {
+      width: '100%',
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: p.actionBg,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    primaryDarkButtonText: {
+      color: p.onPrimary,
+      fontSize: 15,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
 
-  // SCREENS 5, 6, 7, 8, 9: STEP SCREENS
-  stepHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  stepBackButton: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepProgressArea: {
-    flex: 1,
-    marginHorizontal: 16,
-  },
-  progressTrackRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  progressSegment: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-  },
-  progressSegmentActive: {
-    backgroundColor: '#1E40AF',
-  },
-  progressSegmentInactive: {
-    backgroundColor: '#E2E8F0',
-  },
-  headerTitleCentered: {
-    color: '#0F172A',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  stepScrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 24,
-  },
-  stepMainTitle: {
-    color: '#0F172A',
-    fontSize: 26,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-    marginBottom: 6,
-  },
-  stepMainSubtitle: {
-    color: '#64748B',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  cardsStack: {
-    gap: 12,
-  },
-  featureRowCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    gap: 14,
-  },
-  featureIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#EFF6FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  featureTextGroup: {
-    flex: 1,
-  },
-  featureCardTitle: {
-    color: '#0F172A',
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  featureCardSubtitle: {
-    color: '#64748B',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  stepBottomBar: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-    gap: 12,
-  },
-  stepSecondaryLink: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-  },
-  stepSecondaryLinkText: {
-    color: '#64748B',
-    fontSize: 14,
-  },
-  stepSecondaryLinkHighlight: {
-    color: '#2563EB',
-    fontWeight: '700',
-  },
+    // SCREENS 2-4: STEP HEADER, INPUTS, BOTTOM BAR
+    stepHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+    },
+    stepBackButton: {
+      width: 36,
+      height: 36,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    headerTitleCentered: {
+      color: p.ink,
+      fontSize: 17,
+      fontWeight: '700',
+    },
+    stepScrollContent: {
+      paddingHorizontal: 24,
+      paddingTop: 16,
+      paddingBottom: 24,
+    },
+    stepMainTitle: {
+      color: p.ink,
+      fontSize: 26,
+      fontWeight: '700',
+      letterSpacing: -0.4,
+      marginBottom: 6,
+    },
+    stepMainSubtitle: {
+      color: p.inkSecondary,
+      fontSize: 15,
+      lineHeight: 22,
+      marginBottom: 24,
+    },
+    stepBottomBar: {
+      paddingHorizontal: 24,
+      paddingBottom: 24,
+      gap: 12,
+    },
 
-  // SCREEN 6: BIOMETRICS SPECIFIC
-  biometricsContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  bioTitleText: {
-    color: '#0F172A',
-    fontSize: 24,
-    fontWeight: '700',
-    marginTop: 18,
-    marginBottom: 6,
-  },
-  bioSubtitleText: {
-    color: '#64748B',
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  privacyCalloutCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    maxWidth: 320,
-    width: '100%',
-    justifyContent: 'center',
-  },
-  privacyCalloutText: {
-    color: '#475569',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  secondaryLinkButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-  },
-  secondaryLinkText: {
-    color: '#2563EB',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  maybeLaterText: {
-    color: '#64748B',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+    privacyCalloutCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: p.surface,
+      borderWidth: 1,
+      borderColor: p.border,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderRadius: 12,
+      maxWidth: 320,
+      width: '100%',
+      justifyContent: 'center',
+    },
+    privacyCalloutText: {
+      color: p.inkBody,
+      fontSize: 13,
+      fontWeight: '500',
+    },
+    secondaryLinkButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 10,
+    },
+    secondaryLinkText: {
+      color: p.link,
+      fontSize: 14,
+      fontWeight: '600',
+    },
 
-  // SCREEN 7: READY SPECIFIC
-  walletReadyCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 24,
-  },
-  walletReadyAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: '#0F172A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  walletReadyName: {
-    color: '#0F172A',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  walletReadyAddress: {
-    color: '#64748B',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  checklistContainer: {
-    gap: 14,
-    paddingHorizontal: 4,
-  },
-  checklistItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  checklistItemText: {
-    color: '#0F172A',
-    fontSize: 14,
-    fontWeight: '500',
-  },
+    // SCREEN 3: READY SPECIFIC
+    walletReadyCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: p.surface,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 24,
+    },
+    walletReadyAvatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 14,
+      backgroundColor: p.actionBg,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    walletReadyName: {
+      color: p.ink,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    walletReadyAddress: {
+      color: p.inkSecondary,
+      fontSize: 13,
+      fontWeight: '500',
+    },
+    checklistContainer: {
+      gap: 14,
+      paddingHorizontal: 4,
+    },
+    checklistItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    checklistItemText: {
+      color: p.ink,
+      fontSize: 14,
+      fontWeight: '500',
+    },
 
-  // SCREEN 9: SIGN IN SPECIFIC
-  signinCard: {
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  signinCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  signinCardTitle: {
-    color: '#0F172A',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  signinCardDesc: {
-    color: '#64748B',
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  customAddressToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 10,
-  },
-  customAddressToggleText: {
-    color: '#64748B',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  addressInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginTop: 4,
-    marginBottom: 12,
-  },
-  addressInput: {
-    flex: 1,
-    color: '#0F172A',
-    fontSize: 13,
-    padding: 0,
-  },
-  pasteBadgeButton: {
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  pasteBadgeText: {
-    color: '#2563EB',
-    fontSize: 11,
-    fontWeight: '600',
-  },
+    // SCREEN 4: SIGN IN SPECIFIC
+    signinCard: {
+      backgroundColor: p.surface,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 16,
+    },
+    signinCardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 6,
+    },
+    signinCardTitle: {
+      color: p.ink,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    signinCardDesc: {
+      color: p.inkSecondary,
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    customAddressToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      paddingVertical: 10,
+    },
+    customAddressToggleText: {
+      color: p.inkSecondary,
+      fontSize: 13,
+      fontWeight: '500',
+    },
+    addressInputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: p.surface,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      marginTop: 4,
+      marginBottom: 12,
+    },
+    addressInput: {
+      flex: 1,
+      color: p.ink,
+      fontSize: 13,
+      padding: 0,
+    },
+    pasteBadgeButton: {
+      backgroundColor: p.linkSoftBg,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+    },
+    pasteBadgeText: {
+      color: p.link,
+      fontSize: 11,
+      fontWeight: '600',
+    },
 
-  // SCREEN 8: CONNECT PROVIDERS SPECIFIC
-  providerList: {
-    gap: 12,
-  },
-  providerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-  },
-  providerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  providerPasskeyBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#2563EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  providerNameText: {
-    color: '#0F172A',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  providerSubText: {
-    color: '#64748B',
-    fontSize: 12,
-    marginTop: 1,
-  },
-})
+    inputGroup: {
+      marginBottom: 16,
+    },
+    inputLabel: {
+      color: p.ink,
+      fontSize: 14,
+      fontWeight: '600',
+      marginBottom: 8,
+    },
+    textInputField: {
+      color: p.ink,
+      fontSize: 15,
+      backgroundColor: p.surfaceAlt,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: p.shadow,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    },
+    modalContent: {
+      width: '100%',
+      backgroundColor: p.sheetBg,
+      borderRadius: 20,
+      padding: 24,
+      alignItems: 'center',
+    },
+    modalTitle: {
+      color: p.ink,
+      fontSize: 18,
+      fontWeight: '700',
+      marginBottom: 20,
+    },
+    modalStepRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      gap: 12,
+      marginBottom: 16,
+    },
+    modalStepText: {
+      color: p.inkBody,
+      fontSize: 15,
+      fontWeight: '500',
+    },
+  })

@@ -1,14 +1,5 @@
 import React, { useState, useRef } from 'react'
-import {
-  Pressable,
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Platform,
-  StyleProp,
-  ViewStyle,
-} from 'react-native'
+import { Pressable, View, Text, StyleSheet, Animated, Platform, StyleProp, ViewStyle } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -93,11 +84,7 @@ export function HoldToConfirmButton({
   const variantColor = isDanger ? theme.rose : isWarning ? theme.amber : theme.accent
   const fillColor = variantColor
   const borderColor = isDanger || isWarning ? variantColor : theme.borderDefault
-  const surfaceColor = isDanger
-    ? theme.roseSurface
-    : isWarning
-      ? theme.amberBg
-      : theme.bgElevated
+  const surfaceColor = isDanger ? theme.roseSurface : isWarning ? theme.amberBg : theme.bgElevated
   // Text colour once the fill has swept under it. A white fill needs dark text,
   // otherwise the label vanishes mid-hold — exactly when it must stay readable.
   const fillForeground = isDanger || isWarning ? '#FFFFFF' : theme.accentForeground

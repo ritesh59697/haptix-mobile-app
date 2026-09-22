@@ -1,13 +1,5 @@
 import React, { useEffect, useRef, memo } from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Easing,
-  TextStyle,
-  StyleProp,
-} from 'react-native'
+import { View, Text, StyleSheet, Animated, Easing, TextStyle, StyleProp } from 'react-native'
 
 const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -44,14 +36,7 @@ const AnimatedDigit = memo(function AnimatedDigit({
     <View style={[styles.digitWindow, { height: lineHeight }]}>
       <Animated.View style={{ transform: [{ translateY }] }}>
         {DIGITS.map((d) => (
-          <Text
-            key={d}
-            style={[
-              styles.digitText,
-              { height: lineHeight, lineHeight },
-              textStyle,
-            ]}
-          >
+          <Text key={d} style={[styles.digitText, { height: lineHeight, lineHeight }, textStyle]}>
             {d}
           </Text>
         ))}
@@ -99,21 +84,14 @@ export function AnimatedCounter({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {prefix ? (
-        <Text style={[styles.digitText, { height: lineHeight, lineHeight }, textStyle]}>
-          {prefix}
-        </Text>
-      ) : null}
+      {prefix ? <Text style={[styles.digitText, { height: lineHeight, lineHeight }, textStyle]}>{prefix}</Text> : null}
 
       <View style={styles.numberRow}>
         {chars.map((char, index) => {
           const isNum = char >= '0' && char <= '9'
           if (!isNum) {
             return (
-              <Text
-                key={`char-${index}`}
-                style={[styles.digitText, { height: lineHeight, lineHeight }, textStyle]}
-              >
+              <Text key={`char-${index}`} style={[styles.digitText, { height: lineHeight, lineHeight }, textStyle]}>
                 {char}
               </Text>
             )
@@ -131,11 +109,7 @@ export function AnimatedCounter({
         })}
       </View>
 
-      {suffix ? (
-        <Text style={[styles.digitText, { height: lineHeight, lineHeight }, textStyle]}>
-          {suffix}
-        </Text>
-      ) : null}
+      {suffix ? <Text style={[styles.digitText, { height: lineHeight, lineHeight }, textStyle]}>{suffix}</Text> : null}
     </View>
   )
 }

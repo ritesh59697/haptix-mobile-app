@@ -1,15 +1,5 @@
 import React, { useRef } from 'react'
-import {
-  Pressable,
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Platform,
-  StyleProp,
-  ViewStyle,
-  TextStyle,
-} from 'react-native'
+import { Pressable, View, Text, StyleSheet, Animated, Platform, StyleProp, ViewStyle, TextStyle } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
 
@@ -115,16 +105,12 @@ export function DepthOutlineButton({
           {icon && <View style={styles.iconContainer}>{icon}</View>}
           {children ? (
             typeof children === 'string' ? (
-              <Text style={[styles.title, { color: textColor }, textStyle]}>
-                {children}
-              </Text>
+              <Text style={[styles.title, { color: textColor }, textStyle]}>{children}</Text>
             ) : (
               children
             )
           ) : title ? (
-            <Text style={[styles.title, { color: textColor }, textStyle]}>
-              {title}
-            </Text>
+            <Text style={[styles.title, { color: textColor }, textStyle]}>{title}</Text>
           ) : null}
         </View>
       </Pressable>

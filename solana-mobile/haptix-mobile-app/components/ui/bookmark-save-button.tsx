@@ -1,14 +1,5 @@
 import React, { useState, useRef } from 'react'
-import {
-  Pressable,
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Platform,
-  StyleProp,
-  ViewStyle,
-} from 'react-native'
+import { Pressable, View, Text, StyleSheet, Animated, Platform, StyleProp, ViewStyle } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -88,19 +79,9 @@ export function BookmarkSaveButton({
     }).start()
   }
 
-  const bgColor = isSaved
-    ? theme.amberBg
-    : isDark
-      ? '#0F172A'
-      : '#F8FAFC'
+  const bgColor = isSaved ? theme.amberBg : isDark ? '#0F172A' : '#F8FAFC'
 
-  const borderColor = isSaved
-    ? isDark
-      ? 'rgba(245, 158, 11, 0.35)'
-      : '#FDE68A'
-    : isDark
-      ? '#1E293B'
-      : '#E2E8F0'
+  const borderColor = isSaved ? (isDark ? 'rgba(245, 158, 11, 0.35)' : '#FDE68A') : isDark ? '#1E293B' : '#E2E8F0'
 
   const textColor = isSaved ? theme.amberText : theme.textSecondary
   const iconColor = isSaved ? theme.amber : theme.textMuted
@@ -145,20 +126,10 @@ export function BookmarkSaveButton({
         />
 
         <Animated.View style={{ transform: [{ scale: iconScaleAnim }] }}>
-          <MaterialIcons
-            name={isSaved ? 'bookmark' : 'bookmark-border'}
-            size={compact ? 16 : 18}
-            color={iconColor}
-          />
+          <MaterialIcons name={isSaved ? 'bookmark' : 'bookmark-border'} size={compact ? 16 : 18} color={iconColor} />
         </Animated.View>
 
-        <Text
-          style={[
-            styles.label,
-            compact && styles.labelCompact,
-            { color: textColor },
-          ]}
-        >
+        <Text style={[styles.label, compact && styles.labelCompact, { color: textColor }]}>
           {isSaved ? savedLabel : label}
         </Text>
       </Pressable>

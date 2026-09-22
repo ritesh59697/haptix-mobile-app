@@ -1,13 +1,5 @@
 import React from 'react'
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleProp,
-  ViewStyle,
-} from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -37,14 +29,7 @@ export interface HaptixAlertProps {
  * Supports status variants: 'info' | 'success' | 'warning' | 'error' | 'neutral'
  * Responsive flex layout with standard icon, title, description, and action button.
  */
-export function HaptixAlert({
-  status = 'info',
-  title,
-  message,
-  icon,
-  action,
-  style,
-}: HaptixAlertProps) {
+export function HaptixAlert({ status = 'info', title, message, icon, action, style }: HaptixAlertProps) {
   const { isDark } = useAppTheme()
 
   const config = {
@@ -109,23 +94,15 @@ export function HaptixAlert({
       </View>
 
       <View style={styles.contentWrap}>
-        {title ? (
-          <Text style={[styles.alertTitle, { color: config.titleColor }]}>
-            {title}
-          </Text>
-        ) : null}
-        <Text style={[styles.alertMessage, { color: config.textColor }]}>
-          {message}
-        </Text>
+        {title ? <Text style={[styles.alertTitle, { color: config.titleColor }]}>{title}</Text> : null}
+        <Text style={[styles.alertMessage, { color: config.textColor }]}>{message}</Text>
       </View>
 
       {action ? (
         <TouchableOpacity
           style={[
             styles.actionButton,
-            action.variant === 'ghost'
-              ? { backgroundColor: 'transparent' }
-              : { backgroundColor: config.iconColor },
+            action.variant === 'ghost' ? { backgroundColor: 'transparent' } : { backgroundColor: config.iconColor },
           ]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -138,10 +115,7 @@ export function HaptixAlert({
             <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <Text
-              style={[
-                styles.actionButtonText,
-                { color: action.variant === 'ghost' ? config.titleColor : '#FFFFFF' },
-              ]}
+              style={[styles.actionButtonText, { color: action.variant === 'ghost' ? config.titleColor : '#FFFFFF' }]}
             >
               {action.label}
             </Text>
