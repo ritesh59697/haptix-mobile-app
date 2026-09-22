@@ -7,9 +7,7 @@ import {
 } from '@solana/web3.js'
 import { Buffer } from 'buffer'
 
-export const HAPTIX_PROGRAM_ID = new PublicKey(
-  'YTdPGhiX7wgA9mQPJpUXqXRFzRvMBLwRAJBWdTVUHWL'
-)
+export const HAPTIX_PROGRAM_ID = new PublicKey('YTdPGhiX7wgA9mQPJpUXqXRFzRvMBLwRAJBWdTVUHWL')
 
 export const WALLET_SEED = Buffer.from('haptix_wallet')
 
@@ -40,19 +38,13 @@ export interface AgentSessionState {
  */
 export function getWalletPda(primaryPasskey: Uint8Array): [PublicKey, number] {
   const seedSlice = primaryPasskey.length === 33 ? primaryPasskey.subarray(1, 33) : primaryPasskey
-  return PublicKey.findProgramAddressSync(
-    [WALLET_SEED, Buffer.from(seedSlice)],
-    HAPTIX_PROGRAM_ID
-  )
+  return PublicKey.findProgramAddressSync([WALLET_SEED, Buffer.from(seedSlice)], HAPTIX_PROGRAM_ID)
 }
 
 /**
  * Fetches and deserializes live on-chain Anchor state for a Haptix Wallet PDA.
  */
-export async function fetchHaptixWallet(
-  connection: Connection,
-  walletPda: PublicKey
-): Promise<WalletState | null> {
+export async function fetchHaptixWallet(connection: Connection, walletPda: PublicKey): Promise<WalletState | null> {
   try {
     const accountInfo = await connection.getAccountInfo(walletPda)
     if (!accountInfo || !accountInfo.data || accountInfo.data.length < 150) {
@@ -278,7 +270,7 @@ export function createExecuteTransferInstruction({
 export function getGrantAgentSignedMessage(
   agentPubkey: PublicKey,
   allowanceLamports: bigint,
-  validForSeconds: bigint
+  validForSeconds: bigint,
 ): Uint8Array {
   const prefix = Buffer.from('GRANT_AGENT:')
   const msg = new Uint8Array(prefix.length + 32 + 8 + 8)
@@ -353,6 +345,49 @@ export function createGrantAgentSessionInstruction({
 }
 
 /**
+ * Computes the message payload required for revoking an agent session:
+ * b"REVOKE_AGENT:" (13B) || agent_pubkey (32B) = 45 bytes.
+ */
+export function getRevokeAgentSignedMessage(agentPubkey: PublicKey): Uint8Array {
+  const prefix = Buffer.from('REVOKE_AGENT:')
+  const msg = new Uint8Array(prefix.length + 32)
+  msg.set(prefix, 0)
+  msg.set(agentPubkey.toBytes(), prefix.length)
+  return msg
+}
+
+/**
+ * Builds the `revoke_agent_session` instruction.
+ * Discriminator: [233, 61, 198, 225, 102, 73, 225, 49]
+ */
+export function createRevokeAgentSessionInstruction({
+  walletPda,
+  agentPubkey,
+  primarySigIxIndex,
+  secondarySigIxIndex,
+}: {
+  walletPda: PublicKey
+  agentPubkey: PublicKey
+  primarySigIxIndex: number
+  secondarySigIxIndex: number
+}): TransactionInstruction {
+  const buffer = Buffer.alloc(8 + 32 + 2 + 2)
+  buffer.set([233, 61, 198, 225, 102, 73, 225, 49], 0)
+  buffer.set(agentPubkey.toBytes(), 8)
+  buffer.writeUInt16LE(primarySigIxIndex, 40)
+  buffer.writeUInt16LE(secondarySigIxIndex, 42)
+
+  return new TransactionInstruction({
+    programId: HAPTIX_PROGRAM_ID,
+    keys: [
+      { pubkey: walletPda, isSigner: false, isWritable: true },
+      { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+    ],
+    data: buffer,
+  })
+}
+
+/**
  * Builds the `agent_execute` instruction for autonomous trading/execution.
  * Discriminator: [133, 29, 92, 254, 69, 92, 252, 191]
  */
@@ -408,7 +443,7 @@ export function createPanicFreezeInstruction({
 
 /**
  * Builds the `unfreeze` instruction.
- * Requires 2-of-2 Hardware Passkey Quorum on message b"UNFREEZE_WALLET".
+ * Requires a 2-of-2 passkey quorum on message b"UNFREEZE_WALLET".
  * Discriminator: [133, 160, 68, 253, 80, 232, 218, 247]
  */
 export function createUnfreezeInstruction({

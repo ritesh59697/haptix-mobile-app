@@ -69,7 +69,7 @@ export async function createSmartWalletRecord({
   primaryPasskeyHex,
   secondaryPasskeyHex,
   primaryLabel = 'Touch ID / Face ID (Primary)',
-  secondaryLabel = 'Hardware Security Key (Quorum)',
+  secondaryLabel = 'Backup quorum key (device secure storage)',
   guardianAddress,
   spendThreshold = 0.1,
   network = 'devnet',

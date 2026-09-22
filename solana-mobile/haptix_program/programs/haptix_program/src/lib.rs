@@ -154,4 +154,19 @@ pub mod haptix_program {
     pub fn execute_recovery(ctx: Context<ExecuteRecovery>) -> Result<()> {
         instructions::recovery::handle_execute_recovery(ctx)
     }
+
+    /// Revoke an authorized agent session key (requires 2-of-2 Hardware Passkey Quorum)
+    pub fn revoke_agent_session(
+        ctx: Context<RevokeAgentSession>,
+        agent_pubkey: Pubkey,
+        primary_sig_ix_index: u16,
+        secondary_sig_ix_index: u16,
+    ) -> Result<()> {
+        instructions::revoke_agent_session::revoke_agent_session(
+            ctx,
+            agent_pubkey,
+            primary_sig_ix_index,
+            secondary_sig_ix_index,
+        )
+    }
 }

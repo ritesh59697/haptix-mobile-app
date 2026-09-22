@@ -166,7 +166,7 @@ export function ActivityBold({ size = 24, color = '#FFFFFF' }: IconProps) {
 
 /**
  * MX Icons: ShieldSecurityBold
- * Used for: Dock Security tab & Hardware Firewall
+ * Used for: Dock Security tab & policy firewall
  */
 export function ShieldSecurityBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
@@ -234,7 +234,7 @@ export function Refresh2Bold({ size = 24, color = '#FFFFFF' }: IconProps) {
 
 /**
  * MX Icons: FingerScanBold
- * Used for: Secure Enclave Primary Passkey / Biometrics
+ * Used for: primary device passkey / biometrics
  */
 export function FingerScanBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (
@@ -269,7 +269,7 @@ export function FingerScanBold({ size = 24, color = '#FFFFFF' }: IconProps) {
 
 /**
  * MX Icons: KeySquareBold
- * Used for: Hardware Backup Key / YubiKey Quorum
+ * Used for: Backup device key / quorum key
  */
 export function KeySquareBold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (

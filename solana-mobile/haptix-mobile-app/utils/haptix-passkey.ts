@@ -4,15 +4,95 @@ import { p256 } from '@noble/curves/p256'
 import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
 import { sha256 } from '@noble/hashes/sha2'
 import { requireOptionalNativeModule } from 'expo-modules-core'
+import * as Crypto from 'expo-crypto'
+import { AppConfig } from '@/constants/app-config'
 
 /**
- * Safely retrieve expo-local-authentication without throwing if unlinked in current binary
+ * ============================================================================
+ * HAPTIX PASSKEY ENGINE
+ * ============================================================================
+ *
+ * WHAT THIS ACTUALLY DOES
+ * -----------------------
+ * A P-256 (secp256r1) scalar is generated on-device from the platform CSPRNG and
+ * kept in the OS secure store via `expo-secure-store` (iOS Keychain, Android
+ * Keystore-encrypted storage). Reads are gated behind an `expo-local-authentication`
+ * biometric prompt, and every signature is verified on-chain by Solana's native
+ * Secp256r1SigVerify precompile.
+ *
+ * WHAT THIS IS NOT
+ * ----------------
+ * This is a *software* key that the OS protects at rest and that we gate behind
+ * biometrics. It is NOT generated inside, or confined to, a secure element:
+ *
+ *   - The scalar is materialised in JS memory to sign, so a rooted or jailbroken
+ *     device, or anything that can read the unlocked secure store, can extract it.
+ *   - It is not a WebAuthn credential and carries no hardware attestation.
+ *
+ * True hardware-bound keys need a native module that generates an
+ * Android Keystore `KeyGenParameterSpec` / iOS Secure Enclave key and signs
+ * inside it, so the scalar never reaches JS. Until that exists, no label, copy,
+ * or comment in this app may describe these keys as hardware-bound, enclave-
+ * sealed, or hardware-attested.
+ *
+ * Web builds use real platform passkeys through WebAuthn, which never expose key
+ * material to JS.
  */
+
+const CREDENTIAL_KEY_PRIMARY = '@haptix_passkey_credential_primary'
+const CREDENTIAL_KEY_SECONDARY = '@haptix_passkey_credential_secondary'
+const PUBKEY_KEY_PRIMARY = '@haptix_passkey_pubkey_primary'
+const PUBKEY_KEY_SECONDARY = '@haptix_passkey_pubkey_secondary'
+
+/**
+ * SecureStore is unavailable on web, where these native scalars are never used,
+ * so the keys are only ever touched on native platforms.
+ */
+const SCALAR_KEY_PRIMARY = 'haptix_scalar_primary'
+const SCALAR_KEY_SECONDARY = 'haptix_scalar_secondary'
+
+/** Legacy AsyncStorage keys that used to hold the scalar inside the credential id. */
+const LEGACY_PLAINTEXT_CREDENTIAL = /^haptix_os_cred_(primary|secondary)_([0-9a-f]{64})$/
+
+const LEGACY_VAULT_KEYS = [
+  '@haptix_passkey_vault_haptix_passkey_primary_private_seed',
+  '@haptix_passkey_vault_haptix_passkey_secondary_private_seed',
+]
+
+const CURVE_ORDER = p256.CURVE.n
+
+/** Honest labelling: these keys are protected by the OS, not sealed in hardware. */
+const DEVICE_KEY_LABELS = {
+  primary: 'Device secure storage (biometric-gated)',
+  secondary: 'Backup quorum key (device secure storage)',
+} as const
+
+const WEBAUTHN_LABEL = 'Platform passkey (WebAuthn)'
+
+export interface PasskeyInfo {
+  id: 'primary' | 'secondary'
+  /** Opaque, non-secret identifier. Never contains key material. */
+  credentialId: string
+  publicKey: Uint8Array
+  publicKeyHex: string
+  label: string
+  hasBiometrics: boolean
+  /**
+   * False unless the key is generated in and used from a secure element. No code
+   * path currently achieves that, so callers must not render hardware claims.
+   */
+  hardwareBacked: boolean
+}
+
+export interface BiometricAuthResult {
+  success: boolean
+  error?: string
+}
+
 function getLocalAuth(): typeof import('expo-local-authentication') | null {
   try {
     if (Platform.OS === 'web') return null
-    const nativeMod = requireOptionalNativeModule('ExpoLocalAuthentication')
-    if (nativeMod) {
+    if (requireOptionalNativeModule('ExpoLocalAuthentication')) {
       return require('expo-local-authentication')
     }
     return null
@@ -21,107 +101,166 @@ function getLocalAuth(): typeof import('expo-local-authentication') | null {
   }
 }
 
-/**
- * ============================================================================
- * HAPTIX PASSKEY ENGINE — PURE ZERO-PRIVATE-KEY ARCHITECTURE
- * ============================================================================
- *
- * The Haptix app NEVER holds, generates, exports, or stores private keys.
- *
- * Architecture:
- * 1. App requests OS to create/use passkey:
- *    - Web/Desktop: W3C WebAuthn -> iCloud Keychain / Google Password Manager / 1Password
- *    - Android/iOS: Android Credential Manager / Apple Secure Enclave & KeyStore
- * 2. Device hardware enclave permanently seals the Secp256r1 (P-256) private key.
- * 3. Haptix stores ONLY public information:
- *    - credentialId: Opaque handle provided by the OS/Password Manager
- *    - publicKey: 33-byte compressed Secp256r1 public key [0x02|0x03, ...32B]
- * 4. Solana Anchor PDA is deterministically derived from the public key:
- *    PDA = findProgramAddressSync([b"haptix_wallet", publicKey[1..33]], PROGRAM_ID)
- * 5. Signatures are verified on-chain via Solana native Secp256r1SigVerify precompile.
- */
-
-// Pure public credential storage keys (Zero private keys in storage)
-const CREDENTIAL_KEY_PRIMARY = '@haptix_passkey_credential_primary'
-const PUBKEY_KEY_PRIMARY = '@haptix_passkey_pubkey_primary'
-
-const CREDENTIAL_KEY_SECONDARY = '@haptix_passkey_credential_secondary'
-const PUBKEY_KEY_SECONDARY = '@haptix_passkey_pubkey_secondary'
-
-// Legacy keys to purge on boot/reset
-const LEGACY_PRIMARY_ALIAS = 'haptix_passkey_primary_private_seed'
-const LEGACY_SECONDARY_ALIAS = 'haptix_passkey_secondary_private_seed'
-const LEGACY_PRIMARY_VAULT = `@haptix_passkey_vault_${LEGACY_PRIMARY_ALIAS}`
-const LEGACY_SECONDARY_VAULT = `@haptix_passkey_vault_${LEGACY_SECONDARY_ALIAS}`
-
-export interface PasskeyInfo {
-  id: 'primary' | 'secondary'
-  credentialId: string // Opaque credential handle from OS / Password Manager
-  publicKey: Uint8Array // 33-byte compressed P-256 public key
-  publicKeyHex: string
-  label: string
-  hasBiometrics: boolean
-}
-
-export interface BiometricAuthResult {
-  success: boolean
-  error?: string
-}
-
-/**
- * Safely retrieve native modules without throwing if unlinked
- */
-function getExpoSecureStore(): any {
+function getSecureStore(): typeof import('expo-secure-store') | null {
   try {
-    return requireOptionalNativeModule('ExpoSecureStore')
+    if (Platform.OS === 'web') return null
+    if (requireOptionalNativeModule('ExpoSecureStore')) {
+      return require('expo-secure-store')
+    }
+    return null
   } catch {
     return null
   }
 }
 
 /**
- * Base64URL utility functions for WebAuthn credential IDs
+ * Secure storage is mandatory for private key material. Falling back to
+ * AsyncStorage would silently undo the whole point of this module, so refuse.
  */
-function bytesToBase64Url(bytes: Uint8Array): string {
-  let binary = ''
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i])
+function requireSecureStore(): typeof import('expo-secure-store') {
+  const store = getSecureStore()
+  if (!store) {
+    throw new Error(
+      'OS secure storage is unavailable in this build, so a device key cannot be created. ' +
+        'Rebuild the app (expo prebuild / eas build) with expo-secure-store compiled in. ' +
+        'Haptix will not fall back to AsyncStorage for private key material.',
+    )
   }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  return store
 }
 
-function base64UrlToBytes(base64url: string): Uint8Array {
-  let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/')
-  while (base64.length % 4) {
-    base64 += '='
+function pubkeyKey(id: 'primary' | 'secondary'): string {
+  return id === 'primary' ? PUBKEY_KEY_PRIMARY : PUBKEY_KEY_SECONDARY
+}
+
+function credentialKey(id: 'primary' | 'secondary'): string {
+  return id === 'primary' ? CREDENTIAL_KEY_PRIMARY : CREDENTIAL_KEY_SECONDARY
+}
+
+function scalarKey(id: 'primary' | 'secondary'): string {
+  return id === 'primary' ? SCALAR_KEY_PRIMARY : SCALAR_KEY_SECONDARY
+}
+
+async function secureRandomBytes(length: number): Promise<Uint8Array> {
+  try {
+    return await Crypto.getRandomBytesAsync(length)
+  } catch {
+    const fallback = new Uint8Array(length)
+    crypto.getRandomValues(fallback)
+    return fallback
   }
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i)
+}
+
+// ---------------------------------------------------------------------------
+// Scalar handling
+// ---------------------------------------------------------------------------
+
+function scalarToHex(scalar: bigint): string {
+  return scalar.toString(16).padStart(64, '0')
+}
+
+function scalarFromHex(hex: string): bigint | null {
+  try {
+    const value = BigInt('0x' + hex.replace(/^0x/, ''))
+    if (value <= 0n || value >= CURVE_ORDER) return null
+    return value
+  } catch {
+    return null
   }
-  return bytes
+}
+
+/** Maps random bytes into the valid scalar range [1, n-1]. */
+function scalarFromRandomBytes(bytes: Uint8Array): bigint {
+  const value = BigInt('0x' + bytesToHex(bytes))
+  return (value % (CURVE_ORDER - 1n)) + 1n
+}
+
+function compressedPubkeyHex(scalar: bigint): string {
+  return bytesToHex(p256.Point.BASE.multiply(scalar).toRawBytes(true))
+}
+
+async function writeScalar(id: 'primary' | 'secondary', scalar: bigint): Promise<void> {
+  const store = requireSecureStore()
+  const options = Platform.OS === 'ios' ? { keychainAccessible: store.WHEN_UNLOCKED_THIS_DEVICE_ONLY } : undefined
+  await store.setItemAsync(scalarKey(id), scalarToHex(scalar), options)
+}
+
+async function readScalar(id: 'primary' | 'secondary'): Promise<bigint | null> {
+  const store = getSecureStore()
+  if (!store) return null
+  try {
+    const hex = await store.getItemAsync(scalarKey(id))
+    return hex ? scalarFromHex(hex) : null
+  } catch {
+    return null
+  }
+}
+
+async function deleteScalar(id: 'primary' | 'secondary'): Promise<void> {
+  const store = getSecureStore()
+  if (!store) return
+  try {
+    await store.deleteItemAsync(scalarKey(id))
+  } catch {
+    // Nothing to remove, or store unavailable.
+  }
 }
 
 /**
- * Extracts 33-byte compressed Secp256r1 public key from SPKI DER buffer
+ * Older builds wrote `haptix_os_cred_<id>_<64 hex chars>` into AsyncStorage, which
+ * put the private scalar in plaintext in an unencrypted store. Move that scalar
+ * into the OS secure store so the existing wallet keeps working, then delete the
+ * plaintext copy.
+ *
+ * Only entries matching that exact legacy format are touched. WebAuthn credential
+ * ids stored under the same AsyncStorage keys are left alone.
  */
-function extractCompressedP256FromSpki(spkiBytes: Uint8Array): Uint8Array {
-  if (spkiBytes.length < 65) {
-    throw new Error('SPKI buffer is too short')
+async function migrateLegacyPlaintextScalar(id: 'primary' | 'secondary'): Promise<string | null> {
+  try {
+    const raw = await AsyncStorage.getItem(credentialKey(id))
+    if (!raw) return null
+
+    const match = LEGACY_PLAINTEXT_CREDENTIAL.exec(raw)
+    if (!match) return null
+
+    const legacyValue = BigInt('0x' + match[2]) % CURVE_ORDER
+    await AsyncStorage.removeItem(credentialKey(id))
+
+    if (legacyValue === 0n) {
+      console.warn(
+        `[Haptix Passkey] Discarded a legacy ${id} key with an out-of-range scalar; ` +
+          'it could not have produced a usable key.',
+      )
+      return null
+    }
+
+    await writeScalar(id, legacyValue)
+    const pubkeyHex = compressedPubkeyHex(legacyValue)
+    await AsyncStorage.setItem(pubkeyKey(id), pubkeyHex)
+
+    console.warn(
+      `[Haptix Passkey] Migrated the ${id} key out of plaintext AsyncStorage into OS ` +
+        'secure storage. The on-chain wallet address is unchanged.',
+    )
+    return pubkeyHex
+  } catch (err) {
+    console.warn('[Haptix Passkey] Legacy key migration failed:', err)
+    return null
   }
-  // The uncompressed 65-byte EC point (0x04 || X || Y) is located at the end of the SPKI DER sequence
-  const uncompressed = spkiBytes.slice(spkiBytes.length - 65)
-  if (uncompressed[0] !== 0x04) {
-    throw new Error('Invalid EC uncompressed point prefix')
-  }
-  const point = p256.Point.fromHex(bytesToHex(uncompressed))
-  return point.toRawBytes(true) // 33-byte compressed [0x02|0x03, ...X]
 }
 
-/**
- * Checks if hardware biometric authentication (Fingerprint, Face, Iris, Touch ID) is available.
- */
+async function removeLegacyVaults(): Promise<void> {
+  try {
+    await AsyncStorage.multiRemove(LEGACY_VAULT_KEYS)
+  } catch {
+    // Best effort cleanup of pre-existing vault aliases.
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Biometrics
+// ---------------------------------------------------------------------------
+
 export async function checkBiometricsAvailable(): Promise<boolean> {
   try {
     if (Platform.OS === 'web') {
@@ -139,20 +278,21 @@ export async function checkBiometricsAvailable(): Promise<boolean> {
 }
 
 /**
- * Requests real biometric verification from the user.
- * - On Web: Prompts Touch ID / Passkey from iCloud Keychain or Google Password Manager.
- * - On Native Mobile: Pops up the official Android System BiometricPrompt / iOS FaceID.
+ * Requests biometric verification from the user.
+ * - Web: WebAuthn / platform passkey prompt.
+ * - Native: the OS BiometricPrompt (fingerprint, face, or device credential).
+ *
+ * The sensor-less bypass is only reachable in dev mode, because it grants
+ * authorization without authenticating anything.
  */
 export async function promptBiometricAuth(
-  reason: string = 'Authorize Haptix Smart Wallet Action'
+  reason: string = 'Authorize Haptix Smart Wallet Action',
 ): Promise<BiometricAuthResult> {
-  // 1. Web Environment: WebAuthn Passkeys / Touch ID from Password Manager
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined' && window.PublicKeyCredential) {
       try {
         const credIdB64 = await AsyncStorage.getItem(CREDENTIAL_KEY_PRIMARY)
-        // Only query navigator.credentials.get if we have an authentic WebAuthn base64 credential
-        if (credIdB64 && !credIdB64.startsWith('haptix_')) {
+        if (credIdB64 && !LEGACY_PLAINTEXT_CREDENTIAL.test(credIdB64)) {
           const challenge = crypto.getRandomValues(new Uint8Array(32))
           const credential = await navigator.credentials.get({
             publicKey: {
@@ -174,19 +314,18 @@ export async function promptBiometricAuth(
           }
         }
       } catch (e: any) {
-        console.warn('[Haptix Passkey] WebAuthn passkey get error, falling back:', e)
-        if (e?.name === 'NotAllowedError' && e?.message?.toLowerCase().includes('cancel')) {
+        if (e?.name === 'NotAllowedError') {
           return {
             success: false,
-            error: 'Touch ID / Passkey authentication was cancelled by user.',
+            error: 'Touch ID / passkey authentication was cancelled by the user.',
           }
         }
-        // Fallback to confirm below
+        console.warn('[Haptix Passkey] WebAuthn prompt error, falling back:', e)
       }
     }
 
     if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-      const confirmed = window.confirm(`🔐 Haptix Passkey Authorization\n\n${reason}\n\nClick OK to authorize with device passkey.`)
+      const confirmed = window.confirm(`Haptix authorization\n\n${reason}\n\nContinue with your device passkey?`)
       return {
         success: confirmed,
         error: confirmed ? undefined : 'Authentication cancelled by user.',
@@ -195,7 +334,6 @@ export async function promptBiometricAuth(
     return { success: true }
   }
 
-  // 2. Native Mobile with compiled ExpoLocalAuthentication: Real OS System BiometricPrompt
   const localAuth = getLocalAuth()
   if (localAuth) {
     try {
@@ -203,7 +341,6 @@ export async function promptBiometricAuth(
       const isEnrolled = await localAuth.isEnrolledAsync().catch(() => false)
 
       if (hasHardware && isEnrolled) {
-        // Pops up authentic Android System BiometricPrompt bottom sheet / iOS FaceID!
         const result = await localAuth.authenticateAsync({
           promptMessage: reason,
           cancelLabel: 'Cancel',
@@ -215,274 +352,341 @@ export async function promptBiometricAuth(
           return { success: true }
         }
 
-        let errorMsg = 'Biometric authentication was cancelled or failed.'
         if (result.error === 'user_cancel' || result.error === 'system_cancel' || result.error === 'app_cancel') {
-          errorMsg = 'Authentication was cancelled by user.'
-        } else if (result.error === 'not_enrolled') {
-          errorMsg = 'No biometric credentials enrolled in device Settings.'
-        } else if (result.error === 'lockout') {
-          errorMsg = 'Biometric sensor locked due to multiple failed attempts. Please unlock with your device PIN or password first.'
+          return { success: false, error: 'Authentication was cancelled by user.' }
         }
-        return {
-          success: false,
-          error: errorMsg,
+        if (result.error === 'not_enrolled') {
+          return { success: false, error: 'No biometric credentials enrolled in device Settings.' }
         }
+        if (result.error === 'lockout') {
+          return {
+            success: false,
+            error:
+              'Biometric sensor locked after repeated failed attempts. Unlock with your device PIN or password first.',
+          }
+        }
+        return { success: false, error: 'Biometric authentication was cancelled or failed.' }
       }
     } catch (err: any) {
-      console.error('[Haptix Passkey] Native BiometricPrompt error:', err)
+      console.error('[Haptix Passkey] Native biometric prompt error:', err)
     }
   }
 
-  // 3. Fallback for unlinked development builds / emulators without compiled native module
+  // No biometric module compiled into this binary.
+  if (!AppConfig.devMode) {
+    return {
+      success: false,
+      error:
+        'Biometric authentication is unavailable in this build. Rebuild the app so ' +
+        'expo-local-authentication is compiled in, then try again.',
+    }
+  }
+
   return new Promise<BiometricAuthResult>((resolve) => {
     Alert.alert(
-      '⚠️ Biometric Hardware Module Not Compiled in APK',
-      `The official Android Fingerprint / Screenlock bottom sheet requires the newly added 'expo-local-authentication' module to be compiled into the native APK binary.\n\nYour current APK was built before this module was added.\n\nAction: ${reason}\n\nDo you want to continue in Dev Mode (software passkey) or Cancel?`,
+      'Biometric module missing (dev mode)',
+      `This build has no compiled expo-local-authentication module, so the OS biometric ` +
+        `prompt cannot be shown.\n\nAction: ${reason}\n\nDo you want to continue without ` +
+        'biometric verification? This is only permitted in dev mode.',
       [
         {
           text: 'Cancel',
           style: 'cancel',
-          onPress: () => resolve({
-            success: false,
-            error: 'Physical biometric prompt requires rebuilding the development APK (eas build or expo run:android).',
-          }),
+          onPress: () =>
+            resolve({
+              success: false,
+              error: 'Biometric prompt requires rebuilding the app (eas build or expo run:android).',
+            }),
         },
         {
-          text: 'Dev Mode (Bypass Sensor)',
-          onPress: () => resolve({ success: true }),
+          text: 'Continue without biometrics',
+          style: 'destructive',
+          onPress: () => {
+            console.warn('[Haptix Passkey][DEV MODE] Proceeding without biometric verification for: ' + reason)
+            resolve({ success: true })
+          },
         },
       ],
       {
         cancelable: true,
         onDismiss: () => resolve({ success: false, error: 'Authentication dismissed.' }),
-      }
+      },
     )
   })
 }
 
+// ---------------------------------------------------------------------------
+// WebAuthn (web only)
+// ---------------------------------------------------------------------------
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i])
+  }
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+function base64UrlToBytes(base64url: string): Uint8Array {
+  let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/')
+  while (base64.length % 4) {
+    base64 += '='
+  }
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return bytes
+}
+
+/** Extracts the 33-byte compressed point from a SPKI DER public key. */
+function extractCompressedP256FromSpki(spkiBytes: Uint8Array): Uint8Array {
+  if (spkiBytes.length < 65) {
+    throw new Error('SPKI buffer is too short')
+  }
+  const uncompressed = spkiBytes.slice(spkiBytes.length - 65)
+  if (uncompressed[0] !== 0x04) {
+    throw new Error('Invalid EC uncompressed point prefix')
+  }
+  const point = p256.Point.fromHex(bytesToHex(uncompressed))
+  return point.toRawBytes(true)
+}
+
 /**
- * Registers a real W3C WebAuthn passkey in the browser / operating system.
- * Pops up macOS / Chrome native Passkey dialog:
- * "Save a passkey for localhost in iCloud Keychain / Google Password Manager"
- * requiring Touch ID or physical fingerprint on your Mac.
+ * Registers a platform passkey via WebAuthn. No key material reaches JS; the
+ * authenticator holds the private key and we persist only the credential id and
+ * public key.
  */
 export async function registerWebAuthnPasskey(
   id: 'primary' | 'secondary' = 'primary',
-  walletName: string = 'Haptix Wallet'
+  walletName: string = 'Haptix Wallet',
 ): Promise<PasskeyInfo> {
-  if (typeof window === 'undefined' || !window.PublicKeyCredential) {
-    throw new Error('WebAuthn Passkeys are not supported in this browser environment.')
+  if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.PublicKeyCredential) {
+    throw new Error('WebAuthn passkeys are not supported in this environment.')
   }
 
-  const challenge = new Uint8Array(32)
-  crypto.getRandomValues(challenge)
-
-  const userId = new Uint8Array(16)
-  crypto.getRandomValues(userId)
-
-  const isPrimary = id === 'primary'
-  const accountTitle = isPrimary
-    ? `${walletName.toLowerCase().replace(/\s+/g, '_')}@haptix.local`
-    : `quorum_backup_${walletName.toLowerCase().replace(/\s+/g, '_')}@haptix.local`
-  const displayName = isPrimary
-    ? `${walletName} (Primary Passkey)`
-    : `${walletName} (Hardware Quorum Passkey #2)`
+  const challenge = crypto.getRandomValues(new Uint8Array(32))
+  const userId = crypto.getRandomValues(new Uint8Array(16))
 
   try {
-    const credential = await navigator.credentials.create({
+    const credential = (await navigator.credentials.create({
       publicKey: {
         challenge,
-        rp: {
-          name: 'Haptix Smart Wallet',
-          id: window.location.hostname || 'localhost',
-        },
+        rp: { name: 'Haptix Wallet', id: window.location.hostname || 'localhost' },
         user: {
           id: userId,
-          name: accountTitle,
-          displayName,
+          name: walletName,
+          displayName: walletName,
         },
-        pubKeyCredParams: [
-          { alg: -7, type: 'public-key' }, // ES256 (P-256 / Secp256r1)
-        ],
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }], // ES256 / P-256
         authenticatorSelection: {
-          authenticatorAttachment: 'platform', // Enforces Touch ID / Face ID / Windows Hello / Apple Secure Enclave
-          userVerification: 'required', // Enforces physical fingerprint / biometric verification
-          residentKey: 'required',
-          requireResidentKey: true,
+          authenticatorAttachment: 'platform',
+          userVerification: 'required',
+          residentKey: 'preferred',
         },
         timeout: 60000,
         attestation: 'none',
       },
-    }) as PublicKeyCredential | null
+    })) as PublicKeyCredential | null
 
     if (!credential) {
-      throw new Error('Passkey creation was cancelled by user.')
+      throw new Error('Passkey creation was cancelled.')
     }
 
     const rawId = new Uint8Array(credential.rawId)
     const credentialId = bytesToBase64Url(rawId)
-
-    // Extract 33-byte compressed Secp256r1 public key
-    let compressedPublicKey: Uint8Array | null = null
     const response = credential.response as AuthenticatorAttestationResponse
 
-    if (typeof (response as any).getPublicKey === 'function') {
-      const spkiBuffer = (response as any).getPublicKey()
-      if (spkiBuffer) {
-        try {
-          compressedPublicKey = extractCompressedP256FromSpki(new Uint8Array(spkiBuffer))
-        } catch (e) {
-          console.warn('[Haptix Passkey] Failed to parse SPKI DER, falling back:', e)
-        }
-      }
+    let compressedPublicKey: Uint8Array
+    try {
+      const spki = response.getPublicKey?.()
+      if (!spki) throw new Error('Authenticator did not expose a public key')
+      compressedPublicKey = extractCompressedP256FromSpki(new Uint8Array(spki))
+    } catch {
+      throw new Error(
+        'This browser will not export the passkey public key, so the wallet address cannot be derived. Try Chrome or Safari.',
+      )
     }
 
-    if (!compressedPublicKey) {
-      // Fallback derivation from credential raw ID for browsers with restricted SPKI export
-      const point = p256.Point.BASE.multiply(BigInt('0x' + bytesToHex(rawId.slice(0, 32))))
-      compressedPublicKey = point.toRawBytes(true)
-    }
-
-    const credKey = isPrimary ? CREDENTIAL_KEY_PRIMARY : CREDENTIAL_KEY_SECONDARY
-    const pubKey = isPrimary ? PUBKEY_KEY_PRIMARY : PUBKEY_KEY_SECONDARY
-
-    await AsyncStorage.setItem(credKey, credentialId)
-    await AsyncStorage.setItem(pubKey, bytesToHex(compressedPublicKey))
+    const publicKeyHex = bytesToHex(compressedPublicKey)
+    await AsyncStorage.setItem(credentialKey(id), credentialId)
+    await AsyncStorage.setItem(pubkeyKey(id), publicKeyHex)
 
     return {
       id,
       credentialId,
       publicKey: compressedPublicKey,
-      publicKeyHex: bytesToHex(compressedPublicKey),
-      label: isPrimary
-        ? 'iCloud Keychain / Google Password Manager (Primary)'
-        : 'Hardware Security Key (2-of-2 Quorum)',
+      publicKeyHex,
+      label: WEBAUTHN_LABEL,
       hasBiometrics: true,
+      hardwareBacked: false,
     }
   } catch (err: any) {
     console.error(`[Haptix Passkey] WebAuthn registration failed for ${id}:`, err)
     if (err?.name === 'NotAllowedError') {
-      throw new Error('Passkey creation was cancelled. Touch ID / fingerprint verification is required to save your passkey in your password manager.')
+      throw new Error('Passkey creation was cancelled. Complete the platform verification to continue.')
     }
-    throw new Error(err?.message || 'Failed to create passkey in password manager.')
+    throw new Error(err?.message || 'Failed to create a passkey.')
   }
 }
 
+// ---------------------------------------------------------------------------
+// Device (native) passkeys
+// ---------------------------------------------------------------------------
+
 /**
- * Registers a hardware passkey on Native Mobile using Android Credential Manager / iOS Enclave.
- * Generates an opaque hardware-bound credential handle (Zero private keys exposed to app).
+ * Generates a P-256 keypair on-device and stores the scalar in OS secure
+ * storage. The scalar is never written to AsyncStorage.
  */
-async function registerMobilePasskey(
+async function registerDevicePasskey(
   id: 'primary' | 'secondary',
-  walletName: string = 'Haptix Wallet'
+  walletName: string = 'Haptix Wallet',
 ): Promise<PasskeyInfo> {
-  const isPrimary = id === 'primary'
+  requireSecureStore()
 
-  // Only prompt biometrics for the primary passkey during initial wallet setup.
-  // The user's biometric authorization for primary also authenticates initial setup.
-  if (isPrimary) {
-    const auth = await promptBiometricAuth(
-      'Confirm with fingerprint or screen lock to secure your Haptix wallet'
-    )
-
+  if (id === 'primary') {
+    const auth = await promptBiometricAuth('Confirm with your device biometrics to create your Haptix wallet key')
     if (!auth.success) {
       throw new Error(
-        auth.error ||
-          'Biometric verification was cancelled. Fingerprint or screen lock is required to create your passkey.'
+        auth.error || 'Biometric verification was cancelled. Your device must be unlocked to create the wallet key.',
       )
     }
   }
 
-  // Generate an opaque hardware-bound credential handle
-  const credBytes = crypto.getRandomValues(new Uint8Array(32))
-  const credentialId = `haptix_os_cred_${id}_${bytesToHex(credBytes)}`
+  const entropy = await secureRandomBytes(32)
+  const scalar = scalarFromRandomBytes(entropy)
+  entropy.fill(0)
 
-  // 33-byte compressed Secp256r1 public key on curve P-256
-  const point = p256.Point.BASE.multiply(BigInt('0x' + bytesToHex(credBytes)))
-  const compressedPublicKey = point.toRawBytes(true)
+  await writeScalar(id, scalar)
+  const publicKeyHex = compressedPubkeyHex(scalar)
+  await AsyncStorage.setItem(pubkeyKey(id), publicKeyHex)
 
-  const credKey = isPrimary ? CREDENTIAL_KEY_PRIMARY : CREDENTIAL_KEY_SECONDARY
-  const pubKey = isPrimary ? PUBKEY_KEY_PRIMARY : PUBKEY_KEY_SECONDARY
-
-  await AsyncStorage.setItem(credKey, credentialId)
-  await AsyncStorage.setItem(pubKey, bytesToHex(compressedPublicKey))
+  let credentialId: string
+  try {
+    credentialId = `haptix_device_key_${id}_${Crypto.randomUUID()}`
+  } catch {
+    credentialId = `haptix_device_key_${id}_${bytesToHex(await secureRandomBytes(8))}`
+  }
+  await AsyncStorage.setItem(credentialKey(id), credentialId)
 
   return {
     id,
     credentialId,
-    publicKey: compressedPublicKey,
-    publicKeyHex: bytesToHex(compressedPublicKey),
-    label: isPrimary
-      ? 'Android Credential Manager / Hardware KeyStore'
-      : 'Hardware Security Key (2-of-2 Quorum)',
+    publicKey: hexToBytes(publicKeyHex),
+    publicKeyHex,
+    label: DEVICE_KEY_LABELS[id],
     hasBiometrics: true,
+    hardwareBacked: false,
   }
 }
 
 /**
- * Creates or retrieves the Primary Passkey (biometric hardware key).
- * Strictly zero-private-key: stores only credentialId and compressed public key.
+ * Creates or retrieves the primary passkey.
+ *
+ * On native, an existing key is returned from secure storage; a legacy plaintext
+ * key is migrated rather than discarded so existing wallets keep the same address.
  */
 export async function getOrCreatePrimaryPasskey(walletName: string = 'Haptix Wallet'): Promise<PasskeyInfo> {
-  const existingCred = await AsyncStorage.getItem(CREDENTIAL_KEY_PRIMARY)
-  const existingPubHex = await AsyncStorage.getItem(PUBKEY_KEY_PRIMARY)
+  await removeLegacyVaults()
 
-  if (existingCred && existingPubHex) {
-    return {
-      id: 'primary',
-      credentialId: existingCred,
-      publicKey: hexToBytes(existingPubHex),
-      publicKeyHex: existingPubHex,
-      label: Platform.OS === 'web'
-        ? 'iCloud Keychain / Google Password Manager (Primary)'
-        : 'Android Credential Manager / Hardware KeyStore',
-      hasBiometrics: true,
+  const migratedPubkey = await migrateLegacyPlaintextScalar('primary')
+  const existingPubHex = migratedPubkey ?? (await AsyncStorage.getItem(PUBKEY_KEY_PRIMARY))
+
+  if (existingPubHex) {
+    const scalar = await readScalar('primary')
+    if (scalar) {
+      const publicKeyHex = bytesToHex(p256.Point.BASE.multiply(scalar).toRawBytes(true))
+      await AsyncStorage.setItem(PUBKEY_KEY_PRIMARY, publicKeyHex)
+      return {
+        id: 'primary',
+        credentialId: (await AsyncStorage.getItem(CREDENTIAL_KEY_PRIMARY)) ?? '',
+        publicKey: hexToBytes(publicKeyHex),
+        publicKeyHex,
+        label: DEVICE_KEY_LABELS.primary,
+        hasBiometrics: true,
+        hardwareBacked: false,
+      }
     }
   }
 
-  // If not registered yet, invoke real WebAuthn / OS Credential registration
-  // DISABLED ON WEB PREVIEW: Real WebAuthn generates signatures over clientDataJSON which fail raw Secp256r1 precompile (Error 0x2).
-  // if (Platform.OS === 'web' && typeof window !== 'undefined' && window.PublicKeyCredential) {
-  //   return await registerWebAuthnPasskey('primary', walletName)
-  // }
+  if (Platform.OS === 'web') {
+    return await registerWebAuthnPasskey('primary', walletName)
+  }
 
-  return await registerMobilePasskey('primary', walletName)
+  return await registerDevicePasskey('primary', walletName)
 }
 
 /**
- * Authenticates an existing passkey for restoring a wallet.
- * Does not create a new passkey. Uses discoverable credentials on Web.
+ * Creates or retrieves the secondary quorum key.
+ *
+ * NOTE: this is a second key in the same OS secure store on the same device. It
+ * is a second signature, not a second factor, and must not be described as an
+ * external hardware key. A real 2-of-2 needs a separately held authenticator.
+ */
+export async function getOrCreateSecondaryPasskey(walletName: string = 'Haptix Wallet'): Promise<PasskeyInfo> {
+  const migratedPubkey = await migrateLegacyPlaintextScalar('secondary')
+  const existingPubHex = migratedPubkey ?? (await AsyncStorage.getItem(PUBKEY_KEY_SECONDARY))
+
+  if (existingPubHex) {
+    const scalar = await readScalar('secondary')
+    if (scalar) {
+      const publicKeyHex = bytesToHex(p256.Point.BASE.multiply(scalar).toRawBytes(true))
+      await AsyncStorage.setItem(PUBKEY_KEY_SECONDARY, publicKeyHex)
+      return {
+        id: 'secondary',
+        credentialId: (await AsyncStorage.getItem(CREDENTIAL_KEY_SECONDARY)) ?? '',
+        publicKey: hexToBytes(publicKeyHex),
+        publicKeyHex,
+        label: DEVICE_KEY_LABELS.secondary,
+        hasBiometrics: true,
+        hardwareBacked: false,
+      }
+    }
+  }
+
+  if (Platform.OS === 'web') {
+    return await registerWebAuthnPasskey('secondary', walletName)
+  }
+
+  return await registerDevicePasskey('secondary', walletName)
+}
+
+/**
+ * Authenticates an existing passkey, for unlocks and restores.
+ *
+ * On native the key lives in this device's secure store, so this verifies the
+ * local key rather than discovering a credential on a new device. Restoring onto
+ * new hardware goes through guardian recovery instead; pretending otherwise
+ * would produce a wallet whose key the device cannot use.
  */
 export async function authenticatePasskey(reason: string = 'Authenticate to restore wallet'): Promise<PasskeyInfo> {
   if (Platform.OS === 'web' && typeof window !== 'undefined' && window.PublicKeyCredential) {
     const challenge = crypto.getRandomValues(new Uint8Array(32))
     try {
-      const credential = await navigator.credentials.get({
+      const credential = (await navigator.credentials.get({
         publicKey: {
           challenge,
           rpId: window.location.hostname || 'localhost',
           userVerification: 'required',
           timeout: 60000,
         },
-      }) as PublicKeyCredential | null
+      })) as PublicKeyCredential | null
 
       if (!credential) {
         throw new Error('Authentication cancelled.')
       }
 
-      const rawId = new Uint8Array(credential.rawId)
-      const credentialId = bytesToBase64Url(rawId)
+      const credentialId = bytesToBase64Url(new Uint8Array(credential.rawId))
 
-      // We cannot easily get the public key from the assertion unless it was stored in userHandle,
-      // which we didn't do because we couldn't know it during creation.
-      // So we return empty pubkey, and the caller MUST fetch it from the chain using the wallet address.
       return {
         id: 'primary',
         credentialId,
         publicKey: new Uint8Array(0),
         publicKeyHex: '',
-        label: 'Restored Passkey',
+        label: 'Restored passkey (WebAuthn)',
         hasBiometrics: true,
+        hardwareBacked: false,
       }
     } catch (err: any) {
       if (err?.name === 'NotAllowedError') {
@@ -492,173 +696,127 @@ export async function authenticatePasskey(reason: string = 'Authenticate to rest
     }
   }
 
-  // Native Mobile fallback: we can't discover credentials easily without a server,
-  // but we can ask the user to authenticate if we had it. Since this is restore on new device,
-  // mobile zero-private-key without a server means we'd have to prompt them for a seed.
-  // For now, we simulate a restored credential.
-  const credBytes = crypto.getRandomValues(new Uint8Array(32))
+  const scalar = await readScalar('primary')
+  if (!scalar) {
+    throw new Error(
+      'No wallet key exists on this device. A device key cannot be copied between devices, ' +
+        'so restoring onto new hardware requires guardian recovery with your secondary key.',
+    )
+  }
+
+  const auth = await promptBiometricAuth(reason)
+  if (!auth.success) {
+    throw new Error(auth.error || 'Biometric authentication failed.')
+  }
+
+  const publicKeyHex = compressedPubkeyHex(scalar)
   return {
     id: 'primary',
-    credentialId: `haptix_os_cred_primary_${bytesToHex(credBytes)}`,
-    publicKey: new Uint8Array(0),
-    publicKeyHex: '',
-    label: 'Restored Mobile Passkey',
+    credentialId: (await AsyncStorage.getItem(CREDENTIAL_KEY_PRIMARY)) ?? '',
+    publicKey: hexToBytes(publicKeyHex),
+    publicKeyHex,
+    label: DEVICE_KEY_LABELS.primary,
     hasBiometrics: true,
+    hardwareBacked: false,
   }
 }
 
+// ---------------------------------------------------------------------------
+// Signing
+// ---------------------------------------------------------------------------
 
 /**
- * Creates or retrieves the Secondary Passkey (Quorum key).
- * Strictly zero-private-key: stores only credentialId and compressed public key.
- */
-export async function getOrCreateSecondaryPasskey(walletName: string = 'Haptix Wallet'): Promise<PasskeyInfo> {
-  const existingCred = await AsyncStorage.getItem(CREDENTIAL_KEY_SECONDARY)
-  const existingPubHex = await AsyncStorage.getItem(PUBKEY_KEY_SECONDARY)
-
-  if (existingCred && existingPubHex) {
-    return {
-      id: 'secondary',
-      credentialId: existingCred,
-      publicKey: hexToBytes(existingPubHex),
-      publicKeyHex: existingPubHex,
-      label: 'Hardware Security Key (2-of-2 Quorum)',
-      hasBiometrics: false,
-    }
-  }
-
-  // Register new secondary quorum passkey with OS
-  // DISABLED ON WEB PREVIEW: See getOrCreatePrimaryPasskey
-  // if (Platform.OS === 'web' && typeof window !== 'undefined' && window.PublicKeyCredential) {
-  //   return await registerWebAuthnPasskey('secondary', walletName)
-  // }
-  return await registerMobilePasskey('secondary', walletName)
-}
-
-/**
- * Signs a message with the specified passkey after enforcing real biometric/hardware authorization.
- * ZERO-PRIVATE-KEY EXECUTION:
- * Delegates signing to the OS (WebAuthn / Credential Manager / BiometricPrompt).
- * Returns the 64-byte compact signature [r, s] and the 33-byte compressed public key.
+ * Signs a message with the requested passkey, after a biometric check.
+ *
+ * The message is SHA-256 hashed before signing to match the digest the Solana
+ * Secp256r1SigVerify precompile computes over the same bytes.
  */
 export async function signWithPasskey(
   passkeyId: 'primary' | 'secondary',
   message: Uint8Array,
-  promptReason: string = 'Authorize on-chain transaction'
+  promptReason: string = 'Authorize on-chain transaction',
 ): Promise<{ signature: Uint8Array; publicKey: Uint8Array }> {
-  const isPrimary = passkeyId === 'primary'
-  const credKey = isPrimary ? CREDENTIAL_KEY_PRIMARY : CREDENTIAL_KEY_SECONDARY
-  const pubKey = isPrimary ? PUBKEY_KEY_PRIMARY : PUBKEY_KEY_SECONDARY
-
-  const credentialId = await AsyncStorage.getItem(credKey)
-  const publicKeyHex = await AsyncStorage.getItem(pubKey)
-
-  if (!credentialId || !publicKeyHex) {
+  const publicKeyHex = await AsyncStorage.getItem(pubkeyKey(passkeyId))
+  if (!publicKeyHex) {
     throw new Error(`No registered passkey found for ${passkeyId}. Please create or restore your wallet first.`)
   }
-
   const publicKey = hexToBytes(publicKeyHex)
 
-  // 1. Web Environment: Ask OS (iCloud Keychain / Google Password Manager) via WebAuthn if it's a native WebAuthn ID
-  if (
-    Platform.OS === 'web' &&
-    typeof window !== 'undefined' &&
-    window.PublicKeyCredential &&
-    !credentialId.startsWith('haptix_os_cred_')
-  ) {
-    try {
-      const assertion = (await navigator.credentials.get({
-        publicKey: {
-          challenge: message as any, // 32-byte transaction payload
-          rpId: window.location.hostname || 'localhost',
-          userVerification: 'required',
-          allowCredentials: [
-            {
-              id: base64UrlToBytes(credentialId) as any,
-              type: 'public-key' as const,
-            },
-          ],
-          timeout: 60000,
-        },
-      })) as PublicKeyCredential | null
+  // Web: the authenticator signs; no key material is available to JS.
+  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.PublicKeyCredential) {
+    const credentialId = await AsyncStorage.getItem(credentialKey(passkeyId))
+    if (credentialId && !LEGACY_PLAINTEXT_CREDENTIAL.test(credentialId)) {
+      try {
+        const assertion = (await navigator.credentials.get({
+          publicKey: {
+            challenge: message as any,
+            rpId: window.location.hostname || 'localhost',
+            userVerification: 'required',
+            allowCredentials: [
+              {
+                id: base64UrlToBytes(credentialId) as any,
+                type: 'public-key' as const,
+              },
+            ],
+            timeout: 60000,
+          },
+        })) as PublicKeyCredential | null
 
-      if (assertion) {
-        const response = assertion.response as AuthenticatorAssertionResponse
-        const derSig = new Uint8Array(response.signature)
-
-        // Normalize DER signature from hardware into 64-byte compact [r, s] with canonical low-S
-        const parsedSig = p256.Signature.fromDER(derSig)
-        const compactSig = parsedSig.normalizeS().toCompactRawBytes() // exactly 64 bytes
-
-        return {
-          signature: compactSig,
-          publicKey,
+        if (assertion) {
+          const response = assertion.response as AuthenticatorAssertionResponse
+          const parsed = p256.Signature.fromDER(new Uint8Array(response.signature))
+          return {
+            signature: parsed.normalizeS().toCompactRawBytes(),
+            publicKey,
+          }
         }
+      } catch (err: any) {
+        console.error(`[Haptix Passkey] WebAuthn assertion for ${passkeyId} failed:`, err)
+        throw new Error(`Biometric signature failed or cancelled: ${err?.message || 'Unknown error'}`)
       }
-    } catch (err: any) {
-      console.error(`[Haptix Passkey] WebAuthn query for ${passkeyId} failed:`, err)
-      throw new Error(`Biometric signature failed or cancelled: ${err?.message || 'Unknown error'}`)
     }
   }
 
-  // 2. Hardware biometric authorization prompt
   const auth = await promptBiometricAuth(
-    isPrimary ? promptReason : `Authorize 2-of-2 Hardware Quorum (${promptReason})`
+    passkeyId === 'primary' ? promptReason : `Authorize 2-of-2 quorum signature (${promptReason})`,
   )
 
-  // Fail closed: a declined, cancelled, or unavailable biometric prompt must abort
-  // signing. Proceeding here would let anyone holding the device authorize a
-  // transaction by simply dismissing the prompt.
+  // Fail closed: an unavailable or declined prompt must never produce a signature.
   if (!auth.success) {
+    throw new Error(auth.error || 'Biometric authorization was cancelled or unavailable. Transaction aborted.')
+  }
+
+  const scalar = await readScalar(passkeyId)
+  if (!scalar) {
     throw new Error(
-      auth.error || 'Biometric authorization was cancelled or unavailable. Transaction aborted.'
+      `Secure key material for the ${passkeyId} passkey is missing or was cleared. ` +
+        'Re-create the wallet or restore it through guardian recovery.',
     )
   }
 
-  // 3. Hardware Enclave / KeyStore canonical Secp256r1 signing
-  // Extract private key scalar from the hardware credential handle
-  const rawHex = credentialId.split('_').pop() || '01'.repeat(32)
-  const credHex = rawHex.slice(0, 64).padStart(64, '0')
-  // CRITICAL: Noble p256.sign expects a message HASH. 
-  // We must explicitly hash the raw message using SHA-256 to match Solana's Secp256r1SigVerify precompile!
   const msgHash = sha256(message)
-  const sig = p256.sign(msgHash, credHex, { lowS: true })
-  const compactSig = sig.toCompactRawBytes()
+  const signature = p256.sign(msgHash, scalar, { lowS: true }).toCompactRawBytes()
 
-  return {
-    signature: compactSig,
-    publicKey,
-  }
+  return { signature, publicKey }
 }
 
 /**
- * Clears all public passkey credentials and metadata from storage.
- * (Zero private keys exist to delete).
+ * Clears every passkey artifact: secure-store scalars, public metadata, and any
+ * legacy plaintext copies.
  */
 export async function deletePasskeys(): Promise<void> {
   try {
+    await deleteScalar('primary')
+    await deleteScalar('secondary')
+
     await AsyncStorage.multiRemove([
       CREDENTIAL_KEY_PRIMARY,
       PUBKEY_KEY_PRIMARY,
       CREDENTIAL_KEY_SECONDARY,
       PUBKEY_KEY_SECONDARY,
-      '@haptix_webauthn_cred_primary',
-      '@haptix_webauthn_pubkey_primary',
-      LEGACY_PRIMARY_VAULT,
-      LEGACY_SECONDARY_VAULT,
+      ...LEGACY_VAULT_KEYS,
     ])
   } catch (e) {
-    console.warn('[Haptix Passkey] Error clearing storage:', e)
-  }
-
-  // Wipe any legacy secure store aliases if previously present
-  const secureStore = getExpoSecureStore()
-  if (secureStore && typeof secureStore.deleteValueWithKeyAsync === 'function') {
-    try {
-      await secureStore.deleteValueWithKeyAsync(LEGACY_PRIMARY_ALIAS, {})
-      await secureStore.deleteValueWithKeyAsync(LEGACY_SECONDARY_ALIAS, {})
-    } catch (e) {
-      // ignore
-    }
+    console.warn('[Haptix Passkey] Error clearing passkeys:', e)
   }
 }
