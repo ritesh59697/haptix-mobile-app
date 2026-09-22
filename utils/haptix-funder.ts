@@ -7,35 +7,98 @@ import {
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
 } from '@solana/web3.js'
+import { AppConfig } from '@/constants/app-config'
 
 /**
- * Pre-funded persistent relayer on Solana Devnet (4.049+ SOL balance).
- * Public key: 5oE1qrgMaVc2QQhamxAsJHxymTg2JJ4aRWCed6c1vqM6
+ * Devnet fee sponsorship for local demos.
  *
- * Used to sponsor network gas fees (5,000 lamports / 0.000005 SOL per tx)
- * and provide reliable zero-rate-limit faucet funding for smart wallet PDAs.
+ * A client bundle cannot keep a secret: `EXPO_PUBLIC_*` values are inlined at
+ * build time and are recoverable from any shipped binary. Fee sponsorship
+ * therefore belongs in a server-side relayer. Until that exists, this module is
+ * a development-only escape hatch, which is why the key lives in a gitignored
+ * `.env` instead of the source tree and every use is gated behind
+ * `AppConfig.devMode`.
  */
-export const DEVNET_RELAYER_SECRET = new Uint8Array([
-  184, 220, 85, 40, 98, 75, 255, 188, 13, 211, 110, 48, 23, 14, 141, 18,
-  246, 25, 200, 71, 159, 15, 20, 21, 233, 230, 235, 64, 180, 101, 36, 135,
-  71, 70, 46, 52, 173, 218, 118, 185, 145, 139, 58, 146, 178, 169, 44, 238,
-  238, 107, 216, 194, 236, 33, 191, 206, 220, 84, 134, 26, 80, 208, 218, 181,
-])
+
+const FUNDER_KEY_ENV = 'EXPO_PUBLIC_HAPTIX_FUNDER_KEY'
+
+let cachedFunder: Keypair | null = null
+
+function loadFunderSecret(): Uint8Array {
+  const raw = process.env[FUNDER_KEY_ENV]?.trim()
+
+  if (!raw) {
+    throw new Error(
+      `Devnet fee sponsorship is not configured. Set ${FUNDER_KEY_ENV} in ` +
+        'solana-mobile/haptix-mobile-app/.env (gitignored) to the JSON byte array held in ' +
+        'your funder keypair file, for example the contents of ' +
+        '~/.config/solana/haptix-funder.json. See .env.example.'
+    )
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new Error(
+      `${FUNDER_KEY_ENV} must be a JSON byte array such as [12,34,...], not a base58 string.`
+    )
+  }
+
+  if (!Array.isArray(parsed) || parsed.length !== 64) {
+    const shape = Array.isArray(parsed) ? `${parsed.length} entries` : typeof parsed
+    throw new Error(`${FUNDER_KEY_ENV} must be a JSON array of exactly 64 bytes; got ${shape}.`)
+  }
+
+  const bytes = parsed.map((value) => {
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 255) {
+      throw new Error(`${FUNDER_KEY_ENV} contains a value that is not a byte.`)
+    }
+    return value
+  })
+
+  return Uint8Array.from(bytes)
+}
+
+function requireDevMode(feature: string): void {
+  if (!AppConfig.devMode) {
+    throw new Error(
+      `${feature} is a development-only feature and is disabled in this build. ` +
+        'Set EXPO_PUBLIC_HAPTIX_DEV_MODE=true in a gitignored .env for local Devnet demos.'
+    )
+  }
+}
 
 /**
- * Returns the persistent funded Devnet fee payer keypair.
- * Eliminates public faucet 429 rate-limit errors entirely.
+ * Returns the local funder keypair used to sponsor Devnet network fees.
+ *
+ * Gated behind dev mode, requires a funder key in the environment, and logs a
+ * warning the first time it is handed out.
  */
 export async function getFundedDevnetPayer(
   _connection?: Connection,
   _minSol: number = 0.01
 ): Promise<Keypair> {
-  return Keypair.fromSecretKey(DEVNET_RELAYER_SECRET)
+  requireDevMode('Client-side Devnet fee sponsorship')
+
+  if (!cachedFunder) {
+    const funder = Keypair.fromSecretKey(loadFunderSecret())
+
+    console.warn(
+      '[Haptix][DEV MODE] Paying network fees and airdropping Devnet SOL with a local ' +
+        `funder keypair: ${funder.publicKey.toBase58()}. This key is embedded in the ` +
+        'bundle, so it is only ever acceptable for Devnet demos -- use a server-side ' +
+        'relayer before shipping to mainnet or holding anything of value.'
+    )
+
+    cachedFunder = funder
+  }
+
+  return cachedFunder
 }
 
 /**
- * Directly fund a smart wallet PDA with Devnet SOL from the relayer treasury.
- * Bypasses rate limits and delivers funds in sub-second time.
+ * Directly fund a smart wallet PDA with Devnet SOL from the local funder wallet.
  */
 export async function fundDevnetWallet(
   connection: Connection,
@@ -67,4 +130,3 @@ export async function airdropToWalletPda(
 ): Promise<string> {
   return fundDevnetWallet(connection, walletPda, amountSol)
 }
-
