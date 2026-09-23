@@ -1,15 +1,13 @@
 use anchor_lang::prelude::*;
-use crate::constants::WALLET_SEED;
 use crate::error::HaptixError;
 use crate::secp256r1::verify_passkey_precompile_signature;
-use crate::state::WalletAccount;
+use crate::state::{is_self_derived, WalletAccount};
 
 #[derive(Accounts)]
 pub struct InitiateRecovery<'info> {
     #[account(
         mut,
-        seeds = [WALLET_SEED, &wallet.primary_passkey[1..33]],
-        bump = wallet.bump
+        constraint = is_self_derived(&wallet, &wallet.key(), &crate::ID)
     )]
     pub wallet: Account<'info, WalletAccount>,
 
@@ -44,8 +42,7 @@ pub fn handle_initiate_recovery(
 pub struct CancelRecovery<'info> {
     #[account(
         mut,
-        seeds = [WALLET_SEED, &wallet.primary_passkey[1..33]],
-        bump = wallet.bump
+        constraint = is_self_derived(&wallet, &wallet.key(), &crate::ID)
     )]
     pub wallet: Account<'info, WalletAccount>,
 
@@ -92,8 +89,7 @@ pub fn handle_cancel_recovery(
 pub struct ExecuteRecovery<'info> {
     #[account(
         mut,
-        seeds = [WALLET_SEED, &wallet.primary_passkey[1..33]],
-        bump = wallet.bump
+        constraint = is_self_derived(&wallet, &wallet.key(), &crate::ID)
     )]
     pub wallet: Account<'info, WalletAccount>,
 }
@@ -109,6 +105,12 @@ pub fn handle_execute_recovery(ctx: Context<ExecuteRecovery>) -> Result<()> {
         .unwrap_or(i64::MAX);
 
     require!(current_time >= unlock_time, HaptixError::RecoveryTimelockNotElapsed);
+
+    // Pin the seed before the keys move. Every instruction re-derives this account's
+    // address from `identity()`, so this write is what keeps a rotated wallet reachable
+    // at its original address instead of stranding it; a second rotation is a no-op
+    // because the seed is already set.
+    wallet.wallet_seed = wallet.identity();
 
     // Apply the new passkeys
     wallet.primary_passkey = wallet.pending_primary_passkey;

@@ -12,6 +12,7 @@ import {
   Linking,
   Pressable,
   Platform,
+  Share,
   StatusBar as RNStatusBar,
   KeyboardAvoidingView,
 } from 'react-native'
@@ -34,13 +35,38 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useAuth } from '@/components/auth/auth-provider'
 import { AppQrCode } from '@/components/app-qr-code'
 import { ellipsify } from '@/utils/ellipsify'
+import {
+  MAX_SOLANA_ADDRESS_LENGTH,
+  RecipientSource,
+  describeRecipientSource,
+  isSolanaAddress,
+  parseRecipientInput,
+} from '@/utils/solana-address'
+import { SolNameLookup, extractSolName, looksLikeSolName, resolveSolName } from '@/utils/solana-names'
+import { TransferFeeEstimate, estimateTransferFee } from '@/utils/solana-fees'
+import {
+  ContactEntry,
+  MAX_VISIBLE_RECIPIENTS,
+  findContact,
+  rankRecipients,
+  sanitizeContactLabel,
+} from '@/utils/contact-list'
+import { deleteContact, loadContacts, saveContact, touchContact } from '@/utils/haptix-address-book'
 import { createSecp256r1Instruction } from '@/utils/secp256r1-instruction'
-import { signWithPasskey, promptBiometricAuth, deletePasskeys } from '@/utils/haptix-passkey'
+import {
+  StagedRecoveryKeys,
+  commitStagedRecoveryKeys,
+  discardStagedRecoveryKeys,
+  loadStagedRecoveryKeys,
+  deletePasskeys,
+  promptBiometricAuth,
+  signWithPasskey,
+  stageRecoveryKeys,
+} from '@/utils/haptix-passkey'
 import { useAppTheme } from '@/components/theme/theme-context'
 import {
   PrismDepthButton,
   DepthOutlineButton,
-  BookmarkSaveButton,
   CopyActionButton,
   ThemeToggleButton,
   HoldToConfirmButton,
@@ -58,12 +84,20 @@ import {
   createUnfreezeInstruction,
   getRevokeAgentSignedMessage,
   createRevokeAgentSessionInstruction,
+  createInitiateRecoveryInstruction,
+  createCancelRecoveryInstruction,
+  createExecuteRecoveryInstruction,
+  getCancelRecoverySignedMessage,
+  createSetGuardianInstruction,
+  getSetGuardianSignedMessage,
+  parseGuardianAddress,
   WalletState,
   AgentSessionState,
 } from '@/utils/haptix-client'
 import { getFundedDevnetPayer, fundDevnetWallet } from '@/utils/haptix-funder'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
-import { SWAP_COMING_SOON_LABEL, SWAP_ENABLED } from '@/utils/haptix-swap'
+import { describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
+import { SWAP_COMING_SOON_LABEL } from '@/utils/haptix-swap'
 import { MarketSnapshot, fallbackMarketSnapshot, fetchMarketSnapshot } from '@/utils/haptix-prices'
 import {
   TransactionRecord,
@@ -100,7 +134,8 @@ import { HaptixPolicySheet, PolicyTopic } from './haptix-policy-sheet'
 import { HaptixAlert } from './haptix-alert'
 import { AppConfig } from '@/constants/app-config'
 import { useHaptixDialog } from './haptix-dialog'
-import { radius, typeScale } from '@/theme/tokens'
+import { useConfirmRemoveWallet } from './haptix-remove-wallet'
+import { radius, space, typeScale, ThemeTokens } from '@/theme/tokens'
 
 /** Human-readable remaining time for an agent session countdown. */
 function formatRemainingTime(seconds: number): string {
@@ -145,11 +180,16 @@ const MAINNET_RPC = AppConfig.mainnetRpcUrl
 const AGENT_TRADE_AMOUNT_SOL = 0.02
 const AGENT_TRADE_AMOUNT_LAMPORTS = 20_000_000n
 
-function isValidSolanaAddress(addr: string): boolean {
-  if (!addr) return false
-  const trimmed = addr.trim()
-  return trimmed.length >= 32 && trimmed.length <= 44 && /^[1-9A-HJ-NP-Za-km-z]+$/.test(trimmed)
-}
+// One network fee, named once. It was written out as a literal in four places (the
+// percentage chips, the preview row's "$0.0007", the total-outflow sum and the
+// affordability check), so "MAX" could set an amount the fee then pushed over the
+// balance and the transfer failed at signing time with the button still enabled.
+const SEND_NETWORK_FEE_SOL = 0.000005
+
+// How many past recipients are *considered* as shortcuts. The visible row is shorter
+// (MAX_VISIBLE_RECIPIENTS); this is just the candidate pool that complements the saved
+// address book, read back from this wallet's own send history.
+const MAX_RECENT_RECIPIENTS = 8
 
 // Cards previously used three different horizontal insets (hero card 18, asset and
 // activity lists 16, empty state 24), so their inner text columns did not line up
@@ -164,29 +204,14 @@ const HEADER_CONTROL_SIZE = 36
 export function HaptixWalletScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { activeWallet, isLocked, lockWallet, unlockWallet, signOut } = useAuth()
+  const { activeWallet, isLocked, lockWallet, unlockWallet, signOut, updateWallet } = useAuth()
   const { theme, isDark } = useAppTheme()
   const dialog = useHaptixDialog()
+  const confirmRemoveWallet = useConfirmRemoveWallet()
 
-  const s = useMemo(
-    () => ({
-      container: { backgroundColor: theme.bgApp },
-      header: { backgroundColor: theme.bgApp, borderBottomColor: theme.borderSubtle, borderBottomWidth: 1 },
-      card: { backgroundColor: theme.bgCard, borderColor: theme.borderDefault },
-      elevatedCard: { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
-      textPrimary: { color: theme.textPrimary },
-      textSecondary: { color: theme.textSecondary },
-      textMuted: { color: theme.textMuted },
-      input: { backgroundColor: theme.bgInput, borderColor: theme.borderDefault, color: theme.textPrimary },
-      divider: { backgroundColor: theme.borderSubtle },
-      iconBtn: { backgroundColor: isDark ? '#141414' : '#F4F4F5', borderColor: theme.borderDefault },
-      modalSheet: { backgroundColor: theme.bgCard, borderColor: theme.borderDefault },
-      actionBtn: { backgroundColor: isDark ? '#141414' : '#F4F4F5', borderColor: theme.borderDefault },
-      actionBtnText: { color: theme.textPrimary },
-      actionBtnSecondaryText: { color: theme.textSecondary },
-    }),
-    [theme, isDark],
-  )
+  // Rebuilt whenever the palette changes and not on any other render, so the
+  // screen still has one stable style object per theme.
+  const styles = useWalletStyles()
 
   // Network State (Devnet vs Mainnet)
   const [network, setNetwork] = useState<'devnet' | 'mainnet'>('devnet')
@@ -222,6 +247,28 @@ export function HaptixWalletScreen() {
   // Form Inputs
   const [sendRecipient, setSendRecipient] = useState('')
   const [sendAmountText, setSendAmountText] = useState('0.05')
+  // Where the address came from (link, Solana Pay URI, a line of chat) so the sheet can
+  // say what it did, and whether the user has already tried to paste or has left the
+  // field -- an error while a 32-character address is half typed is just noise.
+  const [sendRecipientSource, setSendRecipientSource] = useState<RecipientSource | null>(null)
+  const [sendRecipientAttempted, setSendRecipientAttempted] = useState(false)
+  const [sendRecipientBlurred, setSendRecipientBlurred] = useState(false)
+  // Rejections that never reach the field (an empty clipboard, a link with no address in
+  // it) still need to be visible, and `parseRecipientInput('')` has nothing to say yet.
+  const [recipientAttemptError, setRecipientAttemptError] = useState('')
+  // Saved recipients, loaded once and updated on save/remove.
+  const [contacts, setContacts] = useState<ContactEntry[]>([])
+  // Name resolution result for the current field contents, if it looks like an .sns/.sol name.
+  const [nameLookup, setNameLookup] = useState<SolNameLookup | null>(null)
+  const [isResolvingName, setIsResolvingName] = useState(false)
+  // The address a `.sns`/`.sol` name resolved to, kept so the sheet can show both and
+  // offer the name as the contact's label.
+  const [resolvedName, setResolvedName] = useState<string | null>(null)
+  // Non-null while the "name this contact" row is open. The empty string means the row
+  // is open with no name typed yet.
+  const [pendingContactName, setPendingContactName] = useState<string | null>(null)
+  // Live network fee for the transfer being previewed.
+  const [feeEstimate, setFeeEstimate] = useState<TransferFeeEstimate | null>(null)
 
   // Agent Policy Customization Inputs
   const [isGrantingSession, setIsGrantingSession] = useState(false)
@@ -251,16 +298,20 @@ export function HaptixWalletScreen() {
     setTimeout(() => setHasCopiedAddress(false), 2000)
   }
 
-  // Session expiry countdown. The interval only runs while the agents page is
-  // visible; ticking every second for the whole app would re-render the entire
-  // screen (and every modal in it) once a second, forever.
+  // Session expiry countdown, and the recovery timelock while one is in flight. The
+  // interval is scoped to the two places a countdown is actually on screen: ticking
+  // every second for the whole app would re-render the entire screen (and every modal
+  // in it) once a second, forever. Recovery is exempt from the agents-page scoping
+  // because its window is a real deadline rather than a session readout — leaving it
+  // to the agents page froze the number at whatever it read on arrival.
+  const recoveryInFlight = onChainWallet !== null && onChainWallet.recoveryInitiatedAt !== 0n
   const [nowSeconds, setNowSeconds] = useState(() => Math.floor(Date.now() / 1000))
   useEffect(() => {
-    if (dockTab !== 'agent') return
+    if (dockTab !== 'agent' && !recoveryInFlight) return
     setNowSeconds(Math.floor(Date.now() / 1000))
     const interval = setInterval(() => setNowSeconds(Math.floor(Date.now() / 1000)), 1000)
     return () => clearInterval(interval)
-  }, [dockTab])
+  }, [dockTab, recoveryInFlight])
 
   const handleDockSelect = (tab: DockTabId) => {
     Haptics.selectionAsync()
@@ -506,6 +557,7 @@ export function HaptixWalletScreen() {
         primaryPasskey,
         secondaryPasskey,
         spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
+        guardian: parseGuardianAddress(activeWallet?.guardianAddress) ?? undefined,
       })
 
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
@@ -585,6 +637,7 @@ export function HaptixWalletScreen() {
       primaryPasskey: new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex')),
       secondaryPasskey: new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex')),
       spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
+      guardian: parseGuardianAddress(activeWallet.guardianAddress) ?? undefined,
     })
 
     const blockhash = await connection.getLatestBlockhash('confirmed')
@@ -723,6 +776,169 @@ export function HaptixWalletScreen() {
     }
   }
 
+  // Recipient typing. Addresses are pasted far more often than they are typed, and a
+  // paste can arrive as a link, a chat line or an address wrapped over two lines. Any
+  // edit longer than an address is parsed rather than stored verbatim; anything else
+  // has its whitespace and invisible characters removed so the field always holds
+  // something that can be compared character for character.
+  const handleRecipientTextChange = (text: string) => {
+    setSendRecipientSource(null)
+    setRecipientAttemptError('')
+    setSendRecipientAttempted(false)
+    setSendRecipientBlurred(false)
+
+    const direct = text.replace(/[\s\u200B-\u200D\uFEFF]+/g, '')
+    if (isSolanaAddress(direct)) {
+      setSendRecipient(direct)
+      return
+    }
+
+    // A bulk insertion -- the OS paste menu, autofill, a drag -- that holds no address
+    // is diagnosed and dropped instead of stored. It used to land in the field verbatim,
+    // so a pasted explorer link sat there looking like a recipient until signing failed
+    // on it. Typing one character at a time still stores partial input, so the field
+    // never fights someone halfway through an address. A pasted `.sns`/`.sol` name is
+    // left alone too: that is a name to resolve, not a mistake to reject.
+    const bulkInserted = text.length - sendRecipient.length > 1 || text.includes('\n')
+    if (bulkInserted && !looksLikeSolName(direct)) {
+      const parsed = parseRecipientInput(text)
+      if (parsed.address) {
+        setSendRecipient(parsed.address)
+        setSendRecipientSource(parsed.source)
+        setSendRecipientAttempted(true)
+        return
+      }
+      setRecipientAttemptError(parsed.error ?? 'That is not a Solana address.')
+      setSendRecipientAttempted(true)
+      return
+    }
+
+    setSendRecipient(direct)
+  }
+
+  // The Paste button used to store whatever the clipboard held. Pasting a Solscan link,
+  // a `.sol` name or a stray tweet put that text in the recipient slot, where it looked
+  // like a recipient and only failed at signing time. The clipboard is now parsed first:
+  // an address is extracted and the field is filled, anything else leaves the field
+  // untouched and explains itself.
+  const handlePasteRecipient = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    setSendRecipientAttempted(true)
+    setRecipientAttemptError('')
+    setSendRecipientSource(null)
+
+    const text = await Clipboard.getString()
+    if (!text || !text.trim()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      setRecipientAttemptError('There is nothing on the clipboard to paste.')
+      return
+    }
+
+    const parsed = parseRecipientInput(text)
+    if (!parsed.address) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      setRecipientAttemptError(parsed.error ?? 'The clipboard does not contain a Solana address.')
+      return
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    setSendRecipient(parsed.address)
+    setSendRecipientSource(parsed.source)
+  }
+
+  // A name typed or pasted into the field is resolved automatically rather than being
+  // rejected as "not an address". The effect is debounced because a name is typed one
+  // character at a time, and each lookup costs an RPC round trip.
+  useEffect(() => {
+    if (!showSendModal) return
+    const name = looksLikeSolName(sendRecipient) ? extractSolName(sendRecipient) : null
+    if (!name) {
+      setNameLookup(null)
+      setIsResolvingName(false)
+      return
+    }
+
+    let cancelled = false
+    setIsResolvingName(true)
+    const timer = setTimeout(async () => {
+      const lookup = await resolveSolName(connection, name)
+      if (cancelled) return
+      setIsResolvingName(false)
+      setNameLookup(lookup)
+      if (lookup.status === 'resolved' && lookup.address) {
+        // Fill the field with the address but remember the name, so the preview can show
+        // "Amit (ritesh.sns)" and the contact can be saved under a readable label.
+        setSendRecipient(lookup.address)
+        setResolvedName(lookup.name)
+        setSendRecipientSource(null)
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      }
+    }, 400)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [sendRecipient, showSendModal, connection])
+
+  // Load the address book once. Failures resolve to an empty book, never to an error
+  // the send sheet would have to render.
+  useEffect(() => {
+    let cancelled = false
+    void loadContacts().then((entries) => {
+      if (!cancelled) setContacts(entries)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleSaveContact = async (label: string | null) => {
+    if (!recipientAddress) return
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    // An empty field means "use the name it resolved from", not "save it nameless".
+    const typed = sanitizeContactLabel(label)
+    const next = await saveContact(recipientAddress, typed ?? resolvedName)
+    setContacts(next)
+    setPendingContactName(null)
+  }
+
+  // Removing is destructive and expensive to undo by hand, so it asks first.
+  const handleRemoveContact = (address: string, label: string | null) => {
+    dialog.alert(
+      'Remove saved recipient',
+      `${label || ellipsify(address, 4)} will no longer appear as a shortcut. You can still send to the address by pasting it.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => {
+            void deleteContact(address).then(setContacts)
+          },
+        },
+      ],
+    )
+  }
+
+  // Sharing is the one receive action a copy button cannot cover: sending the address to
+  // the person who is about to pay you. The network is included in the message because a
+  // devnet address that arrives without one gets paid on mainnet.
+  const handleShareAddress = async () => {
+    const address = activeWallet?.address
+    if (!address) return
+    const networkLabel = network === 'devnet' ? 'Solana Devnet' : 'Solana Mainnet'
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    try {
+      await Share.share({ message: `My ${networkLabel} address: ${address}` })
+    } catch (err) {
+      // No share sheet on this platform/browser -- copying achieves the same thing.
+      console.warn('[Haptix] Share sheet unavailable, copied instead', err)
+      await Clipboard.setString(address)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+    }
+  }
+
   // On-chain Send Transaction via Haptix Anchor Program & Secp256r1 Precompile
   const handleSendTransaction = async () => {
     setSendErrorMsg('')
@@ -742,11 +958,22 @@ export function HaptixWalletScreen() {
       return
     }
 
+    const parsedRecipient = parseRecipientInput(sendRecipient)
+    if (parsedRecipient.address && parsedRecipient.source !== 'raw') {
+      // Take the address out of whatever was pasted rather than failing on the wrapper.
+      setSendRecipient(parsedRecipient.address)
+      setSendRecipientSource(parsedRecipient.source)
+    }
+
     let toPubkey: PublicKey
     try {
       toPubkey = new PublicKey(sendRecipient.trim())
     } catch {
-      dialog.alert('Invalid Address', 'Please enter a valid Solana address.')
+      // `parseRecipientInput` knows which mistake this is (0x address, .sol name, a
+      // character that base58 does not contain); saying "invalid address" for all of
+      // them was the reason a pasted link gave no clue what to fix.
+      setSendRecipientAttempted(true)
+      dialog.alert('Invalid Address', parsedRecipient.error ?? 'Please enter a valid Solana address.')
       return
     }
 
@@ -799,6 +1026,7 @@ export function HaptixWalletScreen() {
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
+          guardian: parseGuardianAddress(activeWallet.guardianAddress) ?? undefined,
         })
         txInstructions.push(initIx)
       }
@@ -869,6 +1097,12 @@ export function HaptixWalletScreen() {
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       await fetchRealBalance()
+
+      // Paying a saved recipient again is the signal that it is still current, so the
+      // address book keeps it at the front of the shortcut row.
+      if (contacts.some((entry) => entry.address === toPubkey.toBase58())) {
+        void touchContact(toPubkey.toBase58()).then(setContacts)
+      }
 
       setTransactions((prev) => [
         {
@@ -1075,7 +1309,7 @@ export function HaptixWalletScreen() {
   // confirms the amount and the destination before spending.
   const confirmAgentExecute = () => {
     const destination = agentRecipient.trim()
-    if (!isValidSolanaAddress(destination)) {
+    if (!isSolanaAddress(destination)) {
       dialog.alert(
         'Agent Recipient Required',
         'Set the Solana address the agent session should pay. The agent has no built-in destination, and a randomly generated one would only burn the funds.',
@@ -1226,9 +1460,33 @@ export function HaptixWalletScreen() {
         return
       }
 
+      // A recovery in flight holds the wallet frozen on purpose, and the program now
+      // rejects an unfreeze while one is pending. Explain that here rather than spending
+      // two passkey prompts on a transaction that can only be turned away.
+      if (!desiredFrozen && onChain && onChain.recoveryInitiatedAt > 0n) {
+        dialog.alert(
+          'Recovery In Flight',
+          'A guardian recovery is holding this wallet frozen. Use Veto (2-of-2) to cancel it, or wait out the timelock and Execute Recovery — either of those unfreezes the wallet.',
+        )
+        return
+      }
+
       if (!isFrozen) {
-        // Freeze on-chain via guardian/payer
-        const payer = await getFundedDevnetPayer(connection)
+        // A panic freeze is guardian-gated on-chain, so it can only be submitted by
+        // whoever holds the guardian key. It used to sign with the fee payer and assume
+        // the two were the same account, which quietly turned into a failing transaction
+        // for any wallet whose guardian is a real third party.
+        if (!guardianSigner) {
+          dialog.alert(
+            'Guardian Not On This Device',
+            `Panic Freeze is signed by this wallet's guardian (${
+              onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'not set'
+            }), and this build does not hold that key. Ask the guardian to freeze it, or recover the wallet.`,
+          )
+          return
+        }
+
+        const payer = guardianSigner
         const latestBlockhash = await connection.getLatestBlockhash('confirmed')
         const freezeIx = createPanicFreezeInstruction({
           walletPda,
@@ -1337,6 +1595,344 @@ export function HaptixWalletScreen() {
     }
   }
 
+  // --- Guardian social recovery -------------------------------------------
+  // The guardian can start a recovery and nothing else: executing waits out the
+  // timelock, and a veto is signed by the very keys being replaced, so a compromised
+  // guardian cannot finish a takeover. This device can only play the guardian when it
+  // actually holds the guardian key, which on Devnet it does -- wallets are created with
+  // the bundled dev key as guardian. A release build cannot sign as a guardian at all,
+  // and says so rather than offering a button that would fail every time.
+  const [recoveryBusy, setRecoveryBusy] = useState<null | 'initiate' | 'cancel' | 'execute'>(null)
+  const [stagedRecovery, setStagedRecovery] = useState<StagedRecoveryKeys | null>(null)
+  const [guardianSigner, setGuardianSigner] = useState<Keypair | null>(null)
+  const [guardianDraft, setGuardianDraft] = useState('')
+  const [showGuardianEditor, setShowGuardianEditor] = useState(false)
+  const [guardianBusy, setGuardianBusy] = useState(false)
+
+  /**
+   * The guardian was write-once: `set_guardian` existed on-chain and in the IDL, but
+   * nothing in the app could build the instruction, so every wallet stayed pointed at
+   * whoever was configured at creation. That matters more than it sounds -- while the
+   * guardian is a key this build also holds, starting a recovery and owning the wallet
+   * are the same act, and the veto proves nothing. Pointing the guardian elsewhere is
+   * what turns the recovery flow into a two-party one.
+   */
+  const guardianDraftParse = useMemo(() => parseRecipientInput(guardianDraft), [guardianDraft])
+
+  const guardianAddress = onChainWallet?.guardian.toBase58() ?? null
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const payer = await getFundedDevnetPayer(connection).catch(() => null)
+      if (cancelled) return
+      setGuardianSigner(payer && guardianAddress && payer.publicKey.toBase58() === guardianAddress ? payer : null)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [connection, guardianAddress])
+
+  // The recovery in flight may have been started from this device in an earlier session;
+  // the keys it proposed live in the OS secure store, not in component state.
+  useEffect(() => {
+    let cancelled = false
+    void loadStagedRecoveryKeys().then((keys) => {
+      if (!cancelled) setStagedRecovery(keys)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [onChainWallet?.recoveryInitiatedAt, activeWallet?.address])
+
+  const recoveryWindow = useMemo(() => {
+    if (!onChainWallet || onChainWallet.recoveryInitiatedAt === 0n) return null
+    const unlockAt = Number(onChainWallet.recoveryInitiatedAt) + Number(onChainWallet.recoveryTimelock)
+    return { unlockAt, secondsLeft: Math.max(0, unlockAt - nowSeconds) }
+  }, [onChainWallet, nowSeconds])
+
+  const runInitiateRecovery = async () => {
+    if (!onChainWallet || !activeWallet?.address) return
+    const guardian = guardianSigner ?? (await getFundedDevnetPayer(connection))
+    if (!guardian.publicKey.equals(onChainWallet.guardian)) {
+      dialog.alert(
+        'Not the Guardian',
+        `Only ${ellipsify(onChainWallet.guardian.toBase58(), 6)} can start a recovery for this wallet.`,
+      )
+      return
+    }
+
+    setRecoveryBusy('initiate')
+    try {
+      // Generated before the transaction so the keys written on-chain are the keys this
+      // device will actually hold if the recovery is executed.
+      const staged = await stageRecoveryKeys()
+      setStagedRecovery(staged)
+
+      const walletPda = new PublicKey(activeWallet.address)
+      const initiateIx = createInitiateRecoveryInstruction({
+        walletPda,
+        guardian: guardian.publicKey,
+        newPrimaryPasskey: new Uint8Array(Buffer.from(staged.primaryPublicKeyHex, 'hex')),
+        newSecondaryPasskey: new Uint8Array(Buffer.from(staged.secondaryPublicKeyHex, 'hex')),
+      })
+      const latestBlockhash = await connection.getLatestBlockhash('confirmed')
+      const tx = new Transaction({ feePayer: guardian.publicKey, recentBlockhash: latestBlockhash.blockhash }).add(
+        initiateIx,
+      )
+      const sig = await sendAndConfirmTransaction(connection, tx, [guardian], { commitment: 'confirmed' })
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+      await fetchRealBalance()
+      dialog.alert(
+        'Recovery Started',
+        `The guardian proposed a new key pair and the wallet is frozen for ${describeTimelock(onChainWallet.recoveryTimelock)}. You can veto it with both passkeys, or execute it once the window passes.\n\nTx: ${ellipsify(sig, 8)}`,
+        [
+          {
+            text: 'View on Explorer',
+            onPress: () => Linking.openURL(`https://explorer.solana.com/tx/${sig}?cluster=devnet`),
+          },
+          { text: 'Done', style: 'default' },
+        ],
+      )
+    } catch (err: any) {
+      console.error('[Haptix Recovery] Initiate error:', formatChainErrorForLog(err))
+      dialog.alert(
+        'Recovery Not Started',
+        describeChainError(err, 'The guardian could not start a recovery on-chain. Please try again.'),
+      )
+    } finally {
+      setRecoveryBusy(null)
+    }
+  }
+
+  const handleStartRecovery = () => {
+    if (!onChainWallet) return
+    dialog.alert(
+      'Start Guardian Recovery?',
+      'This is the flow to use when the device holding your passkeys is gone. The guardian ' +
+        `proposes a new key pair, this wallet freezes for ${describeTimelock(onChainWallet.recoveryTimelock)}, and you can still veto it with the current passkeys during that window.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Start Recovery', style: 'destructive', onPress: () => void runInitiateRecovery() },
+      ],
+    )
+  }
+
+  const runCancelRecovery = async () => {
+    if (!activeWallet?.address) return
+    setRecoveryBusy('cancel')
+    try {
+      const walletPda = new PublicKey(activeWallet.address)
+      const message = getCancelRecoverySignedMessage()
+
+      const primarySig = await signWithPasskey('primary', message, 'Veto Guardian Recovery (Primary)')
+      const secondarySig = await signWithPasskey('secondary', message, '2-of-2 Veto: Cancel Recovery')
+
+      const precompilePrimary = createSecp256r1Instruction({ ...primarySig, message })
+      const precompileSecondary = createSecp256r1Instruction({ ...secondarySig, message })
+      const cancelIx = createCancelRecoveryInstruction({ walletPda, primarySigIxIndex: 0, secondarySigIxIndex: 1 })
+
+      const payer = await getFundedDevnetPayer(connection)
+      const latestBlockhash = await connection.getLatestBlockhash('confirmed')
+      const tx = new Transaction({ feePayer: payer.publicKey, recentBlockhash: latestBlockhash.blockhash }).add(
+        precompilePrimary,
+        precompileSecondary,
+        cancelIx,
+      )
+      const sig = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: 'confirmed' })
+
+      // The proposed pair is dead the moment the veto lands; keeping it staged would
+      // leave this device ready to execute a recovery that no longer exists.
+      await discardStagedRecoveryKeys()
+      setStagedRecovery(null)
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      await fetchRealBalance()
+      dialog.alert(
+        'Recovery Cancelled',
+        `Verified 2-of-2 passkey quorum and discarded the guardian's proposed keys. The wallet is unfrozen.\n\nTx: ${ellipsify(
+          sig,
+          8,
+        )}`,
+      )
+    } catch (err: any) {
+      console.error('[Haptix Recovery] Cancel error:', formatChainErrorForLog(err))
+      dialog.alert(
+        'Veto Failed',
+        describeChainError(err, 'The recovery could not be cancelled on-chain. Please try again.'),
+      )
+    } finally {
+      setRecoveryBusy(null)
+    }
+  }
+
+  const runExecuteRecovery = async () => {
+    if (!activeWallet?.address || !onChainWallet) return
+    setRecoveryBusy('execute')
+    try {
+      const walletPda = new PublicKey(activeWallet.address)
+      const payer = await getFundedDevnetPayer(connection)
+      const latestBlockhash = await connection.getLatestBlockhash('confirmed')
+      const tx = new Transaction({ feePayer: payer.publicKey, recentBlockhash: latestBlockhash.blockhash }).add(
+        createExecuteRecoveryInstruction({ walletPda }),
+      )
+      const sig = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: 'confirmed' })
+
+      // The program now expects the staged pair, so this device has to start signing with
+      // it -- otherwise the recovery succeeds on-chain and leaves the owner holding a
+      // wallet none of their keys can spend from.
+      const committed = await commitStagedRecoveryKeys()
+      if (committed) {
+        const updated = {
+          ...activeWallet,
+          primaryPasskeyHex: committed.primaryPublicKeyHex,
+          secondaryPasskeyHex: committed.secondaryPublicKeyHex,
+          // The old credential ids point at the keys that were just replaced.
+          primaryCredentialId: undefined,
+          secondaryCredentialId: undefined,
+          primaryPasskeyLabel: 'Recovered key 1 (this device)',
+          secondaryPasskeyLabel: 'Recovered key 2 (this device)',
+        }
+        await updateWallet(updated)
+        setStagedRecovery(null)
+      }
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      await fetchRealBalance()
+
+      if (committed) {
+        dialog.alert(
+          'Wallet Recovered',
+          `The replacement keys are now in force and this device signs with them. The address is unchanged, so ` +
+            `any funds sent to it are still yours.\n\nTx: ${ellipsify(sig, 8)}`,
+        )
+      } else {
+        // Executing is permissionless, so this device may not hold the keys it just
+        // installed -- saying so is the only way the next step makes sense.
+        dialog.alert(
+          'Recovery Executed',
+          'The proposed keys are now in force, but they were staged on another device. This device ' +
+            'cannot sign for this wallet until you restore it there.',
+        )
+      }
+    } catch (err: any) {
+      console.error('[Haptix Recovery] Execute error:', formatChainErrorForLog(err))
+      dialog.alert(
+        'Recovery Not Executed',
+        describeChainError(err, 'The recovery could not be executed on-chain. Please try again.'),
+      )
+    } finally {
+      setRecoveryBusy(null)
+    }
+  }
+
+  const handleExecuteRecovery = () => {
+    const stagedNote = stagedRecovery
+      ? 'The keys this device staged will be installed and start signing for the wallet.'
+      : 'The keys staged on the other device will be installed; this device will not be able to sign afterwards.'
+    dialog.alert(
+      'Execute Recovery?',
+      `This installs the replacement passkeys and unfreezes the wallet. ${stagedNote}`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Execute', style: 'destructive', onPress: () => void runExecuteRecovery() },
+      ],
+    )
+  }
+
+  const runSetGuardian = async () => {
+    if (!activeWallet?.address || !onChainWallet) return
+
+    const parsed = guardianDraftParse
+    if (!parsed.address) {
+      dialog.alert('Check the guardian address', parsed.error ?? 'That is not a Solana address.')
+      return
+    }
+
+    const newGuardian = new PublicKey(parsed.address)
+    if (newGuardian.equals(onChainWallet.guardian)) {
+      dialog.alert('Already The Guardian', `${ellipsify(parsed.address, 6)} is already this wallet's guardian.`)
+      return
+    }
+    if (newGuardian.equals(new PublicKey(activeWallet.address))) {
+      dialog.alert(
+        'That Is This Wallet',
+        'The wallet cannot be its own guardian — a recovery would then need the wallet to authorize itself.',
+      )
+      return
+    }
+
+    setGuardianBusy(true)
+    try {
+      const walletPda = new PublicKey(activeWallet.address)
+      const message = getSetGuardianSignedMessage(newGuardian)
+
+      const primarySig = await signWithPasskey('primary', message, 'Change Guardian (Primary)')
+      const secondarySig = await signWithPasskey('secondary', message, '2-of-2: Change Guardian')
+
+      const precompilePrimary = createSecp256r1Instruction({ ...primarySig, message })
+      const precompileSecondary = createSecp256r1Instruction({ ...secondarySig, message })
+      const setGuardianIx = createSetGuardianInstruction({
+        walletPda,
+        newGuardian,
+        primarySigIxIndex: 0,
+        secondarySigIxIndex: 1,
+      })
+
+      const payer = await getFundedDevnetPayer(connection)
+      const latestBlockhash = await connection.getLatestBlockhash('confirmed')
+      const tx = new Transaction({ feePayer: payer.publicKey, recentBlockhash: latestBlockhash.blockhash }).add(
+        precompilePrimary,
+        precompileSecondary,
+        setGuardianIx,
+      )
+      const sig = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: 'confirmed' })
+
+      // The record carries the guardian so a wallet that is re-initialized from this
+      // device is created with the one just installed, rather than the old default.
+      await updateWallet({ ...activeWallet, guardianAddress: parsed.address })
+      setGuardianDraft('')
+      setShowGuardianEditor(false)
+      await fetchRealBalance()
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      dialog.alert(
+        'Guardian Updated',
+        `Verified 2-of-2 passkeys and set the guardian to ${ellipsify(parsed.address, 6)}.\n\n` +
+          `That address can now start a recovery and nothing else. It cannot move funds, and this device ` +
+          `no longer can — the button above will go dead unless the new guardian key is held here.\n\nTx: ${ellipsify(sig, 8)}`,
+      )
+    } catch (err: any) {
+      console.error('[Haptix Guardian] Set error:', formatChainErrorForLog(err))
+      dialog.alert(
+        'Guardian Not Updated',
+        describeChainError(err, 'The guardian could not be changed on-chain. Please try again.'),
+      )
+    } finally {
+      setGuardianBusy(false)
+    }
+  }
+
+  const handleSetGuardian = () => {
+    const parsed = guardianDraftParse
+    if (!parsed.address || !onChainWallet) {
+      dialog.alert('Check the guardian address', parsed.error ?? 'Enter the address that should guard this wallet.')
+      return
+    }
+    dialog.alert(
+      'Change The Guardian?',
+      `Recovery would be started by ${ellipsify(parsed.address, 6)} instead of ${ellipsify(onChainWallet.guardian.toBase58(), 6)}.\n\n` +
+        'This needs both passkeys, because handing recovery to an address you do not control is the same as giving ' +
+        'your wallet away. It cannot be undone without both passkeys either.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Change Guardian', style: 'destructive', onPress: () => void runSetGuardian() },
+      ],
+      { status: 'warning' },
+    )
+  }
+
   const handleCopyAddress = () => {
     if (!activeWallet?.address) return
     Clipboard.setString(activeWallet.address)
@@ -1385,6 +1981,94 @@ export function HaptixWalletScreen() {
   const sendAmountNum = parseFloat(sendAmountText) || 0
   const isSendQuorumRequired = sendAmountNum > spendThreshold
 
+  // Recipient state, derived once and shared by the badge, the inline message, the
+  // preview row and the send button, so those four can never disagree about whether the
+  // address is usable -- the button used to look ready with a link sitting in the field.
+  const recipientParse = useMemo(() => parseRecipientInput(sendRecipient), [sendRecipient])
+  const recipientAddress = recipientParse.address
+  const isRecipientSelf = !!recipientAddress && recipientAddress === activeWallet?.address
+  // A `.sns`/`.sol` name is neither an address nor a mistake: it is looked up, so the
+  // "not a Solana address" messaging has to stand down while that happens.
+  const nameInput = looksLikeSolName(sendRecipient) ? extractSolName(sendRecipient) : null
+  const savedContact = findContact(contacts, recipientAddress)
+  // While an address is being typed it is invalid many times on the way to being valid,
+  // so the error text waits until the paste was rejected, the field was left, or what is
+  // in it is already longer than any address could be.
+  const showRecipientError =
+    !nameInput &&
+    (!!recipientAttemptError ||
+      (!!recipientParse.error &&
+        (sendRecipientAttempted || sendRecipientBlurred || sendRecipient.trim().length > MAX_SOLANA_ADDRESS_LENGTH)))
+  const recipientNotice = describeRecipientSource(sendRecipientSource)
+
+  // Everything the fee is subtracted from: the balance chip, the percentage chips and the
+  // affordability check all have to agree on what "all of it" means. The number is the
+  // cluster's answer when it has one, and the base fee when it does not.
+  const effectiveFeeSol = feeEstimate?.sol ?? SEND_NETWORK_FEE_SOL
+  const isFeeLive = feeEstimate?.source === 'rpc'
+  const maxSendableSol = Math.max(0, balance - effectiveFeeSol)
+  const sendTotalSol = sendAmountNum > 0 ? sendAmountNum + effectiveFeeSol : 0
+  const sendAmountError = (() => {
+    if (sendAmountNum <= 0) return null
+    if (sendTotalSol > balance) {
+      return `That is more than your ${balance.toFixed(4)} SOL once the ${effectiveFeeSol} SOL network fee is included.`
+    }
+    return null
+  })()
+
+  // Recent recipients, read back from this wallet's own send history instead of a new
+  // address book: the addresses are already stored per wallet and are exactly the ones
+  // worth offering again. Invalid or self-referential entries are filtered out so a
+  // shortcut can never re-introduce the garbage address the parser rejects.
+  // Fee pricing sits here, below the recipient and amount derivations it reads. It
+  // re-prices while the sheet is open because a blockhash is only good for ~60-90
+  // seconds, and it prices the same message the wallet is about to sign.
+  useEffect(() => {
+    if (!showSendModal) return
+    const feePayer = activeWallet?.address ? new PublicKey(activeWallet.address) : null
+    const destination = recipientAddress ? new PublicKey(recipientAddress) : feePayer
+    if (!feePayer || !destination) return
+
+    let cancelled = false
+    const price = async () => {
+      const estimate = await estimateTransferFee(connection, {
+        feePayer,
+        destination,
+        lamports: BigInt(Math.max(1, Math.round((sendAmountNum || 0.000001) * LAMPORTS_PER_SOL))),
+      })
+      if (!cancelled) setFeeEstimate(estimate)
+    }
+    void price()
+    const interval = setInterval(price, 60_000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [showSendModal, connection, activeWallet?.address, recipientAddress, sendAmountNum])
+
+  const recentRecipients = useMemo(() => {
+    const seen = new Set<string>()
+    const recipients: string[] = []
+    for (const tx of transactions) {
+      if (tx.direction !== 'send') continue
+      const candidate = (tx.recipientOrSender || '').trim()
+      if (!isSolanaAddress(candidate)) continue
+      if (candidate === activeWallet?.address) continue
+      if (seen.has(candidate)) continue
+      seen.add(candidate)
+      recipients.push(candidate)
+      if (recipients.length >= MAX_RECENT_RECIPIENTS) break
+    }
+    return recipients
+  }, [transactions, activeWallet?.address])
+
+  // Saved contacts first, history after: a name the user typed beats an address they
+  // happened to pay once, and both are capped to one row of chips.
+  const recipientShortcuts = useMemo(
+    () => rankRecipients(contacts, recentRecipients, MAX_VISIBLE_RECIPIENTS, activeWallet?.address),
+    [contacts, recentRecipients, activeWallet?.address],
+  )
+
   const activityTitleFor = (tx: TransactionRecord) => {
     if (tx.type === 'freeze') return 'Emergency Freeze'
     if (tx.type === 'unfreeze') return 'Smart Wallet Unlocked'
@@ -1413,18 +2097,19 @@ export function HaptixWalletScreen() {
     return 'receipt-long'
   }
 
+  // Icon chips share one surface and carry their meaning in the icon colour. Tinting
+  // every inflow emerald turned the list into a grid of muddy green circles, and a
+  // tinted chip stopped meaning anything once most rows had one. Only the alarmed
+  // states fill their chip, so a filled chip is now the thing worth noticing.
   const activityToneFor = (tx: TransactionRecord) => {
     const negative = tx.status === 'failed' || tx.type === 'freeze'
     const positive = tx.status !== 'failed' && (tx.direction === 'receive' || tx.type === 'unfreeze')
     if (negative) {
-      return { color: '#FDA4AF', background: 'rgba(244,63,94,0.12)', border: 'rgba(244,63,94,0.3)' }
-    }
-    if (positive) {
-      return { color: '#10B981', background: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.3)' }
+      return { color: theme.roseText, background: theme.roseBg, border: theme.roseBorder }
     }
     return {
-      color: theme.textPrimary,
-      background: isDark ? '#0E1628' : '#F1F5F9',
+      color: positive ? theme.emeraldText : theme.textPrimary,
+      background: theme.bgElevated,
       border: theme.borderDefault,
     }
   }
@@ -1437,10 +2122,10 @@ export function HaptixWalletScreen() {
   const renderWalletHome = () => (
     <>
       {/* HERO BALANCE CARD */}
-      <View style={[styles.heroCard, s.card]}>
+      <View style={[styles.heroCard, styles.card]}>
         <View style={styles.heroTopRow}>
           <View style={styles.heroBalanceLabelRow}>
-            <Text style={[styles.heroBalanceLabel, s.textSecondary]}>Total balance</Text>
+            <Text style={[styles.heroBalanceLabel, styles.textSecondary]}>Total balance</Text>
             <TouchableOpacity
               style={styles.eyeToggleButton}
               onPress={() => {
@@ -1459,26 +2144,23 @@ export function HaptixWalletScreen() {
             </TouchableOpacity>
           </View>
 
-          <View
-            style={[
-              styles.heroBadgePill,
-              { backgroundColor: isDark ? '#161616' : '#F4F4F5', borderColor: theme.borderDefault },
-            ]}
-          >
-            <Text style={[styles.heroBadgeText, s.textSecondary]}>{network === 'devnet' ? 'Devnet' : 'Mainnet'}</Text>
+          <View style={[styles.heroBadgePill, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
+            <Text style={[styles.heroBadgeText, styles.textSecondary]}>
+              {network === 'devnet' ? 'Devnet' : 'Mainnet'}
+            </Text>
           </View>
         </View>
 
         <View style={styles.heroBalanceContent}>
           {isBalanceHidden ? (
-            <Text style={[styles.heroPrimaryBalance, s.textPrimary]}>$ ••••••</Text>
+            <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>$ ••••••</Text>
           ) : (
-            <Text style={[styles.heroPrimaryBalance, s.textPrimary]}>${totalUsdBalance.toFixed(2)}</Text>
+            <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>${totalUsdBalance.toFixed(2)}</Text>
           )}
           {isBalanceHidden ? (
-            <Text style={[styles.heroSecondaryBalance, s.textSecondary]}>•••• SOL</Text>
+            <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>•••• SOL</Text>
           ) : (
-            <Text style={[styles.heroSecondaryBalance, s.textSecondary]}>{balance.toFixed(4)} SOL</Text>
+            <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>{balance.toFixed(4)} SOL</Text>
           )}
         </View>
 
@@ -1486,20 +2168,28 @@ export function HaptixWalletScreen() {
         <View style={styles.heroActionsRow}>
           {/* Send */}
           <TouchableOpacity
-            style={[styles.heroActionBtn, s.actionBtn]}
+            style={[styles.heroActionBtn, styles.actionBtn]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+              // The recipient and its validation flags are cleared on open, so a sheet
+              // that was closed on a half-typed address does not reopen already shouting.
+              setSendRecipient('')
+              setSendRecipientSource(null)
+              setRecipientAttemptError('')
+              setSendRecipientAttempted(false)
+              setSendRecipientBlurred(false)
+              setSendErrorMsg('')
               setShowSendModal(true)
             }}
             activeOpacity={0.78}
           >
             <ActionSendIcon size={15} color={theme.textPrimary} />
-            <Text style={[styles.heroActionBtnText, s.actionBtnText]}>Send</Text>
+            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Send</Text>
           </TouchableOpacity>
 
           {/* Receive */}
           <TouchableOpacity
-            style={[styles.heroActionBtn, s.actionBtn]}
+            style={[styles.heroActionBtn, styles.actionBtn]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
               setShowReceiveModal(true)
@@ -1507,28 +2197,13 @@ export function HaptixWalletScreen() {
             activeOpacity={0.78}
           >
             <ActionReceiveIcon size={15} color={theme.textPrimary} />
-            <Text style={[styles.heroActionBtnText, s.actionBtnText]}>Receive</Text>
+            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Receive</Text>
           </TouchableOpacity>
-
-          {/* Swap stays inert while SWAP_ENABLED is false: a plain View cannot
-              be tapped, so there is no path from here to a fabricated trade. */}
-          {SWAP_ENABLED ? null : (
-            <View
-              style={[styles.heroActionBtn, s.actionBtn, styles.heroActionSoonBtn]}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: true }}
-              accessibilityLabel={`Swap, ${SWAP_COMING_SOON_LABEL.toLowerCase()}`}
-            >
-              <Text style={[styles.heroActionSoonText, s.textMuted]} numberOfLines={1}>
-                {SWAP_COMING_SOON_LABEL}
-              </Text>
-            </View>
-          )}
 
           {/* +0.2 SOL Faucet on Devnet */}
           {network === 'devnet' ? (
             <TouchableOpacity
-              style={[styles.heroActionBtn, s.actionBtn]}
+              style={[styles.heroActionBtn, styles.actionBtn]}
               onPress={handleRequestFaucet}
               disabled={isRequestingFaucet}
               activeOpacity={0.78}
@@ -1538,18 +2213,18 @@ export function HaptixWalletScreen() {
               ) : (
                 <>
                   <MaterialIcons name="local-gas-station" size={15} color={theme.textPrimary} />
-                  <Text style={[styles.heroActionBtnText, s.actionBtnText]}>Faucet</Text>
+                  <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Faucet</Text>
                 </>
               )}
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.heroActionBtn, s.actionBtn]}
+              style={[styles.heroActionBtn, styles.actionBtn]}
               onPress={() => setShowReceiveModal(true)}
               activeOpacity={0.78}
             >
               <MaterialIcons name="add" size={16} color={theme.textPrimary} />
-              <Text style={[styles.heroActionBtnText, s.actionBtnText]}>Buy</Text>
+              <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Buy</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1563,9 +2238,13 @@ export function HaptixWalletScreen() {
             ]}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-              <View style={[styles.onChainStatusDot, { backgroundColor: onChainWallet ? '#10B981' : '#F59E0B' }]} />
+              <View
+                style={[styles.onChainStatusDot, { backgroundColor: onChainWallet ? theme.emerald : theme.amber }]}
+              />
               <Text
-                style={[styles.onChainStatusText, { color: onChainWallet ? '#10B981' : '#F59E0B' }]}
+                // The dot carries the state; the label stays neutral. Green body text on
+                // every card competes with the accent colour that marks what is tappable.
+                style={[styles.onChainStatusText, { color: onChainWallet ? theme.textSecondary : theme.amberText }]}
                 numberOfLines={2}
               >
                 {onChainWallet ? 'Spending policy live on-chain' : 'Spending policy not on-chain yet'}
@@ -1602,52 +2281,48 @@ export function HaptixWalletScreen() {
 
       {/* TAB CONTENT: ASSETS */}
       {segmentedTab === 'assets' && (
-        <View style={[styles.assetList, s.card]}>
+        <View style={[styles.assetList, styles.card]}>
           {/* Solana Row */}
           <View style={styles.assetRow}>
             <View style={styles.assetLeft}>
               <View
-                style={[
-                  styles.assetLogoWrap,
-                  { backgroundColor: isDark ? '#141414' : '#F4F4F5', borderColor: theme.borderDefault },
-                ]}
+                style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
               >
                 <SolanaTokenLogo size={24} />
               </View>
               <View>
-                <Text style={[styles.assetPrimaryName, s.textPrimary]}>Solana</Text>
-                <Text style={[styles.assetSecondaryTag, s.textMuted]}>SOL · Solana</Text>
+                <Text style={[styles.assetPrimaryName, styles.textPrimary]}>Solana</Text>
+                <Text style={[styles.assetSecondaryTag, styles.textMuted]}>SOL · Solana</Text>
               </View>
             </View>
             <View style={styles.assetRight}>
-              <Text style={[styles.assetCryptoAmount, s.textPrimary]}>{balance.toFixed(4)} SOL</Text>
-              <Text style={[styles.assetFiatAmount, s.textSecondary]}>≈ ${(balance * solPriceUsd).toFixed(2)}</Text>
+              <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{balance.toFixed(4)} SOL</Text>
+              <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
+                ≈ ${(balance * solPriceUsd).toFixed(2)}
+              </Text>
             </View>
           </View>
 
-          <View style={[styles.assetDivider, s.divider]} />
+          <View style={[styles.assetDivider, styles.divider]} />
 
           {/* USD Coin Row */}
           <View style={styles.assetRow}>
             <View style={styles.assetLeft}>
               <View
-                style={[
-                  styles.assetLogoWrap,
-                  { backgroundColor: isDark ? '#141414' : '#F4F4F5', borderColor: theme.borderDefault },
-                ]}
+                style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
               >
                 <UsdcTokenLogo size={24} />
               </View>
               <View>
-                <Text style={[styles.assetPrimaryName, s.textPrimary]}>USD Coin</Text>
-                <Text style={[styles.assetSecondaryTag, s.textMuted]}>USDC · Circle</Text>
+                <Text style={[styles.assetPrimaryName, styles.textPrimary]}>USD Coin</Text>
+                <Text style={[styles.assetSecondaryTag, styles.textMuted]}>USDC · Circle</Text>
               </View>
             </View>
             {/* USDC balances are not read or held anywhere yet, so this row
                 reports its status instead of a hardcoded 0.00. */}
             <View style={styles.assetRight}>
-              <Text style={[styles.assetCryptoAmount, s.textMuted]}>{SWAP_COMING_SOON_LABEL}</Text>
-              <Text style={[styles.assetFiatAmount, s.textMuted]}>Not tracked yet</Text>
+              <Text style={[styles.assetCryptoAmount, styles.textMuted]}>{SWAP_COMING_SOON_LABEL}</Text>
+              <Text style={[styles.assetFiatAmount, styles.textMuted]}>Not tracked yet</Text>
             </View>
           </View>
         </View>
@@ -1655,12 +2330,12 @@ export function HaptixWalletScreen() {
 
       {/* TAB CONTENT: MARKETS WATCHLIST */}
       {segmentedTab === 'markets' && (
-        <Text style={[styles.segmentNote, s.textMuted]}>
+        <Text style={[styles.segmentNote, styles.textMuted]}>
           {market.isLive ? 'Live prices · CoinGecko' : 'Offline estimate · last known prices'} · not tradable on Devnet
         </Text>
       )}
       {segmentedTab === 'markets' && (
-        <View style={[styles.assetList, s.card]}>
+        <View style={[styles.assetList, styles.card]}>
           {market.tokens.map((token, idx) => (
             <React.Fragment key={token.symbol}>
               <View style={styles.assetRow}>
@@ -1668,7 +2343,7 @@ export function HaptixWalletScreen() {
                   <View
                     style={[
                       styles.assetLogoWrap,
-                      { backgroundColor: isDark ? '#141414' : '#F4F4F5', borderColor: theme.borderDefault },
+                      { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
                     ]}
                   >
                     {token.symbol === 'SOL' ? (
@@ -1681,13 +2356,8 @@ export function HaptixWalletScreen() {
                   </View>
                   <View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={[styles.assetPrimaryName, s.textPrimary]}>{token.name}</Text>
-                      <View
-                        style={[
-                          styles.trendBadge,
-                          { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' },
-                        ]}
-                      >
+                      <Text style={[styles.assetPrimaryName, styles.textPrimary]}>{token.name}</Text>
+                      <View style={[styles.trendBadge, { backgroundColor: theme.accentLight }]}>
                         <Text
                           style={[
                             styles.trendBadgeText,
@@ -1698,15 +2368,15 @@ export function HaptixWalletScreen() {
                         </Text>
                       </View>
                     </View>
-                    <Text style={[styles.assetSecondaryTag, s.textMuted]}>{token.symbol}</Text>
+                    <Text style={[styles.assetSecondaryTag, styles.textMuted]}>{token.symbol}</Text>
                   </View>
                 </View>
                 <View style={styles.assetRight}>
-                  <Text style={[styles.assetCryptoAmount, s.textPrimary]}>{token.price}</Text>
-                  <Text style={[styles.assetFiatAmount, s.textMuted]}>per token</Text>
+                  <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{token.price}</Text>
+                  <Text style={[styles.assetFiatAmount, styles.textMuted]}>per token</Text>
                 </View>
               </View>
-              {idx < market.tokens.length - 1 && <View style={[styles.assetDivider, s.divider]} />}
+              {idx < market.tokens.length - 1 && <View style={[styles.assetDivider, styles.divider]} />}
             </React.Fragment>
           ))}
         </View>
@@ -1716,27 +2386,27 @@ export function HaptixWalletScreen() {
           leaving roughly a quarter of the screen empty while transaction data
           sat unused in state. */}
       <View style={styles.homeSectionHeaderRow}>
-        <Text style={[styles.homeSectionTitle, s.textPrimary]}>Recent activity</Text>
+        <Text style={[styles.homeSectionTitle, styles.textPrimary]}>Recent activity</Text>
         <TouchableOpacity onPress={() => setDockTab('activity')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Text style={[styles.homeSectionLink, { color: theme.accent }]}>See all</Text>
         </TouchableOpacity>
       </View>
 
       {transactions.length === 0 ? (
-        <View style={[styles.emptyActivityCard, s.card]}>
+        <View style={[styles.emptyActivityCard, styles.card]}>
           <MaterialIcons name="receipt-long" size={26} color={theme.textMuted} />
-          <Text style={[styles.emptyActivityTitle, s.textPrimary]}>No activity yet</Text>
-          <Text style={[styles.emptyActivitySubtitle, s.textMuted]}>
+          <Text style={[styles.emptyActivityTitle, styles.textPrimary]}>No activity yet</Text>
+          <Text style={[styles.emptyActivitySubtitle, styles.textMuted]}>
             Use the Faucet to request Devnet tokens and see your first transaction.
           </Text>
         </View>
       ) : (
-        <View style={[styles.activityList, s.card]}>
+        <View style={[styles.activityList, styles.card]}>
           {transactions.slice(0, 3).map((tx, idx) => {
             const tone = activityToneFor(tx)
             return (
               <React.Fragment key={tx.signature || idx}>
-                {idx > 0 && <View style={[styles.assetDivider, s.divider]} />}
+                {idx > 0 && <View style={[styles.assetDivider, styles.divider]} />}
                 <TouchableOpacity
                   style={styles.activityRow}
                   onPress={() => {
@@ -1756,8 +2426,8 @@ export function HaptixWalletScreen() {
                       <MaterialIcons name={activityIconFor(tx)} size={18} color={tone.color} />
                     </View>
                     <View>
-                      <Text style={[styles.activityItemTitle, s.textPrimary]}>{activityTitleFor(tx)}</Text>
-                      <Text style={[styles.activityItemDate, s.textMuted]}>
+                      <Text style={[styles.activityItemTitle, styles.textPrimary]}>{activityTitleFor(tx)}</Text>
+                      <Text style={[styles.activityItemDate, styles.textMuted]}>
                         {new Date(tx.timestamp).toLocaleTimeString([], {
                           hour: '2-digit',
                           minute: '2-digit',
@@ -1769,10 +2439,10 @@ export function HaptixWalletScreen() {
                     style={[
                       styles.activityAmount,
                       tx.direction === 'receive' && tx.status !== 'failed'
-                        ? { color: '#10B981', fontWeight: '700' }
+                        ? { color: theme.emeraldText, fontWeight: '700' }
                         : tx.status === 'failed'
-                          ? { color: '#FDA4AF', fontWeight: '700' }
-                          : s.textPrimary,
+                          ? { color: theme.roseText, fontWeight: '700' }
+                          : styles.textPrimary,
                     ]}
                   >
                     {tx.status === 'failed' ? 'Failed' : activityAmountFor(tx)}
@@ -1790,83 +2460,93 @@ export function HaptixWalletScreen() {
     <>
       <View style={styles.pageHeader}>
         <View style={styles.pageTitleRow}>
-          <Text style={[styles.pageTitle, s.textPrimary]}>AI Agents</Text>
+          <Text style={[styles.pageTitle, styles.textPrimary]}>AI Agents</Text>
           <PolicyLinkButton onPress={() => setPolicyTopic('agents')} />
         </View>
       </View>
 
       {/* 1. HERO FIREWALL & 24H BUDGET CARD */}
-      <View style={[styles.agentHeroCard, s.card]}>
+      <View style={[styles.agentHeroCard, styles.card]}>
         <View style={styles.agentHeroHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View
-              style={[
-                styles.agentFirewallIconCircle,
-                { backgroundColor: isFrozen ? 'rgba(244,63,94,0.15)' : theme.accentLight },
-              ]}
+              style={[styles.agentFirewallIconCircle, { backgroundColor: isFrozen ? theme.roseBg : theme.accentLight }]}
             >
               <MaterialIcons
                 name={isFrozen ? 'lock' : 'security'}
                 size={18}
-                color={isFrozen ? '#FDA4AF' : theme.accent}
+                color={isFrozen ? theme.roseText : theme.accent}
               />
             </View>
             <View>
-              <Text style={[styles.agentHeroTitle, s.textPrimary]}>Spending Firewall</Text>
+              <Text style={[styles.agentHeroTitle, styles.textPrimary]}>Spending Firewall</Text>
             </View>
           </View>
 
           <View
             style={[
               styles.agentHeroStatusBadge,
-              {
-                backgroundColor: isFrozen ? 'rgba(244,63,94,0.12)' : 'rgba(16,185,129,0.12)',
-                borderColor: isFrozen ? 'rgba(244,63,94,0.25)' : 'rgba(16,185,129,0.25)',
-              },
+              // Only the alarmed state gets a filled, coloured pill. "Everything is fine"
+              // is not worth an accent-coloured badge on every visit.
+              isFrozen
+                ? { backgroundColor: theme.roseBg, borderColor: theme.roseBorder }
+                : { backgroundColor: 'transparent', borderColor: theme.borderDefault },
             ]}
           >
-            <View style={[styles.agentStatusDot, { backgroundColor: isFrozen ? '#F43F5E' : '#10B981' }]} />
-            <Text style={[styles.agentStatusText, { color: isFrozen ? '#FDA4AF' : '#10B981', fontWeight: '600' }]}>
+            <View style={[styles.agentStatusDot, { backgroundColor: isFrozen ? theme.rose : theme.emerald }]} />
+            <Text style={[styles.agentStatusText, { color: isFrozen ? theme.roseText : theme.textSecondary }]}>
               {isFrozen ? 'Panic Frozen' : 'Firewall Active'}
             </Text>
           </View>
         </View>
 
-        {/* Budget Numbers */}
-        <View style={styles.agentBudgetStatRow}>
-          <View>
-            <Text style={[styles.agentBudgetLabel, s.textMuted]}>Spent Today</Text>
-            <Text style={[styles.agentBudgetNumber, s.textPrimary]}>${agentSpentToday.toFixed(2)} USD</Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[styles.agentBudgetLabel, s.textMuted]}>Daily Limit</Text>
-            <Text style={[styles.agentBudgetNumber, s.textSecondary]}>${agentDailyBudgetUsd.toFixed(2)} USD</Text>
-          </View>
-        </View>
+        {/* Budget meter. The cap is what is actually delegated, so with no session granted
+            both numbers are zero and the bar is empty -- a meter that reads as broken
+            rather than as "nothing delegated yet". It appears once there is a budget. */}
+        {agentDailyBudgetUsd > 0 && (
+          <>
+            <View style={styles.agentBudgetStatRow}>
+              <View>
+                <Text style={[styles.agentBudgetLabel, styles.textMuted]}>Spent Today</Text>
+                <Text style={[styles.agentBudgetNumber, styles.textPrimary]}>${agentSpentToday.toFixed(2)} USD</Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={[styles.agentBudgetLabel, styles.textMuted]}>Delegated</Text>
+                <Text style={[styles.agentBudgetNumber, styles.textSecondary]}>
+                  ${agentDailyBudgetUsd.toFixed(2)} USD
+                </Text>
+              </View>
+            </View>
 
-        {/* Progress bar */}
-        <View style={[styles.agentProgressTrack, { backgroundColor: isDark ? '#1F2937' : '#E2E8F0' }]}>
-          <View
-            style={[
-              styles.agentProgressFill,
-              {
-                backgroundColor: isFrozen ? '#F43F5E' : theme.accent,
-                width: `${Math.min(100, Math.max(0, agentDailyBudgetUsd > 0 ? (agentSpentToday / agentDailyBudgetUsd) * 100 : 0))}%`,
-              },
-            ]}
-          />
-        </View>
+            <View
+              style={[
+                styles.agentProgressTrack,
+                { backgroundColor: isDark ? theme.borderSubtle : theme.borderDefault },
+              ]}
+            >
+              <View
+                style={[
+                  styles.agentProgressFill,
+                  {
+                    backgroundColor: isFrozen ? theme.rose : theme.accent,
+                    width: `${Math.min(100, Math.max(0, (agentSpentToday / agentDailyBudgetUsd) * 100))}%`,
+                  },
+                ]}
+              />
+            </View>
+          </>
+        )}
 
         {/* Policy Pills Row */}
         <View style={styles.agentPolicyPillRow}>
-          <View style={[styles.agentPolicyPill, s.elevatedCard]}>
-            <MaterialIcons name="bolt" size={14} color="#10B981" />
-            <Text style={[styles.agentPolicyPillText, s.textSecondary]}>Fast-Lane: ≤ {spendThreshold} SOL</Text>
+          <View style={[styles.agentPolicyPill, styles.elevatedCard]}>
+            <MaterialIcons name="bolt" size={14} color={theme.emerald} />
+            <Text style={[styles.agentPolicyPillText, styles.textSecondary]}>Fast-Lane: ≤ {spendThreshold} SOL</Text>
           </View>
 
-          <View style={[styles.agentPolicyPill, s.elevatedCard]}>
-            <MaterialIcons name="shield" size={14} color="#F59E0B" />
-            <Text style={[styles.agentPolicyPillText, s.textSecondary]}>Quorum: &gt; {spendThreshold} SOL</Text>
+          <View style={[styles.agentPolicyPill, styles.elevatedCard]}>
+            <MaterialIcons name="shield" size={14} color={theme.amber} />
+            <Text style={[styles.agentPolicyPillText, styles.textSecondary]}>Quorum: &gt; {spendThreshold} SOL</Text>
           </View>
         </View>
       </View>
@@ -1874,25 +2554,29 @@ export function HaptixWalletScreen() {
       {/* 2. AGENT SESSIONS. Read from the on-chain wallet account: these rows
           used to be two hardcoded agent names that had nothing to do with what
           was actually delegated. */}
-      <View style={[styles.agentSectionCard, s.card]}>
+      <View style={[styles.agentSectionCard, styles.card]}>
         <View style={styles.agentSectionHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.agentSectionHeading, s.textPrimary]}>Agent Sessions</Text>
-            <View style={[styles.agentCountBadge, { backgroundColor: theme.accentLight }]}>
-              <Text style={[styles.agentCountText, { color: theme.accent }]}>{activeAgentCount} Active</Text>
-            </View>
+            <Text style={[styles.agentSectionHeading, styles.textPrimary]}>Agent Sessions</Text>
+            {/* Counted only when there is something to count: a badge reading "0 Active"
+                beside a heading that already says "Sessions" carries no information. */}
+            {activeAgentCount > 0 ? (
+              <Text style={[styles.agentCompactSub, styles.textMuted]}>{activeAgentCount} active</Text>
+            ) : null}
           </View>
           {agentSessions.length > activeAgentCount && (
-            <Text style={[styles.agentCompactSub, s.textMuted]}>{agentSessions.length - activeAgentCount} expired</Text>
+            <Text style={[styles.agentCompactSub, styles.textMuted]}>
+              {agentSessions.length - activeAgentCount} expired
+            </Text>
           )}
         </View>
 
         {!onChainWallet ? (
-          <Text style={[styles.agentCompactSub, s.textMuted]}>
+          <Text style={[styles.agentCompactSub, styles.textMuted]}>
             Activate the spending policy on-chain to manage agent sessions.
           </Text>
         ) : agentSessions.length === 0 ? (
-          <Text style={[styles.agentCompactSub, s.textMuted]}>
+          <Text style={[styles.agentCompactSub, styles.textMuted]}>
             No session keys delegated. Grant one below to let an agent spend from this wallet.
           </Text>
         ) : (
@@ -1905,43 +2589,44 @@ export function HaptixWalletScreen() {
 
             return (
               <View key={sessionKey}>
-                {index > 0 && <View style={[styles.agentRowDivider, s.divider]} />}
+                {index > 0 && <View style={[styles.agentRowDivider, styles.divider]} />}
                 <View style={styles.agentCompactRow}>
                   <View
                     style={[
                       styles.agentCompactIcon,
                       {
-                        backgroundColor: isExpired ? (isDark ? '#3F1D24' : '#FEF2F2') : isDark ? '#064E3B' : '#ECFDF5',
+                        backgroundColor: isExpired ? theme.roseBg : theme.bgElevated,
+                        borderColor: isExpired ? theme.roseBorder : theme.borderDefault,
                       },
                     ]}
                   >
                     <MaterialIcons
                       name={isExpired ? 'timer-off' : 'vpn-key'}
                       size={18}
-                      color={isExpired ? '#F43F5E' : '#10B981'}
+                      color={isExpired ? theme.rose : theme.emerald}
                     />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.agentCompactName, s.textPrimary]}>{ellipsify(sessionKey, 6)}</Text>
-                    <Text style={[styles.agentCompactSub, s.textMuted]}>
+                    <Text style={[styles.agentCompactName, styles.textPrimary]}>{ellipsify(sessionKey, 6)}</Text>
+                    <Text style={[styles.agentCompactSub, styles.textMuted]}>
                       {remainingAllowance.toFixed(4)} SOL left ·{' '}
                       {isExpired ? 'Expired' : `${formatRemainingTime(remainingSeconds)} left`}
                     </Text>
-                    <Text style={[styles.agentCompactSub, s.textMuted]}>
+                    <Text style={[styles.agentCompactSub, styles.textMuted]}>
                       {session.allowedProgram.equals(SystemProgram.programId)
                         ? 'SOL transfers only'
                         : `Program ${ellipsify(session.allowedProgram.toBase58(), 4)}`}
                     </Text>
                   </View>
                   <TouchableOpacity
-                    style={[styles.agentRevokeBtn, { borderColor: 'rgba(244,63,94,0.35)' }]}
+                    style={[styles.agentRevokeBtn, { borderColor: theme.roseBorder }]}
                     onPress={() => confirmRevokeAgentSession(session)}
                     disabled={isRevoking}
                     accessibilityRole="button"
                     accessibilityLabel={`Revoke agent session ${ellipsify(sessionKey, 4)}`}
                   >
                     {isRevoking ? (
-                      <ActivityIndicator size="small" color="#FDA4AF" />
+                      <ActivityIndicator size="small" color={theme.roseText} />
                     ) : (
                       <Text style={styles.agentRevokeBtnText}>Revoke</Text>
                     )}
@@ -1954,11 +2639,13 @@ export function HaptixWalletScreen() {
       </View>
 
       {/* 3. GRANT SESSION KEY CARD */}
-      <View style={[styles.agentSectionCard, s.card]}>
+      <View style={[styles.agentSectionCard, styles.card]}>
         <View style={styles.agentSectionHeader}>
-          <Text style={[styles.agentSectionHeading, s.textPrimary]}>Grant Session Key</Text>
-          <View style={[styles.quorumBadgeSmall, { backgroundColor: 'rgba(245,158,11,0.12)' }]}>
-            <Text style={{ color: '#F59E0B', fontSize: typeScale.caption, fontWeight: '600' }}>2-of-2 Quorum</Text>
+          <Text style={[styles.agentSectionHeading, styles.textPrimary]}>Grant Session Key</Text>
+          <View style={[styles.quorumBadgeSmall, { backgroundColor: 'transparent', borderColor: theme.amberBorder }]}>
+            <Text style={{ color: theme.amberText, fontSize: typeScale.caption, fontWeight: '600' }}>
+              2-of-2 Quorum
+            </Text>
           </View>
         </View>
 
@@ -1971,7 +2658,7 @@ export function HaptixWalletScreen() {
                 key={val}
                 style={[
                   styles.agentBudgetChip,
-                  isSelected ? { backgroundColor: theme.accent, borderColor: theme.accent } : s.input,
+                  isSelected ? { backgroundColor: theme.accent, borderColor: theme.accent } : styles.input,
                 ]}
                 onPress={() => {
                   Haptics.selectionAsync()
@@ -1981,7 +2668,7 @@ export function HaptixWalletScreen() {
                 <Text
                   style={[
                     styles.agentBudgetChipText,
-                    isSelected ? { color: theme.accentForeground, fontWeight: '700' } : s.textSecondary,
+                    isSelected ? { color: theme.accentForeground, fontWeight: '700' } : styles.textSecondary,
                   ]}
                 >
                   {val} SOL
@@ -2003,26 +2690,14 @@ export function HaptixWalletScreen() {
       </View>
 
       {/* 4. FAST-LANE TEST & EMERGENCY CIRCUIT BREAKER */}
-      <View style={[styles.agentActionCard, s.card]}>
-        <View style={styles.agentActionRow}>
-          <View style={{ flex: 1, marginRight: 8 }}>
-            <Text style={[styles.agentActionTitle, s.textPrimary]}>Autonomous Agent Trade</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.agentFastLaneTestBtn, { backgroundColor: theme.accent }]}
-            onPress={confirmAgentExecute}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name="bolt" size={15} color={theme.accentForeground} />
-            <Text style={[styles.agentFastLaneTestBtnText, { color: theme.accentForeground }]}>Run Trade</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={[styles.agentActionCard, styles.card]}>
+        <Text style={[styles.agentActionTitle, styles.textPrimary]}>Autonomous Agent Trade</Text>
 
         {/* The agent needs a destination. It used to pay a freshly generated
             keypair, i.e. an address nobody controls, which just destroyed the
             funds. This is where the real recipient is entered. */}
         <TextInput
-          style={[styles.agentRecipientInput, s.input]}
+          style={[styles.agentRecipientInput, styles.input]}
           value={agentRecipient}
           onChangeText={setAgentRecipient}
           placeholder="Agent recipient address"
@@ -2031,11 +2706,25 @@ export function HaptixWalletScreen() {
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <Text style={[styles.agentRecipientHint, s.textMuted]}>
+        <Text style={[styles.agentRecipientHint, styles.textMuted]}>
           {`Sends ${AGENT_TRADE_AMOUNT_SOL} SOL to this address.`}
         </Text>
 
-        <View style={[styles.agentRowDivider, s.divider]} />
+        {/* The action sits below the field it consumes. Beside the title it read before the
+            address it spends to, so the card had to be parsed twice. */}
+        <TouchableOpacity
+          style={[
+            styles.agentFastLaneTestBtn,
+            { backgroundColor: theme.accent, alignSelf: 'flex-start', marginTop: 12 },
+          ]}
+          onPress={confirmAgentExecute}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="bolt" size={15} color={theme.accentForeground} />
+          <Text style={[styles.agentFastLaneTestBtnText, { color: theme.accentForeground }]}>Run Trade</Text>
+        </TouchableOpacity>
+
+        <View style={[styles.agentRowDivider, styles.divider]} />
 
         {/* Panic Circuit Breaker */}
         <View style={{ marginTop: 4 }}>
@@ -2043,11 +2732,13 @@ export function HaptixWalletScreen() {
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text style={[styles.agentActionTitle, isFrozen ? { color: '#10B981' } : { color: '#FDA4AF' }]}>
+              <Text
+                style={[styles.agentActionTitle, isFrozen ? { color: theme.emeraldText } : { color: theme.roseText }]}
+              >
                 {isFrozen ? 'Wallet Is Locked' : 'Emergency Circuit Breaker'}
               </Text>
             </View>
-            <Text style={[styles.emergencyTag, { color: isFrozen ? '#10B981' : '#FDA4AF' }]}>
+            <Text style={[styles.emergencyTag, { color: isFrozen ? theme.emeraldText : theme.roseText }]}>
               {isFrozen ? 'Frozen' : 'On-Chain Freeze'}
             </Text>
           </View>
@@ -2084,8 +2775,8 @@ export function HaptixWalletScreen() {
     return (
       <>
         <View style={styles.pageHeader}>
-          <Text style={[styles.pageTitle, s.textPrimary]}>Transaction History</Text>
-          <Text style={[styles.pageSubtitle, s.textSecondary]}>
+          <Text style={[styles.pageTitle, styles.textPrimary]}>Transaction History</Text>
+          <Text style={[styles.pageSubtitle, styles.textSecondary]}>
             On-chain activity verified by Secp256r1 passkey signatures
           </Text>
         </View>
@@ -2097,7 +2788,7 @@ export function HaptixWalletScreen() {
             return (
               <TouchableOpacity
                 key={f.id}
-                style={[styles.activityFilterChip, isSelected ? { backgroundColor: theme.accent } : s.input]}
+                style={[styles.activityFilterChip, isSelected ? { backgroundColor: theme.accent } : styles.input]}
                 onPress={() => {
                   Haptics.selectionAsync()
                   setActivityFilter(f.id)
@@ -2109,7 +2800,7 @@ export function HaptixWalletScreen() {
                 <Text
                   style={[
                     styles.activityFilterChipText,
-                    isSelected ? { color: theme.accentForeground, fontWeight: '700' } : s.textSecondary,
+                    isSelected ? { color: theme.accentForeground, fontWeight: '700' } : styles.textSecondary,
                   ]}
                 >
                   {f.label}
@@ -2121,21 +2812,21 @@ export function HaptixWalletScreen() {
 
         {/* Transactions List */}
         {filtered.length === 0 ? (
-          <View style={[styles.emptyActivityCard, s.card]}>
+          <View style={[styles.emptyActivityCard, styles.card]}>
             <MaterialIcons name="receipt-long" size={26} color={theme.textMuted} />
-            <Text style={[styles.emptyActivityTitle, s.textPrimary]}>
+            <Text style={[styles.emptyActivityTitle, styles.textPrimary]}>
               {activityFilter === 'all'
                 ? 'No transactions yet'
                 : `No ${ACTIVITY_FILTERS.find((f) => f.id === activityFilter)?.label.toLowerCase() ?? activityFilter} events yet`}
             </Text>
-            <Text style={[styles.emptyActivitySubtitle, s.textMuted]}>
+            <Text style={[styles.emptyActivitySubtitle, styles.textMuted]}>
               {activityFilter === 'all'
                 ? 'Send SOL, request Devnet test tokens, or trigger AI trades to see activity.'
                 : 'Try selecting All or trigger a new on-chain transaction.'}
             </Text>
           </View>
         ) : (
-          <View style={[styles.activityList, s.card]}>
+          <View style={[styles.activityList, styles.card]}>
             {filtered.map((tx, idx) => {
               const tone = activityToneFor(tx)
               const isAgent = AGENT_TYPES.includes(tx.type)
@@ -2144,7 +2835,7 @@ export function HaptixWalletScreen() {
 
               return (
                 <React.Fragment key={tx.signature || idx}>
-                  {showDayHeader && <Text style={[styles.activityGroupLabel, s.textMuted]}>{dayLabel}</Text>}
+                  {showDayHeader && <Text style={[styles.activityGroupLabel, styles.textMuted]}>{dayLabel}</Text>}
                   <TouchableOpacity
                     style={styles.activityRow}
                     onPress={() => {
@@ -2164,15 +2855,15 @@ export function HaptixWalletScreen() {
                         <MaterialIcons name={activityIconFor(tx)} size={18} color={tone.color} />
                       </View>
                       <View style={{ flexShrink: 1 }}>
-                        <Text style={[styles.activityItemTitle, s.textPrimary]}>{activityTitleFor(tx)}</Text>
+                        <Text style={[styles.activityItemTitle, styles.textPrimary]}>{activityTitleFor(tx)}</Text>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                          <Text style={[styles.activityItemDate, s.textMuted]}>
+                          <Text style={[styles.activityItemDate, styles.textMuted]}>
                             {new Date(tx.timestamp).toLocaleTimeString([], {
                               hour: '2-digit',
                               minute: '2-digit',
                             })}
                           </Text>
-                          <Text style={s.textMuted}>·</Text>
+                          <Text style={styles.textMuted}>·</Text>
                           <Text
                             style={[styles.activitySecurityBadge, { color: isAgent ? theme.accent : theme.textMuted }]}
                             numberOfLines={1}
@@ -2188,10 +2879,10 @@ export function HaptixWalletScreen() {
                         style={[
                           styles.activityAmount,
                           tx.status === 'failed'
-                            ? { color: '#FDA4AF', fontWeight: '700' }
+                            ? { color: theme.roseText, fontWeight: '700' }
                             : tx.direction === 'receive'
-                              ? { color: '#10B981', fontWeight: '700' }
-                              : s.textPrimary,
+                              ? { color: theme.emeraldText, fontWeight: '700' }
+                              : styles.textPrimary,
                         ]}
                       >
                         {tx.status === 'failed' ? 'Failed' : activityAmountFor(tx)}
@@ -2200,10 +2891,13 @@ export function HaptixWalletScreen() {
                         <MaterialIcons
                           name={tx.status === 'failed' ? 'error-outline' : 'check'}
                           size={11}
-                          color={tx.status === 'failed' ? '#FDA4AF' : '#10B981'}
+                          color={tx.status === 'failed' ? theme.roseText : theme.textMuted}
                         />
                         <Text
-                          style={[styles.confirmedBadgeText, { color: tx.status === 'failed' ? '#FDA4AF' : '#10B981' }]}
+                          style={[
+                            styles.confirmedBadgeText,
+                            { color: tx.status === 'failed' ? theme.roseText : theme.textMuted },
+                          ]}
                         >
                           {tx.status === 'failed' ? 'Failed' : tx.status === 'finalized' ? 'Finalized' : 'Confirmed'}
                         </Text>
@@ -2223,16 +2917,18 @@ export function HaptixWalletScreen() {
     <>
       <View style={styles.pageHeader}>
         <View style={styles.pageTitleRow}>
-          <Text style={[styles.pageTitle, s.textPrimary]}>Security & Protection</Text>
+          <Text style={[styles.pageTitle, styles.textPrimary]}>Security & Protection</Text>
           <PolicyLinkButton onPress={() => setPolicyTopic('security')} />
         </View>
-        <Text style={[styles.pageSubtitle, s.textSecondary]}>
+        <Text style={[styles.pageSubtitle, styles.textSecondary]}>
           Device credentials, on-chain policy firewall & emergency lock
         </Text>
       </View>
 
-      {/* 1. DaisyUI Status Alert */}
-      {isFrozen ? (
+      {/* 1. Status alert. Only the alarmed state is raised here: the green variant said
+          the same thing as the Device Credentials card directly below it, so the top of
+          the screen was spending two blocks on one fact. */}
+      {isFrozen && (
         <HaptixAlert
           status="error"
           icon="lock"
@@ -2244,52 +2940,43 @@ export function HaptixWalletScreen() {
             variant: 'primary',
           }}
         />
-      ) : (
-        <HaptixAlert
-          status="success"
-          icon="verified-user"
-          title="Device Key Protection Active"
-          message="Secp256r1 keys held in OS secure storage and unlocked by device biometrics."
-        />
       )}
 
       {/* 2. Device Credentials Card */}
-      <View style={[styles.securitySectionCard, s.card]}>
+      <View style={[styles.securitySectionCard, styles.card]}>
         <View style={styles.securitySectionHeader}>
-          <Text style={[styles.securitySectionHeading, s.textPrimary]}>Device Credentials</Text>
-          <View style={styles.securityCountBadge}>
-            <Text style={styles.securityCountText}>2 Enrolled</Text>
-          </View>
+          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Device Credentials</Text>
         </View>
 
         {/* Primary Passkey */}
         <View style={styles.credentialCompactRow}>
-          <View style={[styles.credentialIconWrap, { backgroundColor: isDark ? '#064E3B' : '#ECFDF5' }]}>
-            <FingerScanBold size={18} color="#10B981" />
+          <View
+            style={[styles.credentialIconWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+          >
+            <FingerScanBold size={18} color={theme.emerald} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.credentialName, s.textPrimary]}>
+            <Text style={[styles.credentialName, styles.textPrimary]}>
               {activeWallet?.primaryPasskeyLabel ?? 'Primary device key'}
             </Text>
-            <Text style={[styles.credentialSub, s.textMuted]}>OS secure storage · Biometric-gated</Text>
-          </View>
-          <View style={styles.activeTag}>
-            <Text style={styles.activeTagText}>Active</Text>
+            <Text style={[styles.credentialSub, styles.textMuted]}>OS secure storage · Biometric-gated</Text>
           </View>
         </View>
 
-        <View style={[styles.securityRowDivider, s.divider]} />
+        <View style={[styles.securityRowDivider, styles.divider]} />
 
         {/* Secondary / backup device key */}
         <View style={styles.credentialCompactRow}>
-          <View style={[styles.credentialIconWrap, { backgroundColor: isDark ? '#451A03' : '#FFFBEB' }]}>
-            <KeySquareBold size={18} color="#F59E0B" />
+          <View
+            style={[styles.credentialIconWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+          >
+            <KeySquareBold size={18} color={theme.amber} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.credentialName, s.textPrimary]}>
+            <Text style={[styles.credentialName, styles.textPrimary]}>
               {activeWallet?.secondaryPasskeyLabel ?? 'Backup device key'}
             </Text>
-            <Text style={[styles.credentialSub, s.textMuted]}>OS secure storage · Quorum key</Text>
+            <Text style={[styles.credentialSub, styles.textMuted]}>OS secure storage · Quorum key</Text>
           </View>
           <View style={styles.quorumTag}>
             <Text style={styles.quorumTagText}>2-of-2 Quorum</Text>
@@ -2298,37 +2985,34 @@ export function HaptixWalletScreen() {
       </View>
 
       {/* 3. Spending Policy Firewall (Stat Grid) */}
-      <View style={[styles.securitySectionCard, s.card]}>
+      <View style={[styles.securitySectionCard, styles.card]}>
         <View style={styles.securitySectionHeader}>
-          <Text style={[styles.securitySectionHeading, s.textPrimary]}>On-Chain Policy Firewall</Text>
-          <View style={styles.policyProgramTag}>
-            <Text style={styles.policyProgramTagText}>Solana Devnet</Text>
-          </View>
+          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>On-Chain Policy Firewall</Text>
         </View>
 
         <View style={styles.policyStatsGrid}>
           {/* Tile 1: Fast-lane limit */}
-          <View style={[styles.policyStatTile, s.input]}>
-            <Text style={[styles.policyStatLabel, s.textSecondary]}>Fast-Lane Cap</Text>
-            <Text style={[styles.policyStatValue, s.textPrimary]}>≤ {spendThreshold} SOL</Text>
+          <View style={[styles.policyStatTile, styles.input]}>
+            <Text style={[styles.policyStatLabel, styles.textSecondary]}>Fast-Lane Cap</Text>
+            <Text style={[styles.policyStatValue, styles.textPrimary]}>≤ {spendThreshold} SOL</Text>
           </View>
 
           {/* Tile 2: High-value quorum */}
-          <View style={[styles.policyStatTile, s.input]}>
-            <Text style={[styles.policyStatLabel, s.textSecondary]}>Quorum Escalation</Text>
-            <Text style={[styles.policyStatValue, s.textPrimary]}>2-of-2 Keys</Text>
+          <View style={[styles.policyStatTile, styles.input]}>
+            <Text style={[styles.policyStatLabel, styles.textSecondary]}>Quorum Escalation</Text>
+            <Text style={[styles.policyStatValue, styles.textPrimary]}>2-of-2 Keys</Text>
           </View>
 
           {/* Tile 3: Velocity circuit breaker */}
-          <View style={[styles.policyStatTile, s.input]}>
-            <Text style={[styles.policyStatLabel, s.textSecondary]}>Velocity Breaker</Text>
-            <Text style={[styles.policyStatValue, s.textPrimary]}>5 tx / hr</Text>
+          <View style={[styles.policyStatTile, styles.input]}>
+            <Text style={[styles.policyStatLabel, styles.textSecondary]}>Velocity Breaker</Text>
+            <Text style={[styles.policyStatValue, styles.textPrimary]}>5 tx / hr</Text>
           </View>
 
           {/* Tile 4: Agent spending cap */}
-          <View style={[styles.policyStatTile, s.input]}>
-            <Text style={[styles.policyStatLabel, s.textSecondary]}>Agent Limit</Text>
-            <Text style={[styles.policyStatValue, s.textPrimary]}>
+          <View style={[styles.policyStatTile, styles.input]}>
+            <Text style={[styles.policyStatLabel, styles.textSecondary]}>Agent Limit</Text>
+            <Text style={[styles.policyStatValue, styles.textPrimary]}>
               ${(agentAllowance * solPriceUsd).toFixed(0)} / 24h
             </Text>
           </View>
@@ -2336,24 +3020,21 @@ export function HaptixWalletScreen() {
       </View>
 
       {/* 4. Guardian Social Recovery */}
-      <View style={[styles.securitySectionCard, s.card]}>
+      <View style={[styles.securitySectionCard, styles.card]}>
         <View style={styles.securitySectionHeader}>
-          <Text style={[styles.securitySectionHeading, s.textPrimary]}>Guardian Social Recovery</Text>
+          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Guardian Social Recovery</Text>
           <View
             style={[
               styles.activeTag,
               onChainWallet
-                ? {
-                    backgroundColor: isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5',
-                    borderColor: isDark ? 'rgba(16,185,129,0.3)' : '#A7F3D0',
-                  }
+                ? { backgroundColor: 'transparent', borderColor: theme.borderDefault }
                 : {
-                    backgroundColor: isDark ? 'rgba(245,158,11,0.12)' : '#FFFBEB',
-                    borderColor: isDark ? 'rgba(245,158,11,0.3)' : '#FDE68A',
+                    backgroundColor: theme.amberBg,
+                    borderColor: theme.amberBorder,
                   },
             ]}
           >
-            <Text style={[styles.activeTagText, { color: onChainWallet ? '#10B981' : '#F59E0B' }]}>
+            <Text style={[styles.activeTagText, { color: onChainWallet ? theme.textSecondary : theme.amberText }]}>
               {onChainWallet ? 'Active' : 'Not on-chain yet'}
             </Text>
           </View>
@@ -2361,37 +3042,161 @@ export function HaptixWalletScreen() {
 
         <View style={styles.recoveryDetailRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.recoveryDetailTitle, s.textPrimary]}>1 Guardian</Text>
-            <Text style={[styles.recoveryDetailDesc, s.textMuted]}>Cannot spend funds</Text>
+            <Text style={[styles.recoveryDetailTitle, styles.textPrimary]}>1 Guardian</Text>
+            <Text style={[styles.recoveryDetailDesc, styles.textMuted]}>Cannot spend funds</Text>
           </View>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
-            <Text style={[styles.recoveryDetailTitle, s.textPrimary]}>24h Timelock</Text>
-            <Text style={[styles.recoveryDetailDesc, s.textMuted]}>You can veto with 2-of-2</Text>
+            <Text style={[styles.recoveryDetailTitle, styles.textPrimary]}>
+              {onChainWallet ? describeTimelock(onChainWallet.recoveryTimelock) : '24h'} Timelock
+            </Text>
+            <Text style={[styles.recoveryDetailDesc, styles.textMuted]}>You can veto with 2-of-2</Text>
           </View>
         </View>
 
         {/* The program stores exactly one guardian and gives it no spending
             authority, so show who it actually is rather than a capability badge. */}
-        <View style={[styles.recoveryGuardianRow, s.input]}>
-          <Text style={[styles.recoveryGuardianLabel, s.textMuted]}>GUARDIAN</Text>
-          <Text style={[styles.recoveryGuardianValue, s.textPrimary]} numberOfLines={1} ellipsizeMode="middle">
+        <View style={[styles.recoveryGuardianRow, styles.input]}>
+          <Text style={[styles.recoveryGuardianLabel, styles.textMuted]}>GUARDIAN</Text>
+          <Text style={[styles.recoveryGuardianValue, styles.textPrimary]} numberOfLines={1} ellipsizeMode="middle">
             {onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'Set on first on-chain activation'}
           </Text>
-          <Text style={[styles.recoveryGuardianNote, s.textMuted]}>
+          <Text style={[styles.recoveryGuardianNote, styles.textMuted]}>
             Can start a recovery and nothing else — it cannot move funds.
           </Text>
         </View>
+
+        {/* Until the guardian can be pointed somewhere else, starting a recovery and
+            owning the wallet are the same act on this build, because the Devnet guardian
+            key ships inside it. This is where that stops being true. */}
+        {onChainWallet && (
+          <>
+            <TouchableOpacity
+              style={styles.guardianToggle}
+              onPress={() => {
+                Haptics.selectionAsync()
+                setShowGuardianEditor((prev) => !prev)
+              }}
+              disabled={guardianBusy}
+            >
+              <Text style={styles.guardianToggleText}>
+                {showGuardianEditor ? 'Cancel guardian change' : 'Change guardian'}
+              </Text>
+              <MaterialIcons
+                name={showGuardianEditor ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                size={18}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+
+            {showGuardianEditor && (
+              <View style={styles.guardianEditor}>
+                <View style={[styles.guardianInputRow, styles.input]}>
+                  <TextInput
+                    style={styles.guardianInput}
+                    value={guardianDraft}
+                    onChangeText={setGuardianDraft}
+                    placeholder="Paste the new guardian's Solana address"
+                    placeholderTextColor={theme.textMuted}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!guardianBusy}
+                  />
+                  {guardianDraft.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setGuardianDraft('')}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <MaterialIcons name="cancel" size={18} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <Text
+                  style={[
+                    styles.guardianHint,
+                    guardianDraft.length > 0 && !guardianDraftParse.address
+                      ? { color: theme.roseText }
+                      : { color: theme.textMuted },
+                  ]}
+                >
+                  {guardianDraft.trim().length === 0
+                    ? 'A link or a message containing an address is read the same way a bare address is. Needs both passkeys.'
+                    : (guardianDraftParse.error ??
+                      `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
+                </Text>
+
+                <DepthOutlineButton
+                  title={guardianBusy ? 'Changing…' : 'Update Guardian (2-of-2)'}
+                  size="compact"
+                  disabled={guardianBusy || !guardianDraftParse.address}
+                  onPress={handleSetGuardian}
+                />
+              </View>
+            )}
+          </>
+        )}
+
+        {/* The one place recovery is reachable. Without this the program could rotate
+            keys all day and no owner would ever be able to ask it to. */}
+        {recoveryWindow ? (
+          <View style={styles.recoveryPendingBox}>
+            <View style={styles.recoveryPendingHeader}>
+              <MaterialIcons name="lock-clock" size={16} color={theme.amberText} />
+              <Text style={[styles.recoveryPendingTitle, { color: theme.amberText }]}>
+                {recoveryWindow.secondsLeft > 0
+                  ? `Recovery in flight · ${formatRemainingTime(recoveryWindow.secondsLeft)} left`
+                  : 'Recovery in flight · timelock elapsed'}
+              </Text>
+            </View>
+            <Text style={[styles.recoveryDetailDesc, styles.textMuted]}>
+              {recoveryWindow.secondsLeft > 0
+                ? 'The wallet is frozen. Veto with both passkeys, or wait out the window and execute.'
+                : 'Executing installs the proposed keys and unfreezes the wallet.'}
+            </Text>
+            <View style={styles.recoveryActionRow}>
+              <DepthOutlineButton
+                title={recoveryBusy === 'cancel' ? 'Vetoing…' : 'Veto (2-of-2)'}
+                size="compact"
+                disabled={recoveryBusy !== null}
+                onPress={() => void runCancelRecovery()}
+              />
+              <PrismDepthButton
+                title={recoveryBusy === 'execute' ? 'Executing…' : 'Execute Recovery'}
+                size="compact"
+                disabled={recoveryBusy !== null || recoveryWindow.secondsLeft > 0}
+                onPress={handleExecuteRecovery}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.recoveryActionRow}>
+            <DepthOutlineButton
+              title={recoveryBusy === 'initiate' ? 'Starting…' : 'Start Recovery (Guardian)'}
+              size="compact"
+              disabled={recoveryBusy !== null || !guardianSigner || !onChainWallet}
+              onPress={handleStartRecovery}
+            />
+          </View>
+        )}
+
+        <Text style={[styles.recoveryDetailDesc, styles.textMuted]}>
+          {!onChainWallet
+            ? 'The guardian is recorded when the account is first created on-chain.'
+            : guardianSigner
+              ? 'This build holds the guardian key, so it can start and veto a recovery — that is what makes the flow testable end to end.'
+              : 'Recovery is started by the guardian from their own device; this build cannot sign as it.'}
+        </Text>
       </View>
 
       {/* 5. Emergency Panic Lock */}
-      <View style={[styles.securitySectionCard, s.card]}>
+      <View style={[styles.securitySectionCard, styles.card]}>
         <View style={styles.securitySectionHeader}>
-          <Text style={[styles.securitySectionHeading, s.textPrimary]}>Emergency Panic Lock</Text>
+          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Emergency Panic Lock</Text>
         </View>
 
         {/* Body copy rather than an alert panel: the amber box used to be the
             loudest thing in the card, out-shouting the destructive control under it. */}
-        <Text style={[styles.panicExplain, s.textSecondary]}>
+        <Text style={[styles.panicExplain, styles.textSecondary]}>
           {isFrozen
             ? 'Transfers, swaps, and AI session keys are frozen. Hold below to unlock.'
             : 'Hold to instantly freeze all transactions and agent sessions on-chain.'}
@@ -2407,41 +3212,30 @@ export function HaptixWalletScreen() {
       </View>
 
       {/* 6. On-Chain Attestation Log */}
-      <View style={[styles.securitySectionCard, s.card]}>
+      <View style={[styles.securitySectionCard, styles.card]}>
         <View style={styles.securitySectionHeader}>
-          <Text style={[styles.securitySectionHeading, s.textPrimary]}>On-Chain Attestations</Text>
-          <View
-            style={[
-              styles.activeTag,
-              {
-                backgroundColor: isDark ? 'rgba(16,185,129,0.12)' : '#ECFDF5',
-                borderColor: isDark ? 'rgba(16,185,129,0.3)' : '#A7F3D0',
-              },
-            ]}
-          >
-            <Text style={styles.activeTagText}>2 Verified</Text>
-          </View>
+          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>On-Chain Attestations</Text>
         </View>
 
         <View style={styles.auditLogRow}>
-          <MaterialIcons name="check-circle" size={16} color="#10B981" />
+          <MaterialIcons name="check-circle" size={16} color={theme.emerald} />
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={[styles.auditLogText, s.textPrimary]}>Biometric Passkey Enrolled</Text>
+              <Text style={[styles.auditLogText, styles.textPrimary]}>Biometric Passkey Enrolled</Text>
             </View>
-            <Text style={[styles.auditLogTime, s.textMuted]}>Secp256r1 · OS secure storage</Text>
+            <Text style={[styles.auditLogTime, styles.textMuted]}>Secp256r1 · OS secure storage</Text>
           </View>
         </View>
 
-        <View style={[styles.securityRowDivider, s.divider]} />
+        <View style={[styles.securityRowDivider, styles.divider]} />
 
         <View style={styles.auditLogRow}>
-          <MaterialIcons name="check-circle" size={16} color="#10B981" />
+          <MaterialIcons name="check-circle" size={16} color={theme.emerald} />
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Text style={[styles.auditLogText, s.textPrimary]}>2-of-2 Spending Policy Active</Text>
+              <Text style={[styles.auditLogText, styles.textPrimary]}>2-of-2 Spending Policy Active</Text>
             </View>
-            <Text style={[styles.auditLogTime, s.textMuted]}>Secp256r1 on-chain verification · Devnet</Text>
+            <Text style={[styles.auditLogTime, styles.textMuted]}>Secp256r1 on-chain verification · Devnet</Text>
           </View>
         </View>
       </View>
@@ -2452,11 +3246,11 @@ export function HaptixWalletScreen() {
   const headerPaddingTop = Math.max(insets.top, statusBarHeight) + (Platform.OS === 'android' ? 12 : 6)
 
   return (
-    <View style={[styles.container, s.container]}>
+    <View style={[styles.container, styles.container]}>
       {/* ==================================================================== */}
       {/* 1. ELEVATED CONSUMER HOME HEADER                                     */}
       {/* ==================================================================== */}
-      <View style={[styles.header, s.header, { paddingTop: headerPaddingTop }]}>
+      <View style={[styles.header, styles.header, { paddingTop: headerPaddingTop }]}>
         <View style={styles.headerLeftGroup}>
           <TouchableOpacity
             style={styles.avatarButton}
@@ -2466,24 +3260,24 @@ export function HaptixWalletScreen() {
             }}
             activeOpacity={0.75}
           >
-            <View style={[styles.avatarCircle, s.elevatedCard, isFrozen && styles.avatarCircleAlert]}>
-              <HaptixBrandMark size={16} color={isFrozen ? '#FDA4AF' : theme.textPrimary} />
+            <View style={[styles.avatarCircle, styles.elevatedCard, isFrozen && styles.avatarCircleAlert]}>
+              <HaptixBrandMark size={16} color={isFrozen ? theme.roseText : theme.textPrimary} />
             </View>
           </TouchableOpacity>
 
           <View style={styles.identityTextGroup}>
-            <Text style={[styles.headerWalletName, s.textPrimary]} numberOfLines={1}>
+            <Text style={[styles.headerWalletName, styles.textPrimary]} numberOfLines={1}>
               {activeWallet?.name || 'Haptix Wallet'}
             </Text>
             <TouchableOpacity
-              style={[styles.addressCopyChip, s.card]}
+              style={[styles.addressCopyChip, styles.card]}
               onPress={handleCopyWalletAddress}
               activeOpacity={0.7}
             >
-              <Text style={[styles.addressCopyText, s.textMuted]}>
+              <Text style={[styles.addressCopyText, styles.textMuted]}>
                 {hasCopiedAddress ? 'Copied!' : ellipsify(activeWallet?.address || '', 4)}
               </Text>
-              <CopyChipIcon size={11} color={hasCopiedAddress ? '#FFFFFF' : theme.textMuted} />
+              <CopyChipIcon size={11} color={hasCopiedAddress ? theme.accentForeground : theme.textMuted} />
             </TouchableOpacity>
           </View>
         </View>
@@ -2491,7 +3285,7 @@ export function HaptixWalletScreen() {
         <View style={styles.headerRight}>
           {/* Network Switcher Pill */}
           <TouchableOpacity
-            style={[styles.networkPill, s.elevatedCard]}
+            style={[styles.networkPill, styles.elevatedCard]}
             onPress={() => {
               Haptics.selectionAsync()
               setNetwork((prev) => (prev === 'devnet' ? 'mainnet' : 'devnet'))
@@ -2500,8 +3294,10 @@ export function HaptixWalletScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Switch network, currently ${network === 'devnet' ? 'Devnet' : 'Mainnet'}`}
           >
-            <View style={[styles.networkDot, network === 'mainnet' && { backgroundColor: '#10B981' }]} />
-            <Text style={[styles.networkPillText, s.textSecondary]}>{network === 'devnet' ? 'Devnet' : 'Mainnet'}</Text>
+            <View style={[styles.networkDot, network === 'mainnet' && { backgroundColor: theme.emerald }]} />
+            <Text style={[styles.networkPillText, styles.textSecondary]}>
+              {network === 'devnet' ? 'Devnet' : 'Mainnet'}
+            </Text>
             {/* swap-horiz, not a chevron: this tap toggles the network in place, it does
                 not open a menu, and the old keyboard-arrow-down promised one. */}
             <MaterialIcons name="swap-horiz" size={13} color={theme.textMuted} />
@@ -2512,7 +3308,7 @@ export function HaptixWalletScreen() {
 
           {/* Overflow Menu Button */}
           <TouchableOpacity
-            style={[styles.headerIconBtn, s.iconBtn]}
+            style={[styles.headerIconBtn, styles.iconBtn]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
               setShowOverflowMenu(true)
@@ -2566,7 +3362,7 @@ export function HaptixWalletScreen() {
       {/* 2. MAIN FINANCIAL DASHBOARD SCROLL AREA                              */}
       {/* ==================================================================== */}
       <ScrollView
-        style={[styles.scrollArea, s.container]}
+        style={[styles.scrollArea, styles.container]}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 24) + 112 }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
         showsVerticalScrollIndicator={false}
@@ -2587,14 +3383,14 @@ export function HaptixWalletScreen() {
           style={styles.expandedModalBackdrop}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View style={[styles.expandedSendSheet, s.modalSheet, { paddingBottom: insets.bottom + 20 }]}>
+          <View style={[styles.expandedSendSheet, styles.modalSheet, { paddingBottom: insets.bottom + 20 }]}>
             <View style={[styles.modalDragHandle, { backgroundColor: theme.borderDefault }]} />
 
             {/* Modal Header */}
             <View style={styles.modalSheetHeader}>
               <View>
-                <Text style={[styles.modalSheetTitle, s.textPrimary]}>Send Solana</Text>
-                <Text style={[styles.modalSheetSubtitle, s.textMuted]}>Instant on-chain transfer via passkey</Text>
+                <Text style={[styles.modalSheetTitle, styles.textPrimary]}>Send Solana</Text>
+                <Text style={[styles.modalSheetSubtitle, styles.textMuted]}>Instant on-chain transfer via passkey</Text>
               </View>
               <TouchableOpacity
                 onPress={() => setShowSendModal(false)}
@@ -2611,20 +3407,23 @@ export function HaptixWalletScreen() {
               contentContainerStyle={{ paddingBottom: 16 }}
             >
               {/* HERO AMOUNT INPUT SECTION */}
-              <View style={[styles.sendHeroCard, s.card]}>
+              <View style={[styles.sendHeroCard, styles.card]}>
                 <View style={styles.sendTokenHeaderRow}>
-                  <View style={[styles.sendTokenPill, s.elevatedCard]}>
-                    <Text style={[styles.sendTokenSymbol, s.textPrimary]}>SOL</Text>
-                    <Text style={[styles.sendTokenName, s.textMuted]}>Solana</Text>
+                  <View style={[styles.sendTokenPill, styles.elevatedCard]}>
+                    <Text style={[styles.sendTokenSymbol, styles.textPrimary]}>SOL</Text>
+                    <Text style={[styles.sendTokenName, styles.textMuted]}>Solana</Text>
                   </View>
                   <TouchableOpacity
                     onPress={() => {
+                      // Tapping "Available" fills the whole balance, which is always a
+                      // hair more than the wallet can actually send once the fee is
+                      // added. It fills the sendable maximum instead.
                       Haptics.selectionAsync()
-                      setSendAmountText(balance.toString())
+                      setSendAmountText(maxSendableSol > 0 ? maxSendableSol.toFixed(4) : '0')
                     }}
                     style={styles.sendBalanceChip}
                   >
-                    <Text style={[styles.sendBalanceLabel, s.textSecondary]}>Available: </Text>
+                    <Text style={[styles.sendBalanceLabel, styles.textSecondary]}>Available: </Text>
                     <Text style={[styles.sendBalanceValue, { color: theme.accent }]}>{balance.toFixed(4)} SOL</Text>
                   </TouchableOpacity>
                 </View>
@@ -2632,27 +3431,27 @@ export function HaptixWalletScreen() {
                 {/* Big Amount Input */}
                 <View style={styles.sendInputRow}>
                   <TextInput
-                    style={[styles.sendBigInput, s.textPrimary]}
+                    style={[styles.sendBigInput, styles.textPrimary]}
                     value={sendAmountText}
                     onChangeText={setSendAmountText}
                     keyboardType="decimal-pad"
                     placeholder="0.00"
-                    placeholderTextColor="#475569"
+                    placeholderTextColor={theme.textMuted}
                     selectionColor={theme.accent}
                     autoFocus={false}
                   />
-                  <Text style={[styles.sendCurrencySuffix, s.textSecondary]}>SOL</Text>
+                  <Text style={[styles.sendCurrencySuffix, styles.textSecondary]}>SOL</Text>
                 </View>
 
                 {/* Live USD Counter using swamimalode07/rare-ui/animated-counter */}
                 <View style={styles.sendUsdEstimateRow}>
-                  <Text style={[styles.sendUsdApprox, s.textMuted]}>≈ </Text>
+                  <Text style={[styles.sendUsdApprox, styles.textMuted]}>≈ </Text>
                   <AnimatedCounter
                     value={sendAmountNum * solPriceUsd}
                     decimals={2}
                     prefix="$"
                     suffix=" USD"
-                    textStyle={[styles.sendUsdCounter, s.textMuted]}
+                    textStyle={[styles.sendUsdCounter, styles.textMuted]}
                   />
                 </View>
 
@@ -2666,133 +3465,348 @@ export function HaptixWalletScreen() {
                   ].map((chip) => (
                     <TouchableOpacity
                       key={chip.label}
-                      style={[styles.percentChip, s.input]}
+                      style={[styles.percentChip, styles.input]}
                       onPress={() => {
                         Haptics.selectionAsync()
-                        const val = Math.max(0, balance * chip.fraction)
+                        const val = Math.max(0, maxSendableSol * chip.fraction)
                         setSendAmountText(val > 0 ? val.toFixed(4) : '0')
                       }}
                     >
-                      <Text style={[styles.percentChipText, s.textSecondary]}>{chip.label}</Text>
+                      <Text style={[styles.percentChipText, styles.textSecondary]}>{chip.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
+
+                {/* The button simply greyed out when the amount was over the balance, so an
+                    amount typed by hand looked fine. Say what is wrong and by how much. */}
+                {sendAmountError ? (
+                  <View style={styles.fieldMessageRow}>
+                    <MaterialIcons name="error-outline" size={13} color={theme.roseText} />
+                    <Text style={[styles.fieldMessageText, { color: theme.roseText }]}>{sendAmountError}</Text>
+                  </View>
+                ) : null}
               </View>
 
               {/* RECIPIENT INPUT SECTION */}
               <View style={styles.inputSection}>
                 <View style={styles.inputLabelRow}>
-                  <Text style={[styles.inputLabel, s.textMuted]}>RECIPIENT SOLANA ADDRESS</Text>
-                  {isValidSolanaAddress(sendRecipient) && (
+                  <Text style={[styles.inputLabel, styles.textMuted]}>RECIPIENT SOLANA ADDRESS</Text>
+                  {recipientAddress ? (
                     <View style={styles.validBadge}>
-                      <MaterialIcons name="check-circle" size={12} color="#10B981" />
+                      <MaterialIcons name="check-circle" size={12} color={theme.emerald} />
                       <Text style={styles.validBadgeText}>Valid Address</Text>
                     </View>
-                  )}
+                  ) : showRecipientError && recipientParse.error ? (
+                    <View style={styles.invalidBadge}>
+                      <MaterialIcons name="error-outline" size={12} color={theme.roseText} />
+                      <Text style={styles.invalidBadgeText}>Not a Solana address</Text>
+                    </View>
+                  ) : null}
                 </View>
 
-                <View style={[styles.inputBoxRow, s.input]}>
+                <View style={[styles.inputBoxRow, styles.input]}>
                   <TextInput
-                    style={[styles.modalInput, s.textPrimary]}
+                    style={[styles.modalInput, styles.textPrimary]}
                     value={sendRecipient}
-                    onChangeText={setSendRecipient}
+                    onChangeText={handleRecipientTextChange}
+                    onBlur={() => setSendRecipientBlurred(true)}
                     placeholder="Enter recipient base58 address"
                     placeholderTextColor={theme.textMuted}
                     selectionColor={theme.accent}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    accessibilityLabel="Recipient Solana address"
                   />
+                  {recipientAddress && !isRecipientSelf ? (
+                    <TouchableOpacity
+                      style={styles.clearActionBtn}
+                      onPress={() => {
+                        Haptics.selectionAsync()
+                        if (savedContact) {
+                          handleRemoveContact(recipientAddress, savedContact.label)
+                        } else {
+                          setPendingContactName('')
+                        }
+                      }}
+                      accessibilityLabel={savedContact ? 'Remove saved recipient' : 'Save this recipient'}
+                    >
+                      <MaterialIcons
+                        name={savedContact ? 'bookmark' : 'bookmark-border'}
+                        size={16}
+                        color={savedContact ? theme.amber : theme.textMuted}
+                      />
+                    </TouchableOpacity>
+                  ) : null}
                   {sendRecipient ? (
-                    <TouchableOpacity style={styles.clearActionBtn} onPress={() => setSendRecipient('')}>
+                    <TouchableOpacity
+                      style={styles.clearActionBtn}
+                      onPress={() => {
+                        setSendRecipient('')
+                        setSendRecipientSource(null)
+                        setRecipientAttemptError('')
+                        setSendRecipientAttempted(false)
+                        setResolvedName(null)
+                        setNameLookup(null)
+                        setPendingContactName(null)
+                      }}
+                      accessibilityLabel="Clear recipient address"
+                    >
                       <MaterialIcons name="cancel" size={16} color={theme.textMuted} />
                     </TouchableOpacity>
                   ) : null}
                   <TouchableOpacity
-                    style={[styles.pasteActionBtn, { backgroundColor: isDark ? '#1F1F23' : '#EEF2F6' }]}
-                    onPress={async () => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-                      const text = await Clipboard.getString()
-                      if (text) setSendRecipient(text.trim())
-                    }}
+                    style={[styles.pasteActionBtn, { backgroundColor: theme.bgElevated }]}
+                    onPress={handlePasteRecipient}
+                    accessibilityLabel="Paste address from clipboard"
                   >
                     <Text style={[styles.pasteActionText, { color: theme.accent }]}>Paste</Text>
                   </TouchableOpacity>
                 </View>
+
+                {/* One message slot under the field: what the paste did, what a name
+                    resolved to, or what is wrong. The previous sheet said nothing at all
+                    about a rejected paste. */}
+                {isResolvingName ? (
+                  <View style={styles.fieldMessageRow}>
+                    <ActivityIndicator size="small" color={theme.textMuted} />
+                    <Text style={[styles.fieldMessageText, styles.textSecondary]}>
+                      {`Resolving ${nameInput ?? 'name'}…`}
+                    </Text>
+                  </View>
+                ) : nameLookup ? (
+                  <View style={styles.fieldMessageRow}>
+                    <MaterialIcons
+                      name={nameLookup.status === 'resolved' ? 'check-circle' : 'error-outline'}
+                      size={13}
+                      color={nameLookup.status === 'resolved' ? theme.emerald : theme.roseText}
+                    />
+                    <Text
+                      style={[
+                        styles.fieldMessageText,
+                        nameLookup.status === 'resolved' ? styles.textSecondary : { color: theme.roseText },
+                      ]}
+                    >
+                      {nameLookup.message}
+                    </Text>
+                  </View>
+                ) : recipientNotice ? (
+                  <View style={styles.fieldMessageRow}>
+                    <MaterialIcons name="auto-fix-high" size={13} color={theme.emerald} />
+                    <Text style={[styles.fieldMessageText, styles.textSecondary]}>{recipientNotice}</Text>
+                  </View>
+                ) : recipientAttemptError || (showRecipientError && recipientParse.error) ? (
+                  <View style={styles.fieldMessageRow}>
+                    <MaterialIcons name="error-outline" size={13} color={theme.roseText} />
+                    <Text style={[styles.fieldMessageText, { color: theme.roseText }]}>
+                      {recipientAttemptError || recipientParse.error}
+                    </Text>
+                  </View>
+                ) : isRecipientSelf ? (
+                  // Not blocked: moving your own SOL back to yourself is a legitimate
+                  // devnet test. It just is not worth a fee by accident.
+                  <View style={styles.fieldMessageRow}>
+                    <MaterialIcons name="info-outline" size={13} color={theme.amber} />
+                    <Text style={[styles.fieldMessageText, { color: theme.amberText }]}>
+                      That is this wallet&apos;s own address - the transfer would only cost the network fee.
+                    </Text>
+                  </View>
+                ) : null}
+
+                {/* Saving the current recipient. Opens in place, pre-filled with the name a
+                    .sns/.sol lookup produced when there was one. */}
+                {pendingContactName !== null && recipientAddress ? (
+                  <View style={styles.contactSaveRow}>
+                    <TextInput
+                      style={[styles.contactSaveInput, styles.input]}
+                      value={pendingContactName}
+                      onChangeText={setPendingContactName}
+                      placeholder={resolvedName ?? 'Name this recipient (optional)'}
+                      placeholderTextColor={theme.textMuted}
+                      selectionColor={theme.accent}
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                      maxLength={32}
+                      accessibilityLabel="Contact name"
+                    />
+                    <View style={styles.contactSaveActions}>
+                      <TouchableOpacity
+                        style={styles.clearActionBtn}
+                        onPress={() => setPendingContactName(null)}
+                        accessibilityLabel="Cancel saving this recipient"
+                      >
+                        <MaterialIcons name="close" size={16} color={theme.textMuted} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.clearActionBtn}
+                        onPress={() => void handleSaveContact(pendingContactName)}
+                        accessibilityLabel="Save recipient"
+                      >
+                        <MaterialIcons name="check" size={18} color={theme.emerald} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ) : null}
+
+                {/* Shortcuts: saved contacts first, then addresses this wallet has paid.
+                    Only shown while the field is empty, so they never compete with what the
+                    user is typing. Long-pressing a saved one offers to remove it. */}
+                {!sendRecipient && recipientShortcuts.length > 0 ? (
+                  <View style={styles.recentRecipientRow}>
+                    <Text style={[styles.recentRecipientLabel, styles.textMuted]}>
+                      {recipientShortcuts.some((entry) => entry.saved) ? 'Saved' : 'Recent'}
+                    </Text>
+                    {recipientShortcuts.map((entry) => {
+                      const useShortcut = () => {
+                        Haptics.selectionAsync()
+                        setSendRecipient(entry.address)
+                        setResolvedName(null)
+                        setNameLookup(null)
+                        setSendRecipientSource(null)
+                        setRecipientAttemptError('')
+                        setSendRecipientAttempted(true)
+                      }
+                      return entry.saved ? (
+                        <TouchableOpacity
+                          key={entry.address}
+                          style={[styles.savedRecipientChip, styles.input]}
+                          onPress={useShortcut}
+                          onLongPress={() => handleRemoveContact(entry.address, entry.label)}
+                          accessibilityLabel={`Send to ${entry.label ?? ellipsify(entry.address, 4)}. Long press to remove.`}
+                        >
+                          <MaterialIcons name="bookmark" size={12} color={theme.amber} />
+                          <View style={styles.savedRecipientTextGroup}>
+                            <Text style={[styles.savedRecipientLabel, styles.textPrimary]} numberOfLines={1}>
+                              {entry.label ?? ellipsify(entry.address, 4)}
+                            </Text>
+                            <Text style={[styles.savedRecipientAddress, styles.textMuted]} numberOfLines={1}>
+                              {ellipsify(entry.address, 4)}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          key={entry.address}
+                          style={[styles.recentRecipientChip, styles.input]}
+                          onPress={useShortcut}
+                          accessibilityLabel={`Use recent recipient ${ellipsify(entry.address, 4)}`}
+                        >
+                          <Text style={[styles.recentRecipientChipText, styles.textSecondary]}>
+                            {ellipsify(entry.address, 4)}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+                ) : null}
               </View>
 
               {/* EXPANDED TRANSACTION PREVIEW SECTION */}
               <View style={styles.previewSection}>
-                <Text style={[styles.inputLabel, s.textMuted, { marginBottom: 8 }]}>TRANSACTION PREVIEW</Text>
-                <View style={[styles.previewCard, s.card]}>
-                  {/* Recipient Item */}
+                <Text style={[styles.inputLabel, styles.textMuted, { marginBottom: 8 }]}>TRANSACTION PREVIEW</Text>
+                <View style={[styles.previewCard, styles.card]}>
+                  {/* Recipient Item. It showed a wallet avatar and the raw field contents,
+                      so a pasted link or a half-typed address was previewed as if it were a
+                      real recipient. Now the row reflects the parsed state. */}
                   <View style={styles.previewRow}>
-                    <Text style={[styles.previewLabel, s.textMuted]}>Recipient</Text>
+                    <Text style={[styles.previewLabel, styles.textMuted]}>Recipient</Text>
                     <View style={styles.previewValueRow}>
-                      <View style={styles.recipientAvatarSmall}>
-                        <MaterialIcons name="account-balance-wallet" size={12} color={theme.textPrimary} />
-                      </View>
-                      <Text style={[styles.previewValueText, s.textPrimary]}>
-                        {sendRecipient ? ellipsify(sendRecipient, 4) : 'Not specified'}
-                      </Text>
+                      {recipientAddress ? (
+                        <>
+                          {/* A saved or resolved name is what the user recognises; the
+                              address stays next to it so nothing is hidden. */}
+                          {savedContact?.label || resolvedName ? (
+                            <Text style={[styles.previewValueText, styles.textPrimary]}>
+                              {`${savedContact?.label ?? resolvedName} · ${ellipsify(recipientAddress, 4)}`}
+                            </Text>
+                          ) : (
+                            <Text style={[styles.previewValueText, styles.textPrimary]}>
+                              {ellipsify(recipientAddress, 5)}
+                            </Text>
+                          )}
+                        </>
+                      ) : sendRecipient ? (
+                        <>
+                          <MaterialIcons name="error-outline" size={13} color={theme.roseText} />
+                          <Text style={[styles.previewValueText, { color: theme.roseText }]}>Invalid address</Text>
+                        </>
+                      ) : (
+                        <Text style={[styles.previewValueText, styles.textMuted]}>Not specified</Text>
+                      )}
                     </View>
                   </View>
 
-                  <View style={[styles.previewDivider, s.divider]} />
+                  <View style={[styles.previewDivider, styles.divider]} />
 
                   {/* Transfer Value */}
                   <View style={styles.previewRow}>
-                    <Text style={[styles.previewLabel, s.textMuted]}>Transfer Amount</Text>
-                    <Text style={[styles.previewValueBold, s.textPrimary]}>{sendAmountNum.toFixed(4)} SOL</Text>
+                    <Text style={[styles.previewLabel, styles.textMuted]}>Transfer Amount</Text>
+                    <Text style={[styles.previewValueBold, styles.textPrimary]}>{sendAmountNum.toFixed(4)} SOL</Text>
                   </View>
 
-                  <View style={[styles.previewDivider, s.divider]} />
+                  <View style={[styles.previewDivider, styles.divider]} />
 
                   {/* Network & Speed */}
                   <View style={styles.previewRow}>
-                    <Text style={[styles.previewLabel, s.textMuted]}>Network</Text>
+                    <Text style={[styles.previewLabel, styles.textMuted]}>Network</Text>
                     <View style={styles.previewValueRow}>
-                      <View style={styles.networkDotSmall} />
-                      <Text style={[styles.previewValueText, s.textSecondary]}>
+                      <Text style={[styles.previewValueText, styles.textSecondary]}>
                         {network === 'devnet' ? 'Solana Devnet (Sub-second)' : 'Solana Mainnet'}
                       </Text>
                     </View>
                   </View>
 
-                  <View style={[styles.previewDivider, s.divider]} />
+                  <View style={[styles.previewDivider, styles.divider]} />
 
-                  {/* Network Fee */}
+                  {/* Network Fee, priced by the cluster. The old row printed a literal
+                      "0.000005 SOL (~$0.0007)" that could not follow a fee change and did
+                      not match the live price the rest of the sheet quotes. */}
                   <View style={styles.previewRow}>
-                    <Text style={[styles.previewLabel, s.textMuted]}>Estimated Fee</Text>
-                    <Text style={[styles.previewValueText, s.textSecondary]}>0.000005 SOL (~$0.0007)</Text>
+                    <View style={styles.previewValueRow}>
+                      <Text style={[styles.previewLabel, styles.textMuted]}>Estimated Fee</Text>
+                      {isFeeLive ? (
+                        <View style={styles.liveFeePill}>
+                          <View style={[styles.liveFeeDot, { backgroundColor: theme.emerald }]} />
+                          <Text style={[styles.liveFeeText, { color: theme.emeraldText }]}>live</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <Text style={[styles.previewValueText, styles.textSecondary]}>
+                      {`${effectiveFeeSol} SOL (~$${(effectiveFeeSol * solPriceUsd).toFixed(4)})`}
+                    </Text>
                   </View>
 
-                  <View style={[styles.previewDivider, s.divider]} />
+                  <View style={[styles.previewDivider, styles.divider]} />
 
                   {/* Security Clearance */}
                   <View style={styles.previewRow}>
-                    <Text style={[styles.previewLabel, s.textMuted]}>Authorization</Text>
+                    <Text style={[styles.previewLabel, styles.textMuted]}>Authorization</Text>
                     <View style={styles.securityBadgeRow}>
                       <MaterialIcons
                         name={isSendQuorumRequired ? 'security' : 'fingerprint'}
                         size={14}
-                        color={isSendQuorumRequired ? '#F59E0B' : '#10B981'}
+                        color={isSendQuorumRequired ? theme.amber : theme.textMuted}
                       />
-                      <Text style={[styles.securityBadgeText, { color: isSendQuorumRequired ? '#F59E0B' : '#10B981' }]}>
+                      <Text
+                        style={[
+                          styles.securityBadgeText,
+                          { color: isSendQuorumRequired ? theme.amberText : theme.textSecondary },
+                        ]}
+                      >
                         {isSendQuorumRequired ? '2-of-2 Key Quorum' : '1-Tap Biometric Passkey'}
                       </Text>
                     </View>
                   </View>
 
-                  <View style={[styles.previewDivider, s.divider]} />
+                  <View style={[styles.previewDivider, styles.divider]} />
 
                   {/* Total Deduction with AnimatedCounter */}
                   <View style={styles.previewRow}>
-                    <Text style={[styles.previewLabelBold, s.textPrimary]}>Total Outflow</Text>
+                    <Text style={[styles.previewLabelBold, styles.textPrimary]}>Total Outflow</Text>
                     <AnimatedCounter
-                      value={sendAmountNum > 0 ? sendAmountNum + 0.000005 : 0}
+                      value={sendTotalSol}
                       decimals={4}
                       suffix=" SOL"
-                      textStyle={[styles.previewTotalValue, s.textPrimary]}
+                      textStyle={[styles.previewTotalValue, styles.textPrimary]}
                     />
                   </View>
                 </View>
@@ -2822,8 +3836,17 @@ export function HaptixWalletScreen() {
                   title={isSendQuorumRequired ? 'Authorize 2-of-2 Key Quorum' : 'Sign & Send with Passkey'}
                   onPress={handleSendTransaction}
                   loading={isSending}
-                  disabled={isSending || sendAmountNum <= 0 || sendAmountNum > balance}
+                  // A missing (or unusable) recipient is a reason not to send, so the button
+                  // says so instead of appearing ready and failing after the tap.
+                  disabled={isSending || sendAmountNum <= 0 || sendTotalSol > balance || !recipientAddress}
                 />
+                {!recipientAddress ? (
+                  <Text style={[styles.actionHintText, styles.textMuted]}>
+                    {sendRecipient
+                      ? 'Enter a valid recipient address to continue.'
+                      : 'Add a recipient address to continue.'}
+                  </Text>
+                ) : null}
               </View>
             </ScrollView>
           </View>
@@ -2835,39 +3858,69 @@ export function HaptixWalletScreen() {
       {/* ==================================================================== */}
       <Modal visible={showReceiveModal} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalSheet, s.modalSheet, { paddingBottom: insets.bottom + 24 }]}>
+          <View style={[styles.modalSheet, styles.modalSheet, { paddingBottom: insets.bottom + 24 }]}>
             <View style={[styles.modalDragHandle, { backgroundColor: theme.borderDefault }]} />
 
             <View style={styles.modalSheetHeader}>
-              <Text style={[styles.modalSheetTitle, s.textPrimary]}>Receive Assets</Text>
+              <Text style={[styles.modalSheetTitle, styles.textPrimary]}>Receive Assets</Text>
               <TouchableOpacity onPress={() => setShowReceiveModal(false)}>
                 <MaterialIcons name="close" size={22} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.receiveExplainerText, s.textSecondary]}>
-              Scan this QR code or copy your address to receive SOL or SPL tokens on Solana.
+            <Text style={[styles.receiveExplainerText, styles.textSecondary]}>
+              Scan this QR code, or share the address with the person paying you.
             </Text>
+
+            {/* Which network this address belongs to. The sheet said "on Solana" while the
+                header behind it can be on devnet or mainnet, and the two get paid
+                differently. */}
+            <View style={styles.receiveMetaRow}>
+              <View style={[styles.receiveNetworkPill, styles.input]}>
+                <View
+                  style={[
+                    styles.networkDotSmall,
+                    { backgroundColor: network === 'devnet' ? theme.accent : theme.emerald },
+                  ]}
+                />
+                <Text style={[styles.receiveNetworkPillText, styles.textSecondary]}>
+                  {network === 'devnet' ? 'Solana Devnet' : 'Solana Mainnet'}
+                </Text>
+              </View>
+              <Text style={[styles.receiveMetaText, styles.textMuted]}>
+                {activeWallet?.name ? activeWallet.name : 'Smart account'}
+              </Text>
+            </View>
 
             <View style={styles.qrContainer}>
               <AppQrCode value={activeWallet?.address || 'HaptixSolanaAddress'} />
             </View>
 
-            <View style={[styles.addressDisplayBox, s.input]}>
-              <Text style={[styles.addressDisplayText, s.textPrimary]} numberOfLines={1} ellipsizeMode="middle">
+            <View style={[styles.addressDisplayBox, styles.input]}>
+              <Text style={[styles.addressDisplayText, styles.textPrimary]} numberOfLines={1} ellipsizeMode="middle">
                 {activeWallet?.address || ''}
               </Text>
             </View>
 
-            <View style={{ width: '100%', gap: 10, marginTop: 8 }}>
+            {/* The one irreversible mistake an address screen can prevent. */}
+            <View style={styles.receiveWarning}>
+              <MaterialIcons name="warning-amber" size={13} color={theme.amber} />
+              <Text style={[styles.receiveWarningText, styles.textSecondary]}>
+                Only send SOL or SPL tokens on {network === 'devnet' ? 'Devnet' : 'Mainnet'} here. Assets from any other
+                chain cannot be recovered.
+              </Text>
+            </View>
+
+            <View style={{ width: '100%', gap: 10, marginTop: 14 }}>
               <CopyActionButton
                 value={activeWallet?.address || ''}
                 label="Copy Smart Account Address"
                 copiedLabel="Address Copied to Clipboard!"
               />
-              <View style={{ alignItems: 'center' }}>
-                <BookmarkSaveButton label="Bookmark this address" savedLabel="Address bookmarked" />
-              </View>
+              {/* Replaces a "Bookmark this address" button that only held local state: it
+                  was never persisted anywhere, and bookmarking your own receive address
+                  is not a thing anyone needs. Share is the action that was missing. */}
+              <DepthOutlineButton title="Share Address" onPress={handleShareAddress} size="compact" />
             </View>
           </View>
         </View>
@@ -2878,11 +3931,11 @@ export function HaptixWalletScreen() {
       {/* ==================================================================== */}
       <Modal visible={showTxDetailModal} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalSheet, s.modalSheet, { paddingBottom: insets.bottom + 24 }]}>
+          <View style={[styles.modalSheet, styles.modalSheet, { paddingBottom: insets.bottom + 24 }]}>
             <View style={[styles.modalDragHandle, { backgroundColor: theme.borderDefault }]} />
 
             <View style={styles.modalSheetHeader}>
-              <Text style={[styles.modalSheetTitle, s.textPrimary]}>Transaction Details</Text>
+              <Text style={[styles.modalSheetTitle, styles.textPrimary]}>Transaction Details</Text>
               <TouchableOpacity
                 onPress={() => setShowTxDetailModal(false)}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -2908,14 +3961,14 @@ export function HaptixWalletScreen() {
                           />
                         </View>
 
-                        <Text style={[styles.txDetailAmountText, s.textPrimary]}>
+                        <Text style={[styles.txDetailAmountText, styles.textPrimary]}>
                           {isValue
                             ? `${selectedTransaction.direction === 'receive' ? '+' : '-'}${selectedTransaction.amount.toFixed(4)} ${selectedTransaction.tokenSymbol}`
                             : 'No funds moved'}
                         </Text>
 
                         {isValue && selectedTransaction.tokenSymbol === 'SOL' && (
-                          <Text style={[styles.txDetailFiatText, s.textMuted]}>
+                          <Text style={[styles.txDetailFiatText, styles.textMuted]}>
                             ≈ ${(selectedTransaction.amount * solPriceUsd).toFixed(2)} USD
                           </Text>
                         )}
@@ -2924,12 +3977,12 @@ export function HaptixWalletScreen() {
                           <MaterialIcons
                             name={selectedTransaction.status === 'failed' ? 'error-outline' : 'verified'}
                             size={13}
-                            color={selectedTransaction.status === 'failed' ? '#FDA4AF' : '#10B981'}
+                            color={selectedTransaction.status === 'failed' ? theme.roseText : theme.emeraldText}
                           />
                           <Text
                             style={[
                               styles.txDetailConfirmedText,
-                              selectedTransaction.status === 'failed' ? { color: '#FDA4AF' } : null,
+                              selectedTransaction.status === 'failed' ? { color: theme.roseText } : null,
                             ]}
                           >
                             {selectedTransaction.status === 'failed'
@@ -2943,38 +3996,38 @@ export function HaptixWalletScreen() {
                 </View>
 
                 {/* Cryptographic Clearance Details Card */}
-                <View style={[styles.securityGroupCard, s.card]}>
-                  <Text style={[styles.securityGroupLabel, s.textMuted]}>HOW THIS WAS APPROVED</Text>
+                <View style={[styles.securityGroupCard, styles.card]}>
+                  <Text style={[styles.securityGroupLabel, styles.textMuted]}>HOW THIS WAS APPROVED</Text>
 
                   <View style={styles.specKeyValueRow}>
-                    <Text style={[styles.specKeyText, s.textSecondary]}>Approved by:</Text>
+                    <Text style={[styles.specKeyText, styles.textSecondary]}>Approved by:</Text>
                     <Text style={[styles.specValueText, { color: theme.accent }]}>
                       {selectedTransaction.securityType || 'Secp256r1 Passkey'}
                     </Text>
                   </View>
 
                   <View style={styles.specKeyValueRow}>
-                    <Text style={[styles.specKeyText, s.textSecondary]}>Signature curve:</Text>
-                    <Text style={[styles.specValueText, s.textPrimary]}>NIST P-256 (Secp256r1)</Text>
+                    <Text style={[styles.specKeyText, styles.textSecondary]}>Signature curve:</Text>
+                    <Text style={[styles.specValueText, styles.textPrimary]}>NIST P-256 (Secp256r1)</Text>
                   </View>
 
                   <View style={styles.specKeyValueRow}>
-                    <Text style={[styles.specKeyText, s.textSecondary]}>Time:</Text>
-                    <Text style={[styles.specValueText, s.textPrimary]}>
+                    <Text style={[styles.specKeyText, styles.textSecondary]}>Time:</Text>
+                    <Text style={[styles.specValueText, styles.textPrimary]}>
                       {new Date(selectedTransaction.timestamp).toLocaleString()}
                     </Text>
                   </View>
                 </View>
 
                 {/* Addresses & Signature Card */}
-                <View style={[styles.securityGroupCard, s.card]}>
-                  <Text style={[styles.securityGroupLabel, s.textMuted]}>ON-CHAIN IDENTIFIERS</Text>
+                <View style={[styles.securityGroupCard, styles.card]}>
+                  <Text style={[styles.securityGroupLabel, styles.textMuted]}>ON-CHAIN IDENTIFIERS</Text>
 
                   {/* Recipient / Program */}
                   <View style={{ marginBottom: 10 }}>
-                    <Text style={[styles.specKeyText, s.textMuted, { marginBottom: 4 }]}>Counterparty</Text>
-                    <View style={[styles.addressCopyRow, s.input]}>
-                      <Text style={[styles.addressCopyRowText, s.textPrimary]} numberOfLines={1}>
+                    <Text style={[styles.specKeyText, styles.textMuted, { marginBottom: 4 }]}>Counterparty</Text>
+                    <View style={[styles.addressCopyRow, styles.input]}>
+                      <Text style={[styles.addressCopyRowText, styles.textPrimary]} numberOfLines={1}>
                         {selectedTransaction.recipientOrSender}
                       </Text>
                       <TouchableOpacity
@@ -2990,9 +4043,11 @@ export function HaptixWalletScreen() {
 
                   {/* Transaction Signature */}
                   <View>
-                    <Text style={[styles.specKeyText, s.textMuted, { marginBottom: 4 }]}>Transaction Signature</Text>
-                    <View style={[styles.addressCopyRow, s.input]}>
-                      <Text style={[styles.addressCopyRowText, s.textPrimary]} numberOfLines={1}>
+                    <Text style={[styles.specKeyText, styles.textMuted, { marginBottom: 4 }]}>
+                      Transaction Signature
+                    </Text>
+                    <View style={[styles.addressCopyRow, styles.input]}>
+                      <Text style={[styles.addressCopyRowText, styles.textPrimary]} numberOfLines={1}>
                         {selectedTransaction.signature}
                       </Text>
                       <TouchableOpacity
@@ -3032,7 +4087,7 @@ export function HaptixWalletScreen() {
       {/* ==================================================================== */}
       <Modal visible={showOverflowMenu} transparent animationType="fade">
         <Pressable style={styles.menuBackdrop} onPress={() => setShowOverflowMenu(false)}>
-          <View style={[styles.overflowSheet, s.card, { bottom: insets.bottom + 16 }]}>
+          <View style={[styles.overflowSheet, styles.card, { bottom: insets.bottom + 16 }]}>
             <TouchableOpacity
               style={styles.overflowRow}
               onPress={() => {
@@ -3041,10 +4096,10 @@ export function HaptixWalletScreen() {
               }}
             >
               <MaterialIcons name="content-copy" size={18} color={theme.textSecondary} />
-              <Text style={[styles.overflowRowText, s.textPrimary]}>Copy wallet address</Text>
+              <Text style={[styles.overflowRowText, styles.textPrimary]}>Copy wallet address</Text>
             </TouchableOpacity>
 
-            <View style={[styles.overflowDivider, s.divider]} />
+            <View style={[styles.overflowDivider, styles.divider]} />
 
             <TouchableOpacity
               style={styles.overflowRow}
@@ -3058,10 +4113,10 @@ export function HaptixWalletScreen() {
               }}
             >
               <MaterialIcons name="open-in-new" size={18} color={theme.textSecondary} />
-              <Text style={[styles.overflowRowText, s.textPrimary]}>View on Solana Explorer</Text>
+              <Text style={[styles.overflowRowText, styles.textPrimary]}>View on Solana Explorer</Text>
             </TouchableOpacity>
 
-            <View style={[styles.overflowDivider, s.divider]} />
+            <View style={[styles.overflowDivider, styles.divider]} />
 
             <TouchableOpacity
               style={styles.overflowRow}
@@ -3071,10 +4126,10 @@ export function HaptixWalletScreen() {
               }}
             >
               <MaterialIcons name="shield" size={18} color={theme.textPrimary} />
-              <Text style={[styles.overflowRowText, s.textPrimary]}>Security & Protection</Text>
+              <Text style={[styles.overflowRowText, styles.textPrimary]}>Security & Protection</Text>
             </TouchableOpacity>
 
-            <View style={[styles.overflowDivider, s.divider]} />
+            <View style={[styles.overflowDivider, styles.divider]} />
 
             <TouchableOpacity
               style={styles.overflowRow}
@@ -3084,10 +4139,10 @@ export function HaptixWalletScreen() {
               }}
             >
               <MaterialIcons name="lock" size={18} color={theme.textPrimary} />
-              <Text style={[styles.overflowRowText, s.textPrimary]}>Lock wallet (Safe Lock)</Text>
+              <Text style={[styles.overflowRowText, styles.textPrimary]}>Lock wallet (Safe Lock)</Text>
             </TouchableOpacity>
 
-            <View style={[styles.overflowDivider, s.divider]} />
+            <View style={[styles.overflowDivider, styles.divider]} />
 
             <TouchableOpacity
               style={styles.overflowRow}
@@ -3097,58 +4152,24 @@ export function HaptixWalletScreen() {
               }}
             >
               <MaterialIcons name="settings" size={18} color={theme.textPrimary} />
-              <Text style={[styles.overflowRowText, s.textPrimary]}>Settings</Text>
+              <Text style={[styles.overflowRowText, styles.textPrimary]}>Settings</Text>
             </TouchableOpacity>
 
-            <View style={[styles.overflowDivider, s.divider]} />
+            <View style={[styles.overflowDivider, styles.divider]} />
 
             <TouchableOpacity
               style={styles.overflowRow}
               onPress={async () => {
                 setShowOverflowMenu(false)
-                if (Platform.OS === 'web') {
-                  const confirmed =
-                    typeof window !== 'undefined'
-                      ? window.confirm(
-                          'Are you sure you want to remove this smart wallet from this device? Your on-chain account and funds remain secure on Solana and can be restored anytime using your passkey.',
-                        )
-                      : true
-                  if (confirmed) {
-                    try {
-                      await deletePasskeys()
-                    } catch (e) {
-                      console.warn('Failed to delete passkeys:', e)
-                    }
-                    await signOut()
-                    router.replace('/sign-in')
-                  }
-                  return
-                }
-
-                dialog.alert(
-                  'Remove Wallet from Device',
-                  'Are you sure you want to remove this smart wallet from this device? Your on-chain account and funds remain secure on Solana and can be restored anytime using your passkey.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Remove',
-                      style: 'destructive',
-                      onPress: async () => {
-                        try {
-                          await deletePasskeys()
-                        } catch (e) {
-                          console.warn('Failed to delete passkeys:', e)
-                        }
-                        await signOut()
-                        router.replace('/sign-in')
-                      },
-                    },
-                  ],
-                )
+                confirmRemoveWallet(activeWallet?.address, async () => {
+                  await deletePasskeys()
+                  await signOut()
+                  router.replace('/sign-in')
+                })
               }}
             >
-              <MaterialIcons name="delete-outline" size={18} color="#FDA4AF" />
-              <Text style={[styles.overflowRowText, { color: '#FDA4AF' }]}>Remove from this device</Text>
+              <MaterialIcons name="delete-outline" size={18} color={theme.roseText} />
+              <Text style={[styles.overflowRowText, { color: theme.roseText }]}>Remove from this device</Text>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -3164,18 +4185,18 @@ export function HaptixWalletScreen() {
       {/* ==================================================================== */}
       {isLocked && (
         <Modal visible={isLocked} animationType="fade" transparent={false}>
-          <View style={[styles.safeLockContainer, s.container]}>
-            <View style={[styles.safeLockCard, s.card]}>
+          <View style={[styles.safeLockContainer, styles.container]}>
+            <View style={[styles.safeLockCard, styles.card]}>
               <View
                 style={[
                   styles.safeLockIconWrap,
-                  { backgroundColor: isDark ? '#0E172A' : '#F1F5F9', borderColor: theme.borderDefault },
+                  { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
                 ]}
               >
                 <HaptixBrandMark size={32} color={theme.accent} />
               </View>
-              <Text style={[styles.safeLockTitle, s.textPrimary]}>Wallet Locked</Text>
-              <Text style={[styles.safeLockSubtitle, s.textSecondary]}>Protected by your device passkey</Text>
+              <Text style={[styles.safeLockTitle, styles.textPrimary]}>Wallet Locked</Text>
+              <Text style={[styles.safeLockSubtitle, styles.textSecondary]}>Protected by your device passkey</Text>
               <Text style={[styles.safeLockWalletName, { color: theme.accent }]}>
                 {activeWallet?.name || 'Personal Smart Wallet'}
               </Text>
@@ -3205,1612 +4226,1787 @@ export function HaptixWalletScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+// Status labels, tappable chips and mini stat tiles each get exactly one
+// geometry. This family previously carried eleven hand-tuned padding pairs
+// (vertical 2/3/4/5/6/7/8 against horizontal 6/7/8/9/10/12/14, spread over
+// radii sm/md/xl), so two badges sitting in the same row never lined up, and
+// "the same" tag looked different on the agents page than on the home page.
+const TAG_SHAPE = {
+  paddingHorizontal: space.sm,
+  paddingVertical: space.xs,
+  borderRadius: radius.pill,
+} as const
 
-  /* 1. ELEVATED CONSUMER HEADER */
-  header: {
-    // Matches scrollContent so the brand chip lines up with the card edges below.
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerLeftGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flexShrink: 1,
-  },
-  avatarButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarCircleAlert: {
-    borderColor: '#FDA4AF',
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
-  },
-  identityTextGroup: {
-    justifyContent: 'center',
-  },
-  headerWalletName: {
-    fontSize: typeScale.title,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-    maxWidth: 140,
-  },
-  addressCopyChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    marginTop: 2,
-    alignSelf: 'flex-start',
-  },
-  addressCopyText: {
-    fontSize: typeScale.caption,
-    fontWeight: '500',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  networkPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    height: HEADER_CONTROL_SIZE,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    borderRadius: radius.md,
-  },
-  networkDot: {
-    width: 6,
-    height: 6,
-    borderRadius: radius.pill,
-    backgroundColor: '#F59E0B',
-  },
-  networkPillText: {
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-  },
-  headerIconBtn: {
-    width: HEADER_CONTROL_SIZE,
-    height: HEADER_CONTROL_SIZE,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerIconBtnAlert: {
-    borderColor: 'rgba(244, 63, 94, 0.4)',
-    backgroundColor: 'rgba(244, 63, 94, 0.08)',
-  },
+const CHIP_SHAPE = {
+  paddingHorizontal: space.md,
+  paddingVertical: space.sm,
+  borderRadius: radius.pill,
+} as const
 
-  /* EMERGENCY FREEZE BANNER */
-  freezeAlertBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(244, 63, 94, 0.12)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(244, 63, 94, 0.3)',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
-  freezeAlertText: {
-    color: '#FDA4AF',
-    fontSize: typeScale.caption,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  freezeAlertAction: {
-    color: '#FDA4AF',
-    fontSize: typeScale.footnote,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
+const TILE_SHAPE = {
+  paddingHorizontal: space.md,
+  paddingVertical: space.sm,
+  borderRadius: radius.lg,
+} as const
 
-  /* 2. DASHBOARD SCROLL & SPACING */
-  scrollArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-  dashboardContainer: {
-    maxWidth: 440,
-    width: '100%',
-    alignSelf: 'center',
-  },
+// This sheet is built per theme rather than declared once at module scope.
+// The screen used to carry a second, Tailwind-ish palette inline (25 copies of
+// #10B981, 21 of #FDA4AF, 33 rgba() tints) purely because a module-level
+// StyleSheet.create cannot read the active theme -- and those hand-picked values
+// were dark-only, so light mode rendered #FFFBEB and #ECFDF5 washes on white.
+// Every colour below now resolves through theme/tokens.ts.
+const createStyles = (theme: ThemeTokens) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.bgApp,
+    },
 
-  /* DEDICATED PAGE HEADER */
-  pageHeader: {
-    marginBottom: 16,
-    paddingHorizontal: 2,
-    marginTop: 4,
-  },
-  pageTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  pageTitle: {
-    fontSize: typeScale.display,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-  },
-  pageSubtitle: {
-    fontSize: typeScale.body,
-    lineHeight: 18,
-    marginTop: 4,
-  },
-  policyLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  policyLinkText: {
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-  },
+    /* 1. ELEVATED CONSUMER HEADER */
+    header: {
+      backgroundColor: theme.bgApp,
+      borderBottomColor: theme.borderSubtle,
+      borderBottomWidth: 1,
+      // Matches scrollContent so the brand chip lines up with the card edges below.
+      paddingHorizontal: 20,
+      paddingBottom: 12,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    headerLeftGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flexShrink: 1,
+    },
+    avatarButton: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    avatarCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    avatarCircleAlert: {
+      borderColor: theme.roseBorder,
+      backgroundColor: theme.roseBg,
+    },
+    identityTextGroup: {
+      justifyContent: 'center',
+    },
+    headerWalletName: {
+      fontSize: typeScale.title,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+      // Was 140, measured against the old 15dp title. The name truncates on one
+      // line, so the cap has to grow with the type it caps: 140 * (17/15).
+      maxWidth: 160,
+    },
+    addressCopyChip: {
+      ...TAG_SHAPE,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      borderWidth: 1,
+      marginTop: space.xxs,
+      alignSelf: 'flex-start',
+    },
+    addressCopyText: {
+      fontSize: typeScale.caption,
+      fontWeight: '500',
+    },
+    headerRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    networkPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      height: HEADER_CONTROL_SIZE,
+      borderWidth: 1,
+      paddingHorizontal: 10,
+      borderRadius: radius.md,
+    },
+    networkDot: {
+      width: 6,
+      height: 6,
+      borderRadius: radius.pill,
+      backgroundColor: theme.amber,
+    },
+    networkPillText: {
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+    },
+    headerIconBtn: {
+      width: HEADER_CONTROL_SIZE,
+      height: HEADER_CONTROL_SIZE,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    headerIconBtnAlert: {
+      borderColor: theme.roseBorder,
+      backgroundColor: theme.roseBg,
+    },
 
-  /* HERO BALANCE CARD */
-  heroCard: {
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    padding: CARD_PADDING_X,
-    marginBottom: 14,
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  heroBalanceLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  heroBalanceLabel: {
-    fontSize: typeScale.body,
-    fontWeight: '500',
-  },
-  eyeToggleButton: {
-    padding: 4,
-  },
-  heroBadgePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radius.sm,
-    borderWidth: 1,
-  },
-  heroBadgeText: {
-    fontSize: typeScale.micro,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  heroBalanceContent: {
-    marginBottom: 16,
-  },
-  heroPrimaryBalance: {
-    fontSize: typeScale.hero,
-    fontWeight: '700',
-    letterSpacing: -0.6,
-  },
-  heroSecondaryBalance: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '500',
-    marginTop: 3,
-  },
-  heroActionsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 2,
-  },
-  heroActionBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-  },
-  heroActionBtnText: {
-    fontSize: typeScale.body,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-    flexShrink: 1,
-  },
-  heroActionSoonBtn: {
-    // Kept fully opaque: fading the whole button also faded its 1px border, which made
-    // the disabled Swap pill vanish out of the otherwise uniform four-button row. The
-    // disabled state is carried by the muted label colour and accessibilityState.
-    opacity: 1,
-  },
-  heroActionSoonText: {
-    // Deliberately one step below the sibling action labels. Measured on a 390dp-wide
-    // device: "Coming Soon" renders 65.8dp wide at 11px inside a 70.3dp pill, so at the
-    // siblings' 13px it would need 77.8dp and truncate to "Coming Soo...". The row is
-    // kept uniform through height, border and background colour instead.
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-    flexShrink: 1,
-  },
+    /* EMERGENCY FREEZE BANNER */
+    freezeAlertBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: theme.roseBg,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.roseBorder,
+      paddingHorizontal: 20,
+      paddingVertical: 8,
+    },
+    freezeAlertText: {
+      color: theme.roseText,
+      fontSize: typeScale.caption,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
+    freezeAlertAction: {
+      color: theme.roseText,
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+      textDecorationLine: 'underline',
+    },
 
-  /* QUICK ACTIONS GRID */
-  quickActionsGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
-  },
-  /* SEGMENTED FILTER BAR */
-  segmentedContainer: {
-    marginBottom: 14,
-  },
+    /* 2. DASHBOARD SCROLL & SPACING */
+    scrollArea: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingHorizontal: 20,
+      paddingTop: 8,
+    },
+    dashboardContainer: {
+      maxWidth: 440,
+      width: '100%',
+      alignSelf: 'center',
+    },
 
-  segmentNote: {
-    fontSize: typeScale.footnote,
-    fontWeight: '500',
-    marginTop: -6,
-    marginBottom: 10,
-    marginLeft: 2,
-  },
+    /* DEDICATED PAGE HEADER */
+    pageHeader: {
+      marginBottom: 16,
+      paddingHorizontal: 2,
+      marginTop: 4,
+    },
+    pageTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    pageTitle: {
+      fontSize: typeScale.display,
+      fontWeight: '700',
+      letterSpacing: -0.4,
+    },
+    pageSubtitle: {
+      fontSize: typeScale.body,
+      lineHeight: 18,
+      marginTop: 4,
+    },
+    policyLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 9,
+      paddingVertical: 5,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+    },
+    policyLinkText: {
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+    },
 
-  panicExplain: {
-    fontSize: typeScale.body,
-    lineHeight: 19,
-    marginBottom: 14,
-  },
+    /* HERO BALANCE CARD */
+    heroCard: {
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      padding: CARD_PADDING_X,
+      marginBottom: 14,
+    },
+    heroTopRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    heroBalanceLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    heroBalanceLabel: {
+      fontSize: typeScale.body,
+      fontWeight: '500',
+    },
+    eyeToggleButton: {
+      padding: 4,
+    },
+    heroBadgePill: { ...TAG_SHAPE, borderWidth: 1 },
+    heroBadgeText: {
+      fontSize: typeScale.micro,
+      fontWeight: '600',
+      letterSpacing: 0.2,
+    },
+    heroBalanceContent: {
+      marginBottom: 16,
+    },
+    heroPrimaryBalance: {
+      fontSize: typeScale.hero,
+      fontWeight: '700',
+      letterSpacing: -0.6,
+    },
+    heroSecondaryBalance: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '500',
+      marginTop: 3,
+    },
+    heroActionsRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 2,
+    },
+    heroActionBtn: {
+      flex: 1,
+      height: 44,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 6,
+    },
+    heroActionBtnText: {
+      fontSize: typeScale.body,
+      fontWeight: '600',
+      letterSpacing: -0.1,
+      flexShrink: 1,
+    },
+    /* QUICK ACTIONS GRID */
+    quickActionsGrid: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 14,
+    },
+    /* SEGMENTED FILTER BAR */
+    segmentedContainer: {
+      marginBottom: 14,
+    },
 
-  homeSectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    // The title stays on the card edge (like the segmented control above it) while the
-    // "See all" action is pulled in to the card's inner content column, so it lines up
-    // with the right-aligned amounts in the list below instead of the card's border.
-    paddingRight: CARD_PADDING_X,
-    marginTop: 22,
-    marginBottom: 10,
-  },
+    segmentNote: {
+      fontSize: typeScale.footnote,
+      fontWeight: '500',
+      marginTop: -6,
+      marginBottom: 10,
+      marginLeft: 2,
+    },
 
-  homeSectionTitle: {
-    fontSize: typeScale.title,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
+    panicExplain: {
+      fontSize: typeScale.body,
+      lineHeight: 19,
+      marginBottom: 14,
+    },
 
-  homeSectionLink: {
-    fontSize: typeScale.body,
-    fontWeight: '600',
-  },
+    homeSectionHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      // The title stays on the card edge (like the segmented control above it) while the
+      // "See all" action is pulled in to the card's inner content column, so it lines up
+      // with the right-aligned amounts in the list below instead of the card's border.
+      paddingRight: CARD_PADDING_X,
+      marginTop: 22,
+      marginBottom: 10,
+    },
 
-  /* TREND BADGE */
-  trendBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  trendBadgeText: {
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-    letterSpacing: 0.1,
-  },
-  trendPositive: {
-    color: '#10B981',
-  },
-  trendNegative: {
-    color: '#F43F5E',
-  },
+    homeSectionTitle: {
+      fontSize: typeScale.title,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
 
-  /* ASSETS LIST (CLEAN LIST WITHOUT CARD CLUTTER) */
-  assetList: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    paddingHorizontal: CARD_PADDING_X,
-  },
-  assetRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  assetLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  assetLogoWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  assetPrimaryName: {
-    fontSize: typeScale.title,
-    fontWeight: '600',
-  },
-  assetSecondaryTag: {
-    fontSize: typeScale.footnote,
-    marginTop: 2,
-  },
-  assetRight: {
-    alignItems: 'flex-end',
-  },
-  assetCryptoAmount: {
-    fontSize: typeScale.title,
-    fontWeight: '600',
-  },
-  assetFiatAmount: {
-    fontSize: typeScale.footnote,
-    marginTop: 2,
-  },
-  assetDivider: {
-    height: 1,
-  },
+    homeSectionLink: {
+      fontSize: typeScale.body,
+      fontWeight: '600',
+    },
 
-  /* AI AGENTS STYLES */
-  agentHeroCard: {
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 16,
-    marginBottom: 14,
-  },
-  agentHeroHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  agentFirewallIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  agentHeroTitle: {
-    fontSize: typeScale.title,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  agentHeroSubtitle: {
-    fontSize: typeScale.footnote,
-    marginTop: 1,
-  },
-  agentHeroStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: radius.md,
-    borderWidth: 1,
-  },
-  agentStatusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: radius.pill,
-  },
-  agentStatusText: {
-    fontSize: typeScale.footnote,
-    fontWeight: '600',
-  },
-  agentBudgetStatRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: 8,
-  },
-  agentBudgetLabel: {
-    fontSize: typeScale.footnote,
-    fontWeight: '500',
-  },
-  agentBudgetNumber: {
-    fontSize: typeScale.displaySm,
-    fontWeight: '700',
-    marginTop: 2,
-    letterSpacing: -0.3,
-  },
-  agentProgressTrack: {
-    height: 6,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  agentProgressFill: {
-    height: '100%',
-    borderRadius: radius.pill,
-  },
-  agentPolicyPillRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  agentPolicyPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingVertical: 7,
-    paddingHorizontal: 8,
-    borderRadius: radius.md,
-    borderWidth: 1,
-  },
-  agentPolicyPillText: {
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  agentSectionCard: {
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 16,
-    marginBottom: 14,
-  },
-  agentSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  agentSectionHeading: {
-    fontSize: typeScale.title,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  agentCountBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  agentCountText: {
-    fontSize: typeScale.caption,
-    fontWeight: '700',
-  },
-  agentCompactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 4,
-  },
-  agentCompactIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  agentCompactName: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-  },
-  agentCompactSub: {
-    fontSize: typeScale.footnote,
-    marginTop: 2,
-  },
-  agentRevokeBtn: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    minWidth: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  agentRevokeBtnText: {
-    color: '#FDA4AF',
-    fontSize: typeScale.caption,
-    fontWeight: '700',
-  },
-  agentRowDivider: {
-    height: 1,
-    marginVertical: 10,
-  },
-  quorumBadgeSmall: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radius.sm,
-  },
-  agentChipSelectorRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  agentRecipientInput: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginTop: 12,
-    fontSize: typeScale.footnote,
-  },
-  agentRecipientHint: {
-    fontSize: typeScale.caption,
-    marginTop: 6,
-  },
-  agentBudgetChip: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  agentBudgetChipText: {
-    fontSize: typeScale.body,
-    fontWeight: '600',
-  },
-  agentActionCard: {
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 16,
-    marginBottom: 14,
-  },
-  agentActionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  agentActionTitle: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '700',
-  },
-  agentActionSubtitle: {
-    fontSize: typeScale.footnote,
-    marginTop: 2,
-  },
-  agentFastLaneTestBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: radius.md,
-  },
-  agentFastLaneTestBtnText: {
-    fontSize: typeScale.footnote,
-    fontWeight: '700',
-  },
-  emergencyTag: {
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-  },
+    /* TREND BADGE */
+    trendBadge: { ...TAG_SHAPE, backgroundColor: theme.accentLight },
+    trendBadgeText: {
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+      letterSpacing: 0.1,
+    },
+    trendPositive: {
+      color: theme.emeraldText,
+    },
+    trendNegative: {
+      color: theme.roseText,
+    },
 
-  /* RECENT ACTIVITY */
-  emptyActivityCard: {
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    paddingHorizontal: CARD_PADDING_X,
-    paddingVertical: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyActivityTitle: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  emptyActivitySubtitle: {
-    fontSize: typeScale.footnote,
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  activityList: {
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    paddingHorizontal: CARD_PADDING_X,
-  },
-  activityGroupLabel: {
-    fontSize: typeScale.footnote,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
-  activityRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  activityLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  activityIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  activityItemTitle: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '500',
-  },
-  activityItemDate: {
-    color: '#64748B',
-    fontSize: typeScale.footnote,
-    marginTop: 2,
-  },
-  activityRight: {
-    alignItems: 'flex-end',
-  },
-  activityAmount: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-  },
-  activityConfirmedLabel: {
-    color: '#475569',
-    fontSize: typeScale.caption,
-  },
-  /* MODAL COMMON STYLES */
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.72)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-  },
-  modalDragHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: radius.pill,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  modalSheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  modalSheetTitle: {
-    fontSize: typeScale.heading,
-    fontWeight: '700',
-  },
-  modalSheetSubtitle: {
-    color: '#64748B',
-    fontSize: typeScale.footnote,
-    marginTop: 2,
-  },
-  modalCloseBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    /* ASSETS LIST (CLEAN LIST WITHOUT CARD CLUTTER) */
+    assetList: {
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      paddingHorizontal: CARD_PADDING_X,
+    },
+    assetRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 14,
+    },
+    assetLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    assetLogoWrap: {
+      width: 38,
+      height: 38,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    assetPrimaryName: {
+      fontSize: typeScale.title,
+      fontWeight: '600',
+    },
+    assetSecondaryTag: {
+      fontSize: typeScale.footnote,
+      marginTop: 2,
+    },
+    assetRight: {
+      alignItems: 'flex-end',
+    },
+    assetCryptoAmount: {
+      fontSize: typeScale.title,
+      fontWeight: '600',
+    },
+    assetFiatAmount: {
+      fontSize: typeScale.footnote,
+      marginTop: 2,
+    },
+    assetDivider: {
+      height: 1,
+    },
 
-  /* EXPANDED SEND TRANSACTION & PREVIEW STYLES */
-  expandedModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.78)',
-    justifyContent: 'flex-end',
-  },
-  expandedSendSheet: {
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
-    borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    maxHeight: '92%',
-  },
-  sendHeroCard: {
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 16,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  sendTokenHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 12,
-  },
-  sendTokenPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radius.md,
-    borderWidth: 1,
-  },
-  sendTokenSymbol: {
-    fontSize: typeScale.body,
-    fontWeight: '700',
-  },
-  sendTokenName: {
-    fontSize: typeScale.footnote,
-  },
-  sendBalanceChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sendBalanceLabel: {
-    color: '#64748B',
-    fontSize: typeScale.footnote,
-  },
-  sendBalanceValue: {
-    fontSize: typeScale.footnote,
-    fontWeight: '600',
-  },
-  sendInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-    marginBottom: 4,
-  },
-  sendBigInput: {
-    fontSize: typeScale.heroXl,
-    fontWeight: '700',
-    textAlign: 'center',
-    minWidth: 120,
-    padding: 0,
-    includeFontPadding: false,
-  },
-  sendCurrencySuffix: {
-    fontSize: typeScale.displaySm,
-    fontWeight: '600',
-    marginLeft: 6,
-    color: '#64748B',
-  },
-  sendUsdEstimateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  sendUsdApprox: {
-    fontSize: typeScale.body,
-    color: '#64748B',
-  },
-  sendUsdCounter: {
-    fontSize: typeScale.body,
-    fontWeight: '500',
-    color: '#64748B',
-  },
-  percentageChipsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    gap: 8,
-  },
-  percentChip: {
-    flex: 1,
-    paddingVertical: 7,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  percentChipText: {
-    fontSize: typeScale.footnote,
-    fontWeight: '600',
-  },
-  inputSection: {
-    marginBottom: 16,
-  },
-  validBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  validBadgeText: {
-    color: '#10B981',
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-  },
-  clearActionBtn: {
-    paddingHorizontal: 6,
-    justifyContent: 'center',
-  },
-  previewSection: {
-    marginBottom: 14,
-  },
-  previewCard: {
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 14,
-    gap: 10,
-  },
-  previewRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  previewLabel: {
-    color: '#64748B',
-    fontSize: typeScale.body,
-  },
-  previewLabelBold: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '700',
-  },
-  previewValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  previewValueText: {
-    color: '#CBD5E1',
-    fontSize: typeScale.body,
-    fontWeight: '500',
-  },
-  previewValueBold: {
-    fontSize: typeScale.body,
-    fontWeight: '700',
-  },
-  previewTotalValue: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '700',
-  },
-  previewDivider: {
-    height: 1,
-    backgroundColor: '#1F1F1F',
-  },
-  recipientAvatarSmall: {
-    width: 20,
-    height: 20,
-    borderRadius: radius.pill,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  networkDotSmall: {
-    width: 6,
-    height: 6,
-    borderRadius: radius.pill,
-    backgroundColor: '#10B981',
-  },
-  securityBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  securityBadgeText: {
-    fontSize: typeScale.footnote,
-    fontWeight: '600',
-  },
+    /* AI AGENTS STYLES */
+    agentHeroCard: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: 16,
+      marginBottom: 14,
+    },
+    agentHeroHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    agentFirewallIconCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.pill,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    agentHeroTitle: {
+      fontSize: typeScale.title,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    agentHeroSubtitle: {
+      fontSize: typeScale.footnote,
+      marginTop: 1,
+    },
+    agentHeroStatusBadge: {
+      ...TAG_SHAPE,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      borderWidth: 1,
+    },
+    agentStatusDot: {
+      width: 6,
+      height: 6,
+      borderRadius: radius.pill,
+    },
+    agentStatusText: {
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+    },
+    agentBudgetStatRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      marginBottom: 8,
+    },
+    agentBudgetLabel: {
+      fontSize: typeScale.footnote,
+      fontWeight: '500',
+    },
+    agentBudgetNumber: {
+      fontSize: typeScale.displaySm,
+      fontWeight: '700',
+      marginTop: 2,
+      letterSpacing: -0.3,
+    },
+    agentProgressTrack: {
+      height: 6,
+      borderRadius: radius.pill,
+      overflow: 'hidden',
+      marginBottom: 12,
+    },
+    agentProgressFill: {
+      height: '100%',
+      borderRadius: radius.pill,
+    },
+    agentPolicyPillRow: {
+      flexDirection: 'row',
+      gap: space.sm,
+    },
+    agentPolicyPill: {
+      ...TILE_SHAPE,
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      borderWidth: 1,
+    },
+    agentPolicyPillText: {
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+      flexShrink: 1,
+    },
+    agentSectionCard: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: 16,
+      marginBottom: 14,
+    },
+    agentSectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    agentSectionHeading: {
+      fontSize: typeScale.title,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    agentCompactRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 4,
+    },
+    agentCompactIcon: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    agentCompactName: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+    },
+    agentCompactSub: {
+      fontSize: typeScale.footnote,
+      marginTop: 2,
+    },
+    agentRevokeBtn: {
+      ...CHIP_SHAPE,
+      borderWidth: 1,
+      minWidth: 64,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    agentRevokeBtnText: {
+      color: theme.roseText,
+      fontSize: typeScale.caption,
+      fontWeight: '700',
+    },
+    agentRowDivider: {
+      height: 1,
+      marginVertical: 10,
+    },
+    quorumBadgeSmall: {
+      ...TAG_SHAPE,
+      borderWidth: 1,
+    },
+    agentChipSelectorRow: {
+      flexDirection: 'row',
+      gap: space.sm,
+    },
+    agentRecipientInput: {
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginTop: 12,
+      fontSize: typeScale.footnote,
+    },
+    agentRecipientHint: {
+      fontSize: typeScale.caption,
+      marginTop: 6,
+    },
+    agentBudgetChip: {
+      ...CHIP_SHAPE,
+      flex: 1,
+      alignItems: 'center',
+      borderWidth: 1,
+    },
+    agentBudgetChipText: {
+      fontSize: typeScale.body,
+      fontWeight: '600',
+    },
+    agentActionCard: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: 16,
+      marginBottom: 14,
+    },
+    agentActionTitle: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '700',
+    },
+    agentActionSubtitle: {
+      fontSize: typeScale.footnote,
+      marginTop: 2,
+    },
+    agentFastLaneTestBtn: {
+      ...CHIP_SHAPE,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+    },
+    agentFastLaneTestBtnText: {
+      fontSize: typeScale.footnote,
+      fontWeight: '700',
+    },
+    emergencyTag: {
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+    },
 
-  /* SECURITY SECTION REFRESH */
-  securitySectionCard: {
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 16,
-    marginBottom: 14,
-  },
-  securitySectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  securitySectionHeading: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  securityCountBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  securityCountText: {
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
-  credentialCompactRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 4,
-  },
-  credentialIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  credentialName: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-  },
-  credentialSub: {
-    fontSize: typeScale.footnote,
-    marginTop: 2,
-  },
-  securityRowDivider: {
-    height: 1,
-    marginVertical: 10,
-  },
-  policyProgramTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-    backgroundColor: 'rgba(147, 51, 234, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(147, 51, 234, 0.28)',
-  },
-  policyProgramTagText: {
-    color: '#A855F7',
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-  },
-  policyStatsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  policyStatTile: {
-    width: '48%',
-    flexGrow: 1,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: 12,
-  },
-  policyStatLabel: {
-    fontSize: typeScale.caption,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  policyStatValue: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '700',
-  },
-  recoveryDetailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  recoveryDetailTitle: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-  },
-  recoveryDetailDesc: {
-    fontSize: typeScale.footnote,
-    marginTop: 2,
-  },
-  recoveryGuardianRow: {
-    marginTop: 14,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  recoveryGuardianLabel: {
-    fontSize: typeScale.micro,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    marginBottom: 3,
-  },
-  recoveryGuardianValue: {
-    fontSize: typeScale.body,
-    fontWeight: '600',
-  },
-  recoveryGuardianNote: {
-    fontSize: typeScale.caption,
-    lineHeight: 15,
-    marginTop: 4,
-  },
+    /* RECENT ACTIVITY */
+    emptyActivityCard: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      paddingHorizontal: CARD_PADDING_X,
+      paddingVertical: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyActivityTitle: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+      marginTop: 8,
+      textAlign: 'center',
+    },
+    emptyActivitySubtitle: {
+      fontSize: typeScale.footnote,
+      marginTop: 2,
+      textAlign: 'center',
+    },
+    activityList: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      paddingHorizontal: CARD_PADDING_X,
+    },
+    activityGroupLabel: {
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+      letterSpacing: 0.2,
+      paddingTop: 12,
+      paddingBottom: 4,
+    },
+    activityRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+    },
+    activityLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    activityIconCircle: {
+      width: 34,
+      height: 34,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    activityItemTitle: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '500',
+    },
+    activityItemDate: {
+      color: theme.textMuted,
+      fontSize: typeScale.footnote,
+      marginTop: 2,
+    },
+    activityRight: {
+      alignItems: 'flex-end',
+    },
+    activityAmount: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+    },
+    activityConfirmedLabel: {
+      color: theme.textMuted,
+      fontSize: typeScale.caption,
+    },
+    /* MODAL COMMON STYLES */
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: theme.scrim,
+      justifyContent: 'flex-end',
+    },
+    modalSheet: {
+      backgroundColor: theme.bgCard,
+      borderColor: theme.borderDefault,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      borderWidth: 1,
+      paddingHorizontal: 20,
+      paddingTop: 12,
+    },
+    modalDragHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: radius.pill,
+      alignSelf: 'center',
+      marginBottom: 16,
+    },
+    modalSheetHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 18,
+    },
+    modalSheetTitle: {
+      fontSize: typeScale.heading,
+      fontWeight: '700',
+    },
+    modalSheetSubtitle: {
+      color: theme.textMuted,
+      fontSize: typeScale.footnote,
+      marginTop: 2,
+    },
+    modalCloseBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.pill,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 
-  /* LEGACY SECURITY COMPAT */
-  securityRowCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 14,
-    marginBottom: 14,
-  },
-  securityCardIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  securityItemTitle: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-  },
-  securityItemDesc: {
-    color: '#7E8FA6',
-    fontSize: typeScale.footnote,
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  securityGroupCard: {
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 16,
-    marginBottom: 14,
-  },
-  securityGroupLabel: {
-    color: '#64748B',
-    fontSize: typeScale.caption,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    marginBottom: 12,
-  },
-  securitySpecRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  specLabelWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  securitySpecTitle: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '500',
-  },
-  securitySpecSub: {
-    color: '#64748B',
-    fontSize: typeScale.caption,
-    marginTop: 1,
-  },
-  activeTag: {
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  activeTagText: {
-    color: '#10B981',
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-  },
-  quorumTag: {
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radius.sm,
-  },
-  quorumTagText: {
-    color: '#F59E0B',
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-  },
-  specInnerDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    marginVertical: 8,
-  },
-  specKeyValueRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 6,
-  },
-  specKeyText: {
-    color: '#7E8FA6',
-    fontSize: typeScale.body,
-  },
-  specValueText: {
-    fontSize: typeScale.body,
-    fontWeight: '600',
-  },
-  freezeSectionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 14,
-    marginBottom: 14,
-  },
-  freezeTitle: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-  },
-  freezeDesc: {
-    color: '#64748B',
-    fontSize: typeScale.footnote,
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  panicBtn: {
-    backgroundColor: '#1A2338',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radius.sm,
-  },
-  panicBtnActive: {
-    backgroundColor: 'rgba(244, 63, 94, 0.2)',
-    borderWidth: 1,
-    borderColor: '#F43F5E',
-  },
-  panicBtnText: {
-    color: '#FDA4AF',
-    fontSize: typeScale.footnote,
-    fontWeight: '600',
-  },
-  auditLogRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    paddingVertical: 6,
-  },
-  auditLogText: {
-    color: '#E2E8F0',
-    fontSize: typeScale.footnote,
-    fontWeight: '500',
-  },
-  auditLogTime: {
-    color: '#64748B',
-    fontSize: typeScale.caption,
-    marginTop: 2,
-  },
+    /* EXPANDED SEND TRANSACTION & PREVIEW STYLES */
+    expandedModalBackdrop: {
+      flex: 1,
+      backgroundColor: theme.scrim,
+      justifyContent: 'flex-end',
+    },
+    expandedSendSheet: {
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      borderWidth: 1,
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      maxHeight: '92%',
+    },
+    sendHeroCard: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: 16,
+      marginBottom: 16,
+      alignItems: 'center',
+    },
+    sendTokenHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      width: '100%',
+      marginBottom: 12,
+    },
+    sendTokenPill: {
+      ...CHIP_SHAPE,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+      borderWidth: 1,
+    },
+    sendTokenSymbol: {
+      fontSize: typeScale.body,
+      fontWeight: '700',
+    },
+    sendTokenName: {
+      fontSize: typeScale.footnote,
+    },
+    sendBalanceChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    sendBalanceLabel: {
+      color: theme.textMuted,
+      fontSize: typeScale.footnote,
+    },
+    sendBalanceValue: {
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+    },
+    sendInputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+      marginBottom: 4,
+    },
+    sendBigInput: {
+      fontSize: typeScale.heroXl,
+      fontWeight: '700',
+      textAlign: 'center',
+      minWidth: 120,
+      padding: 0,
+      includeFontPadding: false,
+    },
+    sendCurrencySuffix: {
+      fontSize: typeScale.displaySm,
+      fontWeight: '600',
+      marginLeft: 6,
+      color: theme.textMuted,
+    },
+    sendUsdEstimateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    sendUsdApprox: {
+      fontSize: typeScale.body,
+      color: theme.textMuted,
+    },
+    sendUsdCounter: {
+      fontSize: typeScale.body,
+      fontWeight: '500',
+      color: theme.textMuted,
+    },
+    percentageChipsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      gap: space.sm,
+    },
+    percentChip: {
+      ...CHIP_SHAPE,
+      flex: 1,
+      alignItems: 'center',
+      borderWidth: 1,
+    },
+    percentChipText: {
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+    },
+    inputSection: {
+      marginBottom: 16,
+    },
+    validBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    validBadgeText: {
+      color: theme.textSecondary,
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+    },
+    invalidBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    invalidBadgeText: {
+      color: theme.roseText,
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+    },
+    /* One message slot under the recipient and amount fields, shared by the
+       extraction notice, the rejection reason and the self-send warning. */
+    fieldMessageRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 6,
+      marginTop: 8,
+    },
+    fieldMessageText: {
+      flex: 1,
+      fontSize: typeScale.footnote,
+      lineHeight: 17,
+    },
+    recentRecipientRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      marginTop: 10,
+    },
+    recentRecipientLabel: {
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+      letterSpacing: 0.4,
+      marginRight: 2,
+    },
+    recentRecipientChip: {
+      ...CHIP_SHAPE,
+      borderWidth: 1,
+    },
+    recentRecipientChipText: {
+      fontSize: typeScale.footnote,
+      fontWeight: '500',
+      fontFamily: 'SpaceMono',
+    },
+    /* A saved (named) shortcut reads as a name with its address underneath rather than
+       as a hex blob, so the row is scannable and the address is still visible. */
+    savedRecipientChip: {
+      ...CHIP_SHAPE,
+      borderWidth: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      maxWidth: 180,
+    },
+    savedRecipientTextGroup: {
+      flexShrink: 1,
+    },
+    savedRecipientLabel: {
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+    },
+    savedRecipientAddress: {
+      fontSize: typeScale.caption,
+      fontFamily: 'SpaceMono',
+      marginTop: 1,
+    },
+    /* Inline "name this contact" row. It lives in the sheet instead of a dialog because
+       the theme's dialog has no text input, and an address book without names is just
+       another list of hex. */
+    contactSaveRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      marginTop: 10,
+    },
+    contactSaveInput: {
+      flex: 1,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: typeScale.body,
+    },
+    contactSaveActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+    },
+    liveFeePill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    liveFeeDot: {
+      width: 5,
+      height: 5,
+      borderRadius: radius.pill,
+    },
+    liveFeeText: {
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+    },
+    actionHintText: {
+      marginTop: 8,
+      fontSize: typeScale.footnote,
+      textAlign: 'center',
+    },
+    clearActionBtn: {
+      paddingHorizontal: 6,
+      justifyContent: 'center',
+    },
+    previewSection: {
+      marginBottom: 14,
+    },
+    previewCard: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: 14,
+      gap: 10,
+    },
+    previewRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    previewLabel: {
+      color: theme.textMuted,
+      fontSize: typeScale.body,
+    },
+    previewLabelBold: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '700',
+    },
+    previewValueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    previewValueText: {
+      color: theme.textSecondary,
+      fontSize: typeScale.body,
+      fontWeight: '500',
+    },
+    previewValueBold: {
+      fontSize: typeScale.body,
+      fontWeight: '700',
+    },
+    previewTotalValue: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '700',
+    },
+    previewDivider: {
+      height: 1,
+      backgroundColor: theme.borderSubtle,
+    },
+    recipientAvatarSmall: {
+      width: 20,
+      height: 20,
+      borderRadius: radius.pill,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    networkDotSmall: {
+      width: 6,
+      height: 6,
+      borderRadius: radius.pill,
+      backgroundColor: theme.emerald,
+    },
+    securityBadgeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    securityBadgeText: {
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+    },
 
-  /* INPUTS & FORM MODALS */
-  inputLabel: {
-    color: '#64748B',
-    fontSize: typeScale.caption,
-    fontWeight: '600',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
-  inputLabelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  maxLinkText: {
-    color: '#FFFFFF',
-    fontSize: typeScale.footnote,
-    fontWeight: '500',
-  },
-  inputBoxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: 12,
-  },
-  modalInput: {
-    flex: 1,
-    paddingVertical: 12,
-    fontSize: typeScale.bodyLg,
-  },
-  modalInputStandalone: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: typeScale.title,
-  },
-  pasteActionBtn: {
-    backgroundColor: '#181818',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radius.sm,
-  },
-  pasteActionText: {
-    color: '#FFFFFF',
-    fontSize: typeScale.footnote,
-    fontWeight: '600',
-  },
-  riskCardNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: radius.md,
-    padding: 12,
-    marginTop: 14,
-    marginBottom: 20,
-  },
-  riskCardNoticeQuorum: {
-    backgroundColor: 'rgba(245, 158, 11, 0.08)',
-    borderColor: 'rgba(245, 158, 11, 0.3)',
-  },
-  riskNoticeText: {
-    flex: 1,
-    color: '#94A3B8',
-    fontSize: typeScale.footnote,
-    lineHeight: 16,
-  },
-  modalPrimaryActionBtn: {
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 15,
-    borderRadius: radius.lg,
-  },
-  modalPrimaryActionBtnText: {
-    color: '#000000',
-    fontSize: typeScale.title,
-    fontWeight: '600',
-  },
+    /* SECURITY SECTION REFRESH */
+    securitySectionCard: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: 16,
+      marginBottom: 14,
+    },
+    securitySectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    securitySectionHeading: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    credentialCompactRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 4,
+    },
+    credentialIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    credentialName: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+    },
+    credentialSub: {
+      fontSize: typeScale.footnote,
+      marginTop: 2,
+    },
+    securityRowDivider: {
+      height: 1,
+      marginVertical: 10,
+    },
+    policyStatsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+    },
+    policyStatTile: {
+      width: '48%',
+      flexGrow: 1,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      padding: 12,
+    },
+    policyStatLabel: {
+      fontSize: typeScale.caption,
+      fontWeight: '500',
+      marginBottom: 4,
+    },
+    policyStatValue: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '700',
+    },
+    recoveryDetailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 4,
+    },
+    recoveryDetailTitle: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+    },
+    recoveryDetailDesc: {
+      fontSize: typeScale.footnote,
+      marginTop: 2,
+    },
+    recoveryGuardianRow: {
+      marginTop: 14,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    recoveryGuardianLabel: {
+      fontSize: typeScale.micro,
+      fontWeight: '700',
+      letterSpacing: 0.6,
+      marginBottom: 3,
+    },
+    recoveryGuardianValue: {
+      fontSize: typeScale.body,
+      fontWeight: '600',
+    },
+    recoveryGuardianNote: {
+      fontSize: typeScale.caption,
+      lineHeight: 15,
+      marginTop: 4,
+    },
+    guardianToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      paddingVertical: 10,
+    },
+    guardianToggleText: {
+      color: theme.textSecondary,
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+    },
+    guardianEditor: {
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      marginBottom: 4,
+    },
+    guardianInputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    guardianInput: { flex: 1, color: theme.textPrimary, fontSize: typeScale.caption, padding: 0 },
+    guardianHint: {
+      fontSize: typeScale.caption,
+      lineHeight: 15,
+      marginTop: 8,
+      marginBottom: 12,
+    },
+    recoveryActionRow: {
+      // Stacked, not side by side. Both buttons are `width: '100%'` with their label
+      // clipped by `overflow: 'hidden'`, so sharing a row made the pair wider than the
+      // box it sits in and "Execute Recovery" hung over the amber border. Full-width
+      // rows also survive a large system font, which a 50/50 split would not.
+      gap: 10,
+      marginTop: 14,
+    },
+    recoveryPendingBox: {
+      marginTop: 14,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      backgroundColor: theme.amberBg,
+      borderColor: theme.amberBorder,
+    },
+    recoveryPendingHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    recoveryPendingTitle: {
+      fontSize: typeScale.body,
+      fontWeight: '700',
+    },
 
-  /* RECEIVE MODAL */
-  receiveExplainerText: {
-    color: '#94A3B8',
-    fontSize: typeScale.body,
-    lineHeight: 18,
-    marginBottom: 16,
-  },
-  qrContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: radius.lg,
-    padding: 16,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  addressDisplayBox: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 18,
-  },
-  addressDisplayText: {
-    fontSize: typeScale.footnote,
-    fontFamily: 'SpaceMono',
-    textAlign: 'center',
-  },
+    /* LEGACY SECURITY COMPAT */
+    securityRowCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: 14,
+      marginBottom: 14,
+    },
+    securityCardIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.pill,
+      backgroundColor: theme.accentLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    securityItemTitle: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+    },
+    securityItemDesc: {
+      color: theme.textMuted,
+      fontSize: typeScale.footnote,
+      lineHeight: 16,
+      marginTop: 2,
+    },
+    securityGroupCard: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: 16,
+      marginBottom: 14,
+    },
+    securityGroupLabel: {
+      color: theme.textMuted,
+      fontSize: typeScale.caption,
+      fontWeight: '700',
+      letterSpacing: 0.8,
+      marginBottom: 12,
+    },
+    securitySpecRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 6,
+    },
+    specLabelWithIcon: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    securitySpecTitle: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '500',
+    },
+    securitySpecSub: {
+      color: theme.textMuted,
+      fontSize: typeScale.caption,
+      marginTop: 1,
+    },
+    activeTag: {
+      ...TAG_SHAPE,
+      backgroundColor: theme.emeraldBg,
+      borderWidth: 1,
+      borderColor: theme.emeraldBorder,
+    },
+    activeTagText: {
+      color: theme.emeraldText,
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+    },
+    quorumTag: {
+      ...TAG_SHAPE,
+      // Quiet outline rather than a filled amber pill: the quorum is a standing
+      // property of the wallet, not an alarm, and two filled amber chips on one
+      // screen read as decoration instead of information.
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: theme.amberBorder,
+    },
+    quorumTagText: {
+      color: theme.amberText,
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+    },
+    specInnerDivider: {
+      height: 1,
+      backgroundColor: theme.borderSubtle,
+      marginVertical: 8,
+    },
+    specKeyValueRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 6,
+    },
+    specKeyText: {
+      color: theme.textMuted,
+      fontSize: typeScale.body,
+    },
+    specValueText: {
+      fontSize: typeScale.body,
+      fontWeight: '600',
+    },
+    freezeSectionCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: 14,
+      marginBottom: 14,
+    },
+    freezeTitle: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+    },
+    freezeDesc: {
+      color: theme.textMuted,
+      fontSize: typeScale.footnote,
+      lineHeight: 16,
+      marginTop: 2,
+    },
+    panicBtn: {
+      ...CHIP_SHAPE,
+      backgroundColor: theme.bgElevated,
+    },
+    panicBtnActive: {
+      backgroundColor: theme.roseSurface,
+      borderWidth: 1,
+      borderColor: theme.rose,
+    },
+    panicBtnText: {
+      color: theme.roseText,
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+    },
+    auditLogRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+      paddingVertical: 6,
+    },
+    auditLogText: {
+      color: theme.textSecondary,
+      fontSize: typeScale.footnote,
+      fontWeight: '500',
+    },
+    auditLogTime: {
+      color: theme.textMuted,
+      fontSize: typeScale.caption,
+      marginTop: 2,
+    },
 
-  modalSecondaryBtn: {
-    flex: 1,
-    borderWidth: 1,
-    paddingVertical: 14,
-    borderRadius: radius.md,
-    alignItems: 'center',
-  },
-  modalSecondaryBtnText: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-  },
-  modalDangerBtn: {
-    flex: 1,
-    backgroundColor: 'rgba(244, 63, 94, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(244, 63, 94, 0.3)',
-    paddingVertical: 14,
-    borderRadius: radius.md,
-    alignItems: 'center',
-  },
-  modalDangerBtnText: {
-    color: '#FDA4AF',
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-  },
+    /* INPUTS & FORM MODALS */
+    inputLabel: {
+      color: theme.textMuted,
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+      letterSpacing: 0.8,
+      marginBottom: 8,
+    },
+    inputLabelRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    maxLinkText: {
+      color: theme.accent,
+      fontSize: typeScale.footnote,
+      fontWeight: '500',
+    },
+    inputBoxRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: 12,
+    },
+    modalInput: {
+      flex: 1,
+      paddingVertical: 12,
+      fontSize: typeScale.bodyLg,
+    },
+    modalInputStandalone: {
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: typeScale.title,
+    },
+    pasteActionBtn: {
+      ...CHIP_SHAPE,
+      backgroundColor: theme.bgElevated,
+    },
+    pasteActionText: {
+      color: theme.textPrimary,
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+    },
+    riskCardNotice: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      backgroundColor: theme.accentLight,
+      borderWidth: 1,
+      borderColor: theme.borderDefault,
+      borderRadius: radius.md,
+      padding: 12,
+      marginTop: 14,
+      marginBottom: 20,
+    },
+    riskCardNoticeQuorum: {
+      backgroundColor: theme.amberBg,
+      borderColor: theme.amberBorder,
+    },
+    riskNoticeText: {
+      flex: 1,
+      color: theme.textSecondary,
+      fontSize: typeScale.footnote,
+      lineHeight: 16,
+    },
+    modalPrimaryActionBtn: {
+      backgroundColor: theme.accent,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 15,
+      borderRadius: radius.lg,
+    },
+    modalPrimaryActionBtnText: {
+      color: theme.accentForeground,
+      fontSize: typeScale.title,
+      fontWeight: '600',
+    },
 
-  /* OVERFLOW MENU */
-  menuBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-  },
-  overflowSheet: {
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 8,
-  },
-  overflowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  overflowRowText: {
-    fontSize: typeScale.title,
-    fontWeight: '500',
-  },
-  overflowDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
+    /* RECEIVE MODAL */
+    receiveExplainerText: {
+      color: theme.textSecondary,
+      fontSize: typeScale.body,
+      lineHeight: 18,
+      marginBottom: 16,
+    },
+    receiveMetaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space.sm,
+      marginBottom: 14,
+    },
+    receiveNetworkPill: {
+      ...TAG_SHAPE,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      borderWidth: 1,
+    },
+    receiveNetworkPillText: {
+      fontSize: typeScale.caption,
+      fontWeight: '600',
+    },
+    receiveMetaText: {
+      flex: 1,
+      fontSize: typeScale.caption,
+      textAlign: 'right',
+    },
+    receiveWarning: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+      backgroundColor: theme.amberBg,
+      borderWidth: 1,
+      borderColor: theme.amberBorder,
+      borderRadius: radius.md,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      marginBottom: 14,
+    },
+    receiveWarningText: {
+      flex: 1,
+      fontSize: typeScale.caption,
+      lineHeight: 16,
+    },
+    qrContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.accent,
+      borderRadius: radius.lg,
+      padding: 16,
+      alignSelf: 'center',
+      marginBottom: 16,
+    },
+    addressDisplayBox: {
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      marginBottom: 18,
+    },
+    addressDisplayText: {
+      fontSize: typeScale.footnote,
+      fontFamily: 'SpaceMono',
+      textAlign: 'center',
+    },
 
-  /* 9. SAFE LOCK OVERLAY */
-  safeLockContainer: {
-    flex: 1,
+    modalSecondaryBtn: {
+      flex: 1,
+      borderWidth: 1,
+      paddingVertical: 14,
+      borderRadius: radius.md,
+      alignItems: 'center',
+    },
+    modalSecondaryBtnText: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+    },
+    modalDangerBtn: {
+      flex: 1,
+      backgroundColor: theme.roseBg,
+      borderWidth: 1,
+      borderColor: theme.roseBorder,
+      paddingVertical: 14,
+      borderRadius: radius.md,
+      alignItems: 'center',
+    },
+    modalDangerBtnText: {
+      color: theme.roseText,
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+    },
 
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  safeLockCard: {
-    width: '100%',
-    maxWidth: 380,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    padding: 28,
-    alignItems: 'center',
-  },
-  safeLockIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  safeLockTitle: {
-    fontSize: typeScale.display,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-    marginBottom: 8,
-  },
-  safeLockSubtitle: {
-    color: '#94A3B8',
-    fontSize: typeScale.bodyLg,
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  safeLockWalletName: {
-    color: '#A1A1AA',
-    fontSize: typeScale.body,
-    fontWeight: '600',
-    marginBottom: 26,
-  },
-  unlockButton: {
-    width: '100%',
-    height: 52,
-    borderRadius: radius.lg,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  unlockButtonText: {
-    color: '#000000',
-    fontSize: typeScale.title,
-    fontWeight: '700',
-    letterSpacing: -0.2,
-  },
-  // On-Chain Deployment Banner
-  onChainStatusBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    marginTop: 14,
-  },
-  onChainStatusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: radius.pill,
-  },
-  onChainStatusText: {
-    fontSize: typeScale.footnote,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  deployPdaButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radius.sm,
-  },
-  deployPdaButtonText: {
-    fontSize: typeScale.caption,
-    fontWeight: '700',
-  },
-  // Activity Filters
-  activityFilterRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  activityFilterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-  },
-  activityFilterChipText: {
-    fontSize: typeScale.body,
-    fontWeight: '500',
-  },
-  activitySecurityBadge: {
-    fontSize: typeScale.caption,
-    fontWeight: '500',
-  },
-  confirmedBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginTop: 2,
-  },
-  confirmedBadgeText: {
-    color: '#10B981',
-    fontSize: typeScale.caption,
-    fontWeight: '500',
-  },
-  // Sub-Agent Details
-  subAgentItem: {
-    paddingVertical: 4,
-  },
-  subAgentHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  subAgentTitleWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  subAgentName: {
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-  },
-  subAgentDesc: {
-    fontSize: typeScale.footnote,
-    lineHeight: 16,
-    marginBottom: 6,
-  },
-  subAgentMetaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  subAgentMetaText: {
-    fontSize: typeScale.footnote,
-    fontWeight: '500',
-  },
-  sessionGrantExplainer: {
-    fontSize: typeScale.footnote,
-    lineHeight: 16,
-    marginBottom: 12,
-  },
-  sessionInputRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 10,
-  },
-  sessionInputLabel: {
-    fontSize: typeScale.footnote,
-    fontWeight: '500',
-    marginBottom: 4,
-  },
-  sessionInputBox: {
-    height: 42,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    fontSize: typeScale.bodyLg,
-    fontWeight: '600',
-  },
-  zeroPromptBadgeText: {
-    fontSize: typeScale.footnote,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  // Transaction Details Modal
-  txDetailHeroCard: {
-    alignItems: 'center',
-    paddingVertical: 18,
-    marginBottom: 14,
-  },
-  txDetailIconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: radius.pill,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  txDetailAmountText: {
-    fontSize: typeScale.displayLg,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  txDetailFiatText: {
-    fontSize: typeScale.body,
-    marginBottom: 10,
-  },
-  txDetailConfirmedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(16,185,129,0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radius.xl,
-  },
-  txDetailConfirmedText: {
-    color: '#10B981',
-    fontSize: typeScale.footnote,
-    fontWeight: '600',
-  },
-  addressCopyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: radius.md,
-    borderWidth: 1,
-  },
-  addressCopyRowText: {
-    fontSize: typeScale.footnote,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    flex: 1,
-    marginRight: 8,
-  },
-  explorerButton: {
-    height: 48,
-    borderRadius: radius.md,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  explorerButtonText: {
-    color: '#000000',
-    fontSize: typeScale.bodyLg,
-    fontWeight: '700',
-  },
-})
+    /* OVERFLOW MENU */
+    menuBackdrop: {
+      flex: 1,
+      backgroundColor: theme.scrim,
+      justifyContent: 'flex-end',
+      paddingHorizontal: 16,
+    },
+    overflowSheet: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      padding: 8,
+    },
+    overflowRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+    },
+    overflowRowText: {
+      fontSize: typeScale.title,
+      fontWeight: '500',
+    },
+    overflowDivider: {
+      height: 1,
+      backgroundColor: theme.borderSubtle,
+    },
+
+    /* 9. SAFE LOCK OVERLAY */
+    safeLockContainer: {
+      flex: 1,
+
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+    },
+    safeLockCard: {
+      width: '100%',
+      maxWidth: 380,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      padding: 28,
+      alignItems: 'center',
+    },
+    safeLockIconWrap: {
+      width: 64,
+      height: 64,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    safeLockTitle: {
+      fontSize: typeScale.display,
+      fontWeight: '700',
+      letterSpacing: -0.4,
+      marginBottom: 8,
+    },
+    safeLockSubtitle: {
+      color: theme.textSecondary,
+      fontSize: typeScale.bodyLg,
+      textAlign: 'center',
+      marginBottom: 6,
+    },
+    safeLockWalletName: {
+      color: theme.textMuted,
+      fontSize: typeScale.body,
+      fontWeight: '600',
+      marginBottom: 26,
+    },
+    unlockButton: {
+      width: '100%',
+      height: 52,
+      borderRadius: radius.lg,
+      backgroundColor: theme.accent,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    unlockButtonText: {
+      color: theme.accentForeground,
+      fontSize: typeScale.title,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    // On-Chain Deployment Banner
+    onChainStatusBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 9,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      marginTop: 14,
+    },
+    onChainStatusDot: {
+      width: 8,
+      height: 8,
+      borderRadius: radius.pill,
+    },
+    onChainStatusText: {
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+      flexShrink: 1,
+    },
+    deployPdaButton: {
+      ...CHIP_SHAPE,
+    },
+    deployPdaButtonText: {
+      fontSize: typeScale.caption,
+      fontWeight: '700',
+    },
+    // Activity Filters
+    activityFilterRow: {
+      flexDirection: 'row',
+      gap: space.sm,
+      marginBottom: space.md,
+    },
+    activityFilterChip: {
+      ...CHIP_SHAPE,
+      borderWidth: 1,
+    },
+    activityFilterChipText: {
+      fontSize: typeScale.body,
+      fontWeight: '500',
+    },
+    activitySecurityBadge: {
+      fontSize: typeScale.caption,
+      fontWeight: '500',
+    },
+    confirmedBadgeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      marginTop: 2,
+    },
+    confirmedBadgeText: {
+      color: theme.emeraldText,
+      fontSize: typeScale.caption,
+      fontWeight: '500',
+    },
+    // Sub-Agent Details
+    subAgentItem: {
+      paddingVertical: 4,
+    },
+    subAgentHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    subAgentTitleWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    subAgentName: {
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+    },
+    subAgentDesc: {
+      fontSize: typeScale.footnote,
+      lineHeight: 16,
+      marginBottom: 6,
+    },
+    subAgentMetaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    subAgentMetaText: {
+      fontSize: typeScale.footnote,
+      fontWeight: '500',
+    },
+    sessionGrantExplainer: {
+      fontSize: typeScale.footnote,
+      lineHeight: 16,
+      marginBottom: 12,
+    },
+    sessionInputRow: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 10,
+    },
+    sessionInputLabel: {
+      fontSize: typeScale.footnote,
+      fontWeight: '500',
+      marginBottom: 4,
+    },
+    sessionInputBox: {
+      height: 42,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      fontSize: typeScale.bodyLg,
+      fontWeight: '600',
+    },
+    zeroPromptBadgeText: {
+      fontSize: typeScale.footnote,
+      textAlign: 'center',
+      marginTop: 4,
+    },
+    // Transaction Details Modal
+    txDetailHeroCard: {
+      alignItems: 'center',
+      paddingVertical: 18,
+      marginBottom: 14,
+    },
+    txDetailIconCircle: {
+      width: 60,
+      height: 60,
+      borderRadius: radius.pill,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    txDetailAmountText: {
+      fontSize: typeScale.displayLg,
+      fontWeight: '800',
+      letterSpacing: -0.5,
+      marginBottom: 4,
+    },
+    txDetailFiatText: {
+      fontSize: typeScale.body,
+      marginBottom: 10,
+    },
+    txDetailConfirmedPill: {
+      ...TAG_SHAPE,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.xs,
+      backgroundColor: theme.emeraldBg,
+    },
+    txDetailConfirmedText: {
+      color: theme.emeraldText,
+      fontSize: typeScale.footnote,
+      fontWeight: '600',
+    },
+    addressCopyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderRadius: radius.md,
+      borderWidth: 1,
+    },
+    addressCopyRowText: {
+      fontSize: typeScale.footnote,
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+      flex: 1,
+      marginRight: 8,
+    },
+    explorerButton: {
+      height: 48,
+      borderRadius: radius.md,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+    },
+    explorerButtonText: {
+      color: theme.accentForeground,
+      fontSize: typeScale.bodyLg,
+      fontWeight: '700',
+    },
+
+    /* Shared surface / text treatments.
+     These used to live in a second style object built inline in JSX because a
+     module-level StyleSheet could not see the palette. Now that the sheet is
+     built from the theme, one mechanism covers both. */
+    card: { backgroundColor: theme.bgCard, borderColor: theme.borderDefault },
+    elevatedCard: { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
+    textPrimary: { color: theme.textPrimary },
+    textSecondary: { color: theme.textSecondary },
+    textMuted: { color: theme.textMuted },
+    input: { backgroundColor: theme.bgInput, borderColor: theme.borderDefault, color: theme.textPrimary },
+    divider: { backgroundColor: theme.borderSubtle },
+    iconBtn: { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
+    actionBtn: { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
+    actionBtnText: { color: theme.textPrimary },
+  })
+
+function useWalletStyles() {
+  const { theme } = useAppTheme()
+  return useMemo(() => createStyles(theme), [theme])
+}
 
 function PolicyLinkButton({ onPress }: { onPress: () => void }) {
   const { theme } = useAppTheme()
+  const styles = useWalletStyles()
   return (
     <TouchableOpacity
       style={[styles.policyLink, { borderColor: theme.borderDefault, backgroundColor: theme.accentLight }]}

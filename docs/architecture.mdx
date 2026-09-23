@@ -1,0 +1,50 @@
+---
+title: "Architecture & Security"
+description: "How Haptix enforces the 4-layer authority architecture on-chain."
+---
+
+# The 4-Layer Authority Architecture
+
+The standard instinct in crypto is *"require a second factor for high-value transfers."* However, standard wallet implementations fail because a software private key has no strict login gate; a leaked key is a compromised wallet. 
+
+Haptix moves enforcement entirely on-chain through a clean 4-layer architecture:
+
+```text
+                 HAPTIX SMART ACCOUNT
+                          │
+        ┌─────────────────┴─────────────────┐
+        │                                   │
+   HUMAN AUTHORITY                   AGENT AUTHORITY
+        │                                   │
+   Passkeys (P-256)                  Session Keys (secp256k1)
+        │                                   │
+        └─────────────────┬─────────────────┘
+                          ↓
+               ON-CHAIN POLICY ENGINE
+                          │
+        ┌─────────────────┼─────────────────┐
+        ↓                 ↓                 ↓
+      ALLOW            ESCALATE           REJECT
+        │                 │                 │
+        ↓                 ↓                 ↓
+     Execute       Require Quorum       Fail-Closed
+                   (Agent + Passkeys)
+```
+
+## The 3-Tier Security Policy Firewall
+
+Haptix intercepts every operation before execution using an on-chain Policy Engine. 
+
+1. **Tier 1 (Autonomous Micro-Execution):**
+   - The AI agent signs with its local session key.
+   - The transaction executes autonomously on-chain without human prompting, accumulating against a 24-hour rolling budget window.
+2. **Tier 2 (Human Biometric Escalation):**
+   - If the agent exceeds its autonomous limit, the smart contract will reject the transaction unless it receives a **2-of-2 WebAuthn Passkey Quorum**.
+   - The agent requests human approval, and the user authorizes via biometrics (Touch ID, Face ID).
+3. **Tier 3 (Hard Ceiling Revert):**
+   - Any transaction exceeding the maximum hard ceiling is **rejected immediately on-chain**.
+   - This protects your account even if both the AI agent and the front-end UI are compromised.
+
+## Cryptography & Curve Validation
+
+Haptix relies on the **RIP-7212 Precompile** to natively verify P-256 (secp256r1) WebAuthn signatures on EVM chains, and utilizes native curve verification on Solana. This allows your device's Secure Enclave to act as a hardware wallet without gas-heavy signature verification on-chain.

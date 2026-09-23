@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Clipboard from '@/utils/clipboard'
 import { useAppTheme } from '@/components/theme/theme-context'
+import { typeScale } from '@/theme/tokens'
 
 export interface CopyActionButtonProps {
   value: string
@@ -78,9 +79,9 @@ export function CopyActionButton({
     }).start()
   }
 
-  const bgColor = copied ? theme.emeraldBg : isDark ? '#0F172A' : '#F1F5F9'
+  const bgColor = copied ? theme.emeraldBg : theme.bgElevated
 
-  const borderColor = copied ? (isDark ? 'rgba(16, 185, 129, 0.4)' : '#A7F3D0') : isDark ? '#1E293B' : '#E2E8F0'
+  const borderColor = copied ? theme.emeraldBorder : theme.borderDefault
 
   const iconColor = copied ? theme.emerald : theme.textSecondary
   const textColor = copied ? theme.emeraldText : theme.textSecondary
@@ -147,12 +148,12 @@ const styles = StyleSheet.create({
     width: 36,
   },
   label: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '600',
     letterSpacing: 0.1,
   },
   labelCompact: {
-    fontSize: 11,
+    fontSize: typeScale.caption,
   },
   nativeShadow: {
     shadowColor: '#000',

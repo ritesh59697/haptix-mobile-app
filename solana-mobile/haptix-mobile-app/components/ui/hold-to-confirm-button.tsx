@@ -87,7 +87,7 @@ export function HoldToConfirmButton({
   const surfaceColor = isDanger ? theme.roseSurface : isWarning ? theme.amberBg : theme.bgElevated
   // Text colour once the fill has swept under it. A white fill needs dark text,
   // otherwise the label vanishes mid-hold — exactly when it must stay readable.
-  const fillForeground = isDanger || isWarning ? '#FFFFFF' : theme.accentForeground
+  const fillForeground = isDanger || isWarning ? theme.onTone : theme.accentForeground
 
   return (
     <View style={[styles.wrapper, style]}>

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Haptix",
+  "colors": {
+    "primary": "#6C6AF3",
+    "light": "#6C6AF3",
+    "dark": "#9C93FF"
+  },
+  "favicon": "/favicon.ico",
+  "navigation": {
+    "anchors": [
+      {
+        "anchor": "Documentation",
+        "icon": "book-open",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Developer SDK",
+            "pages": [
+              "sdk/overview"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/ritesh59697/haptix",
+          "icon": "github"
+        },
+        {
+          "anchor": "Twitter",
+          "href": "https://twitter.com/haptix",
+          "icon": "twitter"
+        }
+      ]
+    }
+  },
+  "logo": {
+    "light": "/assets/haptix_official_logo.jpg",
+    "dark": "/assets/haptix_official_logo.jpg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@haptix.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get Started",
+      "href": "https://haptix.com"
+    }
+  },
+  "footer": {
+    "socials": {
+      "twitter": "https://twitter.com/haptix",
+      "github": "https://github.com/ritesh59697/haptix"
+    }
+  }
+}

@@ -1,15 +1,13 @@
 use anchor_lang::prelude::*;
-use crate::constants::WALLET_SEED;
 use crate::error::HaptixError;
 use crate::secp256r1::verify_passkey_precompile_signature;
-use crate::state::WalletAccount;
+use crate::state::{is_self_derived, WalletAccount};
 
 #[derive(Accounts)]
 pub struct ExecuteTransfer<'info> {
     #[account(
         mut,
-        seeds = [WALLET_SEED, &wallet.primary_passkey[1..33]],
-        bump = wallet.bump
+        constraint = is_self_derived(&wallet, &wallet.key(), &crate::ID)
     )]
     pub wallet: Account<'info, WalletAccount>,
 

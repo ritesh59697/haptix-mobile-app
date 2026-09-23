@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useMobileWallet } from '@wallet-ui/react-native-web3js'
+import { useCluster } from '@/components/cluster/cluster-provider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { ellipsify } from '@/utils/ellipsify'
 import { setString as copyToClipboard } from '@/utils/clipboard'
@@ -13,7 +13,7 @@ import { HaptixSettingsRow } from '@/components/haptix/haptix-settings-ui'
  * ellipsified hash that could never be read back in full or used anywhere.
  */
 export function ClusterUiGenesisHash({ selectedCluster }: { selectedCluster: Cluster }) {
-  const { connection } = useMobileWallet()
+  const { connection } = useCluster()
   const { theme } = useAppTheme()
   const [hasCopied, setHasCopied] = useState(false)
   const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null)

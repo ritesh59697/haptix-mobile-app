@@ -1,9 +1,9 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
-import { radius, typeScale } from '@/theme/tokens'
+import { radius, space, typeScale } from '@/theme/tokens'
 
 export type AlertStatus = 'info' | 'success' | 'warning' | 'error' | 'neutral'
 
@@ -30,50 +30,58 @@ export interface HaptixAlertProps {
  * Responsive flex layout with standard icon, title, description, and action button.
  */
 export function HaptixAlert({ status = 'info', title, message, icon, action, style }: HaptixAlertProps) {
-  const { isDark } = useAppTheme()
+  const { theme } = useAppTheme()
 
-  const config = {
-    info: {
-      bg: isDark ? 'rgba(59, 130, 246, 0.12)' : '#EFF6FF',
-      border: isDark ? 'rgba(59, 130, 246, 0.28)' : '#BFDBFE',
-      iconColor: '#3B82F6',
-      titleColor: isDark ? '#93C5FD' : '#1E40AF',
-      textColor: isDark ? '#BFDBFE' : '#1E3A8A',
-      defaultIcon: 'info-outline' as const,
-    },
-    success: {
-      bg: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5',
-      border: isDark ? 'rgba(16, 185, 129, 0.28)' : '#A7F3D0',
-      iconColor: '#10B981',
-      titleColor: isDark ? '#6EE7B7' : '#065F46',
-      textColor: isDark ? '#A7F3D0' : '#064E3B',
-      defaultIcon: 'check-circle-outline' as const,
-    },
-    warning: {
-      bg: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FFFBEB',
-      border: isDark ? 'rgba(245, 158, 11, 0.28)' : '#FDE68A',
-      iconColor: '#F59E0B',
-      titleColor: isDark ? '#FCD34D' : '#92400E',
-      textColor: isDark ? '#FDE68A' : '#78350F',
-      defaultIcon: 'warning-amber' as const,
-    },
-    error: {
-      bg: isDark ? 'rgba(244, 63, 94, 0.12)' : '#FFF1F2',
-      border: isDark ? 'rgba(244, 63, 94, 0.28)' : '#FECDD3',
-      iconColor: '#F43F5E',
-      titleColor: isDark ? '#FDA4AF' : '#9F1239',
-      textColor: isDark ? '#FECDD3' : '#881337',
-      defaultIcon: 'error-outline' as const,
-    },
-    neutral: {
-      bg: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F4F4F5',
-      border: isDark ? 'rgba(255, 255, 255, 0.12)' : '#E4E4E7',
-      iconColor: isDark ? '#A1A1AA' : '#71717A',
-      titleColor: isDark ? '#FFFFFF' : '#18181B',
-      textColor: isDark ? '#D4D4D8' : '#3F3F46',
-      defaultIcon: 'shield' as const,
-    },
-  }[status]
+  // Each status resolves to one tone from theme/tokens.ts instead of the local
+  // five-shade palette this file used to carry: the tints, hairlines and title
+  // colours were picked independently per variant (0.12 and 0.28 here, 0.10 and
+  // 0.30 elsewhere), so an alert never matched the badge reporting the same
+  // state. Body copy is the shared secondary text colour for every tone, which
+  // is what removes the fifth hand-picked shade per variant.
+  const config = useMemo(() => {
+    switch (status) {
+      case 'success':
+        return {
+          bg: theme.emeraldBg,
+          border: theme.emeraldBorder,
+          iconColor: theme.emerald,
+          titleColor: theme.emeraldText,
+          defaultIcon: 'check-circle-outline' as const,
+        }
+      case 'warning':
+        return {
+          bg: theme.amberBg,
+          border: theme.amberBorder,
+          iconColor: theme.amber,
+          titleColor: theme.amberText,
+          defaultIcon: 'warning-amber' as const,
+        }
+      case 'error':
+        return {
+          bg: theme.roseBg,
+          border: theme.roseBorder,
+          iconColor: theme.rose,
+          titleColor: theme.roseText,
+          defaultIcon: 'error-outline' as const,
+        }
+      case 'neutral':
+        return {
+          bg: theme.accentLight,
+          border: theme.borderDefault,
+          iconColor: theme.textMuted,
+          titleColor: theme.textPrimary,
+          defaultIcon: 'shield' as const,
+        }
+      default:
+        return {
+          bg: theme.infoBg,
+          border: theme.infoBorder,
+          iconColor: theme.info,
+          titleColor: theme.infoText,
+          defaultIcon: 'info-outline' as const,
+        }
+    }
+  }, [status, theme])
 
   const iconName = icon || config.defaultIcon
 
@@ -95,7 +103,7 @@ export function HaptixAlert({ status = 'info', title, message, icon, action, sty
 
       <View style={styles.contentWrap}>
         {title ? <Text style={[styles.alertTitle, { color: config.titleColor }]}>{title}</Text> : null}
-        <Text style={[styles.alertMessage, { color: config.textColor }]}>{message}</Text>
+        <Text style={[styles.alertMessage, { color: theme.textSecondary }]}>{message}</Text>
       </View>
 
       {action ? (
@@ -112,10 +120,13 @@ export function HaptixAlert({ status = 'info', title, message, icon, action, sty
           activeOpacity={0.75}
         >
           {action.loading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
+            <ActivityIndicator size="small" color={theme.accentForeground} />
           ) : (
             <Text
-              style={[styles.actionButtonText, { color: action.variant === 'ghost' ? config.titleColor : '#FFFFFF' }]}
+              style={[
+                styles.actionButtonText,
+                { color: action.variant === 'ghost' ? config.titleColor : theme.accentForeground },
+              ]}
             >
               {action.label}
             </Text>
@@ -131,10 +142,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: space.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    gap: 12,
+    gap: space.md,
     marginBottom: 14,
   },
   iconWrap: {
@@ -150,7 +161,7 @@ const styles = StyleSheet.create({
     fontSize: typeScale.body,
     fontWeight: '700',
     letterSpacing: -0.1,
-    marginBottom: 2,
+    marginBottom: space.xxs,
   },
   alertMessage: {
     fontSize: typeScale.footnote,
@@ -158,9 +169,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   actionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radius.sm,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },

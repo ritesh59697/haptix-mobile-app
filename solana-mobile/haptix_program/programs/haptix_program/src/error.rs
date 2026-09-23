@@ -30,4 +30,8 @@ pub enum HaptixError {
     InvalidPubkeyLength,
     #[msg("Malformed or untrusted WebAuthn assertion.")]
     InvalidWebAuthnAssertion,
+    #[msg("Recovery timelock must not be negative.")]
+    InvalidRecoveryTimelock,
+    #[msg("A recovery is in flight. Veto it or execute it before unlocking.")]
+    RecoveryInProgress,
 }

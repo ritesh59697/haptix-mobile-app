@@ -20,11 +20,14 @@ export interface HaptixDialogOptions {
   onDismiss?: () => void
   /** Draws a status icon above the title. */
   status?: HaptixDialogStatus
+  /** Runs the given node between the message and the actions for whatever a string cannot carry. */
+  content?: React.ReactNode
 }
 
 interface DialogRequest {
   title: string
   message?: string
+  content?: React.ReactNode
   buttons: HaptixDialogButton[]
   cancelable: boolean
   onDismiss?: () => void
@@ -81,6 +84,7 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
         {
           title,
           message,
+          content: options?.content,
           buttons: buttons && buttons.length > 0 ? buttons : [{ text: 'OK' }],
           cancelable: options?.cancelable ?? true,
           onDismiss: options?.onDismiss,
@@ -179,6 +183,8 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
                   <Text style={[layout.message, colors.message]}>{active.message}</Text>
                 </ScrollView>
               )}
+
+              {active.content}
 
               <View style={[layout.divider, colors.divider]} />
 

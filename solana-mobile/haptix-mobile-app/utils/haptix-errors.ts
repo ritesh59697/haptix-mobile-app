@@ -17,6 +17,14 @@
 /** Failure modes worth their own sentence, most specific first. */
 const EXPLANATIONS: { pattern: RegExp; describe: string }[] = [
   {
+    // `HaptixError::RecoveryInProgress` (6015). The program rejects an unfreeze while a
+    // guardian recovery is pending, because the freeze is what makes the recovery
+    // visible. Matched on the Anchor hex code and on the message, since web3.js puts the
+    // code in `message` and the text in the program logs.
+    pattern: /0x177f|recovery is in flight/i,
+    describe: 'A recovery is in flight, so this wallet stays frozen until you veto it or execute it.',
+  },
+  {
     pattern: /already in use/i,
     describe: 'That account already exists on-chain, so there is nothing to create.',
   },

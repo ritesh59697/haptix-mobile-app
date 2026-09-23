@@ -1,0 +1,34 @@
+---
+title: "Quickstart Guide"
+description: "How to set up your first Haptix Smart Account and enroll passkeys."
+---
+
+# Getting Started
+
+Setting up Haptix is designed to be frictionless. There are no seed phrases to copy down or store. 
+
+## 1. Install the App
+
+Haptix is available as a browser extension and a mobile application.
+- **Browser Extension:** Install from the Chrome Web Store or load unpacked from the `/extension` directory.
+- **Mobile App:** Download the iOS or Android app (currently in development on Solana Devnet).
+
+## 2. Create Your Smart Account
+
+When you first open Haptix, select **Create New Wallet**.
+
+### Passkey Enrollment
+
+Haptix requires you to set up two passkeys to establish a secure **2-of-2 Hardware Quorum**:
+1. **Primary Passkey (Device Auth):** Typically tied to your current device (e.g., your phone's Secure Enclave).
+2. **Secondary Passkey (Backup Auth):** This acts as your backup and quorum key. 
+
+Follow the biometric prompts (Face ID, Touch ID, etc.) to generate these keys securely on your hardware.
+
+## 3. Fund Your Wallet
+
+Your Smart Account address is a deterministic PDA (Program Derived Address) or CREATE2 contract address. 
+You can send assets (ETH, SOL, USDC) to this address from any exchange or other wallet. 
+
+## Next Steps
+Now that your account is funded and secured by your biometrics, you can learn about [Delegating to AI Agents](/docs/sdk/overview) or deep dive into the [Smart Account Architecture](/docs/architecture).

@@ -1,0 +1,60 @@
+---
+title: "SDK Overview"
+description: "How to use @haptix/sdk to request AI Session Keys."
+---
+
+# Haptix SDK
+
+The `@haptix/sdk` provides a simple interface for AI agents and dApps to request and utilize autonomous **Session Keys**. 
+
+If you are building an AI agent (e.g., using Eliza, LangChain, or a custom script) that needs to trade or interact with Web3 on behalf of a user, you should integrate the Haptix SDK to request an on-chain budget.
+
+## Installation
+
+Install the SDK via npm or yarn:
+
+```bash
+npm install @haptix/sdk
+# or
+yarn add @haptix/sdk
+```
+
+## Requesting a Session Key
+
+Your AI agent must first request permission from the user to operate on their behalf. The user will be prompted to biometricly approve a specific set of rules (e.g., "Allow trading up to 10 USDC per day").
+
+```typescript
+import { HaptixAgent } from '@haptix/sdk';
+
+// Initialize the agent
+const agent = new HaptixAgent({
+  name: "My Trading Bot",
+  description: "DCA into ETH every hour",
+});
+
+// Request a Session Key with a specific policy
+const session = await agent.requestSession({
+  maxSpend: "10", // 10 USDC
+  token: "USDC",
+  duration: 86400, // 24 hours
+});
+
+console.log("Session Key Generated:", session.address);
+```
+
+## Executing Autonomous Transactions
+
+Once the user approves the policy, the smart contract registers the session key. Your agent can now use this key to sign transactions, provided they stay within the policy constraints.
+
+```typescript
+// The agent attempts to buy ETH using its session key
+const txHash = await session.execute({
+  to: "0xDefiDexRouterAddress...",
+  value: "0",
+  data: "0xSwapData...", 
+});
+
+console.log("Autonomous Trade Executed:", txHash);
+```
+
+If the agent attempts to exceed the policy, the transaction will either **revert** or **escalate** to the user's phone for a biometric override, depending on the tier limits set by the user.

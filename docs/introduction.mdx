@@ -1,0 +1,26 @@
+---
+title: "Introduction to Haptix"
+description: "A smart account architecture that balances human biometric authority with AI autonomous delegation."
+---
+
+# Welcome to Haptix
+
+Haptix is a non-custodial smart wallet designed for a world where humans and AI agents manage assets together. 
+
+Instead of relying on a fragile 12-word seed phrase, Haptix secures your assets using **WebAuthn Passkeys** backed by your device's hardware enclave (e.g., Apple Secure Enclave, Touch ID, Face ID, Windows Hello). 
+
+## The Core Problem
+
+Traditional wallets are designed for manual human signing. If you want an AI agent to execute a trade, you are forced to hand over your private key. If the agent makes a mistake or gets hacked, your entire wallet is drained.
+
+## The Haptix Solution
+
+Haptix uses **Account Abstraction (ERC-4337)** to enforce spending policies directly on the blockchain. 
+You can generate a scoped **Session Key** for an AI agent, granting it permission to trade autonomously, but only under strict, on-chain constraints.
+
+- **No Seed Phrases:** Secure your wallet with your biometrics.
+- **AI Agent Delegation:** Let AI bots trade for you, safely.
+- **3-Tier On-Chain Firewall:** Limits are enforced by the blockchain, not just the UI.
+- **Guardian Social Recovery:** Recover your wallet even if you lose your phone.
+
+Get started by checking out our [Quickstart Guide](/docs/quickstart).

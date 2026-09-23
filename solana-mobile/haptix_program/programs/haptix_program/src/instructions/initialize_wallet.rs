@@ -27,8 +27,16 @@ pub fn initialize_wallet(
     secondary_passkey: [u8; 33],
     spend_threshold_lamports: Option<u64>,
     guardian: Option<Pubkey>,
+    recovery_timelock_seconds: Option<i64>,
 ) -> Result<()> {
     require!(primary_passkey != secondary_passkey, HaptixError::DuplicatePasskeys);
+
+    // The timelock is the owner's veto window, so a negative value would mean a guardian
+    // could rotate the keys before the owner ever sees the prompt. Zero is allowed but
+    // deliberately explicit: it is an opt-out of the veto, not a shortcut.
+    if let Some(seconds) = recovery_timelock_seconds {
+        require!(seconds >= 0, HaptixError::InvalidRecoveryTimelock);
+    }
 
     let wallet = &mut ctx.accounts.wallet;
     wallet.bump = ctx.bumps.wallet;
@@ -36,15 +44,19 @@ pub fn initialize_wallet(
     wallet.secondary_passkey = secondary_passkey;
     wallet.spend_threshold_lamports = spend_threshold_lamports.unwrap_or(DEFAULT_SPEND_THRESHOLD);
     wallet.guardian = guardian.unwrap_or(ctx.accounts.payer.key());
-    wallet.recovery_timelock = DEFAULT_RECOVERY_TIMELOCK;
+    wallet.recovery_timelock = recovery_timelock_seconds.unwrap_or(DEFAULT_RECOVERY_TIMELOCK);
     wallet.recovery_initiated_at = 0;
     wallet.pending_primary_passkey = [0u8; 33];
     wallet.pending_secondary_passkey = [0u8; 33];
     wallet.is_frozen = false;
     wallet.agents = Vec::new();
+    // Pinned at creation: this is what every later instruction re-derives the address
+    // from, and it has to stay put across a recovery rotation.
+    wallet.wallet_seed = primary_passkey[1..33].try_into().unwrap();
 
     msg!("Haptix Wallet initialized. PDA: {:?}", wallet.key());
     msg!("Spend Threshold: {} lamports", wallet.spend_threshold_lamports);
     msg!("Guardian: {:?}", wallet.guardian);
+    msg!("Recovery Timelock: {} seconds", wallet.recovery_timelock);
     Ok(())
 }

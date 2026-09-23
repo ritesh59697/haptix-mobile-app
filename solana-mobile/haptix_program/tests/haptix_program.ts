@@ -46,7 +46,8 @@ describe("haptix_program tests", () => {
         Array.from(primaryPasskey),
         Array.from(secondaryPasskey),
         new anchor.BN(100_000_000), // 0.1 SOL spend threshold
-        guardianKeypair.publicKey
+        guardianKeypair.publicKey,
+        null // default recovery timelock
       )
       .accounts({
         payer: provider.wallet.publicKey,
@@ -64,6 +65,7 @@ describe("haptix_program tests", () => {
     assert.equal(walletAccount.guardian.toBase58(), guardianKeypair.publicKey.toBase58());
     assert.equal(walletAccount.isFrozen, false);
     assert.equal(walletAccount.agents.length, 0);
+    assert.equal(walletAccount.recoveryTimelock.toNumber(), 86_400);
   });
 
   it("Guardian triggers Panic Freeze", async () => {
@@ -103,5 +105,71 @@ describe("haptix_program tests", () => {
     assert.isTrue(walletAccount.recoveryInitiatedAt.toNumber() > 0);
     assert.deepEqual(Buffer.from(walletAccount.pendingPrimaryPasskey), newPrimary);
     assert.deepEqual(Buffer.from(walletAccount.pendingSecondaryPasskey), newSecondary);
+  });
+
+  it("Refuses to execute recovery before the timelock elapses", async () => {
+    // This wallet carries the 24h default, so the window cannot have passed.
+    try {
+      await program.methods.executeRecovery().accounts({ wallet: walletPda }).rpc();
+      assert.fail("execute_recovery should have been rejected");
+    } catch (err: any) {
+      assert.include(String(err), "RecoveryTimelockNotElapsed");
+    }
+
+    const walletAccount = await program.account.walletAccount.fetch(walletPda);
+    assert.deepEqual(Buffer.from(walletAccount.primaryPasskey), primaryPasskey);
+    assert.equal(walletAccount.isFrozen, true);
+  });
+
+  it("Executes recovery once the timelock elapses and rotates the keys", async () => {
+    // A second wallet on a two-second timelock. Waiting out the 24h default is not an
+    // option in a test, and shortening the window is the only way to reach the branch
+    // that actually swaps the keys -- the half of recovery that was never covered.
+    const shortPrimary = Buffer.alloc(33, 0x02);
+    shortPrimary[1] = 0x11;
+    const shortSecondary = Buffer.alloc(33, 0x03);
+    shortSecondary[1] = 0x22;
+
+    const [shortPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("haptix_wallet"), shortPrimary.subarray(1, 33)],
+      program.programId
+    );
+
+    await program.methods
+      .initializeWallet(
+        Array.from(shortPrimary),
+        Array.from(shortSecondary),
+        null,
+        guardianKeypair.publicKey,
+        new anchor.BN(2)
+      )
+      .accounts({
+        payer: provider.wallet.publicKey,
+        wallet: shortPda,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    const replacementPrimary = Buffer.alloc(33, 0x02);
+    replacementPrimary[1] = 0x33;
+    const replacementSecondary = Buffer.alloc(33, 0x03);
+    replacementSecondary[1] = 0x44;
+
+    await program.methods
+      .initiateRecovery(Array.from(replacementPrimary), Array.from(replacementSecondary))
+      .accounts({ wallet: shortPda, guardian: guardianKeypair.publicKey })
+      .signers([guardianKeypair])
+      .rpc();
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    await program.methods.executeRecovery().accounts({ wallet: shortPda }).rpc();
+
+    const rotated = await program.account.walletAccount.fetch(shortPda);
+    assert.deepEqual(Buffer.from(rotated.primaryPasskey), replacementPrimary);
+    assert.deepEqual(Buffer.from(rotated.secondaryPasskey), replacementSecondary);
+    assert.equal(rotated.isFrozen, false);
+    assert.equal(rotated.recoveryInitiatedAt.toNumber(), 0);
+    assert.deepEqual(Buffer.from(rotated.pendingPrimaryPasskey), Buffer.alloc(33));
   });
 });

@@ -1,5 +1,4 @@
 import { createContext, type PropsWithChildren, use, useMemo, useState, useEffect } from 'react'
-import { useMobileWallet } from '@wallet-ui/react-native-web3js'
 import {
   HaptixWalletAccount,
   getSavedWallet,
@@ -71,7 +70,6 @@ async function backfillCredentials(wallet: HaptixWalletAccount): Promise<HaptixW
 }
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const { disconnect } = useMobileWallet()
   const [activeWallet, setActiveWallet] = useState<HaptixWalletAccount | null>(null)
   const [wallets, setWallets] = useState<HaptixWalletAccount[]>([])
   const [isLocked, setIsLocked] = useState(false)
@@ -228,7 +226,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setActiveWallet(null)
     setWallets([])
     setIsLocked(false)
-    await disconnect()
   }
 
   const value: AuthState = useMemo(

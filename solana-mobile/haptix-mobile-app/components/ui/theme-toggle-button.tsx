@@ -3,6 +3,7 @@ import { Pressable, View, Text, StyleSheet, Animated, Platform, StyleProp, ViewS
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useAppTheme } from '@/components/theme/theme-context'
+import { typeScale } from '@/theme/tokens'
 
 export interface ThemeToggleButtonProps {
   style?: StyleProp<ViewStyle>
@@ -118,7 +119,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   label: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
     fontWeight: '600',
     marginRight: 4,
   },

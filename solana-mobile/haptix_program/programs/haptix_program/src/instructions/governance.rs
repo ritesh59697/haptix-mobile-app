@@ -1,15 +1,13 @@
 use anchor_lang::prelude::*;
-use crate::constants::WALLET_SEED;
 use crate::error::HaptixError;
 use crate::secp256r1::verify_passkey_precompile_signature;
-use crate::state::WalletAccount;
+use crate::state::{is_self_derived, WalletAccount};
 
 #[derive(Accounts)]
 pub struct SetGuardian<'info> {
     #[account(
         mut,
-        seeds = [WALLET_SEED, &wallet.primary_passkey[1..33]],
-        bump = wallet.bump
+        constraint = is_self_derived(&wallet, &wallet.key(), &crate::ID)
     )]
     pub wallet: Account<'info, WalletAccount>,
 
@@ -54,8 +52,7 @@ pub fn handle_set_guardian(
 pub struct SetSpendThreshold<'info> {
     #[account(
         mut,
-        seeds = [WALLET_SEED, &wallet.primary_passkey[1..33]],
-        bump = wallet.bump
+        constraint = is_self_derived(&wallet, &wallet.key(), &crate::ID)
     )]
     pub wallet: Account<'info, WalletAccount>,
 
@@ -100,8 +97,7 @@ pub fn handle_set_spend_threshold(
 pub struct PanicFreeze<'info> {
     #[account(
         mut,
-        seeds = [WALLET_SEED, &wallet.primary_passkey[1..33]],
-        bump = wallet.bump
+        constraint = is_self_derived(&wallet, &wallet.key(), &crate::ID)
     )]
     pub wallet: Account<'info, WalletAccount>,
 
@@ -126,8 +122,7 @@ pub fn handle_panic_freeze(ctx: Context<PanicFreeze>) -> Result<()> {
 pub struct Unfreeze<'info> {
     #[account(
         mut,
-        seeds = [WALLET_SEED, &wallet.primary_passkey[1..33]],
-        bump = wallet.bump
+        constraint = is_self_derived(&wallet, &wallet.key(), &crate::ID)
     )]
     pub wallet: Account<'info, WalletAccount>,
 
@@ -142,6 +137,17 @@ pub fn handle_unfreeze(
     secondary_sig_ix_index: u16,
 ) -> Result<()> {
     let wallet = &mut ctx.accounts.wallet;
+
+    // The freeze applied by `initiate_recovery` is what makes a pending recovery
+    // visible and keeps the wallet quiet while the owner decides. Unfreezing during
+    // that window would leave the recovery in flight with the wallet looking normal,
+    // and the guardian could still rotate the keys once the timelock elapsed. The only
+    // exits from a recovery are to veto it or to execute it, and each of those unfreezes
+    // the wallet itself.
+    require!(
+        wallet.recovery_initiated_at == 0,
+        HaptixError::RecoveryInProgress
+    );
 
     let expected_message = b"UNFREEZE_WALLET";
 

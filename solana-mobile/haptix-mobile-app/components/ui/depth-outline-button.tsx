@@ -2,6 +2,7 @@ import React, { useRef } from 'react'
 import { Pressable, View, Text, StyleSheet, Animated, Platform, StyleProp, ViewStyle, TextStyle } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
+import { typeScale } from '@/theme/tokens'
 
 export interface DepthOutlineButtonProps {
   children?: React.ReactNode
@@ -61,8 +62,8 @@ export function DepthOutlineButton({
   const height = size === 'large' ? 52 : size === 'compact' ? 36 : 46
   const borderRadius = size === 'large' ? 14 : size === 'compact' ? 9 : 12
 
-  const bgColor = isDark ? '#0B1120' : '#FFFFFF'
-  const borderColor = isDark ? '#1E293B' : '#E2E8F0'
+  const bgColor = isDark ? theme.bgElevated : theme.bgApp
+  const borderColor = theme.borderDefault
   const textColor = theme.textPrimary
 
   return (
@@ -146,7 +147,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 14,
+    fontSize: typeScale.bodyLg,
     fontWeight: '600',
     letterSpacing: 0.2,
   },

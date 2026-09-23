@@ -20,8 +20,20 @@ export interface WalletState {
   guardian: PublicKey
   recoveryTimelock: bigint
   recoveryInitiatedAt: bigint
+  /** Candidate keys proposed by an in-flight recovery; all zero when none is active. */
+  pendingPrimaryPasskey: Uint8Array // 33 bytes
+  pendingSecondaryPasskey: Uint8Array // 33 bytes
   isFrozen: boolean
   agents: AgentSessionState[]
+  /**
+   * The 32 bytes this account's address was derived from, pinned at creation.
+   *
+   * A recovery rotation rewrites `primaryPasskey`, so deriving the address from that
+   * field after a rotation lands on an account that does not exist. This is the seed to
+   * derive from once a wallet has been recovered; all zeroes means the wallet has never
+   * been rotated, and `primaryPasskey` is still the seed.
+   */
+  walletSeed: Uint8Array // 32 bytes
   balanceLamports: number
 }
 
@@ -39,6 +51,37 @@ export interface AgentSessionState {
 export function getWalletPda(primaryPasskey: Uint8Array): [PublicKey, number] {
   const seedSlice = primaryPasskey.length === 33 ? primaryPasskey.subarray(1, 33) : primaryPasskey
   return PublicKey.findProgramAddressSync([WALLET_SEED, Buffer.from(seedSlice)], HAPTIX_PROGRAM_ID)
+}
+
+/**
+ * The PDA seed for a wallet whose on-chain state is known.
+ *
+ * `getWalletPda` derives from a passkey, which is only correct while the passkey is the
+ * one the account was created with. After a recovery rotation the account keeps its
+ * address but its primary passkey is a different key, so anything that needs to re-derive
+ * (or explain) the address has to go through the pinned seed instead.
+ */
+export function getWalletSeedFromState(state: { walletSeed: Uint8Array; primaryPasskey: Uint8Array }): Uint8Array {
+  const allZero = state.walletSeed.every((b) => b === 0)
+  if (!allZero) return state.walletSeed
+  return state.primaryPasskey.length === 33 ? state.primaryPasskey.subarray(1, 33) : state.primaryPasskey
+}
+
+/**
+ * Reads a guardian address stored on a wallet record.
+ *
+ * Returns null rather than throwing: a record written by an older build, or one whose
+ * guardian was mistyped before validation existed, must not make every on-chain action
+ * fail. Null simply leaves the program's own default in place.
+ */
+export function parseGuardianAddress(value?: string | null): PublicKey | null {
+  const candidate = (value ?? '').trim()
+  if (!candidate) return null
+  try {
+    return new PublicKey(candidate)
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -76,8 +119,13 @@ export async function fetchHaptixWallet(connection: Connection, walletPda: Publi
     const recoveryInitiatedAt = view.getBigInt64(offset, true)
     offset += 8
 
-    // Skip pending keys: 33 + 33 = 66 bytes
-    offset += 66
+    // Candidate keys proposed while a recovery is in flight. These are the keys the
+    // guardian asked to install, so they are what a veto is rejecting; zeroes mean no
+    // recovery is pending.
+    const pendingPrimaryPasskey = new Uint8Array(data.subarray(offset, offset + 33))
+    offset += 33
+    const pendingSecondaryPasskey = new Uint8Array(data.subarray(offset, offset + 33))
+    offset += 33
 
     const isFrozen = data[offset++] === 1
 
@@ -113,8 +161,13 @@ export async function fetchHaptixWallet(connection: Connection, walletPda: Publi
       guardian,
       recoveryTimelock,
       recoveryInitiatedAt,
+      pendingPrimaryPasskey,
+      pendingSecondaryPasskey,
       isFrozen,
       agents,
+      // Accounts created before the seed field existed leave this all zeroes, which is
+      // also the "never rotated" marker, so both cases read the same.
+      walletSeed: offset + 32 <= data.length ? new Uint8Array(data.subarray(offset, offset + 32)) : new Uint8Array(32),
       balanceLamports: accountInfo.lamports,
     }
   } catch (err) {
@@ -134,6 +187,7 @@ export function createInitializeWalletInstruction({
   secondaryPasskey,
   spendThresholdLamports,
   guardian,
+  recoveryTimelockSeconds,
 }: {
   payer: PublicKey
   walletPda: PublicKey
@@ -141,16 +195,19 @@ export function createInitializeWalletInstruction({
   secondaryPasskey: Uint8Array
   spendThresholdLamports?: bigint
   guardian?: PublicKey
+  recoveryTimelockSeconds?: bigint
 }): TransactionInstruction {
   if (primaryPasskey.length !== 33 || secondaryPasskey.length !== 33) {
     throw new Error('Both passkeys must be 33-byte compressed Secp256r1 keys.')
   }
 
   // Calculate buffer size:
-  // 8 (disc) + 33 (primary) + 33 (secondary) + 1 + (spendThreshold ? 8 : 0) + 1 + (guardian ? 32 : 0)
+  // 8 (disc) + 33 + 33 + Option<u64> + Option<Pubkey> + Option<i64>, each option costing
+  // a 1-byte tag plus its payload when present.
   const spendOptionSize = spendThresholdLamports !== undefined ? 9 : 1
   const guardianOptionSize = guardian ? 33 : 1
-  const totalSize = 8 + 33 + 33 + spendOptionSize + guardianOptionSize
+  const timelockOptionSize = recoveryTimelockSeconds !== undefined ? 9 : 1
+  const totalSize = 8 + 33 + 33 + spendOptionSize + guardianOptionSize + timelockOptionSize
 
   const buffer = Buffer.alloc(totalSize)
   let offset = 0
@@ -181,6 +238,15 @@ export function createInitializeWalletInstruction({
     buffer.writeUInt8(1, offset++)
     buffer.set(guardian.toBytes(), offset)
     offset += 32
+  } else {
+    buffer.writeUInt8(0, offset++)
+  }
+
+  // recovery_timelock_seconds: Option<i64>
+  if (recoveryTimelockSeconds !== undefined) {
+    buffer.writeUInt8(1, offset++)
+    buffer.writeBigInt64LE(recoveryTimelockSeconds, offset)
+    offset += 8
   } else {
     buffer.writeUInt8(0, offset++)
   }
@@ -467,5 +533,211 @@ export function createUnfreezeInstruction({
       { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
     ],
     data: buffer,
+  })
+}
+
+/**
+ * The payload a 2-of-2 quorum signs to point the wallet at a new guardian.
+ *
+ * The address is inside the signed bytes, so a signature collected for one guardian
+ * cannot be replayed to install a different one.
+ */
+export function getSetGuardianSignedMessage(newGuardian: PublicKey): Uint8Array {
+  const prefix = new TextEncoder().encode('SET_GUARDIAN:')
+  const message = new Uint8Array(prefix.length + 32)
+  message.set(prefix, 0)
+  message.set(new Uint8Array(newGuardian.toBuffer()), prefix.length)
+  return message
+}
+
+/**
+ * The payload a 2-of-2 quorum signs to move the spending threshold.
+ */
+export function getSetSpendThresholdSignedMessage(newThresholdLamports: bigint): Uint8Array {
+  const prefix = new TextEncoder().encode('SET_THRESHOLD:')
+  const message = new Uint8Array(prefix.length + 8)
+  message.set(prefix, 0)
+  // Written straight into the message rather than through a Buffer: the program reads
+  // this as a little-endian u64, so the byte order is the whole point.
+  new DataView(message.buffer).setBigUint64(prefix.length, newThresholdLamports, true)
+  return message
+}
+
+/**
+ * Builds the `set_guardian` instruction.
+ *
+ * The guardian is the one address that can start a recovery, and it is fixed when the
+ * account is created -- there was no way to move it afterwards, which left every wallet
+ * pointing at whoever was configured first. Changing it needs the full 2-of-2 owner
+ * quorum, so a guardian cannot appoint its own successor.
+ *
+ * Discriminator: [147, 243, 50, 121, 154, 164, 50, 30]
+ */
+export function createSetGuardianInstruction({
+  walletPda,
+  newGuardian,
+  primarySigIxIndex,
+  secondarySigIxIndex,
+}: {
+  walletPda: PublicKey
+  newGuardian: PublicKey
+  primarySigIxIndex: number
+  secondarySigIxIndex: number
+}): TransactionInstruction {
+  const buffer = Buffer.alloc(8 + 32 + 2 + 2)
+  buffer.set([147, 243, 50, 121, 154, 164, 50, 30], 0)
+  buffer.set(new Uint8Array(newGuardian.toBuffer()), 8)
+  buffer.writeUInt16LE(primarySigIxIndex, 40)
+  buffer.writeUInt16LE(secondarySigIxIndex, 42)
+
+  return new TransactionInstruction({
+    programId: HAPTIX_PROGRAM_ID,
+    keys: [
+      { pubkey: walletPda, isSigner: false, isWritable: true },
+      { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+    ],
+    data: buffer,
+  })
+}
+
+/**
+ * Builds the `set_spend_threshold` instruction.
+ *
+ * Like the guardian, the threshold was write-once: the app read it from chain and showed
+ * it, but nothing ever wrote a new one, so the quorum boundary was stuck at whatever the
+ * wallet was created with. Also 2-of-2.
+ *
+ * Discriminator: [174, 99, 85, 154, 250, 74, 170, 124]
+ */
+export function createSetSpendThresholdInstruction({
+  walletPda,
+  newThresholdLamports,
+  primarySigIxIndex,
+  secondarySigIxIndex,
+}: {
+  walletPda: PublicKey
+  newThresholdLamports: bigint
+  primarySigIxIndex: number
+  secondarySigIxIndex: number
+}): TransactionInstruction {
+  const buffer = Buffer.alloc(8 + 8 + 2 + 2)
+  buffer.set([174, 99, 85, 154, 250, 74, 170, 124], 0)
+  buffer.writeBigUInt64LE(newThresholdLamports, 8)
+  buffer.writeUInt16LE(primarySigIxIndex, 16)
+  buffer.writeUInt16LE(secondarySigIxIndex, 18)
+
+  return new TransactionInstruction({
+    programId: HAPTIX_PROGRAM_ID,
+    keys: [
+      { pubkey: walletPda, isSigner: false, isWritable: true },
+      { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+    ],
+    data: buffer,
+  })
+}
+
+/**
+ * The payload a 2-of-2 quorum signs to veto an in-flight recovery.
+ *
+ * The program compares this byte-for-byte against the base64url-decoded
+ * `clientDataJSON.challenge`, so the veto cannot be replayed from a signature the
+ * owner made for some other action.
+ */
+export function getCancelRecoverySignedMessage(): Uint8Array {
+  return new TextEncoder().encode('CANCEL_RECOVERY')
+}
+
+/**
+ * Builds the `initiate_recovery` instruction.
+ *
+ * Only the stored guardian may call this, so a compromised passkey alone cannot
+ * redirect the wallet. The instruction proposes the replacement keys; it does not
+ * install them, and it freezes the wallet so the account cannot be drained while the
+ * owner still has time to veto.
+ *
+ * Discriminator: [132, 148, 60, 74, 49, 178, 235, 187]
+ */
+export function createInitiateRecoveryInstruction({
+  walletPda,
+  guardian,
+  newPrimaryPasskey,
+  newSecondaryPasskey,
+}: {
+  walletPda: PublicKey
+  guardian: PublicKey
+  newPrimaryPasskey: Uint8Array
+  newSecondaryPasskey: Uint8Array
+}): TransactionInstruction {
+  if (newPrimaryPasskey.length !== 33 || newSecondaryPasskey.length !== 33) {
+    throw new Error('Both replacement passkeys must be 33-byte compressed Secp256r1 keys.')
+  }
+
+  const buffer = Buffer.alloc(8 + 33 + 33)
+  buffer.set([132, 148, 60, 74, 49, 178, 235, 187], 0)
+  buffer.set(newPrimaryPasskey, 8)
+  buffer.set(newSecondaryPasskey, 41)
+
+  return new TransactionInstruction({
+    programId: HAPTIX_PROGRAM_ID,
+    keys: [
+      { pubkey: walletPda, isSigner: false, isWritable: true },
+      { pubkey: guardian, isSigner: true, isWritable: false },
+    ],
+    data: buffer,
+  })
+}
+
+/**
+ * Builds the `cancel_recovery` instruction.
+ *
+ * Cancels a guardian's in-flight recovery. Requires a 2-of-2 passkey quorum on
+ * `b"CANCEL_RECOVERY"`, which is why the guardian cannot unilaterally take over an
+ * account: the owner keeps the last word, and the veto needs both hardware keys.
+ *
+ * The signature instruction indices must point at the two `Secp256r1SigVerify`
+ * instructions in the same transaction, which the program reads back through the
+ * instructions sysvar rather than trusting.
+ *
+ * Discriminator: [176, 23, 203, 37, 121, 251, 227, 83]
+ */
+export function createCancelRecoveryInstruction({
+  walletPda,
+  primarySigIxIndex,
+  secondarySigIxIndex,
+}: {
+  walletPda: PublicKey
+  primarySigIxIndex: number
+  secondarySigIxIndex: number
+}): TransactionInstruction {
+  const buffer = Buffer.alloc(8 + 2 + 2)
+  buffer.set([176, 23, 203, 37, 121, 251, 227, 83], 0)
+  buffer.writeUInt16LE(primarySigIxIndex, 8)
+  buffer.writeUInt16LE(secondarySigIxIndex, 10)
+
+  return new TransactionInstruction({
+    programId: HAPTIX_PROGRAM_ID,
+    keys: [
+      { pubkey: walletPda, isSigner: false, isWritable: true },
+      { pubkey: SYSVAR_INSTRUCTIONS_PUBKEY, isSigner: false, isWritable: false },
+    ],
+    data: buffer,
+  })
+}
+
+/**
+ * Builds the `execute_recovery` instruction.
+ *
+ * Installs the pending keys and unfreezes the wallet. The program refuses this until
+ * `recovery_timelock` seconds have elapsed since initiation, which is the window the
+ * owner gets to cancel. Needs no signature of its own: the timelock and the stored
+ * pending keys are the authorization.
+ *
+ * Discriminator: [203, 133, 133, 228, 153, 121, 182, 237]
+ */
+export function createExecuteRecoveryInstruction({ walletPda }: { walletPda: PublicKey }): TransactionInstruction {
+  return new TransactionInstruction({
+    programId: HAPTIX_PROGRAM_ID,
+    keys: [{ pubkey: walletPda, isSigner: false, isWritable: true }],
+    data: Buffer.from([203, 133, 133, 228, 153, 121, 182, 237]),
   })
 }
