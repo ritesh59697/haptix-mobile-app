@@ -4,18 +4,21 @@ import { PropsWithChildren } from 'react'
 import { AuthProvider } from '@/components/auth/auth-provider'
 import { ClusterProvider, useCluster } from '@/components/cluster/cluster-provider'
 import { AppTheme } from '@/components/app-theme'
+import { HaptixDialogProvider } from '@/components/haptix/haptix-dialog'
 
 const queryClient = new QueryClient()
 export function AppProviders({ children }: PropsWithChildren) {
   return (
     <AppTheme>
-      <QueryClientProvider client={queryClient}>
-        <ClusterProvider>
-          <SolanaProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </SolanaProvider>
-        </ClusterProvider>
-      </QueryClientProvider>
+      <HaptixDialogProvider>
+        <QueryClientProvider client={queryClient}>
+          <ClusterProvider>
+            <SolanaProvider>
+              <AuthProvider>{children}</AuthProvider>
+            </SolanaProvider>
+          </ClusterProvider>
+        </QueryClientProvider>
+      </HaptixDialogProvider>
     </AppTheme>
   )
 }

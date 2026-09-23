@@ -310,38 +310,62 @@ export function parseTransactionRecord(
 
 /**
  * Fetches the most recent transactions for a wallet and parses each one.
- * `getParsedTransaction` costs one RPC round trip per signature, so the count
- * is deliberately small.
+ *
+ * `getParsedTransaction` costs one RPC round trip per signature, which forced two
+ * limits. The public endpoints answer a burst of ten parallel calls with HTTP 429,
+ * and web3.js then retries that request with growing backoff — so the burst was
+ * showing up as a wall of `Server responded with 429` and, because the caller
+ * swallowed errors, as an empty activity list. Parses now run in small batches.
+ *
+ * The second limit is wasted work: a signature parsed on an earlier launch keeps its
+ * stored record (the merge keeps the first copy it sees), so re-parsing it buys
+ * nothing and costs a round trip. Passing `knownSignatures` makes a routine launch
+ * cost one call instead of eleven.
  */
+// Measured against api.devnet.solana.com: ten parallel calls returned five 429s while
+// eight sequential calls all passed, so the binding limit is a rolling request budget
+// (roughly ten requests) rather than concurrency. A cold launch now spends one call on
+// the signature list plus at most this many parses; later launches skip everything
+// already parsed and cost one call.
+const TX_FETCH_LIMIT = 4
+const PARSE_BATCH_SIZE = 3
+
 export async function fetchOnChainTransactions(
   connection: Connection,
   walletAddress: PublicKey,
-  limit: number = 10,
+  options: { limit?: number; knownSignatures?: Iterable<string> } = {},
 ): Promise<TransactionRecord[]> {
-  const signatures = await connection.getSignaturesForAddress(walletAddress, { limit }).catch(() => [])
+  const { limit = TX_FETCH_LIMIT, knownSignatures = [] } = options
 
+  const signatures = await connection.getSignaturesForAddress(walletAddress, { limit }).catch(() => [])
   if (signatures.length === 0) return []
 
-  const parsed = await Promise.all(
-    signatures.map((info) =>
-      connection
-        .getParsedTransaction(info.signature, {
-          commitment: 'confirmed',
-          maxSupportedTransactionVersion: 0,
-        })
-        .catch(() => null),
-    ),
-  )
+  const known = new Set(knownSignatures)
+  const pending = signatures.filter((info) => !known.has(info.signature))
+  if (pending.length === 0) return []
+
+  const parsed: (ParsedTransactionWithMeta | null)[] = []
+  for (let start = 0; start < pending.length; start += PARSE_BATCH_SIZE) {
+    const batch = pending.slice(start, start + PARSE_BATCH_SIZE)
+    parsed.push(
+      ...(await Promise.all(
+        batch.map((info) =>
+          connection
+            .getParsedTransaction(info.signature, {
+              commitment: 'confirmed',
+              maxSupportedTransactionVersion: 0,
+            })
+            .catch(() => null),
+        ),
+      )),
+    )
+  }
 
   const records: TransactionRecord[] = []
-  parsed.forEach((tx, index) => {
-    const record = parseTransactionRecord(
-      signatures[index].signature,
-      tx as ParsedTransactionWithMeta | null,
-      walletAddress.toBase58(),
-    )
+  pending.forEach((info, index) => {
+    const record = parseTransactionRecord(info.signature, parsed[index], walletAddress.toBase58())
     if (record) {
-      if (record.status !== 'failed' && signatures[index].confirmationStatus === 'finalized') {
+      if (record.status !== 'failed' && info.confirmationStatus === 'finalized') {
         record.status = 'finalized'
       }
       records.push(record)

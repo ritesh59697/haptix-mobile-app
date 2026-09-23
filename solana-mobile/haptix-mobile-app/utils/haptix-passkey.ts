@@ -6,6 +6,7 @@ import { sha256 } from '@noble/hashes/sha2'
 import { requireOptionalNativeModule } from 'expo-modules-core'
 import * as Crypto from 'expo-crypto'
 import { AppConfig } from '@/constants/app-config'
+import { WebAuthnAssertion } from '@/utils/secp256r1-instruction'
 
 /**
  * ============================================================================
@@ -987,9 +988,13 @@ function describePasskeyError(err: unknown, action: 'create' | 'get'): string {
  * Creates a platform passkey for a brand-new wallet.
  *
  * The private key is generated inside the OS authenticator and never reaches JS: we
- * persist only the credential id and the public key. The biometric prompt below is an
- * app-level gate; the authenticator additionally enforces its own user verification
- * (`userVerification: 'required'`).
+ * persist only the credential id and the public key.
+ *
+ * There is deliberately no app-level biometric prompt before `createPlatformKey`. The
+ * authenticator enforces user verification itself (`userVerification: 'required'`), so
+ * prompting first showed the same sheet twice -- four sheets to create a wallet, since
+ * both the primary and the secondary key are registered. This is the same reasoning the
+ * signing path in `signWithPasskey` already follows.
  */
 async function registerHardwarePasskey(
   id: 'primary' | 'secondary',
@@ -1003,15 +1008,6 @@ async function registerHardwarePasskey(
     )
   }
   const { Passkey } = mod
-
-  const auth = await promptBiometricAuth(
-    id === 'primary'
-      ? 'Confirm with your device biometrics to create your Haptix wallet passkey'
-      : 'Confirm with your device biometrics to create the backup quorum passkey',
-  )
-  if (!auth.success) {
-    throw new Error(auth.error || 'Biometric verification was cancelled. No passkey was created.')
-  }
 
   let created: import('react-native-passkey').PasskeyCreateResult
   try {
@@ -1071,6 +1067,40 @@ async function registerHardwarePasskey(
 }
 
 /**
+ * The platform credential this device already holds for `id`, if any.
+ *
+ * `getOrCreate*Passkey` only ever honoured the "get" half of its name for *software*
+ * keys; a native passkey fell straight through to `registerHardwarePasskey`, which
+ * mints a fresh credential (`user.id` is random per call) and therefore a fresh public
+ * key. Because the wallet address is the PDA of that public key, every tap of "Create
+ * Wallet" produced a different, empty on-chain account and overwrote the single saved
+ * wallet record. Measured on Devnet: four wallets between 13:03 and 13:19, three of
+ * them holding only rent while the funded one was left behind with no pointer to it.
+ *
+ * Returns null when nothing is registered, when the credential was created by the
+ * legacy software path (handled by the caller, which must keep that exact scalar), or
+ * on web, where the credential lives in the browser rather than the OS.
+ */
+async function getRegisteredHardwarePasskey(id: 'primary' | 'secondary'): Promise<PasskeyInfo | null> {
+  if (Platform.OS === 'web' || (await readMode(id)) !== 'hardware') return null
+
+  const credentialId = await AsyncStorage.getItem(credentialKey(id))
+  const publicKeyHex = await AsyncStorage.getItem(pubkeyKey(id))
+  if (!credentialId || !publicKeyHex) return null
+
+  return {
+    id,
+    credentialId,
+    publicKey: hexToBytes(publicKeyHex),
+    publicKeyHex,
+    label: HARDWARE_KEY_LABELS[id],
+    hasBiometrics: true,
+    mode: 'hardware',
+    hardwareBacked: true,
+  }
+}
+
+/**
  * Signs `message` with a platform passkey.
  *
  * The challenge is the raw payload, base64url-encoded, so the assertion's
@@ -1121,6 +1151,174 @@ async function signHardwareAssertion(id: 'primary' | 'secondary', message: Uint8
 }
 
 /**
+ * Asks the authenticator for *any* passkey registered for this relying party and returns
+ * the one the user picks, together with its credential id.
+ *
+ * `allowCredentials` is omitted on purpose. The pinned form used by
+ * `signHardwareAssertion` can only use a credential this app still holds a pointer to,
+ * so a wallet whose pointer was overwritten -- which is what happened when every
+ * "Create Wallet" tap registered a new credential -- was unreachable even though its
+ * passkey was still sitting in the authenticator. The discoverable form is the only route
+ * back to it.
+ *
+ * An assertion carries no public key, so the caller cannot tell which wallet the picked
+ * credential belongs to from the result alone; `matchWebAuthnAssertion` settles that by
+ * verifying the signature against the keys the wallet already holds.
+ */
+export async function getDiscoverablePlatformAssertion(): Promise<{
+  credentialId: string
+  assertion: WebAuthnAssertion
+}> {
+  const mod = getPasskeyModule()
+  if (!mod || !isPlatformPasskeySupported()) {
+    throw new Error('Platform passkeys are not available in this build.')
+  }
+
+  let picked: import('react-native-passkey').PasskeyGetResult
+  try {
+    picked = await mod.Passkey.getPlatformKey({
+      challenge: bytesToBase64Url(await secureRandomBytes(32)),
+      rpId: PASSKEY_RP_ID,
+      userVerification: 'required',
+      timeout: 60_000,
+    })
+  } catch (err) {
+    console.error('[Haptix Passkey] Discoverable passkey prompt failed:', err)
+    throw new Error(describePasskeyError(err, 'get'))
+  }
+
+  const { signature, authenticatorData, clientDataJSON } = picked.response
+  if (!signature || !authenticatorData || !clientDataJSON) {
+    throw new Error('The authenticator returned an incomplete assertion.')
+  }
+  const credentialId = picked.id || picked.rawId
+  if (!credentialId) {
+    throw new Error('The authenticator did not return a credential id for the selected passkey.')
+  }
+
+  return {
+    credentialId,
+    assertion: {
+      signature: base64UrlToBytes(signature),
+      authenticatorData: base64UrlToBytes(authenticatorData),
+      clientDataJSON: base64UrlToBytes(clientDataJSON),
+    },
+  }
+}
+
+/**
+ * Points a role at a credential that was identified by signature rather than created
+ * here, for recovery of a wallet whose passkey pointer was lost.
+ *
+ * Writes exactly what `signHardwareAssertion` reads back. A software scalar for the same
+ * role is dropped only when it derives the very key being bound, i.e. when the same key
+ * was stored twice; the mode marker written here already decides which implementation
+ * signs. A scalar deriving a *different* key belongs to another wallet on this device,
+ * and deleting it would destroy that wallet's only copy of its key.
+ */
+export async function bindHardwarePasskey(
+  id: 'primary' | 'secondary',
+  credentialId: string,
+  publicKeyHex: string,
+): Promise<void> {
+  await AsyncStorage.setItem(credentialKey(id), credentialId)
+  await AsyncStorage.setItem(pubkeyKey(id), publicKeyHex)
+  await writeMode(id, 'hardware')
+
+  const scalar = await readScalar(id)
+  if (scalar && compressedPubkeyHex(scalar) === publicKeyHex) {
+    await deleteScalar(id)
+  }
+}
+
+/**
+ * The credential id worth persisting in a wallet record, if any.
+ *
+ * A software key has no platform credential: its scalar sits in secure storage and its
+ * slot is already aimed at the right key. Recording an id for it would let
+ * `applyWalletCredentials` bind a hardware credential over a software wallet, which is
+ * how a legacy wallet loses the scalar its address was derived from.
+ */
+export function credentialIdForRecord(key: PasskeyInfo): string | undefined {
+  return key.mode === 'hardware' && key.credentialId ? key.credentialId : undefined
+}
+
+/**
+ * Which role this device's *software* key already signs for, if any.
+ *
+ * Software keys are P-256 scalars in secure storage, not platform credentials, so they
+ * never appear in the passkey picker. Without this check, recovery would only ever find
+ * hardware credentials and a wallet created before platform keys existed -- whose address
+ * is the PDA of the scalar this device holds -- would look unrecoverable even though its
+ * key was sitting right there.
+ */
+export async function matchLocalSoftwareKey(keys: {
+  primary: Uint8Array
+  secondary: Uint8Array
+}): Promise<'primary' | 'secondary' | null> {
+  for (const role of ['primary', 'secondary'] as const) {
+    const scalar = await readScalar(role)
+    if (!scalar) continue
+    if (compressedPubkeyHex(scalar) === bytesToHex(keys[role])) return role
+  }
+  return null
+}
+
+/**
+ * Re-points the signing path at another wallet's own credentials.
+ *
+ * Called whenever the active wallet changes. Signing reads one credential id and one
+ * public key per role from device storage, so those pointers have to follow the active
+ * wallet -- otherwise switching wallets would keep signing with the keys of the previous
+ * one and every signature would fail the precompile check.
+ *
+ * Returns the credential ids that are now pointed at this wallet, so the caller can both
+ * refuse a wallet this device cannot sign for and write discovered ids back into the
+ * record. A role with no id in its record is resolved from the device instead: a legacy
+ * software scalar needs no id (it is already the right key), and a hardware slot is
+ * adopted only when it already holds this wallet's public key. Anything else is left
+ * untouched rather than pointed at a guess.
+ */
+export async function applyWalletCredentials(wallet: {
+  primaryCredentialId?: string
+  secondaryCredentialId?: string
+  primaryPasskeyHex: string
+  secondaryPasskeyHex: string
+}): Promise<{ primary?: string; secondary?: string }> {
+  const bound: { primary?: string; secondary?: string } = {}
+
+  const roles = [
+    { role: 'primary' as const, expected: wallet.primaryPasskeyHex, recorded: wallet.primaryCredentialId },
+    { role: 'secondary' as const, expected: wallet.secondaryPasskeyHex, recorded: wallet.secondaryCredentialId },
+  ]
+
+  for (const { role, expected, recorded } of roles) {
+    if (recorded) {
+      await bindHardwarePasskey(role, recorded, expected)
+      bound[role] = recorded
+      continue
+    }
+
+    // No id in the record. The device slot can still be this wallet's own key -- the shape
+    // of every wallet saved before records carried credential ids -- but only trust it
+    // when it already holds this wallet's public key. A slot holding some *other* key
+    // would sign with the wrong credential and fail the on-chain signature check.
+    if ((await AsyncStorage.getItem(pubkeyKey(role))) !== expected) continue
+
+    const scalar = await readScalar(role)
+    if (scalar && compressedPubkeyHex(scalar) === expected) continue
+
+    const deviceCredentialId = await AsyncStorage.getItem(credentialKey(role))
+    if (!deviceCredentialId) continue
+
+    await writeMode(role, 'hardware')
+    bound[role] = deviceCredentialId
+  }
+
+  return bound
+}
+
+/**
  * Creates or retrieves the primary passkey.
  *
  * On native, a pre-existing software key is returned from secure storage (a legacy
@@ -1138,7 +1336,7 @@ export async function getOrCreatePrimaryPasskey(walletName: string = 'Haptix Wal
   if (existingPubHex && (await readMode('primary')) === 'software') {
     const scalar = await readScalar('primary')
     if (scalar) {
-      const publicKeyHex = bytesToHex(p256.Point.BASE.multiply(scalar).toRawBytes(true))
+      const publicKeyHex = compressedPubkeyHex(scalar)
       await AsyncStorage.setItem(PUBKEY_KEY_PRIMARY, publicKeyHex)
       await writeMode('primary', 'software')
       return {
@@ -1158,6 +1356,11 @@ export async function getOrCreatePrimaryPasskey(walletName: string = 'Haptix Wal
     return await registerWebAuthnPasskey('primary', walletName)
   }
 
+  // Reuse before creating: see getRegisteredHardwarePasskey. Returning the wallet the
+  // device already holds is what keeps the address (and the funds at it) stable.
+  const registered = await getRegisteredHardwarePasskey('primary')
+  if (registered) return registered
+
   return await registerHardwarePasskey('primary', walletName)
 }
 
@@ -1176,7 +1379,7 @@ export async function getOrCreateSecondaryPasskey(walletName: string = 'Haptix W
   if (existingPubHex && (await readMode('secondary')) === 'software') {
     const scalar = await readScalar('secondary')
     if (scalar) {
-      const publicKeyHex = bytesToHex(p256.Point.BASE.multiply(scalar).toRawBytes(true))
+      const publicKeyHex = compressedPubkeyHex(scalar)
       await AsyncStorage.setItem(PUBKEY_KEY_SECONDARY, publicKeyHex)
       await writeMode('secondary', 'software')
       return {
@@ -1195,6 +1398,9 @@ export async function getOrCreateSecondaryPasskey(walletName: string = 'Haptix W
   if (Platform.OS === 'web') {
     return await registerWebAuthnPasskey('secondary', walletName)
   }
+
+  const registered = await getRegisteredHardwarePasskey('secondary')
+  if (registered) return registered
 
   return await registerHardwarePasskey('secondary', walletName)
 }

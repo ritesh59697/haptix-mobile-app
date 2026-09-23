@@ -14,7 +14,7 @@
     "lint:check": "expo lint",
     "reset-project": "node ./scripts/reset-project.js",
     "start": "expo start",
-    "test": "npx -y tsx tests/secp256r1-layout.test.ts && npx -y tsx tests/integration-test.ts",
+    "test": "npx -y tsx tests/secp256r1-layout.test.ts && npx -y tsx tests/passkey-recovery.test.ts && npx -y tsx tests/integration-test.ts",
     "web": "expo start --web"
   },
   "displayName": "Mobile Expo Boilerplate",

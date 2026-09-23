@@ -1,5 +1,6 @@
 import { Connection, PublicKey, LAMPORTS_PER_SOL, Keypair } from '@solana/web3.js'
 import { p256 } from '@noble/curves/p256'
+import { sha256 } from '@noble/hashes/sha2'
 import {
   HAPTIX_PROGRAM_ID,
   getWalletPda,
@@ -13,6 +14,25 @@ import {
   createUnfreezeInstruction,
 } from '../utils/haptix-client'
 import { createSecp256r1Instruction, SECP256R1_PRECOMPILE_PROGRAM_ID } from '../utils/secp256r1-instruction'
+import { getDevnetRpcUrl } from '../utils/rpc-endpoints'
+
+/**
+ * `.env` is gitignored, so a fresh clone has none. Pulling it in here keeps this suite
+ * on whichever node the app is configured to use, instead of quietly testing against
+ * the public endpoint that the dedicated provider replaced.
+ *
+ * Guarded because `process.loadEnvFile` only exists on Node 20.12+; older runtimes fall
+ * back to the public endpoint. It never overwrites variables already present in the
+ * environment, so an inline `EXPO_PUBLIC_HAPTIX_DEVNET_RPC_URL=... npm test` still wins.
+ */
+const loadEnvFile = (process as unknown as { loadEnvFile?: (path: string) => void }).loadEnvFile
+if (typeof loadEnvFile === 'function') {
+  try {
+    loadEnvFile('.env')
+  } catch {
+    // No `.env`, or a runtime without the API: the public Devnet endpoint still works.
+  }
+}
 
 async function runTests() {
   console.log('\n===============================================================')
@@ -59,8 +79,10 @@ async function runTests() {
   const transferMsg = getTransferSignedMessage(recipient, amountLamports)
   assert(transferMsg.length === 40, 'Transfer payload is exactly 40 bytes (32B pubkey + 8B amount)')
 
-  // Sign with noble p256 low-S
-  const sig1 = p256.sign(transferMsg, privateKey1, { lowS: true })
+  // Sign with noble p256 low-S. noble's `prehash` defaults to false, so the input is
+  // taken as the digest: the payload has to be hashed first to match what the
+  // secp256r1 precompile does on-chain (SHA-256 over the message region).
+  const sig1 = p256.sign(sha256(transferMsg), privateKey1, { lowS: true })
   const compactSig1 = sig1.toCompactRawBytes()
   assert(compactSig1.length === 64, 'Compact signature is exactly 64 bytes [r (32B), s (32B)]')
   assert(sig1.hasHighS() === false, 'Signature enforces canonical low-S (s <= n/2)')
@@ -189,7 +211,10 @@ async function runTests() {
 
   // TEST 5: Live Solana Devnet Connection & On-Chain Program Verification
   console.log('\n--- TEST GROUP 5: LIVE SOLANA DEVNET ON-CHAIN VERIFICATION ---')
-  const connection = new Connection('https://api.devnet.solana.com', 'confirmed')
+  const devnetRpcUrl = getDevnetRpcUrl()
+  const connection = new Connection(devnetRpcUrl, 'confirmed')
+  // Host only: the URL may carry a provider API key, and test output often gets pasted.
+  console.log(`      RPC endpoint: ${new URL(devnetRpcUrl).host}`)
   try {
     const programInfo = await connection.getAccountInfo(HAPTIX_PROGRAM_ID)
     assert(programInfo !== null, `Program account exists on Devnet (${HAPTIX_PROGRAM_ID.toBase58()})`)
