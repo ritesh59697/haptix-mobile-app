@@ -114,7 +114,7 @@ npx eas-cli build -p android --profile development
 ## 🔒 Quick Start: Smart Program (`haptix_program`)
 
 ### Program Details (Solana Devnet)
-- **Program ID**: `YTdPGhiX7wgA9mQPJpUXqXRFzRvMBLwRAJBWdTVUHWL`
+- **Program ID**: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`
 - **Solana Cluster**: `devnet`
 - **Native Elliptic Curve**: `Secp256r1` (P-256 / WebAuthn)
 - **Precompile**: `Secp256r1SigVerify11111111111111111111111`

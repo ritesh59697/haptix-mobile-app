@@ -44,10 +44,10 @@ use anchor_lang::solana_program::hash::hash;
 /// Must match the `rp.id` the client passes to the authenticator, and the domain the
 /// app is associated with (`assetlinks.json` on Android, `webcredentials:` Associated
 /// Domains on iOS). See `PASSKEY_SETUP.md` in the mobile app.
-pub const RP_ID: &[u8] = b"haptix.io";
+pub const RP_ID: &[u8] = b"haptix-passkeys.vercel.app";
 
 /// WebAuthn origin used by Apple's ASAuthorization stack.
-pub const IOS_ORIGIN: &[u8] = b"https://haptix.io";
+pub const IOS_ORIGIN: &[u8] = b"https://haptix-passkeys.vercel.app";
 
 /// Prefix used by Android Credential Manager for app-originated ceremonies:
 /// `android:apk-key-hash:<base64url(sha256(signing certificate))>`.

@@ -19,7 +19,7 @@ Traditional crypto wallets force users to manage seed phrases or endure annoying
 
 ### 1. On-Chain Smart Program (`haptix_program`)
 - **Framework**: Anchor 0.31 / Solana Agave client (v3.1.13)
-- **Program ID**: `YTdPGhiX7wgA9mQPJpUXqXRFzRvMBLwRAJBWdTVUHWL`
+- **Program ID**: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`
 - **Native Elliptic Curve**: Secp256r1 (P-256 / WebAuthn) verified directly on-chain via precompile instruction introspection.
 - **PDA Seeds**: `[b"haptix_wallet", &primary_passkey[1..33]]`
 

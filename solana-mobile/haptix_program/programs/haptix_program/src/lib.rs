@@ -11,7 +11,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("YTdPGhiX7wgA9mQPJpUXqXRFzRvMBLwRAJBWdTVUHWL");
+declare_id!("9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke");
 
 #[program]
 pub mod haptix_program {

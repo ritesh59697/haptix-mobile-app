@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-haptix_program = "YTdPGhiX7wgA9mQPJpUXqXRFzRvMBLwRAJBWdTVUHWL"
+haptix_program = "9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke"
 
 [registry]
 url = "https://api.apr.dev"
