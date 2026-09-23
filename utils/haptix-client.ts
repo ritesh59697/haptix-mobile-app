@@ -7,7 +7,7 @@ import {
 } from '@solana/web3.js'
 import { Buffer } from 'buffer'
 
-export const HAPTIX_PROGRAM_ID = new PublicKey('YTdPGhiX7wgA9mQPJpUXqXRFzRvMBLwRAJBWdTVUHWL')
+export const HAPTIX_PROGRAM_ID = new PublicKey('9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke')
 
 export const WALLET_SEED = Buffer.from('haptix_wallet')
 
