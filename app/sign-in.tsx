@@ -32,6 +32,8 @@ import {
 } from '@/utils/haptix-passkey'
 import { matchWebAuthnAssertion } from '@/utils/secp256r1-instruction'
 import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet } from '@/utils/haptix-client'
+import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
+import { describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
 import { HaptixBrandMark, CopyChipIcon, FingerScanBold } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
@@ -69,6 +71,7 @@ interface OnboardingPalette {
   link: string
   linkSoftBg: string
   success: string
+  danger: string
   shadow: string
 }
 
@@ -98,6 +101,7 @@ const lightPalette: OnboardingPalette = {
   link: '#2563EB',
   linkSoftBg: '#EFF6FF',
   success: '#10B981',
+  danger: '#C2413A',
   shadow: 'rgba(0,0,0,0.5)',
 }
 
@@ -127,6 +131,7 @@ const darkPalette: OnboardingPalette = {
   link: '#8FA8FF',
   linkSoftBg: 'rgba(108,140,255,0.14)',
   success: '#34D399',
+  danger: '#F87171',
   shadow: 'rgba(0,0,0,0.6)',
 }
 
@@ -175,18 +180,71 @@ export default function SignIn() {
   const [walletName, setWalletName] = useState('My Haptix Wallet')
   const [primaryKeyName, setPrimaryKeyName] = useState('Primary Passkey')
   const [secondaryKeyName, setSecondaryKeyName] = useState('Backup Quorum Passkey')
+  const [guardianInput, setGuardianInput] = useState('')
+
+  // The guardian is the one address that can ever start a recovery, so it is validated
+  // the same way a recipient is: a pasted explorer link or message gets its address
+  // extracted, and anything that is not a 32-byte base58 key is named as the mistake it
+  // is instead of being stored.
+  const guardianParse = useMemo(() => parseRecipientInput(guardianInput), [guardianInput])
+  const guardianPublicKey = useMemo(
+    () => (guardianParse.address ? new PublicKey(guardianParse.address) : null),
+    [guardianParse.address],
+  )
+  const [timelockInput, setTimelockInput] = useState('')
+  const timelockParse = useMemo(() => parseTimelockInput(timelockInput), [timelockInput])
 
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [restoreAddress, setRestoreAddress] = useState('')
   const [showAddressInput, setShowAddressInput] = useState(false)
+  /**
+   * Whether this app container already holds a wallet record. `null` until the first
+   * read. Drives the wording of the address field: the record lives in AsyncStorage,
+   * which is per-container, so a passkey carried in the OS authenticator can outlive it
+   * and leave the sheet with nothing that names the wallet.
+   */
+  const [deviceHasWallet, setDeviceHasWallet] = useState<boolean | null>(null)
+
+  /**
+   * What the pasted text actually resolves to.
+   *
+   * The field used to hand its raw contents to `new PublicKey()`, so an explorer link or
+   * a chat line that wrapped the address was rejected as an invalid address rather than
+   * being read. `parseRecipientInput` is the same parser the send sheet uses, so a link,
+   * a Solana Pay URI and a bare key all land on the same address - or on a reason.
+   */
+  const restoreParse = useMemo(() => parseRecipientInput(restoreAddress), [restoreAddress])
+
+  const restoreHint = useMemo((): { tone: 'ok' | 'error'; text: string } | null => {
+    const raw = restoreAddress.trim()
+    if (!raw) return null
+
+    if (restoreParse.address) {
+      // Naming the source matters: a pasted link is reduced to just its address here, and
+      // without this line the field would look as though it had swallowed the whole paste.
+      return {
+        tone: 'ok',
+        text: describeRecipientSource(restoreParse.source) ?? `Wallet address: ${ellipsify(restoreParse.address, 6)}`,
+      }
+    }
+
+    // A key being typed is a *prefix* of a valid key until its 32nd character, so
+    // reporting "too short" on the way through turns ordinary typing into a wall of red.
+    // Anything already shaped wrong - a scheme, a `.sol` name, a 0x block - still reports
+    // immediately, because no amount of further typing fixes those.
+    if (/^[1-9A-HJ-NP-Za-km-z]{1,31}$/.test(raw)) return null
+
+    return restoreParse.error ? { tone: 'error', text: restoreParse.error } : null
+  }, [restoreAddress, restoreParse])
 
   useEffect(() => {
     getSavedWallet()
       .then((w) => {
         // Just prefetch, we don't automatically route here to let them enjoy the hero,
         // but if they click sign in we can route immediately if it exists.
+        setDeviceHasWallet(!!w)
       })
-      .catch(() => {})
+      .catch(() => setDeviceHasWallet(null))
   }, [])
 
   const handleExecutePasskeyCreation = async () => {
@@ -198,6 +256,15 @@ export default function SignIn() {
       const finalName = walletName.trim() || 'My Haptix Wallet'
       const primaryName = primaryKeyName.trim() || 'Primary Passkey'
       const secondaryName = secondaryKeyName.trim() || 'Backup Quorum Passkey'
+
+      if (guardianInput.trim() && !guardianPublicKey) {
+        dialog.alert('Check the guardian address', guardianParse.error || 'That is not a Solana address.')
+        return
+      }
+      if (timelockParse.error) {
+        dialog.alert('Check the recovery timelock', timelockParse.error)
+        return
+      }
 
       // 1. Generate Primary
       const primary = await getOrCreatePrimaryPasskey(primaryName)
@@ -224,6 +291,7 @@ export default function SignIn() {
         secondaryCredentialId: credentialIdForRecord(secondary),
         primaryLabel: primary.label,
         secondaryLabel: secondary.label,
+        guardianAddress: guardianPublicKey?.toBase58(),
         spendThreshold: 0.1,
         network: 'devnet',
       })
@@ -247,6 +315,8 @@ export default function SignIn() {
               walletPda,
               primaryPasskey,
               secondaryPasskey,
+              guardian: guardianPublicKey ?? undefined,
+              recoveryTimelockSeconds: timelockParse.seconds ?? undefined,
             })
             const tx = new Transaction({
               feePayer: payer.publicKey,
@@ -280,17 +350,22 @@ export default function SignIn() {
       setIsSigningIn(true)
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
+      // What the user typed, if anything, kept apart from the address it parsed to. A
+      // paste the parser could not read has to be reported rather than treated as "no
+      // address given": the saved-wallet branch below reads an empty value as "use the
+      // wallet already on this device", so a typo would silently sign in as that one.
+      const typedInput = showAddressInput ? restoreAddress.trim() : ''
+      const typedAddress = typedInput ? (restoreParse.address ?? '') : ''
+
       const saved = await getSavedWallet()
       if (saved) {
-        const typedAddress = showAddressInput && restoreAddress.trim() ? restoreAddress.trim() : ''
-
         // Typing a *different* address means "bring that wallet onto this device", not
         // "rename this one". The old code overwrote the saved record's address, which left
         // the app pointing at an account whose keys are not on this device: every balance
         // was read from an address it could never sign for. Falling through to recovery
         // instead means the account is only trusted once a passkey has been checked
         // against it.
-        if (!typedAddress || typedAddress === saved.address) {
+        if (!typedInput || typedAddress === saved.address) {
           const auth = await promptBiometricAuth('Authenticate with biometric passkey to sign in')
           if (!auth.success) {
             dialog.alert('Authentication Failed', auth.error || 'Biometric verification was not completed.')
@@ -305,11 +380,15 @@ export default function SignIn() {
         }
       }
 
-      const targetAddress = showAddressInput && restoreAddress.trim() ? restoreAddress.trim() : ''
+      const targetAddress = typedAddress
       if (!targetAddress) {
         dialog.alert(
           'Address Required',
-          'Since this is a new device/browser, we need your Solana smart wallet address to restore your account. Please enter it below.',
+          // The parser's own diagnosis is far more useful than a generic message: it names
+          // the wrong chain, the `.sol` name, or the truncated copy that was actually the
+          // problem. The fallback explains why the address cannot come from the passkey.
+          restoreParse.error ??
+            'Your passkey is on this device, but the address it belongs to is not. A passkey never hands back the public key it was created with, so there is nothing here to work your wallet out from - the address has to come to us from you, and the passkey is then checked against it.\n\nPaste the smart wallet address below.',
         )
         setShowAddressInput(true)
         return
@@ -341,27 +420,44 @@ export default function SignIn() {
         secondary: onchainState.secondaryPasskey,
       }
 
-      const bindOne = async (expectedRole: 'primary' | 'secondary' | null) => {
+      // Named in the prompts below, because "high-value" is not a number the user can weigh.
+      const spendLimitSol = Number(onchainState.spendThresholdLamports) / LAMPORTS_PER_SOL
+
+      /**
+       * Presents one passkey and reports which of the wallet's two keys it turned out to
+       * be, *including* when that is not the role that was asked for.
+       *
+       * The two keys are not interchangeable, so "wrong passkey" is the wrong answer for
+       * someone who simply picked the other one. On-chain, every instruction verifies the
+       * primary signature first and the secondary is only ever an extra requirement on top
+       * of it (`execute_transfer.rs`, `governance.rs`, `recovery.rs`): the backup can
+       * identify the account but authorizes nothing by itself. Naming the key that was
+       * presented is what lets the flow say that instead of dead-ending.
+       */
+      const bindOne = async (expectedRole: 'primary' | 'secondary') => {
         // A legacy software key never appears in the OS picker, so the scalar this device
         // already holds is checked first. It needs no binding: the existing pointers are
         // already correct, which is why no credential id is recorded for it.
         const localRole = await matchLocalSoftwareKey(onChainKeys)
-        if (localRole && (!expectedRole || localRole === expectedRole)) {
-          return { role: localRole, credentialId: undefined }
-        }
+        if (localRole) return { role: localRole, credentialId: undefined }
 
         const picked = await getDiscoverablePlatformAssertion()
         const matched = matchWebAuthnAssertion(picked.assertion, onChainKeys)
-        if (!matched || (expectedRole && matched !== expectedRole)) {
-          return null
-        }
+        if (!matched) return null
+        // Recognised as one of this wallet's keys, but not the one being asked for. Returned
+        // rather than bound, so the caller can explain and re-ask.
+        if (matched !== expectedRole) return { role: matched, credentialId: undefined }
+
         const key = matched === 'primary' ? onChainKeys.primary : onChainKeys.secondary
         await bindHardwarePasskey(matched, picked.credentialId, Buffer.from(key).toString('hex'))
         return { role: matched, credentialId: picked.credentialId }
       }
 
-      const first = await bindOne(null)
-      if (!first) {
+      // The primary is asked for first, and by name. Accepting whichever passkey the user
+      // happened to pick let a restore finish with only the backup bound, which is a wallet
+      // that unlocks the app and then fails every send, unfreeze and veto.
+      const primaryAttempt = await bindOne('primary')
+      if (!primaryAttempt) {
         dialog.alert(
           'Wrong Passkey',
           `That passkey does not belong to ${ellipsify(targetAddress, 6)}.\n\nPick the passkey you created for this wallet and try again.`,
@@ -370,25 +466,44 @@ export default function SignIn() {
         )
         return
       }
+      if (primaryAttempt.role !== 'primary') {
+        dialog.alert(
+          "That's The Backup Key",
+          `The passkey you picked is this wallet's Backup quorum key. It can identify the account, but it ` +
+            'cannot authorize anything on its own: every transfer, unfreeze and recovery veto is signed by ' +
+            'the Primary key, and the Backup only ever adds to it.\n\n' +
+            `Pick the Primary passkey for ${ellipsify(targetAddress, 6)} instead.\n\n` +
+            'If the Primary passkey is gone for good, this wallet has to be recovered through its guardian.',
+          undefined,
+          { status: 'warning' },
+        )
+        return
+      }
 
-      // A 2-of-2 wallet needs both keys. The other one is usually on the same device, so
-      // offer it now rather than leaving the user with a wallet that cannot unfreeze or
-      // send above its spending threshold.
-      const otherRole = first.role === 'primary' ? 'secondary' : 'primary'
-      const bound: { primary?: string; secondary?: string } = { [first.role]: first.credentialId }
+      // The second key is optional in the sense that the wallet still works without it --
+      // but only up to the spending limit. Said in those terms rather than as "needs both
+      // keys for high-value transfers", which reads as a nice-to-have and got declined.
+      const bound: { primary?: string; secondary?: string } = { primary: primaryAttempt.credentialId }
       const wantsSecondKey = await confirmDialog(
-        'Bind The Second Key?',
-        `${first.role === 'primary' ? 'Primary' : 'Backup'} key bound.\n\nThis wallet needs both keys for high-value transfers and unfreezing. Add the ${otherRole} key now?`,
-        `Select ${otherRole} passkey`,
+        'Add The Backup Key?',
+        `Primary key bound.\n\nThis wallet holds a second, Backup quorum key. Without it you can still send up to ${spendLimitSol} SOL, but anything above that, unfreezing the wallet, and cancelling a recovery all need both keys.\n\nAdd the Backup key now?`,
+        'Select Backup Passkey',
       )
       if (wantsSecondKey) {
-        const second = await bindOne(otherRole)
-        if (second) {
-          bound[second.role] = second.credentialId
+        const second = await bindOne('secondary')
+        if (second?.role === 'secondary') {
+          bound.secondary = second.credentialId
+        } else if (second) {
+          dialog.alert(
+            'Backup Key Not Bound',
+            'You picked the Primary passkey again, so the Backup key was not bound. You can add it later from Settings.',
+            undefined,
+            { status: 'warning' },
+          )
         } else {
           dialog.alert(
-            'Key Not Bound',
-            `That passkey is not this wallet's ${otherRole} key, so it was not bound. You can add it later from Settings.`,
+            'Backup Key Not Bound',
+            "That passkey is not this wallet's Backup key, so it was not bound. You can add it later from Settings.",
             undefined,
             { status: 'warning' },
           )
@@ -422,14 +537,47 @@ export default function SignIn() {
     }
   }
 
-  const handlePasteAddress = async () => {
+  /**
+   * Fills the field from the clipboard, when the clipboard holds something that reads as
+   * a Solana address. Returns that address, or null.
+   *
+   * The raw text is what goes in the field, not the extracted address, so that the hint
+   * underneath can say where the address came from - silently replacing a pasted link
+   * with a bare key looks like the app lost part of the paste.
+   */
+  const fillFromClipboard = async (): Promise<string | null> => {
     try {
       const text = await Clipboard.getString()
-      if (text) {
-        setRestoreAddress(text.trim())
-        Haptics.selectionAsync()
-      }
-    } catch {}
+      const parsed = parseRecipientInput(text ?? '')
+      if (!parsed.address) return null
+      setRestoreAddress((text ?? '').trim())
+      return parsed.address
+    } catch {
+      return null
+    }
+  }
+
+  const handlePasteAddress = async () => {
+    if (await fillFromClipboard()) Haptics.selectionAsync()
+  }
+
+  /**
+   * Opens the sign-in sheet, and on a container that holds no wallet record opens the
+   * address field straight away with the clipboard already tried.
+   *
+   * The address is the one input a passkey can never supply, so on a fresh container it
+   * is not optional. Leaving it collapsed behind an "(Optional)" disclosure made the
+   * sheet look as though the passkey alone would do, and the tap that followed failed
+   * with nothing on screen explaining the missing piece.
+   */
+  const openSignInSheet = async () => {
+    setShowSignInModal(true)
+    const saved = await getSavedWallet().catch(() => null)
+    setDeviceHasWallet(!!saved)
+    if (saved) return
+
+    setShowAddressInput(true)
+    await fillFromClipboard()
   }
 
   return (
@@ -491,7 +639,7 @@ export default function SignIn() {
           style={[styles.heroButton, styles.heroButtonSecondary]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            setShowSignInModal(true)
+            openSignInSheet()
           }}
           activeOpacity={0.9}
         >
@@ -552,6 +700,56 @@ export default function SignIn() {
                     autoCorrect={false}
                   />
                 </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Recovery Guardian (optional)</Text>
+                  <TextInput
+                    style={[
+                      styles.textInputField,
+                      guardianInput.trim() && !guardianPublicKey ? styles.textInputFieldInvalid : null,
+                    ]}
+                    value={guardianInput}
+                    onChangeText={setGuardianInput}
+                    placeholder="A Solana address you trust"
+                    placeholderTextColor={p.inkMuted}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                  />
+                  <Text style={[styles.inputHint, guardianInput.trim() && !guardianPublicKey && styles.inputHintError]}>
+                    {guardianInput.trim()
+                      ? guardianPublicKey
+                        ? `Only ${ellipsify(guardianPublicKey.toBase58(), 4)} can start a recovery, and a ` +
+                          '24h timelock means you can still veto it. It can never move funds.'
+                        : guardianParse.error
+                      : 'Leave blank to use the dev guardian bundled with this build - the only key it can sign ' +
+                        'a recovery with.'}
+                  </Text>
+                </View>
+
+                {/* Dev-only: a 24h veto window cannot be waited out while testing, and the
+                    execute leg is the half of recovery that rotates the keys. Hidden
+                    outside dev mode so it cannot quietly weaken a real wallet. */}
+                {AppConfig.devMode && (
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Recovery Timelock (dev only)</Text>
+                    <TextInput
+                      style={[styles.textInputField, timelockParse.error ? styles.textInputFieldInvalid : null]}
+                      value={timelockInput}
+                      onChangeText={setTimelockInput}
+                      placeholder="Blank for 24h, or e.g. 3s"
+                      placeholderTextColor={p.inkMuted}
+                      autoCorrect={false}
+                      autoCapitalize="none"
+                    />
+                    <Text style={[styles.inputHint, timelockParse.error && styles.inputHintError]}>
+                      {timelockParse.error
+                        ? timelockParse.error
+                        : timelockParse.seconds !== null
+                          ? `The owner gets ${describeTimelock(timelockParse.seconds)} to veto a recovery before it can be executed.`
+                          : 'How long the owner has to veto a recovery. Shorten it to test the execute leg.'}
+                    </Text>
+                  </View>
+                )}
 
                 <TouchableOpacity
                   style={[styles.primaryDarkButton, { marginTop: 12 }]}
@@ -622,7 +820,11 @@ export default function SignIn() {
                 }}
               >
                 <Text style={styles.customAddressToggleText}>
-                  {showAddressInput ? 'Hide custom address' : 'Specify custom wallet address (Optional)'}
+                  {showAddressInput
+                    ? 'Hide custom address'
+                    : deviceHasWallet === false
+                      ? 'Wallet address required on this device'
+                      : 'Specify custom wallet address (Optional)'}
                 </Text>
                 <MaterialIcons
                   name={showAddressInput ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
@@ -654,6 +856,24 @@ export default function SignIn() {
                       <Text style={styles.pasteBadgeText}>Paste</Text>
                     </TouchableOpacity>
                   )}
+                </View>
+              )}
+
+              {showAddressInput && restoreHint && (
+                <View style={styles.addressHintRow}>
+                  <MaterialIcons
+                    name={restoreHint.tone === 'error' ? 'error-outline' : 'check-circle-outline'}
+                    size={14}
+                    color={restoreHint.tone === 'error' ? p.danger : p.inkSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.addressHintText,
+                      { color: restoreHint.tone === 'error' ? p.danger : p.inkSecondary },
+                    ]}
+                  >
+                    {restoreHint.text}
+                  </Text>
                 </View>
               )}
 
@@ -808,6 +1028,9 @@ const createStyles = (p: OnboardingPalette) =>
     primaryDarkButtonText: { color: p.onPrimary, fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
     inputGroup: { marginBottom: 16 },
     inputLabel: { color: p.heroInk, fontSize: 14, fontWeight: '600', marginBottom: 8 },
+    inputHint: { color: p.inkMuted, fontSize: 12, lineHeight: 17, marginTop: 8 },
+    inputHintError: { color: p.danger },
+    textInputFieldInvalid: { borderColor: p.danger },
     textInputField: {
       color: p.heroInk,
       fontSize: 15,
@@ -848,6 +1071,17 @@ const createStyles = (p: OnboardingPalette) =>
       marginBottom: 12,
     },
     addressInput: { flex: 1, color: p.heroInk, fontSize: 13, padding: 0 },
+    // Pulled up into the input's own trailing margin, so the hint sits under the field
+    // rather than opening a second, wider gap below it.
+    addressHintRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 6,
+      marginTop: -6,
+      marginBottom: 12,
+      paddingHorizontal: 2,
+    },
+    addressHintText: { flex: 1, fontSize: 12, lineHeight: 16 },
     pasteBadgeButton: { backgroundColor: p.linkSoftBg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
     pasteBadgeText: { color: p.link, fontSize: 11, fontWeight: '600' },
   })

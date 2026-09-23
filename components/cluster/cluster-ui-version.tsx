@@ -1,6 +1,6 @@
 import React from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useMobileWallet } from '@wallet-ui/react-native-web3js'
+import { useCluster } from '@/components/cluster/cluster-provider'
 import { Cluster } from '@/components/cluster/cluster'
 import { HaptixSettingsRow } from '@/components/haptix/haptix-settings-ui'
 
@@ -9,7 +9,7 @@ import { HaptixSettingsRow } from '@/components/haptix/haptix-settings-ui'
  * sentence sat inside the app's 14/12px card rhythm and read as unstyled body copy.
  */
 export function ClusterUiVersion({ selectedCluster }: { selectedCluster: Cluster }) {
-  const { connection } = useMobileWallet()
+  const { connection } = useCluster()
   const query = useQuery({
     queryKey: ['get-version', { selectedCluster }],
     queryFn: () =>

@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
+import { typeScale } from '@/theme/tokens'
 
 export interface PrismDepthButtonProps {
   children?: React.ReactNode
@@ -80,17 +81,19 @@ export function PrismDepthButton({
   // Color tokens depending on variant and theme
   let mainBg = theme.accent
   let textColor = theme.accentForeground
-  let glowColor = theme.accentGlow
 
   if (variant === 'danger') {
     mainBg = theme.rose
-    textColor = '#FFFFFF'
-    glowColor = theme.roseBg
+    textColor = theme.onTone
   } else if (variant === 'success') {
     mainBg = theme.emerald
-    textColor = '#FFFFFF'
-    glowColor = theme.emeraldBg
+    textColor = theme.onTone
   }
+
+  // The disabled surface is a neutral, but the ink was left as the variant's
+  // on-tone colour: in light mode that painted white label text onto #F4F4F5,
+  // so a disabled "Sign & Send" button rendered as an empty white bar.
+  const inkColor = disabled ? theme.textMuted : textColor
 
   return (
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
@@ -106,14 +109,8 @@ export function PrismDepthButton({
           {
             height,
             borderRadius,
-            backgroundColor: disabled ? (isDark ? '#1F1F1F' : '#E2E8F0') : mainBg,
-            borderColor: disabled
-              ? isDark
-                ? '#262626'
-                : '#CBD5E1'
-              : isDark
-                ? 'rgba(255, 255, 255, 0.22)'
-                : 'rgba(0, 0, 0, 0.15)',
+            backgroundColor: disabled ? theme.bgElevated : mainBg,
+            borderColor: disabled ? theme.borderDefault : isDark ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.15)',
           },
           Platform.OS === 'web'
             ? {
@@ -139,18 +136,18 @@ export function PrismDepthButton({
         )}
 
         {loading ? (
-          <ActivityIndicator size="small" color={textColor} />
+          <ActivityIndicator size="small" color={inkColor} />
         ) : (
           <View style={styles.contentRow}>
             {icon && <View style={styles.iconContainer}>{icon}</View>}
             {children ? (
               typeof children === 'string' ? (
-                <Text style={[styles.title, { color: textColor }, textStyle]}>{children}</Text>
+                <Text style={[styles.title, { color: inkColor }, textStyle]}>{children}</Text>
               ) : (
                 children
               )
             ) : title ? (
-              <Text style={[styles.title, { color: textColor }, textStyle]}>{title}</Text>
+              <Text style={[styles.title, { color: inkColor }, textStyle]}>{title}</Text>
             ) : null}
           </View>
         )}
@@ -187,7 +184,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 15,
+    fontSize: typeScale.title,
     fontWeight: '700',
     letterSpacing: 0.3,
   },

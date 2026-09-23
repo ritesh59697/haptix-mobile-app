@@ -3,6 +3,7 @@ import { Pressable, View, Text, StyleSheet, Animated, Platform, StyleProp, ViewS
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useAppTheme } from '@/components/theme/theme-context'
+import { typeScale } from '@/theme/tokens'
 
 export interface BookmarkSaveButtonProps {
   label?: string
@@ -79,9 +80,9 @@ export function BookmarkSaveButton({
     }).start()
   }
 
-  const bgColor = isSaved ? theme.amberBg : isDark ? '#0F172A' : '#F8FAFC'
+  const bgColor = isSaved ? theme.amberBg : theme.bgElevated
 
-  const borderColor = isSaved ? (isDark ? 'rgba(245, 158, 11, 0.35)' : '#FDE68A') : isDark ? '#1E293B' : '#E2E8F0'
+  const borderColor = isSaved ? theme.amberBorder : theme.borderDefault
 
   const textColor = isSaved ? theme.amberText : theme.textSecondary
   const iconColor = isSaved ? theme.amber : theme.textMuted
@@ -164,12 +165,12 @@ const styles = StyleSheet.create({
     height: 1,
   },
   label: {
-    fontSize: 13,
+    fontSize: typeScale.body,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
   labelCompact: {
-    fontSize: 12,
+    fontSize: typeScale.footnote,
   },
   nativeShadow: {
     shadowColor: '#000',

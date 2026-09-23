@@ -14,8 +14,10 @@
     "lint:check": "expo lint",
     "reset-project": "node ./scripts/reset-project.js",
     "start": "expo start",
-    "test": "npx -y tsx tests/secp256r1-layout.test.ts && npx -y tsx tests/passkey-recovery.test.ts && npx -y tsx tests/integration-test.ts",
-    "web": "expo start --web"
+    "test": "npx -y tsx tests/solana-address.test.ts && npx -y tsx tests/contact-list.test.ts && npx -y tsx tests/solana-fees.test.ts && npx -y tsx tests/secp256r1-layout.test.ts && npx -y tsx tests/passkey-recovery.test.ts && npx -y tsx tests/wallet-seed.test.ts && npx -y tsx tests/recovery-devnet.test.ts && npx -y tsx tests/integration-test.ts && npx -y tsx tests/set-guardian.test.ts",
+    "test:recovery": "npx -y tsx tests/recovery-devnet.test.ts",
+    "web": "expo start --web",
+    "guardian": "npx -y tsx tools/haptix-guardian.ts"
   },
   "displayName": "Mobile Expo Boilerplate",
   "description": "A template for building a Solana mobile app with Expo and React Native.",
@@ -39,6 +41,7 @@
   "main": "./index.js",
   "version": "1.0.0",
   "dependencies": {
+    "@bonfida/spl-name-service": "^4.0.1",
     "@expo/metro-runtime": "~55.0.6",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -51,7 +54,6 @@
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
     "@tanstack/react-query": "^5.85.5",
-    "@wallet-ui/react-native-web3js": "^4.0.1",
     "expo": "~55.0.23",
     "expo-blur": "~55.0.10",
     "expo-constants": "~55.0.9",
@@ -74,11 +76,11 @@
     "mx-icons": "^1.1.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "react-native": "0.83.6",
+    "react-native": "0.83.10",
     "react-native-gesture-handler": "~2.30.0",
-    "react-native-get-random-values": "^2.0.0",
+    "react-native-get-random-values": "~1.11.0",
     "react-native-passkey": "^3.6.2",
-    "react-native-reanimated": "~4.2.1",
+    "react-native-reanimated": "4.2.1",
     "react-native-safe-area-context": "5.6.2",
     "react-native-screens": "~4.23.0",
     "react-native-snackbar": "^2.9.0",
@@ -90,6 +92,7 @@
     "utf-8-validate": "5.0.10"
   },
   "devDependencies": {
+    "@types/node": "^26.6.2",
     "@types/react": "~19.2.14",
     "eslint": "^9.33.0",
     "eslint-config-expo": "~55.0.0",

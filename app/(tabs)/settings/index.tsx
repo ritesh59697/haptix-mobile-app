@@ -13,6 +13,7 @@ import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { HaptixAlert } from '@/components/haptix/haptix-alert'
 import { HaptixIosTabs, IosTabItem } from '@/components/haptix/haptix-ios-tabs'
 import { HaptixPolicySheet, PolicyTopic } from '@/components/haptix/haptix-policy-sheet'
+import { useConfirmRemoveWallet } from '@/components/haptix/haptix-remove-wallet'
 import {
   HaptixSettingsCard,
   HaptixSettingsDivider,
@@ -56,6 +57,7 @@ export default function TabSettingsScreen() {
   const { activeWallet, isLocked, lockWallet, signOut, wallets } = useAuth()
   const { selectedCluster } = useCluster()
   const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
+  const confirmRemoveWallet = useConfirmRemoveWallet()
 
   const s = useMemo(
     () => ({
@@ -104,27 +106,11 @@ export default function TabSettingsScreen() {
   }
 
   const handleRemoveWallet = () => {
-    dialog.alert(
-      'Remove Wallet from Device',
-      'Are you sure you want to remove this smart wallet from this device? Your on-chain account and funds remain secure on Solana and can be restored anytime using your passkey.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deletePasskeys()
-            } catch (e) {
-              console.warn('Failed to delete passkeys:', e)
-            }
-            await signOut()
-            router.replace('/sign-in')
-          },
-        },
-      ],
-      { status: 'error' },
-    )
+    confirmRemoveWallet(activeWallet?.address, async () => {
+      await deletePasskeys()
+      await signOut()
+      router.replace('/sign-in')
+    })
   }
 
   const chevron = <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
@@ -254,7 +240,7 @@ export default function TabSettingsScreen() {
           <HaptixSettingsRow
             icon="delete-outline"
             title="Remove from this device"
-            subtitle="Funds stay on Solana and can be restored with your passkey."
+            subtitle="Funds stay on Solana. Save your address — signing back in needs it."
             tone="danger"
             onPress={handleRemoveWallet}
           />

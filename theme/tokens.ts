@@ -15,16 +15,24 @@ export interface ThemeTokens {
   accentLight: string
   accentGlow: string
   accentForeground: string
+  onTone: string
   amber: string
   amberBg: string
   amberText: string
+  amberBorder: string
   emerald: string
   emeraldBg: string
   emeraldText: string
+  emeraldBorder: string
   rose: string
   roseBg: string
   roseText: string
   roseSurface: string
+  roseBorder: string
+  info: string
+  infoBg: string
+  infoText: string
+  infoBorder: string
   scrim: string
   shadowColor: string
   cardShadow: {
@@ -53,16 +61,33 @@ export const darkTokens: ThemeTokens = {
   accentLight: 'rgba(255, 255, 255, 0.08)',
   accentGlow: 'rgba(255, 255, 255, 0.15)',
   accentForeground: '#000000', // Crisp Black Text on White
+  // Text and icons that sit on a *filled* status tone. The tones are bright in
+  // dark mode and dark in light mode, so the readable ink inverts with the
+  // theme: white on #F59E0B measured 2.1:1, which made the panic-lock label
+  // disappear at exactly the moment the user was holding it down.
+  onTone: '#000000',
   amber: '#F59E0B',
-  amberBg: 'rgba(245, 158, 11, 0.10)',
+  // Every status tone uses the same tint strength (0.12) and hairline strength
+  // (0.30). The screen previously shipped pills at 0.08/0.10/0.12/0.15/0.18/0.20,
+  // which read as six unrelated systems rather than one.
+  amberBg: 'rgba(245, 158, 11, 0.12)',
   amberText: '#FBBF24',
+  amberBorder: 'rgba(245, 158, 11, 0.3)',
   emerald: '#10B981',
-  emeraldBg: 'rgba(16, 185, 129, 0.10)',
+  emeraldBg: 'rgba(16, 185, 129, 0.12)',
   emeraldText: '#34D399',
+  emeraldBorder: 'rgba(16, 185, 129, 0.3)',
   rose: '#F43F5E',
-  roseBg: 'rgba(244, 63, 94, 0.10)',
-  roseText: '#FB7185',
-  roseSurface: 'rgba(244, 63, 94, 0.18)',
+  roseBg: 'rgba(244, 63, 94, 0.12)',
+  // rose-300 rather than rose-400: on pure black the darker shade only reached
+  // 7.5:1 against the tint, and this is the colour destructive copy is set in.
+  roseText: '#FDA4AF',
+  roseSurface: 'rgba(244, 63, 94, 0.2)',
+  roseBorder: 'rgba(244, 63, 94, 0.3)',
+  info: '#60A5FA',
+  infoBg: 'rgba(96, 165, 250, 0.12)',
+  infoText: '#93C5FD',
+  infoBorder: 'rgba(96, 165, 250, 0.3)',
   scrim: 'rgba(8, 8, 10, 0.94)',
   shadowColor: '#000000',
   cardShadow: {
@@ -91,16 +116,24 @@ export const lightTokens: ThemeTokens = {
   accentLight: 'rgba(0, 0, 0, 0.05)',
   accentGlow: 'rgba(0, 0, 0, 0.10)',
   accentForeground: '#FFFFFF', // Crisp White Text on Black
+  onTone: '#FFFFFF',
   amber: '#D97706',
   amberBg: '#FEF3C7',
   amberText: '#92400E',
+  amberBorder: '#FDE68A',
   emerald: '#059669',
   emeraldBg: '#D1FAE5',
   emeraldText: '#065F46',
+  emeraldBorder: '#6EE7B7',
   rose: '#E11D48',
   roseBg: '#FFE4E6',
   roseText: '#9F1239',
   roseSurface: '#FECDD3',
+  roseBorder: '#FDA4AF',
+  info: '#2563EB',
+  infoBg: '#DBEAFE',
+  infoText: '#1E40AF',
+  infoBorder: '#BFDBFE',
   scrim: 'rgba(250, 250, 250, 0.94)',
   shadowColor: '#000000',
   cardShadow: {
@@ -128,17 +161,39 @@ export const radius = {
 // ── Type scale ───────────────────────────────────────────────────────────────
 // Whole numbers only: fractional sizes render blurry on Android and read as
 // accidents rather than decisions.
+//
+// The steps are ~1.15x apart on purpose. The previous scale ran 13/14/15/18 for
+// body, bodyLg, title and heading, so four "levels" sat within one step of each
+// other and hierarchy had to be carried entirely by colour and weight. Anything
+// inside the dense-UI range (micro..body) stays put, because those sizes are
+// already distinguished by role rather than by prominence.
 export const typeScale = {
   micro: 10,
   caption: 11,
   footnote: 12,
   body: 13,
-  bodyLg: 14,
-  title: 15,
-  heading: 18,
-  displaySm: 20,
-  display: 22,
-  displayLg: 26,
+  bodyLg: 15,
+  title: 17,
+  heading: 20,
+  displaySm: 23,
+  display: 26,
+  displayLg: 30,
   hero: 34,
-  heroXl: 38,
+  heroXl: 40,
+} as const
+
+// ── Space scale ──────────────────────────────────────────────────────────────
+// Gaps and paddings come from here rather than from hand-picked numbers, so two
+// cards sitting next to each other cannot disagree about what "a little space"
+// means. `sm`/`md`/`lg` cover the common cases; `xxs` and `xs` exist for badge
+// insets, where a 4dp difference is visible.
+export const space = {
+  xxs: 2,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
 } as const

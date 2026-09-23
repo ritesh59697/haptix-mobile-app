@@ -5,21 +5,17 @@
 
 import { Colors } from '@/constants/colors'
 import { useAppTheme } from '@/components/theme/theme-context'
-import { useColorScheme as useRNColorScheme } from 'react-native'
 
 export function useThemeColor(
   props: { light?: string; dark?: string },
   colorName: keyof typeof Colors.light & keyof typeof Colors.dark,
 ) {
-  const systemScheme = useRNColorScheme() === 'dark' ? 'dark' : 'light'
-  let colorScheme: 'dark' | 'light' = systemScheme
-
-  try {
-    const { isDark } = useAppTheme()
-    colorScheme = isDark ? 'dark' : 'light'
-  } catch {
-    // Outside theme provider fallback to system
-  }
+  // Called unconditionally: the provider ships a dark default, so this reads fine
+  // outside it, and a hook behind a try/catch changes the hook order as soon as the
+  // call once succeeds. The device scheme is not consulted at all — the provider is
+  // the one place that decides between the stored preference and "follow system".
+  const { isDark } = useAppTheme()
+  const colorScheme: 'dark' | 'light' = isDark ? 'dark' : 'light'
 
   const colorFromProps = props[colorScheme]
 

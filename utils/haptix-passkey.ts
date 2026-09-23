@@ -73,6 +73,8 @@ const PUBKEY_KEY_SECONDARY = '@haptix_passkey_pubkey_secondary'
  *  produce different on-chain signature formats and cannot be told apart by shape. */
 const MODE_KEY_PRIMARY = '@haptix_passkey_mode_primary'
 const MODE_KEY_SECONDARY = '@haptix_passkey_mode_secondary'
+const RECOVERY_SCALAR_KEY_PRIMARY = 'haptix_recovery_scalar_primary'
+const RECOVERY_SCALAR_KEY_SECONDARY = 'haptix_recovery_scalar_secondary'
 
 /**
  * WebAuthn relying party. Must match `RP_ID` in
@@ -90,6 +92,30 @@ export type PasskeyMode = 'software' | 'hardware'
  */
 const SCALAR_KEY_PRIMARY = 'haptix_scalar_primary'
 const SCALAR_KEY_SECONDARY = 'haptix_scalar_secondary'
+
+/**
+ * `expo-secure-store` rejects any key that is not alphanumeric plus `.`, `-`, `_`
+ * (see the pattern in `expo-secure-store/build/SecureStore.js`). An `@` prefix —
+ * natural here, because the AsyncStorage keys in this repo use one — makes every
+ * read and write throw, and inside a wrapped `try/catch` that failure is
+ * indistinguishable from "nothing stored yet". Validate the constants at import
+ * so a bad key names itself instead of silently breaking a flow months later.
+ */
+const SECURE_STORE_KEY_PATTERN = /^[\w.-]+$/
+
+for (const [name, key] of Object.entries({
+  SCALAR_KEY_PRIMARY,
+  SCALAR_KEY_SECONDARY,
+  RECOVERY_SCALAR_KEY_PRIMARY,
+  RECOVERY_SCALAR_KEY_SECONDARY,
+})) {
+  if (!SECURE_STORE_KEY_PATTERN.test(key)) {
+    throw new Error(
+      `[Haptix Passkey] ${name} is not a valid SecureStore key: ${JSON.stringify(key)}. ` +
+        'SecureStore keys must be non-empty and contain only alphanumerics, ".", "-" and "_".',
+    )
+  }
+}
 
 /** Legacy AsyncStorage keys that used to hold the scalar inside the credential id. */
 const LEGACY_PLAINTEXT_CREDENTIAL = /^haptix_os_cred_(primary|secondary)_([0-9a-f]{64})$/
@@ -1599,6 +1625,121 @@ export async function signWithPasskey(
   return { signature, publicKey }
 }
 
+// ---------------------------------------------------------------------------
+// Recovery key staging
+// ---------------------------------------------------------------------------
+
+export interface StagedRecoveryKeys {
+  primaryPublicKeyHex: string
+  secondaryPublicKeyHex: string
+}
+
+/**
+ * The replacement pair a guardian recovery will install, kept in the OS secure store
+ * until the timelock elapses.
+ *
+ * A recovery has to name the keys that will *replace* the current ones, and they have
+ * to be keys this device can sign with once the rotation lands -- so they are real,
+ * persisted scalars rather than something invented at signing time. They stay out of
+ * the active slots until execution for a reason: a veto is signed by the keys being
+ * replaced, so overwriting those slots before the owner has had their window would
+ * make cancelling impossible right when it matters most.
+ */
+async function readStagedScalars(): Promise<{ primary: bigint; secondary: bigint } | null> {
+  const store = getSecureStore()
+  if (!store) return null
+  try {
+    const [primaryHex, secondaryHex] = await Promise.all([
+      store.getItemAsync(RECOVERY_SCALAR_KEY_PRIMARY),
+      store.getItemAsync(RECOVERY_SCALAR_KEY_SECONDARY),
+    ])
+    const primary = primaryHex ? scalarFromHex(primaryHex) : null
+    const secondary = secondaryHex ? scalarFromHex(secondaryHex) : null
+    if (!primary || !secondary) return null
+    return { primary, secondary }
+  } catch {
+    return null
+  }
+}
+
+async function writeStagedScalars(primary: bigint, secondary: bigint): Promise<void> {
+  const store = requireSecureStore()
+  const options = Platform.OS === 'ios' ? { keychainAccessible: store.WHEN_UNLOCKED_THIS_DEVICE_ONLY } : undefined
+  await store.setItemAsync(RECOVERY_SCALAR_KEY_PRIMARY, scalarToHex(primary), options)
+  await store.setItemAsync(RECOVERY_SCALAR_KEY_SECONDARY, scalarToHex(secondary), options)
+}
+
+/** The staged pair's public keys, or null when this device has nothing staged. */
+export async function loadStagedRecoveryKeys(): Promise<StagedRecoveryKeys | null> {
+  const staged = await readStagedScalars()
+  if (!staged) return null
+  return {
+    primaryPublicKeyHex: compressedPubkeyHex(staged.primary),
+    secondaryPublicKeyHex: compressedPubkeyHex(staged.secondary),
+  }
+}
+
+/**
+ * Generates the pair a recovery will install, or hands back the one already staged.
+ *
+ * Idempotent on purpose: once a recovery is in flight its proposed keys are written
+ * on-chain, so re-generating here would leave the device holding keys the program will
+ * never accept and the wallet unrecoverable by the very device that started it.
+ */
+export async function stageRecoveryKeys(): Promise<StagedRecoveryKeys> {
+  const existing = await loadStagedRecoveryKeys()
+  if (existing) return existing
+
+  const primary = scalarFromRandomBytes(await secureRandomBytes(32))
+  const secondary = scalarFromRandomBytes(await secureRandomBytes(32))
+  await writeStagedScalars(primary, secondary)
+  return {
+    primaryPublicKeyHex: compressedPubkeyHex(primary),
+    secondaryPublicKeyHex: compressedPubkeyHex(secondary),
+  }
+}
+
+/** Drops a staged pair, for a veto or a wallet this device no longer signs for. */
+export async function discardStagedRecoveryKeys(): Promise<void> {
+  const store = getSecureStore()
+  if (!store) return
+  try {
+    await store.deleteItemAsync(RECOVERY_SCALAR_KEY_PRIMARY)
+    await store.deleteItemAsync(RECOVERY_SCALAR_KEY_SECONDARY)
+  } catch {
+    // Nothing staged, or store unavailable.
+  }
+}
+
+/**
+ * Promotes the staged pair into the active signing slots.
+ *
+ * Software mode rather than a fresh platform passkey: the staged keys were generated
+ * here, and an authenticator cannot be asked for a credential over a scalar that
+ * already exists. Call this only once `execute_recovery` has landed, so the pair it
+ * installs is the pair the program has already accepted.
+ */
+export async function commitStagedRecoveryKeys(): Promise<StagedRecoveryKeys | null> {
+  const staged = await readStagedScalars()
+  if (!staged) return null
+
+  const primaryPublicKeyHex = compressedPubkeyHex(staged.primary)
+  const secondaryPublicKeyHex = compressedPubkeyHex(staged.secondary)
+
+  await writeScalar('primary', staged.primary)
+  await AsyncStorage.setItem(PUBKEY_KEY_PRIMARY, primaryPublicKeyHex)
+  await writeMode('primary', 'software')
+  await AsyncStorage.removeItem(CREDENTIAL_KEY_PRIMARY)
+
+  await writeScalar('secondary', staged.secondary)
+  await AsyncStorage.setItem(PUBKEY_KEY_SECONDARY, secondaryPublicKeyHex)
+  await writeMode('secondary', 'software')
+  await AsyncStorage.removeItem(CREDENTIAL_KEY_SECONDARY)
+
+  await discardStagedRecoveryKeys()
+  return { primaryPublicKeyHex, secondaryPublicKeyHex }
+}
+
 /**
  * Clears every passkey artifact: secure-store scalars, public metadata, and any
  * legacy plaintext copies.
@@ -1607,6 +1748,7 @@ export async function deletePasskeys(): Promise<void> {
   try {
     await deleteScalar('primary')
     await deleteScalar('secondary')
+    await discardStagedRecoveryKeys()
 
     await AsyncStorage.multiRemove([
       CREDENTIAL_KEY_PRIMARY,
