@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   TextInput,
   ScrollView,
   RefreshControl,
-  Alert,
   Modal,
   ActivityIndicator,
   Linking,
@@ -23,6 +22,7 @@ import {
   PublicKey,
   Keypair,
   Transaction,
+  TransactionInstruction,
   SystemProgram,
   LAMPORTS_PER_SOL,
   sendAndConfirmTransaction,
@@ -62,14 +62,17 @@ import {
   AgentSessionState,
 } from '@/utils/haptix-client'
 import { getFundedDevnetPayer, fundDevnetWallet } from '@/utils/haptix-funder'
+import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { SWAP_COMING_SOON_LABEL, SWAP_ENABLED } from '@/utils/haptix-swap'
 import { MarketSnapshot, fallbackMarketSnapshot, fetchMarketSnapshot } from '@/utils/haptix-prices'
 import {
   TransactionRecord,
   TransactionType,
   fetchOnChainTransactions,
+  loadCachedBalance,
   loadTxHistory,
   mergeTxRecords,
+  saveCachedBalance,
   saveTxHistory,
 } from '@/utils/haptix-tx-history'
 import {
@@ -95,6 +98,8 @@ import { HaptixFloatingDock, DockTabId } from './haptix-floating-dock'
 import { HaptixIosTabs } from './haptix-ios-tabs'
 import { HaptixPolicySheet, PolicyTopic } from './haptix-policy-sheet'
 import { HaptixAlert } from './haptix-alert'
+import { AppConfig } from '@/constants/app-config'
+import { useHaptixDialog } from './haptix-dialog'
 import { radius, typeScale } from '@/theme/tokens'
 
 /** Human-readable remaining time for an agent session countdown. */
@@ -130,8 +135,10 @@ function matchesActivityFilter(tx: TransactionRecord, filter: ActivityFilter): b
   return true
 }
 
-const DEVNET_RPC = 'https://api.devnet.solana.com'
-const MAINNET_RPC = 'https://api.mainnet-beta.solana.com'
+// Endpoints live in AppConfig so the settings cluster card and the wallet always
+// resolve the same node. See the note there about rate limits and the env override.
+const DEVNET_RPC = AppConfig.devnetRpcUrl
+const MAINNET_RPC = AppConfig.mainnetRpcUrl
 // Demo allowance for the autonomous agent trade. The recipient used to be a
 // throwaway `Keypair.generate()` address, which quietly burned the funds; it is
 // now supplied by the user and confirmed before the trade runs.
@@ -159,6 +166,7 @@ export function HaptixWalletScreen() {
   const insets = useSafeAreaInsets()
   const { activeWallet, isLocked, lockWallet, unlockWallet, signOut } = useAuth()
   const { theme, isDark } = useAppTheme()
+  const dialog = useHaptixDialog()
 
   const s = useMemo(
     () => ({
@@ -188,6 +196,10 @@ export function HaptixWalletScreen() {
   const [refreshing, setRefreshing] = useState(false)
 
   // Loading States
+  // A failed balance read used to be flattened into 0 SOL by `.catch(() => 0)`, which
+  // is the one wrong answer a wallet must never give. Failures keep the last known
+  // balance and raise a banner instead.
+  const [rpcIssue, setRpcIssue] = useState<string | null>(null)
   const [isSending, setIsSending] = useState(false)
   const [sendErrorMsg, setSendErrorMsg] = useState('')
   const [isUnlocking, setIsUnlocking] = useState(false)
@@ -269,8 +281,11 @@ export function HaptixWalletScreen() {
     if (!activeWallet?.address) return
     try {
       const pubkey = new PublicKey(activeWallet.address)
-      const lamports = await connection.getBalance(pubkey).catch(() => 0)
+      const lamports = await connection.getBalance(pubkey)
+      liveBalanceRef.current = true
       setBalance(lamports / LAMPORTS_PER_SOL)
+      void saveCachedBalance(activeWallet.address, lamports)
+      setRpcIssue(null)
 
       if (network === 'devnet') {
         const state = await fetchHaptixWallet(connection, pubkey).catch(() => null)
@@ -281,7 +296,10 @@ export function HaptixWalletScreen() {
         }
       }
     } catch {
-      // Quietly ignore transient RPC network latency
+      // Rate limited, offline, or a dead endpoint: say so rather than reporting zero.
+      setRpcIssue(
+        `Could not reach the Solana ${network === 'devnet' ? 'devnet' : 'mainnet'} RPC. Balance may be out of date.`,
+      )
     }
   }, [activeWallet?.address, connection, network])
 
@@ -291,7 +309,9 @@ export function HaptixWalletScreen() {
   const fetchRecentTransactions = useCallback(async () => {
     if (!activeWallet?.address) return
     try {
-      const records = await fetchOnChainTransactions(connection, new PublicKey(activeWallet.address))
+      const records = await fetchOnChainTransactions(connection, new PublicKey(activeWallet.address), {
+        knownSignatures: parsedHistoryRef.current,
+      })
       if (records.length > 0) {
         setTransactions((prev) => mergeTxRecords(prev, records))
       }
@@ -299,6 +319,32 @@ export function HaptixWalletScreen() {
       // Quietly ignore
     }
   }, [activeWallet?.address, connection])
+
+  // `fetchRecentTransactions` must not list `transactions` as a dependency: that would
+  // rebuild the callback on every write and re-trigger the whole boot fetch in a loop.
+  // A ref carries the already-parsed signatures instead.
+  const parsedHistoryRef = useRef<string[]>([])
+  useEffect(() => {
+    parsedHistoryRef.current = transactions.map((record) => record.signature)
+  }, [transactions])
+
+  // Show the last measured balance straight away instead of a fake zero.
+  // `liveBalanceRef` is set as soon as a live read lands, so a slow AsyncStorage read
+  // can never overwrite fresher chain data with an older figure.
+  const liveBalanceRef = useRef(false)
+  useEffect(() => {
+    const address = activeWallet?.address
+    if (!address) return
+    let cancelled = false
+    liveBalanceRef.current = false
+    loadCachedBalance(address).then((lamports) => {
+      if (cancelled || liveBalanceRef.current || lamports === null) return
+      setBalance(lamports / LAMPORTS_PER_SOL)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [activeWallet?.address])
 
   // Hydrate persisted history so a reload does not wipe the activity list.
   useEffect(() => {
@@ -341,7 +387,7 @@ export function HaptixWalletScreen() {
   // Request Faucet Devnet SOL (+0.2 SOL from funded relayer treasury)
   const handleRequestFaucet = async () => {
     if (network !== 'devnet') {
-      Alert.alert('Devnet Only', 'Faucet funding is only available on Solana Devnet.')
+      dialog.alert('Devnet Only', 'Faucet funding is only available on Solana Devnet.')
       return
     }
     if (!activeWallet?.address) return
@@ -369,7 +415,7 @@ export function HaptixWalletScreen() {
       }
       setTransactions((prev) => [newTx, ...prev])
 
-      Alert.alert(
+      dialog.alert(
         'Devnet SOL Received!',
         `Sent 0.20 SOL to your smart account from the Devnet relayer.\n\nSignature: ${ellipsify(sig, 8)}`,
         [
@@ -381,8 +427,8 @@ export function HaptixWalletScreen() {
         ],
       )
     } catch (err: any) {
-      console.error('[Faucet Error]:', err)
-      Alert.alert('Faucet Request Failed', err?.message || 'Could not fund account on Devnet.')
+      console.error('[Faucet Error]:', formatChainErrorForLog(err))
+      dialog.alert('Faucet Request Failed', describeChainError(err, 'Could not fund this account on Devnet.'))
     } finally {
       setIsRequestingFaucet(false)
     }
@@ -391,11 +437,11 @@ export function HaptixWalletScreen() {
   // Initialize Counterfactual PDA Account on Solana Devnet (Anchor Program)
   const handleInitializeWalletOnChain = async () => {
     if (network !== 'devnet') {
-      Alert.alert('Devnet Only', 'Wallet initialization on Anchor is available on Devnet.')
+      dialog.alert('Devnet Only', 'Wallet initialization on Anchor is available on Devnet.')
       return
     }
     if (!activeWallet?.address || !activeWallet.primaryPasskeyHex || !activeWallet.secondaryPasskeyHex) {
-      Alert.alert('Error', 'Missing device passkey credentials.')
+      dialog.alert('Error', 'Missing device passkey credentials.')
       return
     }
 
@@ -407,6 +453,52 @@ export function HaptixWalletScreen() {
       const payer = await getFundedDevnetPayer(connection)
       const primaryPasskey = new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex'))
       const secondaryPasskey = new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex'))
+
+      // A platform passkey belongs to the relying party, not to this install: remove the
+      // wallet from the device, sign in again, and the authenticator can hand back the
+      // same credential -- which derives the same PDA. Submitting `initialize_wallet`
+      // anyway fails preflight with "Allocate: account ... already in use", so look
+      // first and treat an existing account as the non-event that it is.
+      const existing = await fetchHaptixWallet(connection, walletPda).catch(() => null)
+      if (existing) {
+        const sameSecondary =
+          Buffer.from(existing.secondaryPasskey).toString('hex') === Buffer.from(secondaryPasskey).toString('hex')
+
+        await fetchRealBalance()
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+
+        // The PDA is derived from the primary key, so an existing account proves the
+        // primary matches. The secondary is stored separately on-chain and is not part
+        // of the derivation, which makes it the one key that can silently disagree --
+        // and every 2-of-2 action (high-value transfer, unfreeze) then fails on
+        // signature verification with nothing to explain why.
+        const secondaryWarning = sameSecondary
+          ? ''
+          : '\n\nHeads up: the second key stored on-chain is not the one on this device. ' +
+            '2-of-2 actions (high-value sends, unlocking) will fail until this wallet is re-created here.'
+
+        dialog.alert(
+          'Smart Account Already On-Chain',
+          'This wallet was initialized on Devnet earlier, so your spending limits are already enforced ' +
+            `by the on-chain program.${secondaryWarning}`,
+          [
+            {
+              text: 'View on Explorer',
+              onPress: () =>
+                Linking.openURL(`https://explorer.solana.com/address/${walletPda.toBase58()}?cluster=devnet`),
+            },
+            { text: 'Done', style: 'default' },
+          ],
+        )
+
+        if (!sameSecondary) {
+          console.warn(
+            `[Haptix] On-chain secondary passkey for ${walletPda.toBase58()} differs from this device's. ` +
+              '2-of-2 actions will fail until the wallet is re-created from this device.',
+          )
+        }
+        return
+      }
 
       const initIx = createInitializeWalletInstruction({
         payer: payer.publicKey,
@@ -452,7 +544,7 @@ export function HaptixWalletScreen() {
       }
       setTransactions((prev) => [newTx, ...prev])
 
-      Alert.alert(
+      dialog.alert(
         'Smart Account Ready',
         `Your spending limits are now enforced by the on-chain program on Solana Devnet.\n\nSignature: ${ellipsify(sig, 8)}`,
         [
@@ -464,17 +556,65 @@ export function HaptixWalletScreen() {
         ],
       )
     } catch (err: any) {
-      console.error('[Initialize Wallet Error]:', err)
-      Alert.alert('Initialization Failed', err?.message || 'Could not initialize on-chain account.')
+      console.error('[Initialize Wallet Error]:', formatChainErrorForLog(err))
+      dialog.alert(
+        'Initialization Failed',
+        describeChainError(err, 'The on-chain account could not be created. Please try again.'),
+      )
     } finally {
       setIsInitializingWallet(false)
     }
   }
 
+  // The wallet PDA has to exist on-chain before the program can write to it, and
+  // `initialize_wallet` gets its own transaction rather than riding along with a
+  // passkey instruction. Each hardware passkey contributes a secp256r1 precompile
+  // carrying a full WebAuthn assertion -- authenticatorData || sha256(clientDataJSON),
+  // plus the raw clientDataJSON so the program can re-hash it -- and two of those
+  // already consume most of Solana's 1232-byte transaction limit. Returns the init
+  // signature, or null when the wallet was already live.
+  const ensureWalletInitializedOnChain = async (walletPda: PublicKey, payer: Keypair): Promise<string | null> => {
+    if (!activeWallet?.primaryPasskeyHex || !activeWallet?.secondaryPasskeyHex) return null
+
+    const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
+    if (onChain) return null
+
+    const initIx = createInitializeWalletInstruction({
+      payer: payer.publicKey,
+      walletPda,
+      primaryPasskey: new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex')),
+      secondaryPasskey: new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex')),
+      spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
+    })
+
+    const blockhash = await connection.getLatestBlockhash('confirmed')
+    const tx = new Transaction({
+      feePayer: payer.publicKey,
+      recentBlockhash: blockhash.blockhash,
+    }).add(initIx)
+    tx.sign(payer)
+
+    const sig = await connection.sendRawTransaction(tx.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+    })
+
+    await connection.confirmTransaction(
+      {
+        signature: sig,
+        blockhash: blockhash.blockhash,
+        lastValidBlockHeight: blockhash.lastValidBlockHeight,
+      },
+      'confirmed',
+    )
+
+    return sig
+  }
+
   // Grant Scoped AI Agent Session Key on Solana Devnet (2-of-2 Passkey Quorum)
   const handleGrantCustomSession = async () => {
     if (isFrozen) {
-      Alert.alert('Security Alert', 'Wallet is panic frozen. Session key delegation locked.')
+      dialog.alert('Security Alert', 'Wallet is panic frozen. Session key delegation locked.')
       return
     }
     if (!activeWallet?.address) return
@@ -503,33 +643,26 @@ export function HaptixWalletScreen() {
         ...secondarySig,
         message: grantMsg,
       })
+
+      const payer = await getFundedDevnetPayer(connection)
+
+      // The session is written onto the wallet PDA, so the PDA has to exist first.
+      await ensureWalletInitializedOnChain(walletPda, payer)
+
+      const txInstructions: TransactionInstruction[] = []
+
+      // The program locates each passkey signature by its position in this
+      // transaction, so the indices are read off the array as built rather than
+      // assumed to start at zero.
       const grantIx = createGrantAgentSessionInstruction({
         walletPda,
         agentPubkey: ephemeralAgent.publicKey,
         validForSeconds,
         allowanceLamports,
         allowedProgram: SystemProgram.programId,
-        primarySigIxIndex: 0,
-        secondarySigIxIndex: 1,
+        primarySigIxIndex: txInstructions.length,
+        secondarySigIxIndex: txInstructions.length + 1,
       })
-
-      const payer = await getFundedDevnetPayer(connection)
-      const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
-      const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
-
-      let txInstructions = []
-      if (needsInit) {
-        const primaryPasskey = new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex'))
-        const secondaryPasskey = new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex'))
-        const initIx = createInitializeWalletInstruction({
-          payer: payer.publicKey,
-          walletPda,
-          primaryPasskey,
-          secondaryPasskey,
-          spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-        })
-        txInstructions.push(initIx)
-      }
       txInstructions.push(precompile1, precompile2, grantIx)
 
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
@@ -568,7 +701,7 @@ export function HaptixWalletScreen() {
       }
       setTransactions((prev) => [newTx, ...prev])
 
-      Alert.alert(
+      dialog.alert(
         'Agent Session Granted On-Chain',
         `Authorized session key on Anchor with ${allowanceSol} SOL allowance.\nValid for: ${hours} hours\n\nSignature: ${ellipsify(sig, 8)}`,
         [
@@ -580,8 +713,11 @@ export function HaptixWalletScreen() {
         ],
       )
     } catch (err: any) {
-      console.error('[Grant Session Error]:', err)
-      Alert.alert('Session Grant Failed', err?.message || 'Could not grant session on-chain.')
+      console.error('[Grant Session Error]:', formatChainErrorForLog(err))
+      dialog.alert(
+        'Session Grant Failed',
+        describeChainError(err, 'The agent session could not be granted on-chain. Please try again.'),
+      )
     } finally {
       setIsGrantingSession(false)
     }
@@ -591,18 +727,18 @@ export function HaptixWalletScreen() {
   const handleSendTransaction = async () => {
     setSendErrorMsg('')
     if (isFrozen) {
-      Alert.alert('Security Alert', 'Wallet is panic frozen. Outgoing transfers are locked on-chain.')
+      dialog.alert('Security Alert', 'Wallet is panic frozen. Outgoing transfers are locked on-chain.')
       return
     }
 
     const amt = parseFloat(sendAmountText) || 0
     if (amt <= 0) {
-      Alert.alert('Invalid Amount', 'Please enter a valid transfer amount.')
+      dialog.alert('Invalid Amount', 'Please enter a valid transfer amount.')
       return
     }
 
     if (amt > balance) {
-      Alert.alert('Insufficient Funds', `You have ${balance.toFixed(4)} SOL available.`)
+      dialog.alert('Insufficient Funds', `You have ${balance.toFixed(4)} SOL available.`)
       return
     }
 
@@ -610,12 +746,12 @@ export function HaptixWalletScreen() {
     try {
       toPubkey = new PublicKey(sendRecipient.trim())
     } catch {
-      Alert.alert('Invalid Address', 'Please enter a valid Solana address.')
+      dialog.alert('Invalid Address', 'Please enter a valid Solana address.')
       return
     }
 
     if (!activeWallet?.address) {
-      Alert.alert('Error', 'No active smart wallet found.')
+      dialog.alert('Error', 'No active smart wallet found.')
       return
     }
 
@@ -751,7 +887,7 @@ export function HaptixWalletScreen() {
       setShowSendModal(false)
       setSendRecipient('')
 
-      Alert.alert(
+      dialog.alert(
         'Transfer Confirmed On-Chain',
         `Sent ${amt} SOL.\n\n${
           isHighRiskQuorum ? 'Verified: 2-of-2 Passkey Quorum' : 'Verified: 1-Tap Secp256r1 Passkey'
@@ -768,10 +904,10 @@ export function HaptixWalletScreen() {
         ],
       )
     } catch (err: any) {
-      console.error('[Haptix Send] Execution error:', err)
-      const errorText = err?.message || 'Transaction could not be completed.'
+      console.error('[Haptix Send] Execution error:', formatChainErrorForLog(err))
+      const errorText = describeChainError(err, 'The transfer could not be completed on-chain. Please try again.')
       setSendErrorMsg(errorText)
-      Alert.alert('Transfer Failed', errorText)
+      dialog.alert('Transfer Failed', errorText)
     } finally {
       setIsSending(false)
     }
@@ -780,7 +916,7 @@ export function HaptixWalletScreen() {
   // Autonomous Agent Execution via On-Chain Program (Zero Passkey Prompts)
   const handleAgentExecute = async (recipientAddress: string) => {
     if (isFrozen) {
-      Alert.alert('Security Alert', 'Wallet is panic frozen. Autonomous agents are locked on-chain.')
+      dialog.alert('Security Alert', 'Wallet is panic frozen. Autonomous agents are locked on-chain.')
       return
     }
 
@@ -790,7 +926,7 @@ export function HaptixWalletScreen() {
     try {
       recipient = new PublicKey(recipientAddress.trim())
     } catch {
-      Alert.alert('Invalid Recipient', 'Enter the Solana address the agent should pay.')
+      dialog.alert('Invalid Recipient', 'Enter the Solana address the agent should pay.')
       return
     }
 
@@ -818,15 +954,6 @@ export function HaptixWalletScreen() {
         ...secondarySig,
         message: grantMsg,
       })
-      const grantIx = createGrantAgentSessionInstruction({
-        walletPda,
-        agentPubkey: agentKeypair.publicKey,
-        validForSeconds,
-        allowanceLamports,
-        allowedProgram: SystemProgram.programId,
-        primarySigIxIndex: 0,
-        secondarySigIxIndex: 1,
-      })
 
       // 2. Autonomous execution signed ONLY by agentKeypair (ZERO passkey prompts)
       const execIx = createAgentExecuteInstruction({
@@ -837,50 +964,74 @@ export function HaptixWalletScreen() {
       })
 
       const payer = await getFundedDevnetPayer(connection)
-      const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
-      const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
 
-      let txInstructions = []
+      // Grant and execute travel as two transactions. A hardware passkey returns a
+      // WebAuthn assertion, and each secp256r1 precompile has to carry that
+      // assertion's clientDataJSON inline so the on-chain parser can re-hash it.
+      // Two of those already consume most of Solana's 1232-byte limit, so the wallet
+      // init gets its own transaction and the quorum settles the session before the
+      // agent spends against it.
+      await ensureWalletInitializedOnChain(walletPda, payer)
 
-      if (needsInit) {
-        const primaryPasskey = new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex'))
-        const secondaryPasskey = new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex'))
-        const initIx = createInitializeWalletInstruction({
-          payer: payer.publicKey,
-          walletPda,
-          primaryPasskey,
-          secondaryPasskey,
-          spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-        })
-        txInstructions.push(initIx)
-      }
+      const grantInstructions: TransactionInstruction[] = []
 
-      txInstructions.push(precompile1, precompile2, grantIx, execIx)
+      // Signature indices are positions within their own transaction, so they have
+      // to be read off the array as built rather than assumed to start at zero.
+      const grantIx = createGrantAgentSessionInstruction({
+        walletPda,
+        agentPubkey: agentKeypair.publicKey,
+        validForSeconds,
+        allowanceLamports,
+        allowedProgram: SystemProgram.programId,
+        primarySigIxIndex: grantInstructions.length,
+        secondarySigIxIndex: grantInstructions.length + 1,
+      })
+      grantInstructions.push(precompile1, precompile2, grantIx)
 
-      const latestBlockhash = await connection.getLatestBlockhash('confirmed')
-      const tx = new Transaction({
+      const grantBlockhash = await connection.getLatestBlockhash('confirmed')
+      const grantTx = new Transaction({
         feePayer: payer.publicKey,
-        recentBlockhash: latestBlockhash.blockhash,
-      }).add(...txInstructions)
+        recentBlockhash: grantBlockhash.blockhash,
+      }).add(...grantInstructions)
 
-      tx.sign(payer, agentKeypair)
+      grantTx.sign(payer)
 
-      const rawTx = tx.serialize()
+      const grantSig = await connection.sendRawTransaction(grantTx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      })
+      await connection.confirmTransaction(
+        {
+          signature: grantSig,
+          blockhash: grantBlockhash.blockhash,
+          lastValidBlockHeight: grantBlockhash.lastValidBlockHeight,
+        },
+        'confirmed',
+      )
+
+      // The session is on-chain now, so the agent's own key can spend from it.
+      const execBlockhash = await connection.getLatestBlockhash('confirmed')
+      const execTx = new Transaction({
+        feePayer: payer.publicKey,
+        recentBlockhash: execBlockhash.blockhash,
+      }).add(execIx)
+
+      execTx.sign(payer, agentKeypair)
+
+      const rawTx = execTx.serialize()
       const sig = await connection.sendRawTransaction(rawTx, {
         skipPreflight: false,
         preflightCommitment: 'confirmed',
       })
 
-      connection
-        .confirmTransaction(
-          {
-            signature: sig,
-            blockhash: latestBlockhash.blockhash,
-            lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-          },
-          'confirmed',
-        )
-        .catch(() => null)
+      await connection.confirmTransaction(
+        {
+          signature: sig,
+          blockhash: execBlockhash.blockhash,
+          lastValidBlockHeight: execBlockhash.lastValidBlockHeight,
+        },
+        'confirmed',
+      )
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       await fetchRealBalance()
@@ -899,9 +1050,9 @@ export function HaptixWalletScreen() {
         ...prev,
       ])
 
-      Alert.alert(
+      dialog.alert(
         'Autonomous Agent Trade Executed On-Chain',
-        `The agent sent ${AGENT_TRADE_AMOUNT_SOL} SOL to ${ellipsify(recipient.toBase58(), 6)}, signed by its own session key with no prompt at execution time.\nThe amount came out of its daily allowance.\n\nTx: ${ellipsify(sig, 8)}`,
+        `The agent sent ${AGENT_TRADE_AMOUNT_SOL} SOL to ${ellipsify(recipient.toBase58(), 6)}, signed by its own session key with no prompt at execution time.\nThe amount came out of its daily allowance.\n\nSession grant tx: ${ellipsify(grantSig, 8)}\nTrade tx: ${ellipsify(sig, 8)}`,
         [
           {
             text: 'View on Explorer',
@@ -911,8 +1062,11 @@ export function HaptixWalletScreen() {
         ],
       )
     } catch (err: any) {
-      console.error('[Haptix Agent] Execution error:', err)
-      Alert.alert('Agent Error', err?.message || 'Agent trade execution failed.')
+      console.error('[Haptix Agent] Execution error:', formatChainErrorForLog(err))
+      dialog.alert(
+        'Agent Error',
+        describeChainError(err, 'The agent trade could not be executed on-chain. Please try again.'),
+      )
     }
   }
 
@@ -922,7 +1076,7 @@ export function HaptixWalletScreen() {
   const confirmAgentExecute = () => {
     const destination = agentRecipient.trim()
     if (!isValidSolanaAddress(destination)) {
-      Alert.alert(
+      dialog.alert(
         'Agent Recipient Required',
         'Set the Solana address the agent session should pay. The agent has no built-in destination, and a randomly generated one would only burn the funds.',
         [{ text: 'OK', style: 'default' }],
@@ -930,7 +1084,7 @@ export function HaptixWalletScreen() {
       return
     }
 
-    Alert.alert(
+    dialog.alert(
       'Run Autonomous Agent Trade',
       `Executes a real ${AGENT_TRADE_AMOUNT_SOL} SOL transfer to ${ellipsify(destination, 6)} on Solana Devnet, signed solely by a freshly generated agent session key — no biometric prompt at execution time.\n\nTwo passkey prompts are required up front to grant the session.`,
       [
@@ -942,7 +1096,7 @@ export function HaptixWalletScreen() {
 
   const confirmRevokeAgentSession = (session: AgentSessionState) => {
     const remaining = Number(session.allowanceLamports) / LAMPORTS_PER_SOL
-    Alert.alert(
+    dialog.alert(
       'Revoke Agent Session',
       `Removes the session key ${ellipsify(session.agentPubkey.toBase58(), 8)} from the on-chain wallet.\n\nIt can no longer spend anything, even if it still holds a valid signature. Unspent allowance: ${remaining} SOL.\n\nTwo passkey prompts are required.`,
       [
@@ -1025,7 +1179,7 @@ export function HaptixWalletScreen() {
         ...prev,
       ])
 
-      Alert.alert(
+      dialog.alert(
         'Agent Session Revoked On-Chain',
         `The program no longer accepts signatures from ${ellipsify(agentPubkey.toBase58(), 8)}.\n\nTx: ${ellipsify(sig, 8)}`,
         [
@@ -1037,8 +1191,11 @@ export function HaptixWalletScreen() {
         ],
       )
     } catch (err: any) {
-      console.error('[Haptix Agent] Revoke error:', err)
-      Alert.alert('Revoke Failed', err?.message || 'Could not revoke the agent session on-chain.')
+      console.error('[Haptix Agent] Revoke error:', formatChainErrorForLog(err))
+      dialog.alert(
+        'Revoke Failed',
+        describeChainError(err, 'The agent session could not be revoked on-chain. Please try again.'),
+      )
     } finally {
       setRevokingAgent(null)
     }
@@ -1051,6 +1208,23 @@ export function HaptixWalletScreen() {
 
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+
+      // Check the flag on-chain before spending a transaction on it. The local copy can
+      // already be stale (a freeze landed from an earlier session, or a previous attempt
+      // confirmed but the response was lost), and the banner does not correct itself --
+      // so the user taps a button whose transaction is guaranteed to be rejected.
+      const desiredFrozen = !isFrozen
+      const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
+      if (onChain && onChain.isFrozen === desiredFrozen) {
+        setIsFrozen(desiredFrozen)
+        dialog.alert(
+          desiredFrozen ? 'Already Frozen' : 'Already Unfrozen',
+          desiredFrozen
+            ? 'This wallet is already frozen on-chain, so there was nothing to submit.'
+            : 'This wallet is already unfrozen on-chain, so there was nothing to submit.',
+        )
+        return
+      }
 
       if (!isFrozen) {
         // Freeze on-chain via guardian/payer
@@ -1085,7 +1259,7 @@ export function HaptixWalletScreen() {
           ...prev,
         ])
 
-        Alert.alert(
+        dialog.alert(
           'Emergency Panic Freeze Activated',
           `Smart wallet is now locked on-chain.\n\nOutgoing transactions and agent sessions are blocked.\n\nTx: ${ellipsify(sig, 8)}`,
         )
@@ -1145,15 +1319,21 @@ export function HaptixWalletScreen() {
           ...prev,
         ])
 
-        Alert.alert(
+        dialog.alert(
           'Smart Wallet Unfrozen',
           `Verified 2-of-2 passkey quorum.\nWallet operations restored.\n\nTx: ${ellipsify(sig, 8)}`,
         )
       }
       await fetchRealBalance()
     } catch (err: any) {
-      console.error('[Haptix Freeze/Unfreeze] Error:', err)
-      Alert.alert('Action Failed', err?.message || 'Could not update freeze state on-chain.')
+      // The program logs are the only thing that explains a rejected assertion -- web3.js
+      // leaves them on the error object, and a bare `err` printed just "Simulation
+      // failed." here, which is not diagnosable after the fact.
+      console.error('[Haptix Freeze/Unfreeze] Error:', formatChainErrorForLog(err))
+      dialog.alert(
+        'Action Failed',
+        describeChainError(err, 'The freeze state could not be changed on-chain. Please try again.'),
+      )
     }
   }
 
@@ -1161,7 +1341,7 @@ export function HaptixWalletScreen() {
     if (!activeWallet?.address) return
     Clipboard.setString(activeWallet.address)
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    Alert.alert('Address Copied', activeWallet.address)
+    dialog.alert('Address Copied', activeWallet.address)
   }
 
   const solPriceUsd = market.solPriceUsd
@@ -2363,6 +2543,25 @@ export function HaptixWalletScreen() {
         </View>
       )}
 
+      {/* RPC DEGRADED BANNER */}
+      {rpcIssue && (
+        <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
+          <HaptixAlert
+            status="warning"
+            icon="cloud-off"
+            title="Network trouble"
+            message={rpcIssue}
+            action={{
+              label: 'Retry',
+              onPress: onRefresh,
+              loading: refreshing,
+              variant: 'primary',
+            }}
+            style={{ marginBottom: 0 }}
+          />
+        </View>
+      )}
+
       {/* ==================================================================== */}
       {/* 2. MAIN FINANCIAL DASHBOARD SCROLL AREA                              */}
       {/* ==================================================================== */}
@@ -2892,6 +3091,19 @@ export function HaptixWalletScreen() {
 
             <TouchableOpacity
               style={styles.overflowRow}
+              onPress={() => {
+                setShowOverflowMenu(false)
+                router.push('/(tabs)/settings')
+              }}
+            >
+              <MaterialIcons name="settings" size={18} color={theme.textPrimary} />
+              <Text style={[styles.overflowRowText, s.textPrimary]}>Settings</Text>
+            </TouchableOpacity>
+
+            <View style={[styles.overflowDivider, s.divider]} />
+
+            <TouchableOpacity
+              style={styles.overflowRow}
               onPress={async () => {
                 setShowOverflowMenu(false)
                 if (Platform.OS === 'web') {
@@ -2913,7 +3125,7 @@ export function HaptixWalletScreen() {
                   return
                 }
 
-                Alert.alert(
+                dialog.alert(
                   'Remove Wallet from Device',
                   'Are you sure you want to remove this smart wallet from this device? Your on-chain account and funds remain secure on Solana and can be restored anytime using your passkey.',
                   [

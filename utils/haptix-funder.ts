@@ -8,6 +8,7 @@ import {
   sendAndConfirmTransaction,
 } from '@solana/web3.js'
 import { AppConfig } from '@/constants/app-config'
+import { lamportsToSol } from '@/utils/lamports-to-sol'
 
 /**
  * Devnet fee sponsorship for local demos.
@@ -102,6 +103,19 @@ export async function fundDevnetWallet(
 ): Promise<string> {
   const payer = await getFundedDevnetPayer(connection)
   const lamports = BigInt(Math.round(amountSol * LAMPORTS_PER_SOL))
+
+  // Describe a drained funder in words. Submitting anyway produced
+  // `Transfer: insufficient lamports 91721040, need 200000000` inside a simulation
+  // dump, which is the amount the funder had at that moment and says nothing about
+  // what to do next.
+  const available = await connection.getBalance(payer.publicKey)
+  if (BigInt(available) < lamports) {
+    throw new Error(
+      `The Devnet funder ${payer.publicKey.toBase58()} holds ${lamportsToSol(available).toFixed(4)} SOL ` +
+        `but this request needs ${amountSol.toFixed(2)}. Top the funder up from a Devnet faucet and retry.`,
+    )
+  }
+
   const tx = new Transaction().add(
     SystemProgram.transfer({
       fromPubkey: payer.publicKey,

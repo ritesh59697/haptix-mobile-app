@@ -1,5 +1,6 @@
 import { PublicKey, TransactionInstruction } from '@solana/web3.js'
 import { Buffer } from 'buffer'
+import { p256 } from '@noble/curves/p256'
 import { sha256 } from '@noble/hashes/sha2'
 
 export const SECP256R1_PRECOMPILE_PROGRAM_ID = new PublicKey('Secp256r1SigVerify1111111111111111111111111')
@@ -12,6 +13,71 @@ export const SECP256R1_PRECOMPILE_PROGRAM_ID = new PublicKey('Secp256r1SigVerify
  */
 export const MODE_LEGACY = 0x00
 export const MODE_WEBAUTHN = 0x01
+
+/** A WebAuthn assertion exactly as the platform authenticator returns it. */
+export interface WebAuthnAssertion {
+  /** DER-encoded, as the authenticator returns it (normalised before verification). */
+  signature: Uint8Array
+  authenticatorData: Uint8Array
+  clientDataJSON: Uint8Array
+}
+
+/**
+ * The bytes a platform authenticator signs for an assertion.
+ *
+ * A passkey never signs an arbitrary payload: the signature covers
+ * `authenticatorData || sha256(clientDataJSON)`. The precompile hashes whichever byte
+ * range the message offsets point at, so pointing that range here is what makes the
+ * digest it verifies the digest the authenticator produced.
+ */
+export function webAuthnSignedRegion(authenticatorData: Uint8Array, clientDataJSON: Uint8Array): Uint8Array {
+  const clientDataHash = sha256(clientDataJSON)
+  const region = new Uint8Array(authenticatorData.length + clientDataHash.length)
+  region.set(authenticatorData, 0)
+  region.set(clientDataHash, authenticatorData.length)
+  return region
+}
+
+/**
+ * True when `assertion` was produced by the credential holding `compressedPublicKey`.
+ *
+ * Mirrors what the runtime precompile does -- sha256 the signed region, then verify with
+ * ES256 -- so a "match" here means the chain would accept this credential for that key.
+ * The DER signature the authenticator returns is normalised to the compact low-S form
+ * the precompile requires, so a high-S assertion the chain accepts is not rejected here.
+ *
+ * Malformed input answers "no match" instead of throwing: this is an identity question,
+ * and the caller treats a non-match as an ordinary outcome (it tries the next candidate
+ * key, then reports that the passkey does not belong to the wallet).
+ */
+export function assertionMatchesPublicKey(assertion: WebAuthnAssertion, compressedPublicKey: Uint8Array): boolean {
+  if (compressedPublicKey.length !== 33) return false
+  try {
+    const signature = p256.Signature.fromDER(assertion.signature).normalizeS().toCompactRawBytes()
+    const digest = sha256(webAuthnSignedRegion(assertion.authenticatorData, assertion.clientDataJSON))
+    return p256.verify(signature, digest, compressedPublicKey, { lowS: true })
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Which of a wallet's two on-chain keys signed this assertion, if either.
+ *
+ * Recovery has no other way to tell which credential the user just picked: an assertion
+ * carries a credential id and a signature, never a public key. Verifying against the keys
+ * the account already holds turns "is this the right passkey?" into a fact rather than a
+ * guess -- binding the wrong credential produced a wallet whose every 2-of-2 action
+ * failed the precompile's signature check, with nothing on screen to explain why.
+ */
+export function matchWebAuthnAssertion(
+  assertion: WebAuthnAssertion,
+  keys: { primary: Uint8Array; secondary: Uint8Array },
+): 'primary' | 'secondary' | null {
+  if (assertionMatchesPublicKey(assertion, keys.primary)) return 'primary'
+  if (assertionMatchesPublicKey(assertion, keys.secondary)) return 'secondary'
+  return null
+}
 
 export interface Secp256r1VerifyInstructionParams {
   signature: Uint8Array // 64-byte compact signature [r (32B), s (32B)] with canonical low-s
@@ -167,14 +233,10 @@ export function createWebAuthnSecp256r1Instruction({
   const PUBKEY_OFFSET = SIGNATURE_OFFSET + 64 // 82
   const MESSAGE_OFFSET = PUBKEY_OFFSET + 33 // 115
 
-  const clientDataHash = sha256(clientDataJSON)
-
   // The signed region is `authenticatorData || sha256(clientDataJSON)` and nothing else.
   // Appending the clientDataJSON here would change the digest the precompile computes,
   // and the authenticator never signed those bytes.
-  const message = new Uint8Array(authenticatorData.length + clientDataHash.length)
-  message.set(authenticatorData, 0)
-  message.set(clientDataHash, authenticatorData.length)
+  const message = webAuthnSignedRegion(authenticatorData, clientDataJSON)
 
   if (message.length > 0xffff) {
     throw new Error(`WebAuthn assertion is too large for the precompile: ${message.length} bytes`)
