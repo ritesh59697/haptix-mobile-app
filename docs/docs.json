@@ -23,6 +23,14 @@
             ]
           },
           {
+            "group": "Solana Mobile",
+            "pages": [
+              "solana/architecture",
+              "solana/vault-mode",
+              "solana/recovery"
+            ]
+          },
+          {
             "group": "Developer SDK",
             "pages": [
               "sdk/overview"

@@ -1,0 +1,98 @@
+---
+title: "Solana Mobile Architecture"
+description: "Smart accounts on Solana powered by native secp256r1 precompiles and Anchor."
+---
+
+# Solana Smart Account Architecture
+
+While traditional Solana wallets are basic Ed25519 keypairs stored in software or seed phrases, **Haptix** implements true smart contract accounts on Solana using the **Anchor framework** and native **Secp256r1 WebAuthn signature verification**.
+
+---
+
+## The Challenge of Passkeys on Solana
+
+Hardware security enclaves (Apple Secure Enclave, Android Keystore, FIDO2 USB/NFC keys) generate signatures using the **NIST P-256 (secp256r1)** elliptic curve. 
+
+Historically, Solana smart contracts could not verify passkeys because Solana's native runtime operates on Ed25519. Verifying P-256 in pure BPF bytecode would consume hundreds of thousands of compute units, making everyday transactions economically impractical.
+
+### The Native Precompile Solution
+
+Haptix leverages Solana's native **Secp256r1 Precompile**:
+- **Precompile Program ID**: `Secp256r1SigVerify1111111111111111111111111`
+- **Cost**: Highly optimized native C++ implementation executed directly by Solana validator nodes, verifying signatures in sub-millisecond time.
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│                      SOLANA TRANSACTION BUNDLE                         │
+│                                                                        │
+│  [Instruction 0: Secp256r1 Precompile Verify]                          │
+│   ├── Compact P-256 Signature (64B: r + canonical low-S)               │
+│   ├── Compressed Public Key (33B SEC1: 0x02/0x03)                      │
+│   └── Message Payload (40B: recipient + amount + nonce)                │
+│                                                                        │
+│  [Instruction 1: Haptix Anchor Program (execute_transfer)]              │
+│   ├── Introspects Instructions Sysvar                                  │
+│   ├── Confirms Precompile verified exact pubkey & message at Index 0   │
+│   └── Executes native SOL transfer via PDA signer seeds                │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## On-Chain Program Details
+
+The Haptix Solana program is live on Solana Devnet:
+
+| Parameter | Value |
+| :--- | :--- |
+| **Program ID** | `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke` |
+| **Network** | Solana Devnet |
+| **Program Authority** | Upgradable BPF Loader |
+| **Curve Standard** | NIST P-256 / secp256r1 (WebAuthn / FIDO2) |
+
+---
+
+## Off-Curve Program Derived Addresses (PDAs)
+
+Every Haptix Smart Wallet is an off-curve Program Derived Address:
+
+```typescript
+const [walletPda, bump] = PublicKey.findProgramAddressSync(
+  [
+    Buffer.from("haptix_wallet"),
+    walletSeed.toBuffer(),
+  ],
+  HAPTIX_PROGRAM_ID
+);
+```
+
+### Critical Security Properties:
+1. **No Private Key Exists for the Address**: The wallet PDA is mathematically off the Ed25519 curve; only the Haptix Anchor program can sign for it via runtime seeds.
+2. **Permanent Address Invariance**: Even if a user loses their phone and performs a **Guardian Social Recovery**, the wallet address, token accounts, and balances remain identical. Only the internal stored passkey public keys rotate.
+
+---
+
+## Security Invariants Enforced in Rust
+
+1. **Instructions Sysvar Introspection**:
+   The smart contract checks `solana_program::sysvar::instructions` to confirm that the `Secp256r1SigVerify` precompile was executed in the **exact same transaction** before the transfer instruction.
+2. **Strict Message Matching**:
+   The program reconstructs the expected 40-byte transfer payload `[Recipient (32B) | Amount Lamports (8B LE)]` and verifies that the precompile message offset points to this exact byte sequence.
+3. **Canonical Low-S Normalization**:
+   To prevent signature malleability, signatures must strictly satisfy $s \le n/2$. If an authenticator emits a high-$S$ signature, the client normalizes it ($s' = n - s$) before submitting to Solana.
+
+---
+
+## Autonomous AI Agent Sessions
+
+Haptix introduces scoped autonomous delegation to Solana:
+- **`grant_agent_session`**: The wallet owner signs with their hardware passkey to authorize an AI agent's public key with a specific spending limit (e.g. 0.05 SOL) and expiration window.
+- **`agent_execute`**: The AI agent signs transactions with its local keypair without prompting the user, as long as it operates within its approved bounds.
+- **`revoke_agent_session`**: The user or guardian can revoke an agent's permissions at any time.
+
+---
+
+## Emergency Circuit Breaker (Panic Freeze)
+
+- **`panic_freeze`**: Can be triggered by either the owner or the designated Guardian. Immediately freezes all outgoing transfers while leaving incoming deposits active.
+- **`unfreeze`**: Requires a 2-of-2 hardware quorum from the owner to restore spending operations.

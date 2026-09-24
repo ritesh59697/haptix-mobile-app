@@ -13,14 +13,25 @@ Instead of relying on a fragile 12-word seed phrase, Haptix secures your assets 
 
 Traditional wallets are designed for manual human signing. If you want an AI agent to execute a trade, you are forced to hand over your private key. If the agent makes a mistake or gets hacked, your entire wallet is drained.
 
-## The Haptix Solution
+## The Haptix Architecture
 
-Haptix uses **Account Abstraction (ERC-4337)** to enforce spending policies directly on the blockchain. 
-You can generate a scoped **Session Key** for an AI agent, granting it permission to trade autonomously, but only under strict, on-chain constraints.
+Haptix provides a unified biometric passkey smart account architecture across two major ecosystems:
 
-- **No Seed Phrases:** Secure your wallet with your biometrics.
-- **AI Agent Delegation:** Let AI bots trade for you, safely.
-- **3-Tier On-Chain Firewall:** Limits are enforced by the blockchain, not just the UI.
-- **Guardian Social Recovery:** Recover your wallet even if you lose your phone.
+1. **Solana Mobile Smart Wallet**:
+   - Native **NIST P-256 (secp256r1)** WebAuthn verification powered by Solana's native precompile (`9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`).
+   - **Dual-Device Vault Mode**: Checking vs. savings model (1-tap daily passkey vs. 2-of-2 hardware key quorum for large transfers).
+   - **Timelocked Guardian Social Recovery**: Rescue lost phones without giving guardians unilateral theft power.
+   - Explore the [Solana Mobile Architecture](/solana/architecture).
 
-Get started by checking out our [Quickstart Guide](/docs/quickstart).
+2. **EVM Smart Accounts (ERC-4337 v0.7)**:
+   - Account abstraction on Base Sepolia with RIP-7212 P-256 precompile.
+   - Scoped **AI Agent Session Keys** with 24-hour rolling budgets and on-chain spending firewalls.
+   - Chrome Manifest V3 extension with inpage EIP-1193 / EIP-6963 provider.
+   - Explore the [EVM Architecture](/architecture).
+
+- **No Seed Phrases:** True hardware-enforced passkey biometrics.
+- **AI Agent Delegation:** Scoped on-chain autonomous trade policies.
+- **Dual-Device Quorum:** Phone + OneKey/YubiKey/TouchID multisig.
+- **Guardian Social Recovery:** Non-custodial lost-phone recovery.
+
+Get started by checking out our [Quickstart Guide](/quickstart) or exploring the [Solana Mobile Guide](/solana/architecture).

@@ -1,0 +1,88 @@
+---
+title: "Dual-Device Vault Mode & Spending Limits"
+description: "The Checking vs. Vault security model and on-chain spending threshold governance."
+---
+
+# Dual-Device Vault Mode & Spending Limits
+
+Most mobile wallets rely on a single device. If an attacker steals your phone, shoulder-surfs your PIN, or forces you to scan your biometrics, **100% of your funds are at risk**.
+
+Haptix solves this with **Dual-Device Vault Mode** and **On-Chain Spending Limits**, introducing the web3 equivalent of a checking and savings account.
+
+---
+
+## The "Checking vs. Vault" Security Model
+
+Instead of treating all transfers equally, Haptix splits signing authority based on an on-chain value threshold:
+
+```text
+                               TRANSFER ATTEMPT
+                                      │
+                       Amount <= Spending Limit?
+                                      │
+                   ┌──────────────────┴──────────────────┐
+                   ▼                                     ▼
+                [ YES ]                               [ NO ]
+         Low-Risk Daily Spend                  High-Value Vault Transfer
+                   │                                     │
+           PRIMARY PASSKEY                    PRIMARY PASSKEY (Phone)
+             (Daily Phone)                               +
+                   │                          SECONDARY PASSKEY (Vault Key)
+                   ▼                                     │
+           Instant 1-Tap Send                            ▼
+                                               Dual-Hardware 2-of-2 Quorum
+```
+
+### 1. Low-Risk Transfers ($\le$ Threshold)
+- Signed by the **Primary Passkey** directly from your daily phone.
+- Instant, 1-tap biometric confirmation (Face ID / Android Fingerprint).
+- Ideal for daily coffee runs, token swaps, or gaming microtransactions.
+
+### 2. High-Risk Transfers ($>$ Threshold)
+- Exceeding the threshold automatically escalates security.
+- Requires **both** the Primary Passkey (Phone) **AND** the Secondary Vault Key (Hardware key / Laptop).
+- Even if an attacker physically holds your unlocked phone, they cannot drain your savings.
+
+---
+
+## Supported Vault Key Types
+
+When enabling Vault Mode during onboarding or in Settings, you can choose how your secondary key is stored:
+
+| Key Type | Authenticator Attachment | Use Case |
+| :--- | :--- | :--- |
+| **Everyday Mode** | Platform Authenticator | Both keys on the same phone. Fast setup for beginners. |
+| **Hardware Key (OneKey / YubiKey)** | Cross-Platform FIDO2 (NFC/USB) | Tap your physical hardware key on the back of the phone to approve vault transfers. |
+| **Laptop / Desktop (Touch ID)** | Hybrid FIDO2 / QR Pairing | Sign high-value transfers using your MacBook Secure Enclave or desktop Windows Hello. |
+
+---
+
+## On-Chain Spending Limit Governance
+
+Spending limits are not just a cosmetic feature in the mobile UI — they are **cryptographically enforced on-chain by the Anchor smart contract**:
+
+```rust
+// programs/haptix_program/src/instructions/governance.rs
+pub fn handle_set_spend_threshold(
+    ctx: Context<SetSpendThreshold>,
+    new_threshold_lamports: u64,
+    primary_sig_ix_index: u16,
+    secondary_sig_ix_index: u16,
+) -> Result<()>
+```
+
+### The Immutable Threshold Rule:
+To prevent an attacker with your phone from raising the limit to bypass security, **modifying the spending threshold requires a 2-of-2 Hardware Quorum**:
+1. You select a new limit in **Settings → Spending limits** (`0.05 SOL`, `0.1 SOL`, `0.5 SOL`, `1.0 SOL`, or custom).
+2. The app prompts your **Primary Passkey** biometric authentication.
+3. The app prompts your **Vault Key** (Secondary Passkey) authentication.
+4. Both precompile signatures are bundled into the transaction and submitted to Solana.
+5. If either signature is missing or invalid, the on-chain instruction reverts.
+
+---
+
+## Dynamic Send Sheet Escalation
+
+When sending funds from the main wallet screen:
+- **Under Limit**: The action button displays **"Send with Passkey (1 signature)"**.
+- **Over Limit**: The action button automatically changes to **"Send with Quorum (Requires Vault Key)"** with a security alert informing you that your secondary key will be required.

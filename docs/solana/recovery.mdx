@@ -1,0 +1,114 @@
+---
+title: "Guardian Social Recovery"
+description: "Timelocked non-custodial recovery for lost devices with fast-path owner veto."
+---
+
+# Timelocked Guardian Social Recovery
+
+If you lose a traditional seed phrase wallet, your funds are permanently gone. If you lose a simple passkey wallet tied to a lost phone, you are equally locked out.
+
+Haptix provides a **smart-contract-enforced Guardian Social Recovery** mechanism that allows you to rescue your wallet onto a new device without ever giving a third party the power to steal your funds.
+
+---
+
+## The Asymmetric Security Model
+
+The foundational security guarantee of Haptix recovery is asymmetric:
+
+> **A guardian can *start* a recovery, but they can never *finish* one without your permission or your silence.**
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│                        RECOVERY STATE MACHINE                          │
+│                                                                        │
+│   [Normal Operation] ──(Phone Lost)──> [Guardian: initiate_recovery]   │
+│                                                   │                    │
+│                                                   ▼                    │
+│                                         [ Wallet Frozen ]              │
+│                                         [ Timelock Active ]            │
+│                                                   │                    │
+│                     ┌─────────────────────────────┴────────────┐       │
+│                     ▼                                          ▼       │
+│            [ Unauthorized Attempt ]                   [ Legitimate Loss ]│
+│                     │                                          │       │
+│           Owner: cancel_recovery                      Timelock Elapses  │
+│             ("Keep My Keys")                                   │       │
+│                     │                                          ▼       │
+│                     ▼                              [ execute_recovery ]│
+│              [ Unfrozen ]                                      │       │
+│          [ Proposal Cleared ]                                  ▼       │
+│                                                        [ Keys Rotated ]│
+│                                                        [ Address Intact]│
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Instruction Breakdown
+
+| Instruction | Who Signs | Effect on Smart Account |
+| :--- | :--- | :--- |
+| **`set_guardian`** | **Owner (2-of-2 Passkeys)** | Configures the guardian's Solana address on-chain. |
+| **`initiate_recovery`** | **Guardian Alone** | Staged replacement keys are recorded, `initiated_at` timestamp is set, and the wallet is **frozen**. |
+| **`cancel_recovery`** | **Owner (2-of-2 Passkeys)** | Clears the proposal, unfreezes the wallet. Guardian is completely excluded from canceling. |
+| **`execute_recovery`** | **Permissionless (Anyone)** | Installs the replacement keys onto the PDA. Strictly gated by `now >= initiated_at + timelock`. |
+
+---
+
+## The 5-Step Recovery Flow
+
+### 1. Designating a Guardian
+In the mobile app under **Settings → Guardian & recovery**, tap **Change guardian** and paste a trusted Solana address (a hardware wallet like a **OneKey** or **Ledger**, a trusted friend, or a cold storage key). This action requires a **2-of-2 passkey biometric prompt**.
+
+### 2. Initiating Recovery When Phone is Lost
+If your phone is lost or destroyed, your guardian signs `initiate_recovery` using the CLI or the upcoming web recovery portal:
+- Proposes new public keys for your replacement device.
+- **Immediately freezes the wallet** so no unauthorized outflows can occur.
+- Starts the on-chain security timelock (default 24h on mainnet, 30s in dev mode).
+
+### 3. The Dispute / Timelock Window
+During this window:
+- Transfers out of the wallet are completely rejected by the Anchor program.
+- If an unauthorized guardian attempted to take over the account, the real owner has plenty of time to intervene.
+
+### 4. Fast-Path Veto ("Keep My Keys")
+If you still have your phone and the recovery was unauthorized (e.g. your guardian was compromised):
+- Open the mobile app and see the prominent **`RECOVERY IN FLIGHT`** warning banner.
+- Tap **Keep My Keys**.
+- Authenticate with your passkeys to instantly invoke `cancel_recovery`, clearing the malicious proposal and restoring normal operations.
+
+### 5. Executing Key Rotation
+Once the timelock elapses with no veto:
+- `execute_recovery` is called.
+- The smart contract permanently installs the new passkeys.
+- **The wallet address and all token balances remain unchanged.** Your new device now has full sovereign control.
+
+---
+
+## Guardian Testing CLI Tool
+
+For developers and advanced users, the mobile repository includes an interactive guardian CLI tool:
+
+```bash
+# View on-chain recovery status
+npm run guardian -- status <walletAddress>
+
+# Initiate recovery (guardian signs alone)
+npm run guardian -- initiate <walletAddress> --keypair ~/.config/solana/guardian.json
+
+# Test if owner can veto
+npm run guardian -- veto-check <walletAddress>
+
+# Execute key rotation (after timelock elapses)
+npm run guardian -- execute <walletAddress>
+```
+
+---
+
+## The Future Web Portal (`recovery.haptix.app`)
+
+We are building a zero-install companion web dApp:
+1. Connect your **OneKey**, **Ledger**, or browser wallet (Phantom, Solflare).
+2. Enter the lost wallet address.
+3. Click **"Start Recovery"** to sign `initiate_recovery` directly from your hardware wallet.
+4. Track the countdown and click **"Complete Recovery"** once the timelock elapses.
