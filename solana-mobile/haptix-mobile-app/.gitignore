@@ -45,3 +45,9 @@ app-example
 # https://docs.expo.dev/workflow/continuous-native-generation/
 /android
 /ios
+
+# Anchor Rust Program
+haptix_program/target/
+haptix_program/node_modules/
+haptix_program/.anchor/
+

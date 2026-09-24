@@ -86,8 +86,12 @@ import {
   DepositActionIcon,
   WithdrawActionIcon,
   CopyChipIcon,
-  FingerScanBold,
-  KeySquareBold,
+  LucideSmartphone,
+  LucideShieldCheck,
+  LucideCheck,
+  LucidePlaySolid,
+  LucideFingerprint,
+  LucideKeyRound,
 } from './haptix-icons'
 import { HaptixFloatingDock, DockTabId } from './haptix-floating-dock'
 import { HaptixIosTabs, IosTabItem } from './haptix-ios-tabs'
@@ -1539,24 +1543,20 @@ export function HaptixWalletScreen() {
           <View
             style={[
               styles.agentHeroStatusBadge,
-              // Only the alarmed state gets a filled, coloured pill. "Everything is fine"
-              // is not worth an accent-coloured badge on every visit.
               isFrozen
                 ? { backgroundColor: theme.roseBg, borderColor: theme.roseBorder }
-                : { backgroundColor: 'transparent', borderColor: theme.borderDefault },
+                : { backgroundColor: theme.bgElevated, borderColor: theme.borderSubtle },
             ]}
           >
-            <View
+            {isFrozen ? null : onChainWallet ? (
+              <LucideCheck size={11} color={theme.textSecondary} strokeWidth={2.4} />
+            ) : null}
+            <Text
               style={[
-                styles.agentStatusDot,
-                { backgroundColor: isFrozen ? theme.rose : onChainWallet ? theme.emerald : theme.amber },
+                styles.agentStatusText,
+                { color: isFrozen ? theme.roseText : onChainWallet ? theme.textSecondary : theme.textMuted },
               ]}
-            />
-            <Text style={[styles.agentStatusText, { color: isFrozen ? theme.roseText : theme.textSecondary }]}>
-              {/* Three states, because "not locked" is not the same as "limits are live".
-                  A wallet whose policy was never deployed showed an emerald dot reading
-                  "Limits active" while the Home tab was asking it to finish setup and the
-                  Agent Sessions card directly below said to activate the policy first. */}
+            >
               {isFrozen ? 'Locked' : onChainWallet ? 'Limits active' : 'Not on-chain yet'}
             </Text>
           </View>
@@ -1602,12 +1602,12 @@ export function HaptixWalletScreen() {
         {/* Policy Pills Row */}
         <View style={styles.agentPolicyPillRow}>
           <View style={[styles.agentPolicyPill, styles.elevatedCard]}>
-            <MaterialIcons name="bolt" size={14} color={theme.emerald} />
+            <LucideSmartphone size={13} color={theme.textSecondary} strokeWidth={1.8} />
             <Text style={[styles.agentPolicyPillText, styles.textSecondary]}>One key: ≤ {spendThreshold} SOL</Text>
           </View>
 
           <View style={[styles.agentPolicyPill, styles.elevatedCard]}>
-            <MaterialIcons name="shield" size={14} color={theme.amber} />
+            <LucideShieldCheck size={13} color={theme.textSecondary} strokeWidth={1.8} />
             <Text style={[styles.agentPolicyPillText, styles.textSecondary]}>Both keys: &gt; {spendThreshold} SOL</Text>
           </View>
         </View>
@@ -1743,7 +1743,7 @@ export function HaptixWalletScreen() {
           onPress={confirmAgentExecute}
           activeOpacity={0.8}
         >
-          <MaterialIcons name="bolt" size={15} color={theme.accentForeground} />
+          <LucidePlaySolid size={10} color={theme.accentForeground} />
           <Text style={[styles.agentFastLaneTestBtnText, { color: theme.accentForeground }]}>Run Trade</Text>
         </TouchableOpacity>
 
@@ -1918,9 +1918,9 @@ export function HaptixWalletScreen() {
         {/* Primary Passkey */}
         <View style={styles.credentialCompactRow}>
           <View
-            style={[styles.credentialIconWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+            style={[styles.credentialIconWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderSubtle }]}
           >
-            <FingerScanBold size={18} color={theme.emerald} />
+            <LucideFingerprint size={18} color={theme.textPrimary} strokeWidth={1.8} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.credentialName, styles.textPrimary]}>
@@ -1935,9 +1935,9 @@ export function HaptixWalletScreen() {
         {/* Secondary / backup device key */}
         <View style={styles.credentialCompactRow}>
           <View
-            style={[styles.credentialIconWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+            style={[styles.credentialIconWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderSubtle }]}
           >
-            <KeySquareBold size={18} color={theme.amber} />
+            <LucideKeyRound size={18} color={theme.textPrimary} strokeWidth={1.8} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.credentialName, styles.textPrimary]}>
@@ -2019,7 +2019,7 @@ export function HaptixWalletScreen() {
         </View>
 
         <View style={styles.auditLogRow}>
-          <MaterialIcons name="check-circle" size={16} color={theme.emerald} />
+          <LucideCheck size={14} color={theme.textSecondary} strokeWidth={2.4} />
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text style={[styles.auditLogText, styles.textPrimary]}>Passkey enrolled</Text>
@@ -2035,11 +2035,7 @@ export function HaptixWalletScreen() {
             enforced on-chain on this page while the Home tab was still asking it to
             finish setup. */}
         <View style={styles.auditLogRow}>
-          <MaterialIcons
-            name={onChainWallet ? 'check-circle' : 'schedule'}
-            size={16}
-            color={onChainWallet ? theme.emerald : theme.amber}
-          />
+          <LucideCheck size={14} color={onChainWallet ? theme.textSecondary : theme.textMuted} strokeWidth={2.4} />
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text style={[styles.auditLogText, styles.textPrimary]}>

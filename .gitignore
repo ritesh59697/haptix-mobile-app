@@ -43,3 +43,8 @@ dist/
 .gstack/
 *.apk
 solana-mobile/haptix-wallet.apk
+
+# Anchor & Rust
+target/
+.anchor/
+
