@@ -19,8 +19,8 @@
     "web": "expo start --web",
     "guardian": "npx -y tsx tools/haptix-guardian.ts"
   },
-  "displayName": "Mobile Expo Boilerplate",
-  "description": "A template for building a Solana mobile app with Expo and React Native.",
+  "displayName": "Haptix",
+  "description": "Next-Gen Passkey Smart Wallet for Solana Mobile with hardware-enforced 2-of-2 multisig, on-chain spending limits, and session keys.",
   "usecase": "Mobile",
   "keywords": [
     "expo",
