@@ -21,6 +21,7 @@ import { useCluster } from '@/components/cluster/cluster-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { PrismDepthButton } from '@/components/ui'
+import { LucideSmartphone, LucideShieldCheck, LucideCheck } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
@@ -41,7 +42,7 @@ export default function SpendingLimitsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const dialog = useHaptixDialog()
-  const { theme, isDark } = useAppTheme()
+  const { theme } = useAppTheme()
   const { activeWallet, updateWallet } = useAuth()
   const { connection, getExplorerUrl } = useCluster()
 
@@ -247,7 +248,7 @@ export default function SpendingLimitsScreen() {
               </Text>
             </View>
             <View style={styles.activeBadge}>
-              <View style={styles.activeDot} />
+              <LucideCheck size={11} color={theme.textSecondary} strokeWidth={2.4} />
               <Text style={styles.activeBadgeText}>Live Policy</Text>
             </View>
           </View>
@@ -261,8 +262,8 @@ export default function SpendingLimitsScreen() {
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>How Protection Works</Text>
           <View style={styles.ruleRow}>
-            <View style={[styles.ruleIconContainer, { backgroundColor: isDark ? '#14251e' : '#eaf8f0' }]}>
-              <MaterialIcons name="bolt" size={20} color="#22c55e" />
+            <View style={styles.ruleIconContainer}>
+              <LucideSmartphone size={18} color={theme.textPrimary} strokeWidth={1.8} />
             </View>
             <View style={styles.ruleTextContainer}>
               <Text style={styles.ruleTitle}>Daily Fast Lane (≤ {effectiveLimit} SOL)</Text>
@@ -275,8 +276,8 @@ export default function SpendingLimitsScreen() {
           <View style={styles.ruleDivider} />
 
           <View style={styles.ruleRow}>
-            <View style={[styles.ruleIconContainer, { backgroundColor: isDark ? '#271b30' : '#f5eefb' }]}>
-              <MaterialIcons name="security" size={20} color="#a855f7" />
+            <View style={styles.ruleIconContainer}>
+              <LucideShieldCheck size={18} color={theme.textPrimary} strokeWidth={1.8} />
             </View>
             <View style={styles.ruleTextContainer}>
               <Text style={styles.ruleTitle}>Vault Quorum (&gt; {effectiveLimit} SOL)</Text>
@@ -500,18 +501,12 @@ function createStyles(theme: ThemeTokens) {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: theme.bgElevated,
-      paddingHorizontal: 10,
+      paddingHorizontal: 9,
       paddingVertical: 5,
       borderRadius: radius.pill,
       borderWidth: 1,
       borderColor: theme.borderSubtle,
-      gap: 6,
-    },
-    activeDot: {
-      width: 7,
-      height: 7,
-      borderRadius: 4,
-      backgroundColor: '#22c55e',
+      gap: 5,
     },
     activeBadgeText: {
       fontSize: typeScale.caption,
@@ -541,9 +536,12 @@ function createStyles(theme: ThemeTokens) {
       gap: 12,
     },
     ruleIconContainer: {
-      width: 36,
-      height: 36,
+      width: 38,
+      height: 38,
       borderRadius: radius.md,
+      backgroundColor: theme.bgElevated,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
       alignItems: 'center',
       justifyContent: 'center',
     },

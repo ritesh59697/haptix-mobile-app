@@ -211,17 +211,19 @@ export function HaptixPolicySheet({ topic, threshold, onClose }: HaptixPolicyShe
 
   return (
     <Modal visible={content !== null} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable
+      <View style={styles.backdrop}>
+        {/* Backdrop tap to dismiss */}
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+
+        {/* Bottom sheet */}
+        <View
           style={[
             styles.sheet,
             {
               backgroundColor: theme.bgCard,
               borderColor: theme.borderDefault,
-              paddingBottom: insets.bottom + 20,
             },
           ]}
-          onPress={() => {}}
         >
           <View style={[styles.dragHandle, { backgroundColor: theme.borderDefault }]} />
 
@@ -237,7 +239,14 @@ export function HaptixPolicySheet({ topic, threshold, onClose }: HaptixPolicyShe
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollBody}>
+          <ScrollView
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={true}
+            contentContainerStyle={[styles.scrollBody, { paddingBottom: Math.max(insets.bottom, 16) + 32 }]}
+            nestedScrollEnabled={true}
+            bounces={true}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text style={[styles.intro, { color: theme.textSecondary }]}>{content?.intro}</Text>
 
             {content?.sections.map((section, sectionIndex) => (
@@ -265,8 +274,8 @@ export function HaptixPolicySheet({ topic, threshold, onClose }: HaptixPolicyShe
               <Text style={[styles.doneBtnText, { color: theme.accentForeground }]}>Got it</Text>
             </TouchableOpacity>
           </ScrollView>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   )
 }
@@ -278,11 +287,15 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    maxHeight: '86%',
+    maxHeight: '88%',
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     borderWidth: 1,
     paddingTop: 12,
+    overflow: 'hidden',
+  },
+  scrollView: {
+    flexShrink: 1,
   },
   dragHandle: {
     width: 36,

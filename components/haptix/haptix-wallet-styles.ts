@@ -956,15 +956,12 @@ const createStyles = (theme: ThemeTokens) =>
     },
     quorumTag: {
       ...TAG_SHAPE,
-      // Quiet outline rather than a filled amber pill: the quorum is a standing
-      // property of the wallet, not an alarm, and two filled amber chips on one
-      // screen read as decoration instead of information.
-      backgroundColor: 'transparent',
+      backgroundColor: theme.bgElevated,
       borderWidth: 1,
-      borderColor: theme.amberBorder,
+      borderColor: theme.borderSubtle,
     },
     quorumTagText: {
-      color: theme.amberText,
+      color: theme.textSecondary,
       fontSize: typeScale.caption,
       fontWeight: '600',
     },

@@ -1,5 +1,5 @@
 import React from 'react'
-import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg'
+import Svg, { Path, Rect, Circle, Polygon, Defs, LinearGradient, Stop } from 'react-native-svg'
 
 /**
  * Haptix Design System Icons
@@ -404,3 +404,226 @@ export const ActionAgentsIcon = CpuChipBold
 export const EyeShowIcon = EyeBold
 export const EyeHideIcon = EyeSlashBold
 export const CopyChipIcon = CopyBold
+
+// ============================================================================
+// 4. LUCIDE / RUNE MINIMALIST SYSTEM ICONS
+// Anti-slop, clean monochrome line-art vector icons (https://lucide.dev/icons)
+// ============================================================================
+
+export interface StrokeIconProps extends IconProps {
+  strokeWidth?: number
+}
+
+/**
+ * Lucide: Smartphone
+ * Clean device outline for primary device / single-key daily limit
+ */
+export function LucideSmartphone({ size = 18, color = '#FFFFFF', strokeWidth = 1.8 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Rect
+        x="5"
+        y="2"
+        width="14"
+        height="20"
+        rx="2.5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M11 18h2"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+/**
+ * Lucide: KeyRound
+ * Vector key for cryptographic passkey signing
+ */
+export function LucideKeyRound({ size = 18, color = '#FFFFFF', strokeWidth = 1.8 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx="16.5" cy="7.5" r="0.75" fill={color} />
+    </Svg>
+  )
+}
+
+/**
+ * Lucide: ShieldCheck
+ * Institutional vault protection and multi-key quorum
+ */
+export function LucideShieldCheck({ size = 18, color = '#FFFFFF', strokeWidth = 1.8 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="m9 12 2 2 4-4"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+/**
+ * Lucide: Shield
+ * Clean outline shield
+ */
+export function LucideShield({ size = 18, color = '#FFFFFF', strokeWidth = 1.8 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+/**
+ * Lucide: Check
+ * Crisp checkmark for active status pills and verified guarantees
+ */
+export function LucideCheck({ size = 14, color = '#FFFFFF', strokeWidth = 2.4 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M20 6 9 17l-5-5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+/**
+ * Lucide: PlaySolid
+ * Precision action trigger for autonomous agent trading
+ */
+export function LucidePlaySolid({ size = 12, color = '#000000' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Polygon points="6 3.5 20 12 6 20.5 6 3.5" fill={color} />
+    </Svg>
+  )
+}
+
+/**
+ * Lucide: ArrowRight
+ * Sharp directional arrow
+ */
+export function LucideArrowRight({ size = 14, color = '#000000', strokeWidth = 2 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M5 12h14M12 5l7 7-7 7"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+/**
+ * Lucide: Fingerprint
+ * Biometric touch/face authentication icon
+ */
+export function LucideFingerprint({ size = 18, color = '#FFFFFF', strokeWidth = 1.8 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M14 13.12c0 2.38 0 6.38-1 8.88"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M17.29 21.02c.12-.6.43-2.3.5-3.02"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M2 12a10 10 0 0 1 18-6"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M2 16h.01"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M21.8 16c.2-2 .131-5.354 0-6"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M8.65 22c.21-.66.45-1.32.57-2"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M9 6.8a6 6 0 0 1 9 5.2v2"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
