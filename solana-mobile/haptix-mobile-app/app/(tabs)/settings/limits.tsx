@@ -34,7 +34,8 @@ import {
 } from '@/utils/haptix-client'
 import { radius, typeScale, ThemeTokens } from '@/theme/tokens'
 
-const PRESET_LIMITS = [0.05, 0.1, 0.25, 0.5, 1.0]
+const PRESET_LIMITS_ROW_1 = [0.05, 0.1, 0.25]
+const PRESET_LIMITS_ROW_2 = [0.5, 1.0]
 
 export default function SpendingLimitsScreen() {
   const router = useRouter()
@@ -295,8 +296,9 @@ export default function SpendingLimitsScreen() {
             Select a preset limit or enter a custom amount in SOL.
           </Text>
 
-          <View style={styles.presetsGrid}>
-            {PRESET_LIMITS.map((preset) => {
+          {/* Row 1 */}
+          <View style={styles.presetsRow}>
+            {PRESET_LIMITS_ROW_1.map((preset) => {
               const isSelected = !isCustomMode && selectedLimit === preset
               return (
                 <TouchableOpacity
@@ -306,6 +308,34 @@ export default function SpendingLimitsScreen() {
                     styles.presetChip,
                     isSelected && styles.presetChipActive,
                   ]}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.presetChipText,
+                      isSelected && styles.presetChipTextActive,
+                    ]}
+                  >
+                    {preset} SOL
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+
+          {/* Row 2 */}
+          <View style={[styles.presetsRow, { marginBottom: isCustomMode ? 12 : 16 }]}>
+            {PRESET_LIMITS_ROW_2.map((preset) => {
+              const isSelected = !isCustomMode && selectedLimit === preset
+              return (
+                <TouchableOpacity
+                  key={preset}
+                  onPress={() => handleSelectPreset(preset)}
+                  style={[
+                    styles.presetChip,
+                    isSelected && styles.presetChipActive,
+                  ]}
+                  activeOpacity={0.8}
                 >
                   <Text
                     style={[
@@ -324,6 +354,7 @@ export default function SpendingLimitsScreen() {
                 styles.presetChip,
                 isCustomMode && styles.presetChipActive,
               ]}
+              activeOpacity={0.8}
             >
               <Text
                 style={[
@@ -534,17 +565,15 @@ function createStyles(theme: ThemeTokens) {
       backgroundColor: theme.borderSubtle,
       marginVertical: 4,
     },
-    presetsGrid: {
+    presetsRow: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
       gap: 8,
-      marginBottom: 16,
+      marginBottom: 8,
     },
     presetChip: {
       flex: 1,
-      minWidth: '28%',
-      paddingVertical: 12,
-      paddingHorizontal: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 6,
       borderRadius: radius.md,
       backgroundColor: theme.bgElevated,
       borderWidth: 1,
@@ -562,7 +591,7 @@ function createStyles(theme: ThemeTokens) {
       fontWeight: '600',
     },
     presetChipTextActive: {
-      color: '#ffffff',
+      color: theme.accentForeground,
       fontWeight: '700',
     },
     customInputContainer: {
