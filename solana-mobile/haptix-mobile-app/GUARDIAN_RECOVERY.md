@@ -186,10 +186,9 @@ that accepts `30s`, `5m`, `24h` and similar. To watch `execute` actually rotate 
 inside one session, create a **fresh wallet** with a `30s` window and run the whole
 run-book against that one.
 
-## Still missing
+## Implementation Status & Future Roadmap
 
-- `set_spend_threshold` has a builder in `utils/haptix-client.ts` and tests, but no UI,
-  so the threshold — like the guardian before this — is fixed at creation.
-- `set_guardian` requires the owner's passkeys, so a wallet whose both keys are lost
-  cannot have its guardian moved. The guardian is a recovery _starter_, not a
-  replacement owner.
+- [x] **`set_spend_threshold` UI**: Implemented in **Settings → Spending limits** (`app/(tabs)/settings/limits.tsx`). Allows user-configurable daily limits with 2-of-2 hardware passkey quorum.
+- [x] **Terminal CLI Recovery**: Functional in `tools/haptix-guardian.ts` for status, initiate, execute, and veto checks.
+- [ ] **Web Recovery Portal (`recovery.haptix.app`)**: Build a browser dApp allowing users who lost their phone to connect a hardware wallet (OneKey, Ledger) or browser wallet to initiate and execute recovery without needing the terminal CLI.
+- [ ] **Guardian Invariant Note**: `set_guardian` strictly requires the owner's 2-of-2 passkeys, so a wallet whose keys are already lost cannot have its guardian moved. The guardian is a recovery _starter_, not a replacement owner.
