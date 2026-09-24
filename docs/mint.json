@@ -8,8 +8,8 @@
   },
   "favicon": "/favicon.ico",
   "logo": {
-    "light": "/assets/haptix_official_logo.jpg",
-    "dark": "/assets/haptix_official_logo.jpg"
+    "light": "/assets/haptix_logo_light.svg",
+    "dark": "/assets/haptix_logo_dark.svg"
   },
   "topbarLinks": [
     {
