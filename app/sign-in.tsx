@@ -180,6 +180,7 @@ export default function SignIn() {
   const [primaryKeyName, setPrimaryKeyName] = useState('Primary Passkey')
   const [secondaryKeyName, setSecondaryKeyName] = useState('Backup Key')
   const [guardianInput, setGuardianInput] = useState('')
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
 
   // The guardian is the one address that can ever start a recovery, so it is validated
   // the same way a recipient is: a pasted explorer link or message gets its address
@@ -664,180 +665,214 @@ export default function SignIn() {
             </View>
 
             {creationStep === 0 ? (
-              <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
-                <Text style={styles.sheetDesc}>Choose your security model and customize passkey names.</Text>
+              <>
+                <ScrollView
+                  style={{ flexShrink: 1 }}
+                  contentContainerStyle={{ paddingBottom: 8 }}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Text style={styles.sheetDesc}>Choose your security model and customize passkey names.</Text>
 
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Security Architecture</Text>
-                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        Haptics.selectionAsync()
-                        setSecurityMode('everyday')
-                        setSecondaryKeyName('Backup Key')
-                      }}
-                      style={[
-                        styles.modeCard,
-                        securityMode === 'everyday' && styles.modeCardActive,
-                      ]}
-                    >
-                      <MaterialIcons
-                        name="smartphone"
-                        size={22}
-                        color={securityMode === 'everyday' ? p.heroInk : p.inkMuted}
-                      />
-                      <Text
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Security Architecture</Text>
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          Haptics.selectionAsync()
+                          setSecurityMode('everyday')
+                          setSecondaryKeyName('Backup Key')
+                        }}
                         style={[
-                          styles.modeCardTitle,
-                          securityMode === 'everyday' && styles.modeCardTitleActive,
+                          styles.modeCard,
+                          securityMode === 'everyday' && styles.modeCardActive,
                         ]}
                       >
-                        Everyday
-                      </Text>
-                      <Text style={styles.modeCardDesc}>Both keys on this device</Text>
-                    </TouchableOpacity>
+                        <MaterialIcons
+                          name="smartphone"
+                          size={22}
+                          color={securityMode === 'everyday' ? p.heroInk : p.inkMuted}
+                        />
+                        <Text
+                          style={[
+                            styles.modeCardTitle,
+                            securityMode === 'everyday' && styles.modeCardTitleActive,
+                          ]}
+                        >
+                          Everyday
+                        </Text>
+                        <Text style={styles.modeCardDesc}>Both keys on this device</Text>
+                      </TouchableOpacity>
 
-                    <TouchableOpacity
-                      onPress={() => {
-                        Haptics.selectionAsync()
-                        setSecurityMode('vault')
-                        setSecondaryKeyName('Vault Key (Hardware / Laptop)')
-                      }}
-                      style={[
-                        styles.modeCard,
-                        securityMode === 'vault' && styles.modeCardActive,
-                      ]}
-                    >
-                      <MaterialIcons
-                        name="security"
-                        size={22}
-                        color={securityMode === 'vault' ? p.heroInk : p.inkMuted}
-                      />
-                      <Text
+                      <TouchableOpacity
+                        onPress={() => {
+                          Haptics.selectionAsync()
+                          setSecurityMode('vault')
+                          setSecondaryKeyName('Vault Key (Hardware / Laptop)')
+                        }}
                         style={[
-                          styles.modeCardTitle,
-                          securityMode === 'vault' && styles.modeCardTitleActive,
+                          styles.modeCard,
+                          securityMode === 'vault' && styles.modeCardActive,
                         ]}
                       >
-                        Vault Mode
-                      </Text>
-                      <Text style={styles.modeCardDesc}>Key 2 on Laptop / OneKey</Text>
-                    </TouchableOpacity>
+                        <MaterialIcons
+                          name="security"
+                          size={22}
+                          color={securityMode === 'vault' ? p.heroInk : p.inkMuted}
+                        />
+                        <Text
+                          style={[
+                            styles.modeCardTitle,
+                            securityMode === 'vault' && styles.modeCardTitleActive,
+                          ]}
+                        >
+                          Vault Mode
+                        </Text>
+                        <Text style={styles.modeCardDesc}>Key 2 on Laptop / OneKey</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {securityMode === 'vault' && (
+                      <View style={styles.vaultExplainer}>
+                        <MaterialIcons name="info-outline" size={16} color={p.heroInk} />
+                        <Text style={styles.vaultExplainerText}>
+                          <Text style={{ fontWeight: '700' }}>Vault Mode</Text>: Daily spends use FaceID on this phone. Sends above your limit will require your external key (MacBook TouchID / Hardware Key like OneKey).
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
-                  {securityMode === 'vault' && (
-                    <View style={styles.vaultExplainer}>
-                      <MaterialIcons name="info-outline" size={16} color={p.heroInk} />
-                      <Text style={styles.vaultExplainerText}>
-                        <Text style={{ fontWeight: '700' }}>Vault Mode</Text>: Daily spends use FaceID on this phone. Sends above your limit will require your external key (MacBook TouchID / Hardware Key like OneKey).
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Wallet Name</Text>
-                  <TextInput
-                    style={styles.textInputField}
-                    value={walletName}
-                    onChangeText={setWalletName}
-                    placeholder="e.g., My Haptix Wallet"
-                    placeholderTextColor={p.inkMuted}
-                    autoCorrect={false}
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Passkey 1 Name (Primary)</Text>
-                  <TextInput
-                    style={styles.textInputField}
-                    value={primaryKeyName}
-                    onChangeText={setPrimaryKeyName}
-                    placeholder="e.g., Primary Passkey"
-                    placeholderTextColor={p.inkMuted}
-                    autoCorrect={false}
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Passkey 2 Name (Backup)</Text>
-                  <TextInput
-                    style={styles.textInputField}
-                    value={secondaryKeyName}
-                    onChangeText={setSecondaryKeyName}
-                    placeholder="e.g., Backup Key"
-                    placeholderTextColor={p.inkMuted}
-                    autoCorrect={false}
-                  />
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Recovery Guardian (optional)</Text>
-                  <TextInput
-                    style={[
-                      styles.textInputField,
-                      guardianInput.trim() && !guardianPublicKey ? styles.textInputFieldInvalid : null,
-                    ]}
-                    value={guardianInput}
-                    onChangeText={setGuardianInput}
-                    placeholder="A Solana address you trust"
-                    placeholderTextColor={p.inkMuted}
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                  />
-                  <Text style={[styles.inputHint, guardianInput.trim() && !guardianPublicKey && styles.inputHintError]}>
-                    {guardianInput.trim()
-                      ? guardianPublicKey
-                        ? `Only ${ellipsify(guardianPublicKey.toBase58(), 4)} can start a recovery, and a ` +
-                          `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
-                          'timelock means you can still veto it. It can never move funds.'
-                        : guardianParse.error
-                      : 'Leave blank to use the dev guardian bundled with this build - the only key it can sign ' +
-                        'a recovery with.'}
-                  </Text>
-                </View>
-
-                {/* Dev-only: a 24h veto window cannot be waited out while testing, and the
-                    execute leg is the half of recovery that rotates the keys. Hidden
-                    outside dev mode so it cannot quietly weaken a real wallet. */}
-                {AppConfig.devMode && (
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Recovery Timelock (dev only)</Text>
+                    <Text style={styles.inputLabel}>Wallet Name</Text>
                     <TextInput
-                      style={[styles.textInputField, timelockParse.error ? styles.textInputFieldInvalid : null]}
-                      value={timelockInput}
-                      onChangeText={setTimelockInput}
-                      placeholder="Blank for 24h, or e.g. 3s"
+                      style={styles.textInputField}
+                      value={walletName}
+                      onChangeText={setWalletName}
+                      placeholder="e.g., My Haptix Wallet"
                       placeholderTextColor={p.inkMuted}
                       autoCorrect={false}
-                      autoCapitalize="none"
                     />
-                    <Text style={[styles.inputHint, timelockParse.error && styles.inputHintError]}>
-                      {timelockParse.error
-                        ? timelockParse.error
-                        : timelockParse.seconds !== null
-                          ? `The owner gets ${describeTimelock(timelockParse.seconds)} to veto a recovery before it can be executed.`
-                          : 'How long the owner has to veto a recovery. Shorten it to test the execute leg.'}
-                    </Text>
                   </View>
-                )}
 
-                <TouchableOpacity
-                  style={[styles.primaryDarkButton, { marginTop: 12 }, isCreating && { opacity: 0.6 }]}
-                  onPress={handleExecutePasskeyCreation}
-                  disabled={isCreating}
-                  activeOpacity={0.85}
-                >
-                  {isCreating ? (
-                    <ActivityIndicator size="small" color={p.onPrimary} style={{ marginRight: 8 }} />
-                  ) : (
-                    <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} style={{ marginRight: 8 }} />
+                  {/* Advanced Options Toggle */}
+                  <TouchableOpacity
+                    style={styles.advancedOptionsToggle}
+                    onPress={() => {
+                      Haptics.selectionAsync()
+                      setShowAdvancedOptions((prev) => !prev)
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <MaterialIcons name="tune" size={18} color={p.heroInk} />
+                      <Text style={styles.advancedOptionsToggleText}>
+                        {showAdvancedOptions ? 'Hide Advanced Settings' : 'Advanced Settings (Key Names, Guardian)'}
+                      </Text>
+                    </View>
+                    <MaterialIcons
+                      name={showAdvancedOptions ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                      size={20}
+                      color={p.inkSecondary}
+                    />
+                  </TouchableOpacity>
+
+                  {showAdvancedOptions && (
+                    <>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Passkey 1 Name (Primary)</Text>
+                        <TextInput
+                          style={styles.textInputField}
+                          value={primaryKeyName}
+                          onChangeText={setPrimaryKeyName}
+                          placeholder="e.g., Primary Passkey"
+                          placeholderTextColor={p.inkMuted}
+                          autoCorrect={false}
+                        />
+                      </View>
+
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Passkey 2 Name (Backup)</Text>
+                        <TextInput
+                          style={styles.textInputField}
+                          value={secondaryKeyName}
+                          onChangeText={setSecondaryKeyName}
+                          placeholder="e.g., Backup Key"
+                          placeholderTextColor={p.inkMuted}
+                          autoCorrect={false}
+                        />
+                      </View>
+
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Recovery Guardian (optional)</Text>
+                        <TextInput
+                          style={[
+                            styles.textInputField,
+                            guardianInput.trim() && !guardianPublicKey ? styles.textInputFieldInvalid : null,
+                          ]}
+                          value={guardianInput}
+                          onChangeText={setGuardianInput}
+                          placeholder="A Solana address you trust"
+                          placeholderTextColor={p.inkMuted}
+                          autoCorrect={false}
+                          autoCapitalize="none"
+                        />
+                        <Text style={[styles.inputHint, guardianInput.trim() && !guardianPublicKey && styles.inputHintError]}>
+                          {guardianInput.trim()
+                            ? guardianPublicKey
+                              ? `Only ${ellipsify(guardianPublicKey.toBase58(), 4)} can start a recovery, and a ` +
+                                `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
+                                'timelock means you can still veto it. It can never move funds.'
+                              : guardianParse.error
+                            : 'Leave blank to use the dev guardian bundled with this build - the only key it can sign a recovery with.'}
+                        </Text>
+                      </View>
+
+                      {/* Dev-only: a 24h veto window cannot be waited out while testing, and the
+                          execute leg is the half of recovery that rotates the keys. Hidden
+                          outside dev mode so it cannot quietly weaken a real wallet. */}
+                      {AppConfig.devMode && (
+                        <View style={styles.inputGroup}>
+                          <Text style={styles.inputLabel}>Recovery Timelock (dev only)</Text>
+                          <TextInput
+                            style={[styles.textInputField, timelockParse.error ? styles.textInputFieldInvalid : null]}
+                            value={timelockInput}
+                            onChangeText={setTimelockInput}
+                            placeholder="Blank for 24h, or e.g. 3s"
+                            placeholderTextColor={p.inkMuted}
+                            autoCorrect={false}
+                            autoCapitalize="none"
+                          />
+                          <Text style={[styles.inputHint, timelockParse.error && styles.inputHintError]}>
+                            {timelockParse.error
+                              ? timelockParse.error
+                              : timelockParse.seconds !== null
+                                ? `The owner gets ${describeTimelock(timelockParse.seconds)} to veto a recovery before it can be executed.`
+                                : 'How long the owner has to veto a recovery. Shorten it to test the execute leg.'}
+                          </Text>
+                        </View>
+                      )}
+                    </>
                   )}
-                  <Text style={styles.primaryDarkButtonText}>
-                    {securityMode === 'vault' ? 'Start Vault Setup' : 'Start Setup'}
-                  </Text>
-                </TouchableOpacity>
-              </ScrollView>
+                </ScrollView>
+
+                {/* PINNED ACTION BUTTON - Always visible without scrolling */}
+                <View style={{ paddingTop: 12 }}>
+                  <TouchableOpacity
+                    style={[styles.primaryDarkButton, isCreating && { opacity: 0.6 }]}
+                    onPress={handleExecutePasskeyCreation}
+                    disabled={isCreating}
+                    activeOpacity={0.85}
+                  >
+                    {isCreating ? (
+                      <ActivityIndicator size="small" color={p.onPrimary} style={{ marginRight: 8 }} />
+                    ) : (
+                      <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} style={{ marginRight: 8 }} />
+                    )}
+                    <Text style={styles.primaryDarkButtonText}>
+                      {securityMode === 'vault' ? 'Start Vault Setup' : 'Start Setup'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             ) : (
               <View style={{ paddingVertical: 24, alignItems: 'center' }}>
                 <ActivityIndicator size="large" color={p.link} style={{ marginBottom: 24 }} />
@@ -888,7 +923,11 @@ export default function SignIn() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              style={{ flexShrink: 1 }}
+              contentContainerStyle={{ paddingBottom: 12 }}
+              showsVerticalScrollIndicator={false}
+            >
               <View style={{ alignItems: 'center', marginVertical: 12 }}>
                 <BiometricScanGraphic size={72} dark={isDark} />
               </View>
@@ -1093,6 +1132,7 @@ const createStyles = (p: OnboardingPalette) =>
       borderTopRightRadius: 24,
       paddingHorizontal: 24,
       paddingTop: 22,
+      maxHeight: '92%',
     },
     sheetTitle: { color: p.heroInk, fontSize: 19, fontWeight: '700' },
     sheetDesc: { color: p.inkSecondary, fontSize: 15, marginBottom: 20, textAlign: 'center' },
@@ -1212,5 +1252,23 @@ const createStyles = (p: OnboardingPalette) =>
       fontSize: 11.5,
       color: p.inkSecondary,
       lineHeight: 16,
+    },
+    advancedOptionsToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      backgroundColor: p.surfaceAlt,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: p.border,
+      marginTop: 4,
+      marginBottom: 16,
+    },
+    advancedOptionsToggleText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: p.heroInk,
     },
   })
