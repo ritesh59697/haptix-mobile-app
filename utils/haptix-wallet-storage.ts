@@ -21,6 +21,7 @@ export interface HaptixWalletAccount {
   isInitializedOnChain: boolean
   network: 'devnet' | 'mainnet-beta'
   isLocked?: boolean
+  securityMode?: 'everyday' | 'vault'
   createdAt: number
 }
 
@@ -151,6 +152,7 @@ export async function createSmartWalletRecord({
   guardianAddress,
   spendThreshold = 0.1,
   network = 'devnet',
+  securityMode = 'everyday',
 }: {
   name?: string
   primaryPasskeyHex: string
@@ -162,6 +164,7 @@ export async function createSmartWalletRecord({
   guardianAddress?: string
   spendThreshold?: number
   network?: 'devnet' | 'mainnet-beta'
+  securityMode?: 'everyday' | 'vault'
 }): Promise<HaptixWalletAccount> {
   const primaryBytes = hexToBytes(primaryPasskeyHex)
   const [pda] = getWalletPda(primaryBytes)
@@ -180,6 +183,7 @@ export async function createSmartWalletRecord({
     isInitializedOnChain: false,
     network,
     isLocked: false,
+    securityMode,
     createdAt: Date.now(),
   }
 

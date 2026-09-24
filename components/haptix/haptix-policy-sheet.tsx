@@ -33,14 +33,14 @@ interface PolicyContent {
 export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyContent> {
   return {
     agents: {
-      title: 'Agents & the spending firewall',
-      intro: 'Two numbers govern every autonomous trade: a rolling 24-hour budget, and a per-trade fast-lane limit.',
+      title: 'Agents & spending limits',
+      intro: 'Two numbers govern every autonomous trade: a rolling 24-hour budget, and a per-trade limit.',
       sections: [
         {
           heading: 'Daily budget',
           rows: [
             {
-              term: 'Spending firewall',
+              term: 'Spending limits',
               detail: `Trades up to ${threshold} SOL execute automatically. Anything above requires both device passkeys.`,
             },
             {
@@ -54,11 +54,11 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
           heading: 'Per-trade limits',
           rows: [
             {
-              term: 'Fast lane',
+              term: 'One-key limit',
               detail: `Single trades up to ${threshold} SOL execute with zero biometric prompts.`,
             },
             {
-              term: 'Quorum',
+              term: 'Larger trades',
               detail: `Trades exceeding ${threshold} SOL require both device passkeys.`,
             },
           ],
@@ -95,12 +95,11 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
           ],
         },
         {
-          heading: 'Kill switch',
+          heading: 'Locking the wallet',
           rows: [
             {
-              term: 'Emergency circuit breaker',
-              detail:
-                'Instantly freezes and revokes all autonomous agent trading permissions on-chain. Unlock the wallet to resume trading.',
+              term: 'Wallet lock',
+              detail: 'Locks the wallet on-chain and stops every agent from trading. Unlock the wallet to resume.',
             },
           ],
         },
@@ -111,12 +110,12 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
       intro: 'What protects this wallet, what stops a drain, and how you get back in if a device is lost.',
       sections: [
         {
-          heading: 'Device credentials',
+          heading: 'Your keys',
           rows: [
             {
-              term: 'Device credentials',
+              term: 'Your keys',
               detail:
-                'Secp256r1 keys generated on this device with the platform RNG and held in OS secure storage. These are software keys: a compromised device can extract them.',
+                'Generated on this device and held in OS secure storage. These are software keys, so a compromised device can extract them.',
             },
             {
               term: 'Primary device passkey',
@@ -124,29 +123,28 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
                 'NIST P-256 key in OS secure storage, unlocked with your device biometrics. Not sealed in a secure element.',
             },
             {
-              term: 'Backup quorum key',
-              detail: 'Physical FIDO2 / WebAuthn security key (e.g. YubiKey 5) required for 2-of-2 escalation.',
+              term: 'Backup key',
+              detail: 'The second key in the quorum, also on this device. Required for sends above your one-key limit.',
             },
           ],
         },
         {
-          heading: 'On-chain policy firewall',
+          heading: 'Spending limits',
           rows: [
             {
-              term: 'On-chain policy firewall',
-              detail:
-                'Smart contract rules enforced directly on Solana. Non-compliant transactions are rejected by the validator runtime.',
+              term: 'Spending limits',
+              detail: 'Rules the Solana program enforces itself. A transaction that breaks them is rejected on-chain.',
             },
             {
-              term: 'Fast-lane cap',
+              term: 'One-key limit',
               detail: 'Instant single-signature execution for transactions up to this limit.',
             },
             {
-              term: 'Quorum escalation',
-              detail: 'Transfers above the fast-lane limit require both the biometric and the physical passkey.',
+              term: 'Larger sends',
+              detail: 'Transfers above the one-key limit need both passkeys.',
             },
             {
-              term: 'Velocity breaker',
+              term: 'Rate limit',
               detail: 'Prevents drain attacks by capping transaction frequency to 5 per hour.',
             },
             {
@@ -175,11 +173,11 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
           ],
         },
         {
-          heading: 'Panic & audit',
+          heading: 'Lock and history',
           rows: [
             {
-              term: 'Emergency panic lock',
-              detail: 'Immediately revokes all delegated permissions and freezes account transfers on Solana.',
+              term: 'Wallet lock',
+              detail: 'Revokes every delegated permission and stops transfers until you unlock the wallet.',
             },
             {
               term: 'On-chain attestations',
@@ -190,8 +188,8 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
               detail: 'Keys created on this device and gated by biometrics. No hardware attestation is performed.',
             },
             {
-              term: '2-of-2 spending policy active',
-              detail: 'Smart contract verified on Solana Devnet with multisig fallback.',
+              term: 'Spending limits active',
+              detail: 'The on-chain limits above are live. Above the threshold, both keys must sign.',
             },
           ],
         },

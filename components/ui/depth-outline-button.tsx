@@ -64,7 +64,10 @@ export function DepthOutlineButton({
 
   const bgColor = isDark ? theme.bgElevated : theme.bgApp
   const borderColor = theme.borderDefault
-  const textColor = theme.textPrimary
+  // A disabled outline button used to be pixel-identical to a live one -- same surface,
+  // same border, same ink -- so an inert action read as tappable. Only the label dims:
+  // the layout stays put, which keeps a disabled row from reflowing when it becomes live.
+  const textColor = disabled ? theme.textMuted : theme.textPrimary
 
   return (
     <Animated.View style={[{ transform: [{ scale: scaleAnim }] }, style]}>
@@ -92,15 +95,18 @@ export function DepthOutlineButton({
             : styles.nativeShadow,
         ]}
       >
-        {/* Soft top highlight rim */}
-        <View
-          style={[
-            styles.topLip,
-            {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(255, 255, 255, 0.9)',
-            },
-          ]}
-        />
+        {/* Soft top highlight rim. Suppressed when disabled, matching PrismDepthButton: the
+            raised lip is what makes a surface read as pressable. */}
+        {!disabled && (
+          <View
+            style={[
+              styles.topLip,
+              {
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(255, 255, 255, 0.9)',
+              },
+            ]}
+          />
+        )}
 
         <View style={styles.contentRow}>
           {icon && <View style={styles.iconContainer}>{icon}</View>}

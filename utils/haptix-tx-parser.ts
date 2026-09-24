@@ -79,16 +79,18 @@ const HAPTIX_INSTRUCTION_PRIORITY: [string, TransactionType][] = [
 const NON_VALUE_TYPES: TransactionType[] = ['freeze', 'unfreeze', 'init', 'recovery', 'policy', 'agent_session']
 
 const SECURITY_TYPE_BY_CATEGORY: Record<TransactionType, string> = {
-  transfer: 'Secp256r1 Passkey',
+  // These render as a small badge on a transaction row and in its detail sheet, so they
+  // name the thing the user relied on rather than the curve or the quorum arithmetic.
+  transfer: 'Passkey signature',
   airdrop: 'Devnet Faucet',
-  agent_trade: 'Zero-Prompt Agent Session',
-  agent_session: '2-of-2 Passkey Quorum',
+  agent_trade: 'Agent session',
+  agent_session: 'Both passkeys',
   swap: 'Jupiter Route',
-  freeze: 'Guardian Panic Freeze',
-  unfreeze: '2-of-2 Passkey Quorum',
-  init: 'On-Chain Policy Setup',
+  freeze: 'Guardian lock',
+  unfreeze: 'Both passkeys',
+  init: 'Wallet setup',
   recovery: 'Guardian Recovery',
-  policy: '2-of-2 Passkey Quorum',
+  policy: 'Both passkeys',
 }
 
 /** Token mints worth naming. Anything else falls back to a shortened mint. */

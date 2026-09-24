@@ -169,6 +169,40 @@ export default function TabSettingsScreen() {
 
         <HaptixSettingsCard>
           <HaptixSettingsHeader
+            title="Recovery"
+            description="What happens if this device is lost, and who can start that rescue."
+          />
+          <HaptixSettingsRow
+            icon="supervisor-account"
+            title="Guardian & recovery"
+            subtitle="Change the guardian, or veto a recovery that is already in progress."
+            onPress={() => {
+              Haptics.selectionAsync()
+              router.push('/(tabs)/settings/recovery')
+            }}
+            trailing={chevron}
+          />
+        </HaptixSettingsCard>
+
+        <HaptixSettingsCard>
+          <HaptixSettingsHeader
+            title="Spending Limits"
+            description="Control how much can be sent with one passkey before requiring your backup key."
+          />
+          <HaptixSettingsRow
+            icon="speed"
+            title={`One-key limit: ${activeWallet?.spendThreshold ?? 0.1} SOL`}
+            subtitle="Change threshold for instant 1-tap sends vs. vault quorum."
+            onPress={() => {
+              Haptics.selectionAsync()
+              router.push('/(tabs)/settings/limits')
+            }}
+            trailing={chevron}
+          />
+        </HaptixSettingsCard>
+
+        <HaptixSettingsCard>
+          <HaptixSettingsHeader
             title="Appearance"
             badge={APPEARANCE_LABELS[themePreference]}
             description="Follow the system setting, or pin the app to one scheme."
@@ -232,7 +266,7 @@ export default function TabSettingsScreen() {
           <HaptixSettingsRow
             icon="menu-book"
             title="How security works"
-            subtitle="Fast lane, 2-of-2 quorum and the panic freeze."
+            subtitle="Limits, keys, and locking your wallet."
             onPress={() => setPolicyTopic('security')}
             trailing={chevron}
           />

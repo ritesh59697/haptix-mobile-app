@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react'
 import { useColorScheme as useDeviceColorScheme } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ThemeTokens, darkTokens, lightTokens } from '@/theme/tokens'
@@ -58,20 +58,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     await setThemePreference(next)
   }, [activeColorScheme, setThemePreference])
 
-  return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        colorScheme: activeColorScheme,
-        isDark: activeColorScheme === 'dark',
-        themePreference,
-        setThemePreference,
-        toggleTheme,
-      }}
-    >
-      {children}
-    </ThemeContext.Provider>
+  // Built once per palette instead of once per render. The inline object this replaces
+  // was a new identity on every provider render, so every `useAppTheme()` consumer --
+  // the dock, the wallet screen, and any row that reads the palette -- re-rendered
+  // whenever the provider did. That also quietly defeated `React.memo` on those
+  // components: a memoized component whose context value changes on every render never
+  // gets to skip one. `theme` is one of two frozen token objects, so it is stable.
+  const value = useMemo<ThemeContextValue>(
+    () => ({
+      theme,
+      colorScheme: activeColorScheme,
+      isDark: activeColorScheme === 'dark',
+      themePreference,
+      setThemePreference,
+      toggleTheme,
+    }),
+    [theme, activeColorScheme, themePreference, setThemePreference, toggleTheme],
   )
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
 
 export function useAppTheme() {

@@ -25,6 +25,42 @@ In the output, you'll find options to open the app in a
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
+## Building the Android app
+
+`android/` and `ios/` are gitignored, so every EAS build regenerates them from
+`app.json`. Run a build with:
+
+```bash
+npx eas-cli build -p android --profile preview
+```
+
+`preview` produces a standalone APK (the Hermes engine, no dev client), which is the
+build to judge startup time and animation smoothness on. `development` produces a dev
+client for debugging. Both read their configuration from EAS environment variables,
+not from the gitignored `.env`, so a variable that exists only locally is invisible to
+a cloud build. The three that matter:
+
+| Variable                            | Effect when missing                                                              |
+| ----------------------------------- | -------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_HAPTIX_DEVNET_RPC_URL` | Falls back to the public endpoint, which rate limits a cold launch into HTTP 429 |
+| `EXPO_PUBLIC_HAPTIX_DEV_MODE`       | Faucet and fee sponsorship are disabled                                          |
+| `EXPO_PUBLIC_HAPTIX_FUNDER_KEY`     | The faucet has no key to pay from                                                |
+
+They live in the `preview` and `development` environments on EAS, and each build
+profile names the environment it uses. Push a changed `.env` with:
+
+```bash
+npx eas-cli env:push preview --path .env
+```
+
+Anything in a client bundle is recoverable from the binary, so the funder key is a
+Devnet demo value only. `production` is deliberately left empty: enabling dev mode
+there is how a shipped build leaks a key.
+
+Hardware passkeys additionally need the signing certificate published in
+`assetlinks.json`. See [PASSKEY_SETUP.md](./PASSKEY_SETUP.md), which records the
+fingerprint currently registered.
+
 ## Get a fresh project
 
 When you're ready, run:

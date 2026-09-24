@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { memo, useEffect, useRef } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Platform, useWindowDimensions } from 'react-native'
 import { BlurView } from 'expo-blur'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -62,8 +62,16 @@ const DOCK_FADE_STOPS: readonly [number, number, ...number[]] = [
  * Compressed 4-tab floating navigation dock
  * - Synchronous window-width calculation (clean, centered, balanced)
  * - Fluid sliding thumb transition with tactile haptic feedback
+ *
+ * Memoized because it is on screen for the whole session and takes part in no screen
+ * state: without this it was redrawn -- and its width arithmetic re-run -- every time a
+ * price arrived, a countdown fired, or a keystroke landed in a modal. It only re-renders
+ * for a real tab change, which is what the thumb animation is keyed to anyway.
  */
-export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDockProps) {
+export const HaptixFloatingDock = memo(function HaptixFloatingDock({
+  activeTab,
+  onSelectTab,
+}: HaptixFloatingDockProps) {
   const insets = useSafeAreaInsets()
   const { theme, isDark } = useAppTheme()
   const { width: windowWidth } = useWindowDimensions()
@@ -196,7 +204,7 @@ export function HaptixFloatingDock({ activeTab, onSelectTab }: HaptixFloatingDoc
       </View>
     </View>
   )
-}
+})
 
 const styles = StyleSheet.create({
   dockOuterWrapper: {

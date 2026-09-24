@@ -298,7 +298,7 @@ recovery started
   The wallet is now frozen. On the phone you should see:
     - sends refused, because the wallet is frozen
     - unfreeze refused, because a recovery is holding the freeze
-    - Veto (2-of-2), which is the owner's answer to this
+    - Keep My Keys, which is the owner's answer to this
 
   execute is refused for another ${formatRemaining(Number(state.recoveryTimelock))}.
 `)

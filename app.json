@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "io.haptix.wallet",
-      "associatedDomains": ["webcredentials:haptix.io"]
+      "associatedDomains": ["webcredentials:haptix-passkeys.vercel.app"]
     },
     "android": {
       "adaptiveIcon": {

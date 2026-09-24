@@ -15,7 +15,7 @@
 import { PublicKey } from '@solana/web3.js'
 import { p256 } from '@noble/curves/p256'
 import { getWalletPda, getWalletSeedFromState, parseGuardianAddress } from '../utils/haptix-client'
-import { describeTimelock, parseTimelockInput } from '../utils/recovery-timelock'
+import { describeTimelock, formatRemainingTime, parseTimelockInput } from '../utils/recovery-timelock'
 
 let passed = 0
 let failed = 0
@@ -112,6 +112,18 @@ for (const [label, input] of [
 
 assert(describeTimelock(86_400n) === '1d', 'the default window collapses to its largest exact unit')
 assert(describeTimelock(3n) === '3s', 'a short window keeps its unit')
+
+// --- Recovery countdown ----------------------------------------------------
+// The wallet banner and the recovery screen both read this, and both switch their copy
+// on `secondsLeft > 0`, so an elapsed window has to be a word rather than "0s" -- the
+// screen would otherwise sit on "0s left" instead of saying the window is over.
+assert(formatRemainingTime(0) === 'Expired', 'an elapsed window says so rather than reading as zero')
+assert(formatRemainingTime(-5) === 'Expired', 'a negative window is expired, not garbled')
+assert(formatRemainingTime(42) === '42s', 'under a minute is seconds only')
+assert(formatRemainingTime(8 * 60 + 9) === '8m 9s', 'minutes carry seconds')
+assert(formatRemainingTime(5 * 3600 + 6 * 60 + 7) === '5h 6m 7s', 'hours carry minutes and seconds')
+assert(formatRemainingTime(2 * 86_400 + 3 * 3600 + 4 * 60) === '2d 3h 4m', 'days carry hours and minutes')
+assert(formatRemainingTime(3600) === '1h 0m 0s', 'an exact hour still reports its smaller units')
 
 console.log(`\n  WALLET SEED TOTAL: ${passed + failed} | PASSED: ${passed} | FAILED: ${failed}\n`)
 if (failed > 0) process.exit(1)
