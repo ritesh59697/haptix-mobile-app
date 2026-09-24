@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { router } from 'expo-router'
 import { useAuth } from '@/components/auth/auth-provider'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   View,
   Text,
@@ -11,7 +11,6 @@ import {
   TextInput,
   ActivityIndicator,
   ScrollView,
-  Platform,
   Modal,
   Pressable,
 } from 'react-native'
@@ -20,7 +19,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Clipboard from '@/utils/clipboard'
 import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { AppConfig } from '@/constants/app-config'
-import { HaptixWalletAccount, saveWallet, getSavedWallet, createSmartWalletRecord } from '@/utils/haptix-wallet-storage'
+import { saveWallet, getSavedWallet, createSmartWalletRecord } from '@/utils/haptix-wallet-storage'
 import {
   bindHardwarePasskey,
   credentialIdForRecord,
@@ -33,15 +32,14 @@ import {
 import { matchWebAuthnAssertion } from '@/utils/secp256r1-instruction'
 import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet } from '@/utils/haptix-client'
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
-import { describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
+import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
-import { HaptixBrandMark, CopyChipIcon, FingerScanBold } from '@/components/haptix/haptix-icons'
+import { HaptixBrandMark } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { useAppTheme } from '@/components/theme/theme-context'
 import {
   HeroOrbLight,
   BiometricScanGraphic,
-  WalletSuccessGraphic,
 } from '@/components/haptix/haptix-onboarding-graphics'
 import { StatusBar } from 'expo-status-bar'
 
@@ -178,8 +176,9 @@ export default function SignIn() {
   const [creationStep, setCreationStep] = useState<0 | 1 | 2 | 3>(0)
 
   const [walletName, setWalletName] = useState('My Haptix Wallet')
+  const [securityMode, setSecurityMode] = useState<'everyday' | 'vault'>('everyday')
   const [primaryKeyName, setPrimaryKeyName] = useState('Primary Passkey')
-  const [secondaryKeyName, setSecondaryKeyName] = useState('Backup Quorum Passkey')
+  const [secondaryKeyName, setSecondaryKeyName] = useState('Backup Key')
   const [guardianInput, setGuardianInput] = useState('')
 
   // The guardian is the one address that can ever start a recovery, so it is validated
@@ -255,7 +254,7 @@ export default function SignIn() {
 
       const finalName = walletName.trim() || 'My Haptix Wallet'
       const primaryName = primaryKeyName.trim() || 'Primary Passkey'
-      const secondaryName = secondaryKeyName.trim() || 'Backup Quorum Passkey'
+      const secondaryName = secondaryKeyName.trim() || 'Backup Key'
 
       if (guardianInput.trim() && !guardianPublicKey) {
         dialog.alert('Check the guardian address', guardianParse.error || 'That is not a Solana address.')
@@ -272,8 +271,10 @@ export default function SignIn() {
       setCreationStep(2)
       await new Promise((r) => setTimeout(r, 600))
 
-      // 2. Generate Secondary
-      const secondary = await getOrCreateSecondaryPasskey(secondaryName)
+      // 2. Generate Secondary (platform on-device vs. cross-platform security key)
+      const secondary = await getOrCreateSecondaryPasskey(secondaryName, {
+        attachment: securityMode === 'vault' ? 'securityKey' : 'platform',
+      })
 
       setCreationStep(3)
 
@@ -294,6 +295,7 @@ export default function SignIn() {
         guardianAddress: guardianPublicKey?.toBase58(),
         spendThreshold: 0.1,
         network: 'devnet',
+        securityMode,
       })
       newAccount.isInitializedOnChain = false
       await saveWallet(newAccount)
@@ -469,11 +471,11 @@ export default function SignIn() {
       if (primaryAttempt.role !== 'primary') {
         dialog.alert(
           "That's The Backup Key",
-          `The passkey you picked is this wallet's Backup quorum key. It can identify the account, but it ` +
-            'cannot authorize anything on its own: every transfer, unfreeze and recovery veto is signed by ' +
-            'the Primary key, and the Backup only ever adds to it.\n\n' +
+          `The passkey you picked is this wallet's backup key. It can identify the account, but it ` +
+            'cannot authorize anything on its own: transfers, unlocking, and recovery are all signed by ' +
+            'the primary key, and the backup only ever adds to it.\n\n' +
             `Pick the Primary passkey for ${ellipsify(targetAddress, 6)} instead.\n\n` +
-            'If the Primary passkey is gone for good, this wallet has to be recovered through its guardian.',
+            'If the primary passkey is gone for good, this wallet has to be recovered through its guardian.',
           undefined,
           { status: 'warning' },
         )
@@ -486,7 +488,7 @@ export default function SignIn() {
       const bound: { primary?: string; secondary?: string } = { primary: primaryAttempt.credentialId }
       const wantsSecondKey = await confirmDialog(
         'Add The Backup Key?',
-        `Primary key bound.\n\nThis wallet holds a second, Backup quorum key. Without it you can still send up to ${spendLimitSol} SOL, but anything above that, unfreezing the wallet, and cancelling a recovery all need both keys.\n\nAdd the Backup key now?`,
+        `Primary key bound.\n\nYour wallet has a second, backup key. Without it you can still send up to ${spendLimitSol} SOL. Anything above that, unlocking the wallet, and cancelling a recovery all need both keys.\n\nAdd the backup key now?`,
         'Select Backup Passkey',
       )
       if (wantsSecondKey) {
@@ -662,8 +664,76 @@ export default function SignIn() {
             </View>
 
             {creationStep === 0 ? (
-              <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
-                <Text style={styles.sheetDesc}>Customize your wallet and passkey names.</Text>
+              <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+                <Text style={styles.sheetDesc}>Choose your security model and customize passkey names.</Text>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Security Architecture</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        Haptics.selectionAsync()
+                        setSecurityMode('everyday')
+                        setSecondaryKeyName('Backup Key')
+                      }}
+                      style={[
+                        styles.modeCard,
+                        securityMode === 'everyday' && styles.modeCardActive,
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="smartphone"
+                        size={22}
+                        color={securityMode === 'everyday' ? p.heroInk : p.inkMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.modeCardTitle,
+                          securityMode === 'everyday' && styles.modeCardTitleActive,
+                        ]}
+                      >
+                        Everyday
+                      </Text>
+                      <Text style={styles.modeCardDesc}>Both keys on this device</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        Haptics.selectionAsync()
+                        setSecurityMode('vault')
+                        setSecondaryKeyName('Vault Key (Hardware / Laptop)')
+                      }}
+                      style={[
+                        styles.modeCard,
+                        securityMode === 'vault' && styles.modeCardActive,
+                      ]}
+                    >
+                      <MaterialIcons
+                        name="security"
+                        size={22}
+                        color={securityMode === 'vault' ? p.heroInk : p.inkMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.modeCardTitle,
+                          securityMode === 'vault' && styles.modeCardTitleActive,
+                        ]}
+                      >
+                        Vault Mode
+                      </Text>
+                      <Text style={styles.modeCardDesc}>Key 2 on Laptop / OneKey</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {securityMode === 'vault' && (
+                    <View style={styles.vaultExplainer}>
+                      <MaterialIcons name="info-outline" size={16} color={p.heroInk} />
+                      <Text style={styles.vaultExplainerText}>
+                        <Text style={{ fontWeight: '700' }}>Vault Mode</Text>: Daily spends use FaceID on this phone. Sends above your limit will require your external key (MacBook TouchID / Hardware Key like OneKey).
+                      </Text>
+                    </View>
+                  )}
+                </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Wallet Name</Text>
@@ -695,7 +765,7 @@ export default function SignIn() {
                     style={styles.textInputField}
                     value={secondaryKeyName}
                     onChangeText={setSecondaryKeyName}
-                    placeholder="e.g., Backup Quorum Passkey"
+                    placeholder="e.g., Backup Key"
                     placeholderTextColor={p.inkMuted}
                     autoCorrect={false}
                   />
@@ -719,7 +789,8 @@ export default function SignIn() {
                     {guardianInput.trim()
                       ? guardianPublicKey
                         ? `Only ${ellipsify(guardianPublicKey.toBase58(), 4)} can start a recovery, and a ` +
-                          '24h timelock means you can still veto it. It can never move funds.'
+                          `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
+                          'timelock means you can still veto it. It can never move funds.'
                         : guardianParse.error
                       : 'Leave blank to use the dev guardian bundled with this build - the only key it can sign ' +
                         'a recovery with.'}
@@ -752,12 +823,19 @@ export default function SignIn() {
                 )}
 
                 <TouchableOpacity
-                  style={[styles.primaryDarkButton, { marginTop: 12 }]}
+                  style={[styles.primaryDarkButton, { marginTop: 12 }, isCreating && { opacity: 0.6 }]}
                   onPress={handleExecutePasskeyCreation}
+                  disabled={isCreating}
                   activeOpacity={0.85}
                 >
-                  <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} style={{ marginRight: 8 }} />
-                  <Text style={styles.primaryDarkButtonText}>Start Setup</Text>
+                  {isCreating ? (
+                    <ActivityIndicator size="small" color={p.onPrimary} style={{ marginRight: 8 }} />
+                  ) : (
+                    <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} style={{ marginRight: 8 }} />
+                  )}
+                  <Text style={styles.primaryDarkButtonText}>
+                    {securityMode === 'vault' ? 'Start Vault Setup' : 'Start Setup'}
+                  </Text>
                 </TouchableOpacity>
               </ScrollView>
             ) : (
@@ -777,7 +855,11 @@ export default function SignIn() {
                     size={24}
                     color={creationStep > 2 ? p.success : p.inkMuted}
                   />
-                  <Text style={styles.modalStepText}>Creating {secondaryKeyName || 'Backup Passkey'}...</Text>
+                  <Text style={styles.modalStepText}>
+                    {securityMode === 'vault'
+                      ? `Pairing ${secondaryKeyName || 'Vault Key'} (Cross-Device)...`
+                      : `Creating ${secondaryKeyName || 'Backup Key'}...`}
+                  </Text>
                 </View>
                 <View style={styles.modalStepRow}>
                   <MaterialIcons
@@ -1084,4 +1166,51 @@ const createStyles = (p: OnboardingPalette) =>
     addressHintText: { flex: 1, fontSize: 12, lineHeight: 16 },
     pasteBadgeButton: { backgroundColor: p.linkSoftBg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
     pasteBadgeText: { color: p.link, fontSize: 11, fontWeight: '600' },
+    modeCard: {
+      flex: 1,
+      backgroundColor: p.surfaceAlt,
+      borderWidth: 1.5,
+      borderColor: p.border,
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 8,
+      alignItems: 'center',
+    },
+    modeCardActive: {
+      borderColor: p.actionBg,
+      backgroundColor: p.surface,
+    },
+    modeCardTitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: p.inkMuted,
+      marginTop: 6,
+    },
+    modeCardTitleActive: {
+      color: p.heroInk,
+      fontWeight: '700',
+    },
+    modeCardDesc: {
+      fontSize: 10.5,
+      color: p.inkMuted,
+      textAlign: 'center',
+      marginTop: 2,
+    },
+    vaultExplainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+      backgroundColor: p.surfaceAlt,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderRadius: 10,
+      padding: 10,
+      marginTop: 10,
+    },
+    vaultExplainerText: {
+      flex: 1,
+      fontSize: 11.5,
+      color: p.inkSecondary,
+      lineHeight: 16,
+    },
   })

@@ -130,7 +130,7 @@ const CURVE_ORDER = p256.CURVE.n
 /** Honest labelling: these keys are protected by the OS, not sealed in hardware. */
 const DEVICE_KEY_LABELS = {
   primary: 'Device secure storage (biometric-gated)',
-  secondary: 'Backup quorum key (device secure storage)',
+  secondary: 'Backup key (device secure storage)',
 } as const
 
 const WEBAUTHN_LABEL = 'Platform passkey (WebAuthn)'
@@ -144,7 +144,7 @@ const WEBAUTHN_LABEL = 'Platform passkey (WebAuthn)'
  */
 const HARDWARE_KEY_LABELS = {
   primary: 'Platform passkey (primary)',
-  secondary: 'Platform passkey (backup quorum)',
+  secondary: 'Platform passkey (backup)',
 } as const
 
 export interface PasskeyInfo {
@@ -872,6 +872,7 @@ function extractPublicKeyFromRegistration(response: { publicKey?: string; attest
 export async function registerWebAuthnPasskey(
   id: 'primary' | 'secondary' = 'primary',
   walletName: string = 'Haptix Wallet',
+  attachment: 'platform' | 'cross-platform' = 'platform',
 ): Promise<PasskeyInfo> {
   if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.PublicKeyCredential) {
     throw new Error('WebAuthn passkeys are not supported in this environment.')
@@ -892,7 +893,7 @@ export async function registerWebAuthnPasskey(
         },
         pubKeyCredParams: [{ type: 'public-key', alg: -7 }], // ES256 / P-256
         authenticatorSelection: {
-          authenticatorAttachment: 'platform',
+          authenticatorAttachment: attachment,
           userVerification: 'required',
           residentKey: 'preferred',
         },
@@ -1025,6 +1026,7 @@ function describePasskeyError(err: unknown, action: 'create' | 'get'): string {
 async function registerHardwarePasskey(
   id: 'primary' | 'secondary',
   walletName: string = 'Haptix Wallet',
+  attachment: 'platform' | 'securityKey' | 'any' = 'platform',
 ): Promise<PasskeyInfo> {
   const mod = getPasskeyModule()
   if (!mod || !isPlatformPasskeySupported()) {
@@ -1035,28 +1037,36 @@ async function registerHardwarePasskey(
   }
   const { Passkey } = mod
 
+  const request = {
+    challenge: bytesToBase64Url(await secureRandomBytes(32)),
+    rp: { id: PASSKEY_RP_ID, name: PASSKEY_RP_NAME },
+    user: {
+      id: bytesToBase64Url(await secureRandomBytes(16)),
+      name: walletName,
+      displayName: walletName,
+    },
+    // ES256 / P-256 is the only algorithm the on-chain Secp256r1 precompile accepts.
+    pubKeyCredParams: [{ type: 'public-key' as const, alg: -7 }],
+    authenticatorSelection: {
+      authenticatorAttachment: attachment === 'platform' ? ('platform' as const) : ('cross-platform' as const),
+      residentKey: 'preferred' as const,
+      userVerification: 'required' as const,
+    },
+    attestation: 'none' as const,
+    timeout: 60_000,
+  }
+
   let created: import('react-native-passkey').PasskeyCreateResult
   try {
-    created = await Passkey.createPlatformKey({
-      challenge: bytesToBase64Url(await secureRandomBytes(32)),
-      rp: { id: PASSKEY_RP_ID, name: PASSKEY_RP_NAME },
-      user: {
-        id: bytesToBase64Url(await secureRandomBytes(16)),
-        name: walletName,
-        displayName: walletName,
-      },
-      // ES256 / P-256 is the only algorithm the on-chain Secp256r1 precompile accepts.
-      pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
-      authenticatorSelection: {
-        authenticatorAttachment: 'platform',
-        residentKey: 'preferred',
-        userVerification: 'required',
-      },
-      attestation: 'none',
-      timeout: 60_000,
-    })
+    if (attachment === 'securityKey') {
+      created = await Passkey.createSecurityKey(request)
+    } else if (attachment === 'any') {
+      created = await Passkey.create(request)
+    } else {
+      created = await Passkey.createPlatformKey(request)
+    }
   } catch (err) {
-    console.error(`[Haptix Passkey] Platform passkey creation failed for ${id}:`, err)
+    console.error(`[Haptix Passkey] Passkey creation failed for ${id} (attachment: ${attachment}):`, err)
     throw new Error(describePasskeyError(err, 'create'))
   }
 
@@ -1076,16 +1086,21 @@ async function registerHardwarePasskey(
   await deleteScalar(id)
 
   console.warn(
-    `[Haptix Passkey] Created a platform passkey for the ${id} key. The private key lives in ` +
-      'the OS authenticator and cannot be exported; only the credential id and public key are stored.',
+    `[Haptix Passkey] Created a passkey for the ${id} key. The private key lives in ` +
+      'the authenticator and cannot be exported; only the credential id and public key are stored.',
   )
+
+  const resolvedLabel =
+    attachment === 'securityKey'
+      ? 'Vault key (external security key)'
+      : HARDWARE_KEY_LABELS[id]
 
   return {
     id,
     credentialId,
     publicKey: compressedPublicKey,
     publicKeyHex,
-    label: HARDWARE_KEY_LABELS[id],
+    label: resolvedLabel,
     hasBiometrics: true,
     mode: 'hardware',
     hardwareBacked: true,
@@ -1398,7 +1413,13 @@ export async function getOrCreatePrimaryPasskey(walletName: string = 'Haptix Wal
  * security key. A real 2-of-2 needs a separately held authenticator; that is a
  * product decision, not something this module can claim.
  */
-export async function getOrCreateSecondaryPasskey(walletName: string = 'Haptix Wallet'): Promise<PasskeyInfo> {
+export async function getOrCreateSecondaryPasskey(
+  walletName: string = 'Haptix Wallet',
+  options?: {
+    attachment?: 'platform' | 'securityKey' | 'any'
+  },
+): Promise<PasskeyInfo> {
+  const attachment = options?.attachment ?? 'platform'
   const migratedPubkey = await migrateLegacyPlaintextScalar('secondary')
   const existingPubHex = migratedPubkey ?? (await AsyncStorage.getItem(PUBKEY_KEY_SECONDARY))
 
@@ -1422,13 +1443,17 @@ export async function getOrCreateSecondaryPasskey(walletName: string = 'Haptix W
   }
 
   if (Platform.OS === 'web') {
-    return await registerWebAuthnPasskey('secondary', walletName)
+    return await registerWebAuthnPasskey(
+      'secondary',
+      walletName,
+      attachment === 'platform' ? 'platform' : 'cross-platform',
+    )
   }
 
   const registered = await getRegisteredHardwarePasskey('secondary')
   if (registered) return registered
 
-  return await registerHardwarePasskey('secondary', walletName)
+  return await registerHardwarePasskey('secondary', walletName, attachment)
 }
 
 /**

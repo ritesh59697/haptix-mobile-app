@@ -288,7 +288,7 @@ export function KeySquareBold({ size = 24, color = '#FFFFFF' }: IconProps) {
 
 /**
  * MX Icons: Lock1Bold
- * Used for: Panic Freeze & Security Lock
+ * Used for: the wallet lock
  */
 export function Lock1Bold({ size = 24, color = '#FFFFFF' }: IconProps) {
   return (

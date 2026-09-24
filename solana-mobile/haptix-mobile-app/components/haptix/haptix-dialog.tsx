@@ -151,8 +151,14 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
   const statusIcon = active ? STATUS_ICON[active.status] : null
   const isButtonRow = active?.buttons.length === 2
 
+  // A fresh object here re-rendered every consumer in the tree on any provider render,
+  // and made `dialog` useless as a `useCallback` dependency for callers -- their
+  // handlers were rebuilt whenever a queued dialog moved, which in turn re-rendered the
+  // memoized wallet rows those handlers were passed to.
+  const contextValue = useMemo(() => ({ alert, dismiss }), [alert, dismiss])
+
   return (
-    <HaptixDialogContext.Provider value={{ alert, dismiss }}>
+    <HaptixDialogContext.Provider value={contextValue}>
       {children}
       <Modal
         visible={active !== null}

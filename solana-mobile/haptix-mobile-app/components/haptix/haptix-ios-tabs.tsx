@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { memo, useEffect, useRef, useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing, Platform, LayoutChangeEvent } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -25,7 +25,7 @@ interface HaptixIosTabsProps<T extends string = string> {
  * - Drop shadow: 0 1px 2px rgba(15,23,42,0.2), 0 8px 20px rgba(15,23,42,0.16)
  * - Tactile micro-scale bounce on tab change
  */
-export function HaptixIosTabs<T extends string = string>({
+function HaptixIosTabsImpl<T extends string = string>({
   tabs,
   activeTab,
   onChange,
@@ -151,6 +151,14 @@ export function HaptixIosTabs<T extends string = string>({
     </View>
   )
 }
+
+/**
+ * The segmented control takes part in no screen state, so it is memoized: without this
+ * it redrew on every price tick and every countdown on the page. That only works
+ * because the call site now hands it a module-level `tabs` array and a state setter --
+ * an inline literal or arrow would have been a new prop on every render and defeated it.
+ */
+export const HaptixIosTabs = memo(HaptixIosTabsImpl) as typeof HaptixIosTabsImpl
 
 const styles = StyleSheet.create({
   control: {

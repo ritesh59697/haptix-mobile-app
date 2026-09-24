@@ -26,7 +26,13 @@ const FUNDER_KEY_ENV = 'EXPO_PUBLIC_HAPTIX_FUNDER_KEY'
 let cachedFunder: Keypair | null = null
 
 function loadFunderSecret(): Uint8Array {
-  const raw = process.env[FUNDER_KEY_ENV]?.trim()
+  // Read as a literal member expression. Expo substitutes `EXPO_PUBLIC_*` values by
+  // matching this exact source text at bundle time, so a computed lookup such as
+  // `process.env[FUNDER_KEY_ENV]` is never replaced. Nothing catches that in
+  // development, because the Metro dev server also populates a real `process.env` from
+  // `.env`; a release build has no runtime `process.env` at all, so the computed form
+  // silently read `undefined` and only the shipped APK reported the key as unset.
+  const raw = process.env.EXPO_PUBLIC_HAPTIX_FUNDER_KEY?.trim()
 
   if (!raw) {
     throw new Error(

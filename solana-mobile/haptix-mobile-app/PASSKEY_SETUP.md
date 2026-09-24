@@ -1,13 +1,13 @@
-# Passkey setup — relying party `haptix.io`
+# Passkey setup — relying party `haptix-passkeys.vercel.app`
 
-Haptix wallet keys are WebAuthn credentials scoped to the relying party **`haptix.io`**.
+Haptix wallet keys are WebAuthn credentials scoped to the relying party **`haptix-passkeys.vercel.app`**.
 This value is load-bearing in three places and they must all agree:
 
-| Where                                     | What                                                             |
-| ----------------------------------------- | ---------------------------------------------------------------- |
-| `utils/haptix-passkey.ts`                 | `PASSKEY_RP_ID = 'haptix.io'` — sent as `rp.id` / `rpId`         |
-| `programs/haptix_program/src/webauthn.rs` | `RP_ID` — compared against `authenticatorData.rpIdHash` on-chain |
-| this document                             | the domain that must publish the association files below         |
+| Where                                     | What                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------- |
+| `utils/haptix-passkey.ts`                 | `PASSKEY_RP_ID = 'haptix-passkeys.vercel.app'` — sent as `rp.id` / `rpId` |
+| `programs/haptix_program/src/webauthn.rs` | `RP_ID` — compared against `authenticatorData.rpIdHash` on-chain          |
+| this document                             | the domain that must publish the association files below                  |
 
 Two OS-level associations make that work. **They are a prerequisite for creating a
 wallet, not for building the app** — everything else can be developed and tested
@@ -21,7 +21,7 @@ credential for an unassociated RP ID.
 Host **exactly** this at:
 
 ```
-https://haptix.io/.well-known/assetlinks.json
+https://haptix-passkeys.vercel.app/.well-known/assetlinks.json
 ```
 
 ```json
@@ -63,8 +63,27 @@ EAS-managed credentials:
 eas credentials -p android      # → Keystore → "SHA1 Fingerprint"/"SHA256 Fingerprint"
 ```
 
+Or read it straight out of an APK EAS already built, which avoids the interactive
+prompt and works when the keystore is stored on EAS rather than on this machine.
+Release APKs are signed with the v2/v3 scheme only, so there is no `META-INF/*.RSA`
+entry for `keytool -printcert -jarfile` to read; the certificate has to come out of
+the APK Signing Block, which is what the helper in this repo does:
+
+```sh
+curl -sSL -o /tmp/haptix.apk "<Application Archive URL from `eas build:list`>"
+python3 tools/apk-signing-fingerprint.py /tmp/haptix.apk
+```
+
 The value goes into `sha256_cert_fingerprints` in the colon-separated uppercase hex
-form that `keytool` prints, e.g. `AB:CD:...:EF`.
+form that both commands above print, e.g. `AB:CD:...:EF`.
+
+**Registered as of 2026-09-24.** The `preview` profile's EAS keystore hashes to
+`63:FE:F2:23:9B:12:70:EC:37:81:E0:39:AB:7A:71:EA:8D:D0:CA:D5:F5:7B:F7:4F:6C:12:A4:CC:79:89:B7:D8`,
+and that value is what `assetlinks.json` currently publishes. A `preview` APK
+therefore passes Digital Asset Links as-is. The keystore is stored on EAS, so every
+`preview` build reuses it and the association keeps holding. Rotating it (or adding a
+`production` build, which signs with a different keystore) means publishing a second
+entry before hardware passkeys work in that build.
 
 ### The `android:apk-key-hash:` origin
 
@@ -81,10 +100,10 @@ printf '%s' 'AB:CD:...:EF' | tr -d ':' | xxd -r -p | basenc --base64url | tr -d 
 ### Verifying
 
 - Google's checker: <https://developers.google.com/digital-asset-links/tools/generator>
-  (enter `haptix.io`, `io.haptix.wallet`, the fingerprint).
+  (enter `haptix-passkeys.vercel.app`, `io.haptix.wallet`, the fingerprint).
 - Or, on a device, attempt wallet creation and watch for the
   `BadConfiguration` error, which `utils/haptix-passkey.ts` maps to an explicit
-  "not correctly associated with the haptix.io relying party" message.
+  "not correctly associated with the haptix-passkeys.vercel.app relying party" message.
 
 `react-native-passkey` needs no manifest work of its own: it talks to Credential
 Manager through `androidx.credentials`, which it bundles. The permissions the biometric
@@ -104,7 +123,7 @@ provider rather than an intent the app has to declare.
 Host **exactly** this at:
 
 ```
-https://haptix.io/.well-known/apple-app-site-association
+https://haptix-passkeys.vercel.app/.well-known/apple-app-site-association
 ```
 
 ```json
@@ -133,13 +152,13 @@ The entitlement is declared in `app.json` and applied by Expo's config step
 ```json
 "ios": {
   "bundleIdentifier": "io.haptix.wallet",
-  "associatedDomains": ["webcredentials:haptix.io"]
+  "associatedDomains": ["webcredentials:haptix-passkeys.vercel.app"]
 }
 ```
 
 Confirm it landed after a prebuild by checking
 `ios/HaptixWallet/HaptixWallet.entitlements` contains
-`webcredentials:haptix.io` under `com.apple.developer.associated-domains`.
+`webcredentials:haptix-passkeys.vercel.app` under `com.apple.developer.associated-domains`.
 
 > **Verify before shipping.** `app.json` now sets `ios.bundleIdentifier` to
 > `io.haptix.wallet`, matching `expo.android.package`. If the released iOS app ends up
@@ -170,11 +189,11 @@ is then caller-supplied rather than computed on-chain, so
 `programs/haptix_program/src/webauthn.rs` takes over the binding and requires:
 
 1. the 32-byte trailer to equal `SHA-256(clientDataJSON)`;
-2. `authenticatorData.rpIdHash == SHA-256("haptix.io")`;
+2. `authenticatorData.rpIdHash == SHA-256("haptix-passkeys.vercel.app")`;
 3. the User Present **and** User Verified flags to be set;
 4. `clientDataJSON.type == "webauthn.get"`;
 5. base64url(`clientDataJSON.challenge`) to equal the authorized payload;
-6. `clientDataJSON.origin` to be `https://haptix.io` or a well-formed
+6. `clientDataJSON.origin` to be `https://haptix-passkeys.vercel.app` or a well-formed
    `android:apk-key-hash:<32-byte digest>`.
 
 Client data must sit **outside** the hashed region. `clientDataJSON` is carried _after_
@@ -204,12 +223,12 @@ authenticator, and not exportable.
 
 ## 4. Quick checklist
 
-- [ ] `https://haptix.io/.well-known/assetlinks.json` returns the JSON above, 200,
+- [ ] `https://haptix-passkeys.vercel.app/.well-known/assetlinks.json` returns the JSON above, 200,
       `application/json`, no redirect.
 - [ ] The debug **and** release keystore SHA-256 fingerprints are both listed.
 - [ ] `package_name` matches `expo.android.package`.
-- [ ] `https://haptix.io/.well-known/apple-app-site-association` returns the JSON
+- [ ] `https://haptix-passkeys.vercel.app/.well-known/apple-app-site-association` returns the JSON
       above with the real Team ID.
 - [ ] `expo.ios.bundleIdentifier` is set and matches the AASA entry.
-- [ ] `expo.ios.associatedDomains` contains `webcredentials:haptix.io`.
-- [ ] The on-chain `RP_ID` and `PASSKEY_RP_ID` still read `haptix.io`.
+- [ ] `expo.ios.associatedDomains` contains `webcredentials:haptix-passkeys.vercel.app`.
+- [ ] The on-chain `RP_ID` and `PASSKEY_RP_ID` still read `haptix-passkeys.vercel.app`.

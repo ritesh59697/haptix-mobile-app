@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'expo-router'
+import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { ellipsify } from '@/utils/ellipsify'
 import { setString as copyToClipboard } from '@/utils/clipboard'
@@ -11,6 +13,7 @@ import { HaptixSettingsBadge, HaptixSettingsDivider, HaptixSettingsRow } from '@
  * owned by the settings screen so every section shares one geometry.
  */
 export function SettingsUiAccount() {
+  const router = useRouter()
   const { activeWallet } = useAuth()
   const { theme } = useAppTheme()
   const [hasCopied, setHasCopied] = useState(false)
@@ -69,17 +72,36 @@ export function SettingsUiAccount() {
       <HaptixSettingsDivider />
 
       <HaptixSettingsRow
-        icon="fingerprint"
-        title="2-of-2 passkey quorum"
-        subtitle="Two device-bound keys in the OS secure enclave. Both are required above the fast-lane limit."
+        icon={activeWallet.securityMode === 'vault' ? 'devices' : 'fingerprint'}
+        title={activeWallet.securityMode === 'vault' ? 'Dual-Device Vault' : 'Both passkeys'}
+        subtitle={
+          activeWallet.securityMode === 'vault'
+            ? 'Primary key on this phone. Vault key held on your secondary device or hardware key.'
+            : "Two keys held in this device's secure chip. Above your limit, both are required."
+        }
+        trailing={
+          <HaptixSettingsBadge
+            label={activeWallet.securityMode === 'vault' ? 'Vault' : 'Local'}
+            tone={activeWallet.securityMode === 'vault' ? 'accent' : 'muted'}
+          />
+        }
       />
 
       <HaptixSettingsDivider />
 
       <HaptixSettingsRow
         icon="speed"
-        title={`Fast lane ≤ ${activeWallet.spendThreshold} SOL`}
-        subtitle="Trades at or below this run without a second passkey prompt."
+        title={`One-key limit ≤ ${activeWallet.spendThreshold} SOL`}
+        subtitle={
+          activeWallet.securityMode === 'vault'
+            ? 'Tap to adjust. High-value sends require your secondary device or hardware key.'
+            : 'Tap to adjust. Sends above this require both your primary and backup keys.'
+        }
+        onPress={() => {
+          Haptics.selectionAsync()
+          router.push('/(tabs)/settings/limits')
+        }}
+        trailing={<MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />}
       />
     </>
   )
