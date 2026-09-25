@@ -61,7 +61,7 @@ import {
 } from '@/utils/haptix-client'
 import { getFundedDevnetPayer, fundDevnetWallet } from '@/utils/haptix-funder'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
-import { MarketSnapshot, fallbackMarketSnapshot, fetchMarketSnapshot } from '@/utils/haptix-prices'
+import { MarketSnapshot, MarketToken, fallbackMarketSnapshot, fetchMarketSnapshot } from '@/utils/haptix-prices'
 import {
   TransactionRecord,
   fetchOnChainTransactions,
@@ -93,11 +93,14 @@ import {
   LucidePlaySolid,
   LucideFingerprint,
   LucideKeyRound,
+  HaptixTokenIcon,
 } from './haptix-icons'
 import { HaptixFloatingDock, DockTabId } from './haptix-floating-dock'
 import { HaptixIosTabs, IosTabItem } from './haptix-ios-tabs'
 import { HaptixPolicySheet, PolicyLinkButton, PolicyTopic } from './haptix-policy-sheet'
 import { HaptixSendSheet } from './haptix-send-sheet'
+import { HaptixTokenDetailSheet } from './haptix-token-detail-sheet'
+import { HaptixSwapSheet } from './haptix-swap-sheet'
 import { HaptixAlert } from './haptix-alert'
 import { useGuardianSigner } from '@/hooks/use-guardian-signer'
 import { AppConfig } from '@/constants/app-config'
@@ -223,6 +226,11 @@ export function HaptixWalletScreen() {
   const [customAgentValidHours, setCustomAgentValidHours] = useState('24')
   const [agentRecipient, setAgentRecipient] = useState('')
   const [revokingAgent, setRevokingAgent] = useState<string | null>(null)
+
+  // Token Detail & Swap States (Phantom Style)
+  const [selectedDetailToken, setSelectedDetailToken] = useState<MarketToken | null>(null)
+  const [showSwapModal, setShowSwapModal] = useState(false)
+  const [swapInitialToken, setSwapInitialToken] = useState('SOL')
 
   // Live market prices, refreshed on mount and on pull-to-refresh.
   const [market, setMarket] = useState<MarketSnapshot>(() => fallbackMarketSnapshot())
@@ -1365,7 +1373,7 @@ export function HaptixWalletScreen() {
           )}
         </View>
 
-        {/* Unified 4-Action Symmetrical Buttons Row */}
+        {/* ACTION BUTTONS (Phantom Style: Send · Swap · Receive · Faucet) */}
         <View style={styles.heroActionsRow}>
           {/* Send */}
           <TouchableOpacity
@@ -1378,6 +1386,20 @@ export function HaptixWalletScreen() {
           >
             <ActionSendIcon size={15} color={theme.textPrimary} />
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Send</Text>
+          </TouchableOpacity>
+
+          {/* Swap */}
+          <TouchableOpacity
+            style={[styles.heroActionBtn, styles.actionBtn]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+              setSwapInitialToken('SOL')
+              setShowSwapModal(true)
+            }}
+            activeOpacity={0.78}
+          >
+            <MaterialIcons name="swap-horiz" size={17} color={theme.textPrimary} />
+            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Swap</Text>
           </TouchableOpacity>
 
           {/* Receive */}
@@ -1393,7 +1415,7 @@ export function HaptixWalletScreen() {
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Receive</Text>
           </TouchableOpacity>
 
-          {/* +0.2 SOL Faucet on Devnet */}
+          {/* +0.2 SOL Faucet on Devnet / Buy on Mainnet */}
           {network === 'devnet' ? (
             <TouchableOpacity
               style={[styles.heroActionBtn, styles.actionBtn]}
@@ -1473,7 +1495,23 @@ export function HaptixWalletScreen() {
       {segmentedTab === 'assets' && (
         <View style={[styles.assetList, styles.card]}>
           {/* Solana Row */}
-          <View style={styles.assetRow}>
+          <TouchableOpacity
+            style={styles.assetRow}
+            activeOpacity={0.7}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => {})
+              const solToken = market.tokens.find((t) => t.symbol === 'SOL') ?? {
+                symbol: 'SOL',
+                name: 'Solana',
+                price: `$${solPriceUsd.toFixed(2)}`,
+                priceUsd: solPriceUsd,
+                change: '+1.05%',
+                changePct: 1.05,
+                isPositive: true,
+              }
+              setSelectedDetailToken(solToken)
+            }}
+          >
             <View style={styles.assetLeft}>
               <View
                 style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
@@ -1491,21 +1529,28 @@ export function HaptixWalletScreen() {
                 ≈ ${(balance * solPriceUsd).toFixed(2)}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         </View>
       )}
 
       {/* TAB CONTENT: MARKETS WATCHLIST */}
       {segmentedTab === 'markets' && (
         <Text style={[styles.segmentNote, styles.textMuted]}>
-          {market.isLive ? 'Live prices · CoinGecko' : 'Offline estimate · last known prices'} · not tradable on Devnet
+          {market.isLive ? 'Live prices · CoinGecko' : 'Offline estimate · last known prices'} · tap to view chart
         </Text>
       )}
       {segmentedTab === 'markets' && (
         <View style={[styles.assetList, styles.card]}>
           {market.tokens.map((token, idx) => (
             <React.Fragment key={token.symbol}>
-              <View style={styles.assetRow}>
+              <TouchableOpacity
+                style={styles.assetRow}
+                activeOpacity={0.7}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {})
+                  setSelectedDetailToken(token)
+                }}
+              >
                 <View style={styles.assetLeft}>
                   <View
                     style={[
@@ -1513,13 +1558,7 @@ export function HaptixWalletScreen() {
                       { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
                     ]}
                   >
-                    {token.symbol === 'SOL' ? (
-                      <SolanaTokenLogo size={24} />
-                    ) : token.symbol === 'USDC' ? (
-                      <UsdcTokenLogo size={24} />
-                    ) : (
-                      <MaterialIcons name="monetization-on" size={24} color={theme.textPrimary} />
-                    )}
+                    <HaptixTokenIcon symbol={token.symbol} size={24} />
                   </View>
                   <View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1542,7 +1581,7 @@ export function HaptixWalletScreen() {
                   <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{token.price}</Text>
                   <Text style={[styles.assetFiatAmount, styles.textMuted]}>per token</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
               {idx < market.tokens.length - 1 && <View style={[styles.assetDivider, styles.divider]} />}
             </React.Fragment>
           ))}
@@ -2869,6 +2908,40 @@ export function HaptixWalletScreen() {
         securityMode={activeWallet?.securityMode}
         asModal={true}
         onAuthorize={handleExecuteGrantSession}
+      />
+
+      {/* Phantom-Style Token Detail Sheet */}
+      <HaptixTokenDetailSheet
+        visible={selectedDetailToken !== null}
+        token={selectedDetailToken}
+        balanceSol={balance}
+        solPriceUsd={solPriceUsd}
+        onClose={() => setSelectedDetailToken(null)}
+        onSend={() => setShowSendModal(true)}
+        onReceive={() => setShowReceiveModal(true)}
+        onSwap={(symbol) => {
+          setSwapInitialToken(symbol)
+          setShowSwapModal(true)
+        }}
+      />
+
+      {/* Haptix Swap Sheet (Jupiter DEX) */}
+      <HaptixSwapSheet
+        visible={showSwapModal}
+        initialPaySymbol={swapInitialToken}
+        initialReceiveSymbol={swapInitialToken === 'USDC' ? 'SOL' : 'USDC'}
+        balanceSol={balance}
+        solPriceUsd={solPriceUsd}
+        wallet={activeWallet}
+        connection={connection}
+        network={network}
+        spendThreshold={spendThreshold}
+        isFrozen={isFrozen}
+        onClose={() => setShowSwapModal(false)}
+        onSwapSuccess={(record) => {
+          setTransactions((prev) => [record, ...prev])
+          fetchRealBalance()
+        }}
       />
 
       {/* FLOATING PILL DOCK NAVIGATION */}
