@@ -11,7 +11,9 @@ export type MarketToken = {
   symbol: string
   name: string
   price: string
+  priceUsd: number
   change: string
+  changePct: number
   isPositive: boolean
 }
 
@@ -76,7 +78,9 @@ function buildTokens(pricesUsd: Record<string, number>, changesPct: Record<strin
       symbol: descriptor.symbol,
       name: descriptor.name,
       price: formatUsdPrice(priceUsd),
+      priceUsd,
       change: formatChange(changePct),
+      changePct,
       isPositive: changePct >= 0,
     }
   })

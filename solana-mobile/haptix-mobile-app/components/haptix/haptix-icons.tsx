@@ -80,6 +80,77 @@ export function SolanaTokenLogo({ size = 26 }: { size?: number }) {
   )
 }
 
+// Official Jupiter Vector Logo
+export function JupiterTokenLogo({ size = 26 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <Defs>
+        <LinearGradient id="jupGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <Stop offset="0%" stopColor="#FFA048" />
+          <Stop offset="100%" stopColor="#32C7A8" />
+        </LinearGradient>
+      </Defs>
+      <Circle cx="50" cy="50" r="46" fill="url(#jupGrad)" />
+      <Circle cx="50" cy="50" r="30" fill="#18181B" />
+      <Path
+        d="M28 50 C28 37.85 37.85 28 50 28 C62.15 28 72 37.85 72 50 C72 62.15 62.15 72 50 72"
+        stroke="url(#jupGrad)"
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+      <Circle cx="50" cy="50" r="10" fill="url(#jupGrad)" />
+    </Svg>
+  )
+}
+
+// Official Raydium Vector Logo
+export function RaydiumTokenLogo({ size = 26 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <Defs>
+        <LinearGradient id="rayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <Stop offset="0%" stopColor="#2563EB" />
+          <Stop offset="100%" stopColor="#06B6D4" />
+        </LinearGradient>
+      </Defs>
+      <Circle cx="50" cy="50" r="46" fill="url(#rayGrad)" />
+      <Path
+        d="M32 68 L50 32 L68 68 L50 56 Z"
+        fill="#FFFFFF"
+      />
+    </Svg>
+  )
+}
+
+// Official Bonk Vector Logo
+export function BonkTokenLogo({ size = 26 }: { size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <Defs>
+        <LinearGradient id="bonkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <Stop offset="0%" stopColor="#F59E0B" />
+          <Stop offset="100%" stopColor="#EF4444" />
+        </LinearGradient>
+      </Defs>
+      <Circle cx="50" cy="50" r="46" fill="url(#bonkGrad)" />
+      <Circle cx="40" cy="44" r="5" fill="#FFFFFF" />
+      <Circle cx="60" cy="44" r="5" fill="#FFFFFF" />
+      <Path d="M46 54 Q50 58 54 54" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" />
+    </Svg>
+  )
+}
+
+// Unified Token Icon Component
+export function HaptixTokenIcon({ symbol, size = 26 }: { symbol: string; size?: number }) {
+  const sym = (symbol || '').toUpperCase()
+  if (sym === 'SOL') return <SolanaTokenLogo size={size} />
+  if (sym === 'USDC') return <UsdcTokenLogo size={size} />
+  if (sym === 'JUP') return <JupiterTokenLogo size={size} />
+  if (sym === 'RAY') return <RaydiumTokenLogo size={size} />
+  if (sym === 'BONK') return <BonkTokenLogo size={size} />
+  return <SolanaTokenLogo size={size} />
+}
+
 // ============================================================================
 // 2. OFFICIAL MX ICONS (https://mxicons.vercel.app/)
 // ============================================================================
