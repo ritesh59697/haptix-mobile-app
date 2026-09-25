@@ -96,7 +96,7 @@ import {
 } from './haptix-icons'
 import { HaptixFloatingDock, DockTabId } from './haptix-floating-dock'
 import { HaptixIosTabs, IosTabItem } from './haptix-ios-tabs'
-import { HaptixPolicySheet, PolicyTopic } from './haptix-policy-sheet'
+import { HaptixPolicySheet, PolicyLinkButton, PolicyTopic } from './haptix-policy-sheet'
 import { HaptixSendSheet } from './haptix-send-sheet'
 import { HaptixAlert } from './haptix-alert'
 import { useGuardianSigner } from '@/hooks/use-guardian-signer'
@@ -2874,24 +2874,5 @@ export function HaptixWalletScreen() {
       {/* FLOATING PILL DOCK NAVIGATION */}
       {!isLocked && <HaptixFloatingDock activeTab={dockTab} onSelectTab={handleDockSelect} />}
     </View>
-  )
-}
-
-function PolicyLinkButton({ onPress }: { onPress: () => void }) {
-  const { theme } = useAppTheme()
-  const styles = useWalletStyles()
-  return (
-    <TouchableOpacity
-      style={[styles.policyLink, { borderColor: theme.borderDefault, backgroundColor: theme.accentLight }]}
-      onPress={() => {
-        Haptics.selectionAsync()
-        onPress()
-      }}
-      activeOpacity={0.7}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-    >
-      <MaterialIcons name="info-outline" size={12} color={theme.textSecondary} />
-      <Text style={[styles.policyLinkText, { color: theme.textSecondary }]}>How this works</Text>
-    </TouchableOpacity>
   )
 }
