@@ -37,7 +37,7 @@ import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet } fr
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
-import { HaptixBrandMark, HaptixLogoText, HaptixBrandLockupBlack } from '@/components/haptix/haptix-icons'
+import { HaptixLogoText } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { useAppTheme } from '@/components/theme/theme-context'
 import {
@@ -633,12 +633,9 @@ export default function SignIn() {
     >
       <StatusBar style="light" />
 
-      {/* 1. TOP BAR: Brand Logo + Logo Text directly on wallpaper in Left Top Corner */}
+      {/* 1. TOP BAR: Haptix Logo Text in Left Corner */}
       <View style={styles.topBrandRow}>
-        <View style={styles.heroBrandRow}>
-          <HaptixBrandMark size={28} />
-          <HaptixLogoText height={20} />
-        </View>
+        <HaptixLogoText height={26} />
       </View>
 
       {/* 2. MIDDLE SECTION: Clean Hero Headline + Value Proposition */}
@@ -1129,11 +1126,6 @@ const createStyles = (p: OnboardingPalette) =>
       justifyContent: 'flex-start',
       marginTop: 4,
       marginBottom: 8,
-    },
-    heroBrandRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
     },
     superMiddleSection: {
       flex: 1,
