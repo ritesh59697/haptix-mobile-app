@@ -102,9 +102,10 @@ import { useGuardianSigner } from '@/hooks/use-guardian-signer'
 import { AppConfig } from '@/constants/app-config'
 import { useHaptixDialog } from './haptix-dialog'
 import { useConfirmRemoveWallet } from './haptix-remove-wallet'
-import { typeScale } from '@/theme/tokens'
+import { radius, typeScale } from '@/theme/tokens'
 import { useWalletStyles } from './haptix-wallet-styles'
 import { ActivityRow, AgentSessionRow } from './haptix-wallet-rows'
+import { HaptixCopyableIdentifier } from './haptix-copyable-identifier'
 import {
   AGENT_TYPES,
   MOVEMENT_TYPES,
@@ -1695,6 +1696,10 @@ export function HaptixWalletScreen() {
           </View>
         </View>
 
+        <Text style={[styles.specKeyText, styles.textMuted, { marginTop: 4, marginBottom: 8 }]}>
+          Allowance Cap
+        </Text>
+
         {/* Budget Selector Chips */}
         <View style={styles.agentChipSelectorRow}>
           {['0.10', '0.25', '0.50', '1.00'].map((val) => {
@@ -1724,10 +1729,48 @@ export function HaptixWalletScreen() {
           })}
         </View>
 
-        <View style={{ marginTop: 12 }}>
+        <Text style={[styles.specKeyText, styles.textMuted, { marginTop: 12, marginBottom: 8 }]}>
+          Session Validity
+        </Text>
+
+        {/* Validity Duration Selector Chips */}
+        <View style={styles.agentChipSelectorRow}>
+          {[
+            { label: '1 hour', hours: '1' },
+            { label: '6 hours', hours: '6' },
+            { label: '12 hours', hours: '12' },
+            { label: '24 hours', hours: '24' },
+          ].map((item) => {
+            const isSelected = customAgentValidHours === item.hours
+            return (
+              <TouchableOpacity
+                key={item.hours}
+                style={[
+                  styles.agentBudgetChip,
+                  isSelected ? { backgroundColor: theme.accent, borderColor: theme.accent } : styles.input,
+                ]}
+                onPress={() => {
+                  Haptics.selectionAsync()
+                  setCustomAgentValidHours(item.hours)
+                }}
+              >
+                <Text
+                  style={[
+                    styles.agentBudgetChipText,
+                    isSelected ? { color: theme.accentForeground, fontWeight: '700' } : styles.textSecondary,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+
+        <View style={{ marginTop: 14 }}>
           <PrismDepthButton
             size="default"
-            title={`Authorize ${customAgentAllowance} SOL Session`}
+            title={`Authorize ${customAgentAllowance} SOL · ${customAgentValidHours}h Session`}
             onPress={handleGrantCustomSession}
             loading={isGrantingSession}
             disabled={isGrantingSession}
@@ -2390,20 +2433,32 @@ export function HaptixWalletScreen() {
                           </Text>
                         )}
 
-                        <View style={styles.txDetailConfirmedPill}>
+                        <View
+                          style={[
+                            styles.txDetailConfirmedPill,
+                            {
+                              backgroundColor: selectedTransaction.status === 'failed' ? theme.roseBg : theme.emeraldBg,
+                              borderColor: selectedTransaction.status === 'failed' ? theme.roseBorder : theme.emeraldBorder,
+                              borderWidth: 1,
+                              paddingHorizontal: 10,
+                              paddingVertical: 4,
+                              borderRadius: radius.pill,
+                            },
+                          ]}
+                        >
                           <MaterialIcons
                             name={selectedTransaction.status === 'failed' ? 'error-outline' : 'verified'}
-                            size={13}
+                            size={14}
                             color={selectedTransaction.status === 'failed' ? theme.roseText : theme.emeraldText}
                           />
                           <Text
                             style={[
                               styles.txDetailConfirmedText,
-                              selectedTransaction.status === 'failed' ? { color: theme.roseText } : null,
+                              selectedTransaction.status === 'failed' ? { color: theme.roseText } : { color: theme.emeraldText },
                             ]}
                           >
                             {selectedTransaction.status === 'failed'
-                              ? 'Failed on Solana Devnet'
+                              ? 'Failed on-chain'
                               : `Confirmed on Solana ${network === 'devnet' ? 'Devnet' : 'Mainnet'}`}
                           </Text>
                         </View>
@@ -2440,55 +2495,57 @@ export function HaptixWalletScreen() {
                 <View style={[styles.securityGroupCard, styles.card]}>
                   <Text style={[styles.securityGroupLabel, styles.textMuted]}>ON-CHAIN IDENTIFIERS</Text>
 
-                  {/* Recipient / Program */}
-                  <View style={{ marginBottom: 10 }}>
-                    <Text style={[styles.specKeyText, styles.textMuted, { marginBottom: 4 }]}>Counterparty</Text>
-                    <View style={[styles.addressCopyRow, styles.input]}>
-                      <Text style={[styles.addressCopyRowText, styles.textPrimary]} numberOfLines={1}>
-                        {selectedTransaction.recipientOrSender}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          Clipboard.setString(selectedTransaction.recipientOrSender)
-                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-                        }}
-                      >
-                        <MaterialIcons name="content-copy" size={16} color={theme.textMuted} />
-                      </TouchableOpacity>
-                    </View>
+                  {/* Recipient / Counterparty */}
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={[styles.specKeyText, styles.textMuted, { marginBottom: 5 }]}>Counterparty</Text>
+                    <HaptixCopyableIdentifier
+                      value={selectedTransaction.recipientOrSender}
+                      displayText={selectedTransaction.recipientOrSender}
+                      accessibilityLabel="Copy counterparty address"
+                    />
                   </View>
 
                   {/* Transaction Signature */}
                   <View>
-                    <Text style={[styles.specKeyText, styles.textMuted, { marginBottom: 4 }]}>
+                    <Text style={[styles.specKeyText, styles.textMuted, { marginBottom: 5 }]}>
                       Transaction Signature
                     </Text>
-                    <View style={[styles.addressCopyRow, styles.input]}>
-                      <Text style={[styles.addressCopyRowText, styles.textPrimary]} numberOfLines={1}>
-                        {selectedTransaction.signature}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => {
-                          Clipboard.setString(selectedTransaction.signature)
-                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-                        }}
-                      >
-                        <MaterialIcons name="content-copy" size={16} color={theme.textMuted} />
-                      </TouchableOpacity>
-                    </View>
+                    <HaptixCopyableIdentifier
+                      value={selectedTransaction.signature}
+                      displayText={selectedTransaction.signature}
+                      accessibilityLabel="Copy transaction signature"
+                    />
                   </View>
                 </View>
 
                 {/* Explorer Action Buttons */}
-                <View style={{ marginTop: 12 }}>
+                <View style={{ marginTop: 14, gap: 8 }}>
                   <TouchableOpacity
                     style={[styles.explorerButton, { backgroundColor: theme.accent }]}
-                    onPress={() =>
-                      Linking.openURL(`https://explorer.solana.com/tx/${selectedTransaction.signature}?cluster=devnet`)
-                    }
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                      const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+                      Linking.openURL(`https://solscan.io/tx/${selectedTransaction.signature}${clusterParam}`)
+                    }}
+                    activeOpacity={0.8}
                   >
                     <MaterialIcons name="open-in-new" size={16} color={theme.accentForeground} />
                     <Text style={[styles.explorerButtonText, { color: theme.accentForeground }]}>
+                      View on Solscan
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.explorerButtonSecondary}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                      const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+                      Linking.openURL(`https://explorer.solana.com/tx/${selectedTransaction.signature}${clusterParam}`)
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <MaterialIcons name="travel-explore" size={16} color={theme.textPrimary} />
+                    <Text style={styles.explorerButtonSecondaryText}>
                       View on Solana Explorer
                     </Text>
                   </TouchableOpacity>
