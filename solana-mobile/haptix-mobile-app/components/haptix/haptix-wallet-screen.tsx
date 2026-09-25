@@ -97,6 +97,7 @@ import { HaptixFloatingDock, DockTabId } from './haptix-floating-dock'
 import { HaptixIosTabs, IosTabItem } from './haptix-ios-tabs'
 import { HaptixPolicySheet, PolicyTopic } from './haptix-policy-sheet'
 import { HaptixSendSheet } from './haptix-send-sheet'
+import { HaptixBiometricPromptSheet } from './haptix-biometric-prompt-sheet'
 import { HaptixAlert } from './haptix-alert'
 import { useGuardianSigner } from '@/hooks/use-guardian-signer'
 import { AppConfig } from '@/constants/app-config'
@@ -187,6 +188,7 @@ export function HaptixWalletScreen() {
   const [showReceiveModal, setShowReceiveModal] = useState(false)
   const [showOverflowMenu, setShowOverflowMenu] = useState(false)
   const [showTxDetailModal, setShowTxDetailModal] = useState(false)
+  const [showAgentSessionPrompt, setShowAgentSessionPrompt] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionRecord | null>(null)
 
   const [copiedTxLink, setCopiedTxLink] = useState(false)
@@ -637,12 +639,17 @@ export function HaptixWalletScreen() {
   }
 
   // Grant Scoped AI Agent Session Key on Solana Devnet (2-of-2 Passkey Quorum)
-  const handleGrantCustomSession = async () => {
+  const handleInitiateGrantSession = () => {
     if (isFrozen) {
       dialog.alert('Wallet Locked', 'This wallet is locked, so new agent sessions cannot be created. Unlock it first.')
       return
     }
     if (!activeWallet?.address) return
+    setShowAgentSessionPrompt(true)
+  }
+
+  const handleExecuteGrantSession = async (onStepChange: (step: 1 | 2) => void) => {
+    if (!activeWallet?.address) throw new Error('Active wallet address not found')
 
     const allowanceSol = parseFloat(customAgentAllowance) || 0.25
     const hours = parseInt(customAgentValidHours, 10) || 24
@@ -658,10 +665,15 @@ export function HaptixWalletScreen() {
 
       const grantMsg = getGrantAgentSignedMessage(ephemeralAgent.publicKey, allowanceLamports, validForSeconds)
       const primarySig = await signWithPasskey('primary', grantMsg, `Grant ${allowanceSol} SOL Session to Agent`)
+
+      // Advance step in biometric sheet to show 2nd passkey challenge
+      onStepChange(2)
       const secondarySig = await signWithPasskey(
         'secondary',
         grantMsg,
-        'Confirm the agent session with your backup key',
+        activeWallet?.securityMode === 'vault'
+          ? 'Touch your Vault Key (Mac / YubiKey) to approve the agent session'
+          : 'Confirm the agent session with your backup key',
       )
 
       const precompile1 = createSecp256r1Instruction({
@@ -730,23 +742,10 @@ export function HaptixWalletScreen() {
       }
       setTransactions((prev) => [newTx, ...prev])
 
-      dialog.alert(
-        'Agent Session Granted On-Chain',
-        `Authorized session key on Anchor with ${allowanceSol} SOL allowance.\nValid for: ${hours} hours\n\nSignature: ${ellipsify(sig, 8)}`,
-        [
-          {
-            text: 'View on Explorer',
-            onPress: () => Linking.openURL(`https://explorer.solana.com/tx/${sig}?cluster=devnet`),
-          },
-          { text: 'Done', style: 'default' },
-        ],
-      )
+      return sig
     } catch (err: any) {
       console.error('[Grant Session Error]:', formatChainErrorForLog(err))
-      dialog.alert(
-        'Session Grant Failed',
-        describeChainError(err, 'The agent session could not be granted on-chain. Please try again.'),
-      )
+      throw err
     } finally {
       setIsGrantingSession(false)
     }
@@ -1823,7 +1822,7 @@ export function HaptixWalletScreen() {
           <PrismDepthButton
             size="default"
             title={`Authorize ${customAgentAllowance} SOL · ${customAgentValidHours}h Session`}
-            onPress={handleGrantCustomSession}
+            onPress={handleInitiateGrantSession}
             loading={isGrantingSession}
             disabled={isGrantingSession}
           />
@@ -2789,6 +2788,35 @@ export function HaptixWalletScreen() {
       {/* UNIFIED POLICY / HELP SHEET                                          */}
       {/* ==================================================================== */}
       <HaptixPolicySheet topic={policyTopic} threshold={spendThreshold} onClose={() => setPolicyTopic(null)} />
+
+      {/* ==================================================================== */}
+      {/* BIOMETRIC PROMPT SHEET (AGENT SESSION 2-OF-2 PASSKEYS)               */}
+      {/* ==================================================================== */}
+      <HaptixBiometricPromptSheet
+        visible={showAgentSessionPrompt}
+        onClose={() => setShowAgentSessionPrompt(false)}
+        actionType="agent_session"
+        title="Authorize AI Agent Session"
+        subtitle="2-of-2 Hardware Passkeys Required"
+        agentAllowanceSol={parseFloat(customAgentAllowance) || 0.25}
+        agentValidHours={parseInt(customAgentValidHours, 10) || 24}
+        isQuorumRequired={true}
+        securityMode={activeWallet?.securityMode}
+        onAuthorize={async (onStepChange) => {
+          const sig = await handleExecuteGrantSession(onStepChange)
+          dialog.alert(
+            'Agent Session Granted On-Chain',
+            `Authorized session key on Anchor with ${parseFloat(customAgentAllowance) || 0.25} SOL allowance.\nValid for: ${customAgentValidHours} hours\n\nSignature: ${ellipsify(sig, 8)}`,
+            [
+              {
+                text: 'View on Explorer',
+                onPress: () => Linking.openURL(`https://explorer.solana.com/tx/${sig}?cluster=devnet`),
+              },
+              { text: 'Done', style: 'default' },
+            ],
+          )
+        }}
+      />
 
       {/* ==================================================================== */}
       {/* 9. SAFE LOCK FULLSCREEN OVERLAY                                      */}
