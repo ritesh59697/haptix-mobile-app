@@ -2,6 +2,7 @@ import React, { memo } from 'react'
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
+import Clipboard from '@/utils/clipboard'
 import { LAMPORTS_PER_SOL, SystemProgram } from '@solana/web3.js'
 import { ellipsify } from '@/utils/ellipsify'
 import { AgentSessionState } from '@/utils/haptix-client'
@@ -154,10 +155,15 @@ export const AgentSessionRow = memo(function AgentSessionRow({
   isRevoking,
   onRevoke,
 }: AgentSessionRowProps) {
-  const { theme } = useAppTheme()
+  const { theme, isDark } = useAppTheme()
   const styles = useWalletStyles()
   const sessionKey = session.agentPubkey.toBase58()
   const remainingAllowance = Number(session.allowanceLamports) / LAMPORTS_PER_SOL
+
+  const handleCopySessionKey = () => {
+    Clipboard.setString(sessionKey)
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+  }
 
   return (
     <View style={styles.agentCompactRow}>
@@ -176,17 +182,78 @@ export const AgentSessionRow = memo(function AgentSessionRow({
           color={isExpired ? theme.rose : theme.emerald}
         />
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.agentCompactName, styles.textPrimary]}>{ellipsify(sessionKey, 6)}</Text>
+      <View style={{ flex: 1, paddingRight: 4 }}>
+        <TouchableOpacity
+          onPress={handleCopySessionKey}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+          accessibilityRole="button"
+          accessibilityLabel="Copy agent session key"
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.agentCompactName, styles.textPrimary]}>{ellipsify(sessionKey, 6)}</Text>
+          <MaterialIcons name="content-copy" size={12} color={theme.textMuted} />
+        </TouchableOpacity>
+
+        {/* Live Status & Countdown Badge */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 5,
+            backgroundColor: isExpired ? theme.roseBg : theme.emeraldBg,
+            borderColor: isExpired ? theme.roseBorder : theme.emeraldBorder,
+            borderWidth: 1,
+            paddingHorizontal: 7,
+            paddingVertical: 2,
+            borderRadius: 6,
+            alignSelf: 'flex-start',
+            marginTop: 4,
+            marginBottom: 4,
+          }}
+        >
+          <View
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: 3,
+              backgroundColor: isExpired ? theme.rose : theme.emerald,
+            }}
+          />
+          {isExpired ? (
+            <Text style={{ fontSize: 11, color: theme.roseText, fontWeight: '600' }}>Expired</Text>
+          ) : (
+            <HaptixCountdown
+              until={Number(session.validUntil)}
+              suffix=" left"
+              style={{ fontSize: 11, color: theme.emeraldText, fontWeight: '600' }}
+            />
+          )}
+        </View>
+
         <Text style={[styles.agentCompactSub, styles.textMuted]}>
-          {remainingAllowance.toFixed(4)} SOL left ·{' '}
-          <HaptixCountdown until={Number(session.validUntil)} suffix=" left" />
-        </Text>
-        <Text style={[styles.agentCompactSub, styles.textMuted]}>
+          {remainingAllowance.toFixed(4)} SOL delegated ·{' '}
           {session.allowedProgram.equals(SystemProgram.programId)
-            ? 'SOL transfers only'
+            ? 'SOL transfers'
             : `Program ${ellipsify(session.allowedProgram.toBase58(), 4)}`}
         </Text>
+
+        {/* Allowance Mini Progress Bar */}
+        <View
+          style={[
+            styles.agentMiniProgressBar,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
+          ]}
+        >
+          <View
+            style={[
+              styles.agentMiniProgressFill,
+              {
+                width: isExpired ? '0%' : '100%',
+                backgroundColor: isExpired ? theme.rose : theme.accent,
+              },
+            ]}
+          />
+        </View>
       </View>
       <TouchableOpacity
         style={[styles.agentRevokeBtn, { borderColor: theme.roseBorder }]}

@@ -1463,6 +1463,33 @@ const createStyles = (theme: ThemeTokens) =>
       fontSize: typeScale.bodyLg,
       fontWeight: '700',
     },
+    explorerButtonSecondary: {
+      height: 46,
+      borderRadius: radius.md,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+      borderWidth: 1,
+      backgroundColor: theme.bgElevated,
+      borderColor: theme.borderDefault,
+    },
+    explorerButtonSecondaryText: {
+      color: theme.textPrimary,
+      fontSize: typeScale.body,
+      fontWeight: '600',
+    },
+    agentMiniProgressBar: {
+      height: 4,
+      borderRadius: radius.pill,
+      overflow: 'hidden',
+      marginTop: 6,
+      width: '100%',
+    },
+    agentMiniProgressFill: {
+      height: '100%',
+      borderRadius: radius.pill,
+    },
 
     /* Shared surface / text treatments.
      These used to live in a second style object built inline in JSX because a
