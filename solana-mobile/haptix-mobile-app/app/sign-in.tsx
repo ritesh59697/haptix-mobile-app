@@ -633,20 +633,15 @@ export default function SignIn() {
     >
       <StatusBar style="light" />
 
-      {/* 1. TOP HEADER: Obsidian App Badge */}
-      <View style={styles.superHeaderBlock}>
-        <View style={styles.superIconSquircle}>
-          <HaptixBrandMark size={32} color="#FFFFFF" />
-        </View>
+      {/* 1. TOP HEADER: Brand Logo Mark + HAPTIX Text (Matching img1) */}
+      <View style={styles.brandHeaderBlock}>
+        <HaptixBrandMark size={38} color="#FFFFFF" />
+        <Text style={styles.brandHeaderText}>H A P T I X</Text>
       </View>
 
-      {/* 2. MIDDLE SECTION: Unified Hero Lockup (Eyebrow Badge + Single Strong Headline) */}
+      {/* 2. MIDDLE SECTION: Clean Hero Headline + Value Proposition */}
       <View style={styles.superMiddleSection}>
         <View style={styles.superTaglineWrap}>
-          <View style={styles.superEyebrowBadge}>
-            <Text style={styles.superEyebrowText}>WELCOME TO HAPTIX</Text>
-          </View>
-
           <Text style={styles.superHeroHeadline}>
             A smarter way{'\n'}to own <Text style={{ color: '#60A5FA' }}>crypto</Text>
           </Text>
@@ -1126,25 +1121,18 @@ const createStyles = (p: OnboardingPalette) =>
       paddingHorizontal: 24,
       justifyContent: 'space-between',
     },
-    superHeaderBlock: {
+    brandHeaderBlock: {
       alignItems: 'center',
-      marginTop: 10,
+      marginTop: 14,
       marginBottom: 4,
     },
-    superIconSquircle: {
-      width: 62,
-      height: 62,
-      borderRadius: 19,
-      backgroundColor: '#000000',
-      borderWidth: 1.5,
-      borderColor: 'rgba(255, 255, 255, 0.25)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.5,
-      shadowRadius: 10,
-      elevation: 6,
+    brandHeaderText: {
+      color: '#FFFFFF',
+      fontSize: 13.5,
+      fontWeight: '800',
+      letterSpacing: 4.5,
+      marginTop: 8,
+      textAlign: 'center',
     },
     superMiddleSection: {
       flex: 1,
@@ -1156,23 +1144,6 @@ const createStyles = (p: OnboardingPalette) =>
     superTaglineWrap: {
       alignItems: 'center',
       paddingHorizontal: 16,
-    },
-    superEyebrowBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 13,
-      paddingVertical: 5.5,
-      borderRadius: 16,
-      backgroundColor: 'rgba(147, 197, 253, 0.12)',
-      borderWidth: 1,
-      borderColor: 'rgba(147, 197, 253, 0.30)',
-      marginBottom: 14,
-    },
-    superEyebrowText: {
-      color: '#93C5FD',
-      fontSize: 11,
-      fontWeight: '800',
-      letterSpacing: 2,
     },
     superHeroHeadline: {
       color: '#FFFFFF',
