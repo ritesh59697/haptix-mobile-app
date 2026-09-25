@@ -633,25 +633,24 @@ export default function SignIn() {
     >
       <StatusBar style="light" />
 
-      {/* 1. TOP HEADER: Black Squircle App Icon + Centered Welcome Title */}
+      {/* 1. TOP HEADER: Obsidian App Badge */}
       <View style={styles.superHeaderBlock}>
         <View style={styles.superIconSquircle}>
           <HaptixBrandMark size={32} color="#FFFFFF" />
         </View>
-
-        <Text style={styles.superTitleText}>
-          Welcome{'\n'}to Haptix
-        </Text>
       </View>
 
-      {/* 2. MIDDLE ART SECTION: Creative Doodles + Centered Tagline */}
+      {/* 2. MIDDLE SECTION: Unified Hero Lockup (Eyebrow Badge + Single Strong Headline) */}
       <View style={styles.superMiddleSection}>
-        <SuperlistDoodleArt color="rgba(255, 255, 255, 0.14)" />
-
         <View style={styles.superTaglineWrap}>
-          <Text style={styles.superTaglineHeading}>
-            A smarter way{'\n'}to own <Text style={{ color: '#93C5FD' }}>crypto</Text>
+          <View style={styles.superEyebrowBadge}>
+            <Text style={styles.superEyebrowText}>WELCOME TO HAPTIX</Text>
+          </View>
+
+          <Text style={styles.superHeroHeadline}>
+            A smarter way{'\n'}to own <Text style={{ color: '#60A5FA' }}>crypto</Text>
           </Text>
+
           <Text style={styles.superTaglineSub}>
             Hardware-backed passkeys on Solana.{'\n'}No seed phrases to write down or lose.
           </Text>
@@ -1129,12 +1128,13 @@ const createStyles = (p: OnboardingPalette) =>
     },
     superHeaderBlock: {
       alignItems: 'center',
-      marginTop: 8,
+      marginTop: 10,
+      marginBottom: 4,
     },
     superIconSquircle: {
-      width: 60,
-      height: 60,
-      borderRadius: 18,
+      width: 62,
+      height: 62,
+      borderRadius: 19,
       backgroundColor: '#000000',
       borderWidth: 1.5,
       borderColor: 'rgba(255, 255, 255, 0.25)',
@@ -1145,41 +1145,50 @@ const createStyles = (p: OnboardingPalette) =>
       shadowOpacity: 0.5,
       shadowRadius: 10,
       elevation: 6,
-      marginBottom: 16,
-    },
-    superTitleText: {
-      color: '#FFFFFF',
-      fontSize: 38,
-      fontWeight: '800',
-      lineHeight: 44,
-      letterSpacing: -1.2,
-      textAlign: 'center',
     },
     superMiddleSection: {
       flex: 1,
       minHeight: 160,
       alignItems: 'center',
       justifyContent: 'center',
-      marginVertical: 12,
+      marginVertical: 8,
     },
     superTaglineWrap: {
       alignItems: 'center',
-      paddingHorizontal: 20,
+      paddingHorizontal: 16,
     },
-    superTaglineHeading: {
-      color: '#FFFFFF',
-      fontSize: 27,
+    superEyebrowBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 13,
+      paddingVertical: 5.5,
+      borderRadius: 16,
+      backgroundColor: 'rgba(147, 197, 253, 0.12)',
+      borderWidth: 1,
+      borderColor: 'rgba(147, 197, 253, 0.30)',
+      marginBottom: 14,
+    },
+    superEyebrowText: {
+      color: '#93C5FD',
+      fontSize: 11,
       fontWeight: '800',
-      lineHeight: 34,
-      letterSpacing: -0.6,
+      letterSpacing: 2,
+    },
+    superHeroHeadline: {
+      color: '#FFFFFF',
+      fontSize: 36,
+      fontWeight: '800',
+      lineHeight: 44,
+      letterSpacing: -1.0,
       textAlign: 'center',
     },
     superTaglineSub: {
-      color: 'rgba(255, 255, 255, 0.82)',
-      fontSize: 14,
-      lineHeight: 20,
-      marginTop: 8,
+      color: 'rgba(255, 255, 255, 0.85)',
+      fontSize: 14.5,
+      lineHeight: 22,
+      marginTop: 12,
       textAlign: 'center',
+      maxWidth: 320,
     },
     superButtonStack: {
       width: '100%',
