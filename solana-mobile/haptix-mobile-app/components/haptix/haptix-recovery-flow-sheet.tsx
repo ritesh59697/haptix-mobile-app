@@ -240,7 +240,7 @@ export function HaptixRecoveryFlowSheet({
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
 
       dialog.alert(
-        '🎉 Wallet Recovered Successfully!',
+        'Wallet Recovered Successfully',
         `Your smart wallet keys have been rotated on-chain. Your address (${ellipsify(restored.address, 4)}) and SOL balance are 100% preserved.\n\nTx: ${ellipsify(sig, 8)}`,
         [
           {
@@ -446,8 +446,13 @@ export function HaptixRecoveryFlowSheet({
                       setSigningTab('devnet')
                     }}
                   >
+                    <MaterialIcons
+                      name="bolt"
+                      size={15}
+                      color={signingTab === 'devnet' ? theme.textPrimary : theme.textMuted}
+                    />
                     <Text style={[styles.tabBtnText, { color: signingTab === 'devnet' ? theme.textPrimary : theme.textMuted }]}>
-                      ⚡ Devnet Quick (1-Tap)
+                      Devnet Quick (1-Tap)
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -457,8 +462,13 @@ export function HaptixRecoveryFlowSheet({
                       setSigningTab('hardware')
                     }}
                   >
+                    <MaterialIcons
+                      name="vpn-key"
+                      size={15}
+                      color={signingTab === 'hardware' ? theme.textPrimary : theme.textMuted}
+                    />
                     <Text style={[styles.tabBtnText, { color: signingTab === 'hardware' ? theme.textPrimary : theme.textMuted }]}>
-                      🔑 Mac / Hardware (OneKey)
+                      Mac / Hardware (OneKey)
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -727,8 +737,11 @@ const styles = StyleSheet.create({
   },
   tabBtn: {
     flex: 1,
-    paddingVertical: 7,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 7,
     borderRadius: 8,
   },
   tabBtnText: {
