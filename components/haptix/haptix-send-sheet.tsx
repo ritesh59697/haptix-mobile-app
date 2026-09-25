@@ -52,7 +52,6 @@ import {
   parseGuardianAddress,
 } from '@/utils/haptix-client'
 import { useHaptixDialog } from './haptix-dialog'
-import { HaptixBiometricPromptSheet } from './haptix-biometric-prompt-sheet'
 import { radius, space, typeScale, ThemeTokens } from '@/theme/tokens'
 
 // The fee quoted before the cluster has answered. `estimateTransferFee` prices the real
@@ -158,7 +157,6 @@ export function HaptixSendSheet({
   const [pendingContactName, setPendingContactName] = useState<string | null>(null)
   // Live network fee for the transfer being previewed.
   const [feeEstimate, setFeeEstimate] = useState<TransferFeeEstimate | null>(null)
-  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
 
   // The screen cleared the recipient and its validation flags in the button handler that
   // opened this sheet. Now that the sheet owns them it clears on close instead of on
@@ -173,7 +171,6 @@ export function HaptixSendSheet({
     setSendRecipientAttempted(false)
     setSendRecipientBlurred(false)
     setSendErrorMsg('')
-    setShowBiometricPrompt(false)
   }, [visible])
 
   // Recipient typing. Addresses are pasted far more often than they are typed, and a
@@ -331,8 +328,8 @@ export function HaptixSendSheet({
     )
   }
 
-  // Step 1: Validate transfer inputs and open Biometric Confirmation Sheet
-  const handleInitiateSendFlow = () => {
+  // On-chain Send Transaction via Haptix Anchor Program & Secp256r1 Precompile
+  const handleSendTransaction = async () => {
     setSendErrorMsg('')
     if (isFrozen) {
       dialog.alert(
@@ -357,13 +354,18 @@ export function HaptixSendSheet({
 
     const parsedRecipient = parseRecipientInput(sendRecipient)
     if (parsedRecipient.address && parsedRecipient.source !== 'raw') {
+      // Take the address out of whatever was pasted rather than failing on the wrapper.
       setSendRecipient(parsedRecipient.address)
       setSendRecipientSource(parsedRecipient.source)
     }
 
+    let toPubkey: PublicKey
     try {
-      new PublicKey(sendRecipient.trim())
+      toPubkey = new PublicKey(sendRecipient.trim())
     } catch {
+      // `parseRecipientInput` knows which mistake this is (0x address, .sol name, a
+      // character that base58 does not contain); saying "invalid address" for all of
+      // them was the reason a pasted link gave no clue what to fix.
       setSendRecipientAttempted(true)
       dialog.alert('Invalid Address', parsedRecipient.error ?? 'Please enter a valid Solana address.')
       return
@@ -374,18 +376,7 @@ export function HaptixSendSheet({
       return
     }
 
-    setShowBiometricPrompt(true)
-  }
-
-  // Step 2: Execute cryptographic passkey signing and broadcast inside the Biometric Prompt Sheet
-  const handleExecuteSend = async (onStepChange: (step: 1 | 2) => void) => {
-    if (!wallet) {
-      throw new Error('Wallet not initialized')
-    }
-    const activeWallet = wallet
-    const amt = parseFloat(sendAmountText) || 0
-    const toPubkey = new PublicKey(sendRecipient.trim())
-    const walletPda = new PublicKey(activeWallet.address)
+    const walletPda = new PublicKey(wallet.address)
     const isHighRiskQuorum = amt > spendThreshold
     const amountLamports = BigInt(Math.round(amt * LAMPORTS_PER_SOL))
 
@@ -415,21 +406,21 @@ export function HaptixSendSheet({
 
       // Check if counterfactual PDA is already initialized on-chain
       const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
-      const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
+      const needsInit = !onChain && !!(wallet.primaryPasskeyHex && wallet.secondaryPasskeyHex)
 
       let txInstructions = []
 
       // If wallet is not yet on-chain, atomically initialize it first in the SAME transaction
       if (needsInit) {
-        const primaryPasskey = new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex'))
-        const secondaryPasskey = new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex'))
+        const primaryPasskey = new Uint8Array(Buffer.from(wallet.primaryPasskeyHex, 'hex'))
+        const secondaryPasskey = new Uint8Array(Buffer.from(wallet.secondaryPasskeyHex, 'hex'))
         const initIx = createInitializeWalletInstruction({
           payer: payer.publicKey,
           walletPda,
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: parseGuardianAddress(activeWallet.guardianAddress) ?? undefined,
+          guardian: parseGuardianAddress(wallet.guardianAddress) ?? undefined,
         })
         txInstructions.push(initIx)
       }
@@ -438,12 +429,9 @@ export function HaptixSendSheet({
       const secondarySigIxIndex = needsInit ? (isHighRiskQuorum ? 2 : undefined) : isHighRiskQuorum ? 1 : undefined
 
       if (isHighRiskQuorum) {
-        // Advance step indicator in biometric prompt sheet
-        onStepChange(2)
-
         // 2. High-Risk: 2-of-2 passkey quorum required
         const secondaryPrompt =
-          activeWallet.securityMode === 'vault'
+          wallet?.securityMode === 'vault'
             ? `Touch your Vault Key (Mac / YubiKey) to approve ${amt} SOL`
             : `Confirm with your backup key: ${amt} SOL`
         const secondarySig = await signWithPasskey('secondary', message, secondaryPrompt)
@@ -522,7 +510,6 @@ export function HaptixSendSheet({
         status: 'confirmed',
       })
 
-      setShowBiometricPrompt(false)
       onClose()
 
       dialog.alert(
@@ -1181,7 +1168,7 @@ export function HaptixSendSheet({
                       : 'Authorize with Both Passkeys'
                     : 'Sign & Send with Passkey'
                 }
-                onPress={handleInitiateSendFlow}
+                onPress={handleSendTransaction}
                 loading={isSending}
                 // A missing (or unusable) recipient is a reason not to send, so the button
                 // says so instead of appearing ready and failing after the tap.
@@ -1197,21 +1184,6 @@ export function HaptixSendSheet({
             </View>
           </ScrollView>
         </View>
-
-        {/* Biometric Passkey Confirmation Sheet */}
-        <HaptixBiometricPromptSheet
-          visible={showBiometricPrompt}
-          onClose={() => setShowBiometricPrompt(false)}
-          actionType="transfer"
-          amountSol={parseFloat(sendAmountText) || 0}
-          solPriceUsd={solPriceUsd}
-          recipientAddress={sendRecipient}
-          recipientLabel={resolvedName || (savedContact ? savedContact.label : undefined)}
-          isQuorumRequired={isSendQuorumRequired}
-          securityMode={wallet?.securityMode ?? 'phone'}
-          asModal={false}
-          onAuthorize={handleExecuteSend}
-        />
       </KeyboardAvoidingView>
     </Modal>
   )
