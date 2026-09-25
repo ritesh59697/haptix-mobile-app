@@ -2303,11 +2303,23 @@ export function HaptixWalletScreen() {
               <AppQrCode value={activeWallet?.address || 'HaptixSolanaAddress'} />
             </View>
 
-            <View style={[styles.addressDisplayBox, styles.input]}>
+            <TouchableOpacity
+              style={[styles.addressDisplayBox, styles.input]}
+              onPress={() => {
+                if (!activeWallet?.address) return
+                Clipboard.setString(activeWallet.address)
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                dialog.alert('Address Copied', activeWallet.address)
+              }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Copy smart wallet address"
+            >
               <Text style={[styles.addressDisplayText, styles.textPrimary]} numberOfLines={1} ellipsizeMode="middle">
                 {activeWallet?.address || ''}
               </Text>
-            </View>
+              <MaterialIcons name="content-copy" size={16} color={theme.accent} />
+            </TouchableOpacity>
 
             {/* The one irreversible mistake an address screen can prevent. */}
             <View style={styles.receiveWarning}>
@@ -2323,10 +2335,8 @@ export function HaptixWalletScreen() {
                 value={activeWallet?.address || ''}
                 label="Copy Smart Account Address"
                 copiedLabel="Address Copied to Clipboard!"
+                style={{ height: 46, borderRadius: 12 }}
               />
-              {/* Replaces a "Bookmark this address" button that only held local state: it
-                  was never persisted anywhere, and bookmarking your own receive address
-                  is not a thing anyone needs. Share is the action that was missing. */}
               <DepthOutlineButton title="Share Address" onPress={handleShareAddress} size="compact" />
             </View>
           </View>
