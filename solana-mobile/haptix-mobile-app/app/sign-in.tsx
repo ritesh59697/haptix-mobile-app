@@ -43,6 +43,7 @@ import { useAppTheme } from '@/components/theme/theme-context'
 import {
   HeroOrbLight,
   HeroSplashArt,
+  SuperlistDoodleArt,
   BiometricScanGraphic,
 } from '@/components/haptix/haptix-onboarding-graphics'
 import { HaptixAppLoader } from '@/components/haptix/haptix-app-loader'
@@ -622,96 +623,100 @@ export default function SignIn() {
   }
 
   return (
-    <ImageBackground
-      source={ONBOARDING_BG}
+    <View
       style={[
         styles.heroContainer,
-        { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom + 12, 28) },
+        { paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom + 12, 24) },
       ]}
-      resizeMode="cover"
     >
-      <StatusBar style="dark" />
+      <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      {/* Top Header: Brand & Theme Toggle */}
-      <View style={styles.heroTopRow}>
-        <View style={styles.heroBrandPill}>
-          <HaptixBrandMark size={28} color="#131217" />
-          <Text style={styles.heroBrandName}>HAPTIX</Text>
-        </View>
-
+      {/* Top Bar with subtle Theme Switcher */}
+      <View style={styles.superTopRow}>
+        <View style={{ flex: 1 }} />
         <TouchableOpacity
-          style={styles.heroThemeToggle}
+          style={styles.superThemeToggle}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
             setShowThemeSheet(true)
           }}
-          activeOpacity={0.75}
+          activeOpacity={0.7}
         >
           <MaterialIcons
             name={isDark ? 'light-mode' : 'dark-mode'}
             size={18}
-            color="#131217"
+            color={p.heroInk}
           />
         </TouchableOpacity>
       </View>
 
-      {/* Center Spacer: Showcases the 4K fluid gradient waves with room to breathe */}
-      <View style={styles.heroArtSpacer} />
-
-      {/* Bottom Content: Clean Typography + High-Contrast 3-Tier Buttons */}
-      <View style={styles.heroBottomBlock}>
-        <View style={styles.heroTextWrap}>
-          <Text style={styles.heroTitleText}>
-            A smarter way{'\n'}to own <Text style={styles.heroTitleAccent}>crypto</Text>
-          </Text>
-          <Text style={styles.heroSubtitleText}>
-            Hardware-backed passkeys on Solana.{'\n'}No seed phrases to write down or lose.
-          </Text>
+      {/* 1. TOP HEADER: 3D Squircle App Icon + Centered Welcome Title */}
+      <View style={styles.superHeaderBlock}>
+        <View style={styles.superIconSquircle}>
+          <HaptixBrandMark size={32} color="#FFFFFF" />
         </View>
 
-        {/* PRIMARY CTA: Create New Wallet */}
+        <Text style={styles.superTitleText}>
+          Welcome{'\n'}to Haptix
+        </Text>
+      </View>
+
+      {/* 2. MIDDLE ART SECTION: Creative Doodles + Centered Tagline */}
+      <View style={styles.superMiddleSection}>
+        <SuperlistDoodleArt color={isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.07)'} />
+
+        <View style={styles.superTaglineWrap}>
+          <Text style={styles.superTaglineHeading}>Made for speed.</Text>
+          <Text style={styles.superTaglineHeading}>Designed for Solana.</Text>
+          <Text style={styles.superTaglineSub}>
+            Hardware-backed passkeys · Zero seed phrases
+          </Text>
+        </View>
+      </View>
+
+      {/* 3. BOTTOM BUTTON STACK: 3 Pills with Left Icons (Matching Superlist!) */}
+      <View style={styles.superButtonStack}>
+        {/* Button 1: Create New Wallet */}
         <TouchableOpacity
-          style={[styles.heroButton, styles.heroButtonPrimary]}
+          style={[styles.superButton, styles.superButtonDark]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
             setShowCreateModal(true)
           }}
           activeOpacity={0.9}
         >
-          <Text style={[styles.heroButtonText, { color: '#09090B' }]}>Create New Wallet</Text>
-          <MaterialIcons name="arrow-forward" size={19} color="#09090B" style={styles.heroButtonArrow} />
+          <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} style={styles.superBtnIcon} />
+          <Text style={[styles.superBtnText, { color: p.onPrimary }]}>Create New Wallet</Text>
         </TouchableOpacity>
 
-        {/* SECONDARY CTA: Sign In to Existing Wallet */}
+        {/* Button 2: Sign In with Passkey */}
         <TouchableOpacity
-          style={[styles.heroButton, styles.heroButtonSecondary]}
+          style={[styles.superButton, styles.superButtonDark]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
             openSignInSheet()
           }}
-          activeOpacity={0.85}
+          activeOpacity={0.9}
         >
-          <Text style={[styles.heroButtonTextSecondary, { color: '#FFFFFF' }]}>I already have a wallet</Text>
-          <MaterialIcons name="arrow-forward" size={17} color="#FFFFFF" style={styles.heroButtonArrow} />
+          <MaterialIcons name="vpn-key" size={18} color={p.onPrimary} style={styles.superBtnIcon} />
+          <Text style={[styles.superBtnText, { color: p.onPrimary }]}>Sign In to Existing Wallet</Text>
         </TouchableOpacity>
 
-        {/* TERTIARY / RESCUE: Lost device? Recover with Guardian */}
+        {/* Button 3: Recover Lost Wallet */}
         <TouchableOpacity
-          style={styles.heroRecoveryLink}
+          style={[styles.superButton, styles.superButtonLight]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
             setShowRecoveryModal(true)
           }}
-          activeOpacity={0.7}
+          activeOpacity={0.85}
         >
-          <MaterialIcons name="security" size={14} color="#A5B4FC" />
-          <Text style={[styles.heroRecoveryText, { color: 'rgba(255, 255, 255, 0.75)' }]}>
-            Lost device? <Text style={{ color: '#C7D2FE', fontWeight: '700' }}>Recover with Guardian</Text>
-          </Text>
+          <MaterialIcons name="security" size={18} color={p.heroInk} style={styles.superBtnIcon} />
+          <Text style={[styles.superBtnText, { color: p.heroInk }]}>Recover Lost Wallet</Text>
         </TouchableOpacity>
 
-        {/* Legal caption note */}
-        <Text style={[styles.heroLegalText, { color: 'rgba(255, 255, 255, 0.45)' }]}>
+        {/* Legal Caption */}
+        <Text style={styles.superLegalText}>
           By continuing, you agree to our Terms of Service &amp; Privacy Policy
         </Text>
       </View>
@@ -1122,7 +1127,7 @@ export default function SignIn() {
           router.replace('/(tabs)')
         }}
       />
-    </ImageBackground>
+    </View>
   )
 }
 
@@ -1130,115 +1135,111 @@ const createStyles = (p: OnboardingPalette) =>
   StyleSheet.create({
     heroContainer: {
       flex: 1,
-      backgroundColor: '#07060D',
+      backgroundColor: p.heroBg,
       paddingHorizontal: 24,
       justifyContent: 'space-between',
     },
-    heroTopRow: {
-      height: 48,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    heroBrandPill: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 9,
-    },
-    heroBrandName: {
-      color: '#131217',
-      fontSize: 14.5,
-      fontWeight: '800',
-      letterSpacing: 3,
-    },
-    heroThemeToggle: {
-      width: 40,
+    superTopRow: {
       height: 40,
-      borderRadius: 20,
-      backgroundColor: 'rgba(0, 0, 0, 0.06)',
-      borderWidth: 1,
-      borderColor: 'rgba(0, 0, 0, 0.10)',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+    },
+    superThemeToggle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: p.controlBg,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heroArtSpacer: {
-      flex: 1,
-      minHeight: 120,
+    superHeaderBlock: {
+      alignItems: 'center',
+      marginTop: 2,
     },
-    heroBottomBlock: {
-      width: '100%',
+    superIconSquircle: {
+      width: 58,
+      height: 58,
+      borderRadius: 18,
+      backgroundColor: '#E11D48',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#BE123C',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.35,
+      shadowRadius: 10,
+      elevation: 6,
+      marginBottom: 16,
     },
-    heroTextWrap: {
-      marginBottom: 24,
-    },
-    heroTitleText: {
-      color: '#FFFFFF',
-      fontSize: 34,
+    superTitleText: {
+      color: p.heroInk,
+      fontSize: 38,
       fontWeight: '800',
-      lineHeight: 40,
-      letterSpacing: -0.8,
+      lineHeight: 44,
+      letterSpacing: -1.2,
+      textAlign: 'center',
     },
-    heroTitleAccent: {
-      color: '#A5B4FC',
+    superMiddleSection: {
+      flex: 1,
+      minHeight: 160,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginVertical: 12,
     },
-    heroSubtitleText: {
-      color: 'rgba(255, 255, 255, 0.72)',
-      fontSize: 14,
-      lineHeight: 20,
-      marginTop: 8,
-      fontWeight: '400',
+    superTaglineWrap: {
+      alignItems: 'center',
+      paddingHorizontal: 20,
     },
-    heroButton: {
+    superTaglineHeading: {
+      color: p.heroInk,
+      fontSize: 18,
+      fontWeight: '700',
+      lineHeight: 25,
+      textAlign: 'center',
+    },
+    superTaglineSub: {
+      color: p.inkSecondary,
+      fontSize: 13,
+      marginTop: 6,
+      textAlign: 'center',
+    },
+    superButtonStack: {
       width: '100%',
+    },
+    superButton: {
+      width: '100%',
+      height: 52,
       borderRadius: 26,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    heroButtonPrimary: {
-      height: 52,
-      backgroundColor: '#FFFFFF',
       marginBottom: 10,
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 12,
-      elevation: 4,
     },
-    heroButtonSecondary: {
-      height: 48,
-      backgroundColor: 'rgba(255, 255, 255, 0.10)',
+    superButtonDark: {
+      backgroundColor: p.primaryBg,
+      shadowColor: p.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    superButtonLight: {
+      backgroundColor: p.secondaryBg,
       borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.22)',
+      borderColor: p.border,
       marginBottom: 14,
     },
-    heroButtonText: {
+    superBtnIcon: {
+      marginRight: 8,
+    },
+    superBtnText: {
       fontSize: 15.5,
       fontWeight: '700',
       letterSpacing: -0.2,
     },
-    heroButtonTextSecondary: {
-      fontSize: 14.5,
-      fontWeight: '600',
-      letterSpacing: -0.1,
-    },
-    heroButtonArrow: {
-      position: 'absolute',
-      right: 20,
-    },
-    heroRecoveryLink: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      paddingVertical: 6,
-      marginBottom: 14,
-    },
-    heroRecoveryText: {
-      fontSize: 12.5,
-    },
-    heroLegalText: {
+    superLegalText: {
       fontSize: 11,
+      color: p.inkMuted,
       textAlign: 'center',
       lineHeight: 15,
     },
