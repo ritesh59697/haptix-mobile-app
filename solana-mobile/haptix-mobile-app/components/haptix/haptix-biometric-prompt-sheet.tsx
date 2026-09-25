@@ -8,15 +8,21 @@ import {
   Animated,
   ActivityIndicator,
   Platform,
+  Dimensions,
 } from 'react-native'
-import Svg, { Path } from 'react-native-svg'
 import * as Haptics from 'expo-haptics'
-import * as LocalAuthentication from 'expo-local-authentication'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { useAppTheme } from '@/components/theme/theme-context'
-import { radius, typeScale, ThemeTokens } from '@/theme/tokens'
+import { radius, typeScale, space, ThemeTokens } from '@/theme/tokens'
 import { ellipsify } from '@/utils/ellipsify'
-import { PrismDepthButton } from '@/components/ui'
+import {
+  LucideFingerprint,
+  LucideShieldCheck,
+  LucideKeyRound,
+  LucideCheck,
+  LucideSmartphone,
+} from '@/components/haptix/haptix-icons'
+import { BiometricScanGraphic } from '@/components/haptix/haptix-onboarding-graphics'
 
 export type BiometricActionType = 'transfer' | 'agent_session' | 'policy_update'
 
@@ -39,53 +45,6 @@ export interface HaptixBiometricPromptSheetProps {
 }
 
 type AuthPhase = 'idle' | 'verifying_primary' | 'verifying_secondary' | 'broadcasting' | 'confirmed' | 'error'
-
-/**
- * Authentic Precision Fingerprint Sensor Graphic
- * Replaces cartoon FaceID with realistic biometric ridges.
- */
-function PrecisionFingerprintSensor({ size = 48, color = '#A5B4FC' }: { size?: number; color?: string }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 11c0 1.66-1.34 3-3 3-.74 0-1.42-.27-1.95-.72"
-        stroke={color}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M12 7c-2.76 0-5 2.24-5 5 0 2.21-1.79 4-4 4"
-        stroke={color}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M8.5 2.6c1.07-.38 2.24-.6 3.5-.6 5.52 0 10 4.48 10 10 0 2.87-1.22 5.46-3.17 7.27"
-        stroke={color}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M14.5 15.5c-.88.94-2.12 1.5-3.5 1.5-2.21 0-4-1.79-4-4 0-1.66 1.34-3 3-3s3 1.34 3 3c0 3.31-2.69 6-6 6-1.57 0-3-.6-4.08-1.59"
-        stroke={color}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M17.5 10c0-3.04-2.46-5.5-5.5-5.5-1.95 0-3.68 1.02-4.66 2.56"
-        stroke={color}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M19 14.5c-.68 2.88-2.64 5.17-5.26 6.13"
-        stroke={color}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </Svg>
-  )
-}
 
 export function HaptixBiometricPromptSheet({
   visible,
@@ -110,32 +69,10 @@ export function HaptixBiometricPromptSheet({
   const [phase, setPhase] = useState<AuthPhase>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
-  const [biometricName, setBiometricName] = useState<'Fingerprint' | 'Face ID' | 'Biometrics'>('Fingerprint')
 
-  // Smooth breathing animation for biometric sensor aura
+  // Pulsing animation for biometric scanner aura
   const pulseAnim = useRef(new Animated.Value(1)).current
   const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null)
-
-  // Detect hardware biometric capabilities
-  useEffect(() => {
-    async function detectBiometrics() {
-      try {
-        const types = await LocalAuthentication.supportedAuthenticationTypesAsync()
-        if (
-          Platform.OS === 'ios' &&
-          types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION) &&
-          !types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)
-        ) {
-          setBiometricName('Face ID')
-        } else {
-          setBiometricName('Fingerprint')
-        }
-      } catch {
-        setBiometricName('Fingerprint')
-      }
-    }
-    void detectBiometrics()
-  }, [])
 
   useEffect(() => {
     if (visible) {
@@ -143,17 +80,17 @@ export function HaptixBiometricPromptSheet({
       setErrorMessage(null)
       setCurrentStep(1)
 
-      // Start breathing aura animation
+      // Start aura animation
       pulseLoopRef.current = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.14,
-            duration: 1100,
+            toValue: 1.08,
+            duration: 1200,
             useNativeDriver: true,
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 1100,
+            duration: 1200,
             useNativeDriver: true,
           }),
         ]),
@@ -187,9 +124,10 @@ export function HaptixBiometricPromptSheet({
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setPhase('confirmed')
 
+      // Short delay before closing on confirmation
       setTimeout(() => {
         onClose()
-      }, 1200)
+      }, 1400)
     } catch (err: any) {
       console.warn('[HaptixBiometricPromptSheet] Auth error:', err)
       setPhase('error')
@@ -198,25 +136,26 @@ export function HaptixBiometricPromptSheet({
     }
   }
 
+  // Header Title & Badge
+  const sheetTitle =
+    title ||
+    (actionType === 'transfer'
+      ? 'Authorize Transfer'
+      : actionType === 'agent_session'
+      ? 'Authorize Agent Session'
+      : 'Authorize Security Action')
+
+  const quorumBadgeLabel = isQuorumRequired
+    ? securityMode === 'vault'
+      ? '2-of-2 Quorum · Vault Key'
+      : '2-of-2 Quorum · Both Passkeys'
+    : '1-of-1 Passkey · Fast Path'
+
+  const quorumBadgeColor = isQuorumRequired ? theme.amberText : theme.emeraldText
+  const quorumBadgeBg = isQuorumRequired ? theme.amberBg : theme.emeraldBg
+  const quorumBadgeBorder = isQuorumRequired ? theme.amberBorder : theme.emeraldBorder
+
   if (!visible) return null
-
-  const isAuthenticating =
-    phase === 'verifying_primary' || phase === 'verifying_secondary' || phase === 'broadcasting'
-
-  // Hero Display Values
-  const heroAmount =
-    actionType === 'transfer' && amountSol !== undefined
-      ? `${amountSol.toFixed(4)} SOL`
-      : actionType === 'agent_session'
-      ? `${(agentAllowanceSol || 0.25).toFixed(2)} SOL Cap`
-      : 'Security Policy'
-
-  const heroSubtitle =
-    actionType === 'transfer' && amountSol !== undefined
-      ? `≈ $${(amountSol * solPriceUsd).toFixed(2)} USD · Instant Transfer`
-      : actionType === 'agent_session'
-      ? `Autonomous AI Agent Delegation · ${agentValidHours || 24}h Validity`
-      : subtitle || 'Cryptographically signed via hardware passkey'
 
   const sheetContent = (
     <View style={asModal ? styles.backdrop : styles.overlayBackdrop}>
@@ -224,97 +163,79 @@ export function HaptixBiometricPromptSheet({
         {/* Drag Handle */}
         <View style={styles.dragHandle} />
 
-        {/* Top Header Row with Subtle Badge and Close */}
-        <View style={styles.headerRow}>
-          <View style={styles.badgeWrapper}>
-            <View
-              style={[
-                styles.quorumBadge,
-                {
-                  backgroundColor: isQuorumRequired ? theme.amberBg : theme.accentLight,
-                  borderColor: isQuorumRequired ? theme.amberBorder : theme.accent,
-                },
-              ]}
-            >
-              <MaterialIcons
-                name={isQuorumRequired ? 'security' : 'fingerprint'}
-                size={13}
-                color={isQuorumRequired ? theme.amberText : theme.accent}
-              />
-              <Text
-                style={[
-                  styles.quorumBadgeText,
-                  { color: isQuorumRequired ? theme.amberText : theme.accent },
-                ]}
-              >
-                {isQuorumRequired
-                  ? securityMode === 'vault'
-                    ? '2-of-2 Quorum · Vault Key'
-                    : '2-of-2 Hardware Quorum'
-                  : '1-of-1 Fast-Path Passkey'}
+          {/* Header */}
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sheetTitle}>{sheetTitle}</Text>
+              <Text style={styles.sheetSubtitle}>
+                {subtitle || 'Cryptographically signed via NIST P-256 hardware passkey'}
               </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={onClose}
+              disabled={phase === 'verifying_primary' || phase === 'verifying_secondary' || phase === 'broadcasting'}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={styles.closeBtn}
+            >
+              <MaterialIcons name="close" size={20} color={theme.textMuted} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Quorum Tier Badge */}
+          <View style={[styles.quorumBadge, { backgroundColor: quorumBadgeBg, borderColor: quorumBadgeBorder }]}>
+            <MaterialIcons
+              name={isQuorumRequired ? 'security' : 'verified-user'}
+              size={14}
+              color={quorumBadgeColor}
+            />
+            <Text style={[styles.quorumBadgeText, { color: quorumBadgeColor }]}>{quorumBadgeLabel}</Text>
+          </View>
+
+          {/* Transaction Summary Card */}
+          <View style={styles.summaryCard}>
+            {actionType === 'transfer' && amountSol !== undefined ? (
+              <View style={styles.amountBlock}>
+                <Text style={styles.amountSolText}>{amountSol.toFixed(4)} SOL</Text>
+                <Text style={styles.amountFiatText}>≈ ${(amountSol * solPriceUsd).toFixed(2)} USD</Text>
+                {recipientAddress ? (
+                  <View style={styles.recipientRow}>
+                    <Text style={styles.summaryLabel}>Recipient:</Text>
+                    <Text style={styles.recipientValue}>
+                      {recipientLabel ? `${recipientLabel} (${ellipsify(recipientAddress, 4)})` : ellipsify(recipientAddress, 6)}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : actionType === 'agent_session' ? (
+              <View style={styles.amountBlock}>
+                <Text style={styles.amountSolText}>{(agentAllowanceSol || 0.25).toFixed(2)} SOL Cap</Text>
+                <Text style={styles.amountFiatText}>Valid for {agentValidHours || 24} Hours</Text>
+                <View style={styles.recipientRow}>
+                  <Text style={styles.summaryLabel}>Target:</Text>
+                  <Text style={styles.recipientValue}>Autonomous Ephemeral Agent Key</Text>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Network & Fee Details */}
+            <View style={styles.metaRow}>
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>Network</Text>
+                <Text style={styles.metaValue}>Solana Devnet</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>Relayer Fee</Text>
+                <Text style={[styles.metaValue, { color: theme.emeraldText }]}>0.00 SOL (Sponsored)</Text>
+              </View>
             </View>
           </View>
 
-          <TouchableOpacity
-            onPress={onClose}
-            disabled={isAuthenticating}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={styles.closeBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Close authorization sheet"
-          >
-            <MaterialIcons name="close" size={20} color={theme.textMuted} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Hero Amount & Purpose */}
-        <View style={styles.heroSection}>
-          <Text style={styles.heroAmountText}>{heroAmount}</Text>
-          <Text style={styles.heroSubtitleText}>{heroSubtitle}</Text>
-        </View>
-
-        {/* Sleek Horizontal Context Strip */}
-        <View style={[styles.contextStrip, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
-          <View style={styles.contextItem}>
-            <Text style={styles.contextLabel}>Network</Text>
-            <Text style={[styles.contextValue, { color: theme.textPrimary }]}>Solana Devnet</Text>
-          </View>
-
-          <View style={[styles.contextDivider, { backgroundColor: theme.borderDefault }]} />
-
-          <View style={styles.contextItem}>
-            <Text style={styles.contextLabel}>Network Fee</Text>
-            <Text style={[styles.contextValue, { color: theme.emeraldText }]}>0.00 SOL (Relayer Sponsored)</Text>
-          </View>
-
-          {recipientAddress ? (
-            <>
-              <View style={[styles.contextDivider, { backgroundColor: theme.borderDefault }]} />
-              <View style={styles.contextItem}>
-                <Text style={styles.contextLabel}>Recipient</Text>
-                <Text style={[styles.contextValue, { color: theme.textPrimary }]} numberOfLines={1}>
-                  {recipientLabel || ellipsify(recipientAddress, 4)}
-                </Text>
-              </View>
-            </>
-          ) : null}
-        </View>
-
-        {/* Centerpiece: Interactive Biometric Sensor Touch Target */}
-        <View style={styles.sensorSection}>
-          <TouchableOpacity
-            style={styles.sensorTouchTarget}
-            onPress={handleStartAuth}
-            disabled={isAuthenticating}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={`Authenticate with ${biometricName}`}
-          >
-            {/* Soft Ambient Breathing Ring */}
+          {/* Biometric Interactive Scanner Area */}
+          <View style={styles.scannerWrapper}>
             <Animated.View
               style={[
-                styles.sensorAuraRing,
+                styles.scannerAura,
                 {
                   transform: [{ scale: pulseAnim }],
                   borderColor:
@@ -323,181 +244,182 @@ export function HaptixBiometricPromptSheet({
                       : phase === 'error'
                       ? theme.rose
                       : isDark
-                      ? '#818CF8'
-                      : '#6366F1',
-                },
-              ]}
-            />
-
-            {/* Tactile Hardware Inset Sensor Disc */}
-            <View
-              style={[
-                styles.sensorDisc,
-                {
-                  backgroundColor: isDark ? '#12121A' : '#F4F5FB',
-                  borderColor:
+                      ? '#9C93FF'
+                      : '#7C65C1',
+                  backgroundColor:
                     phase === 'confirmed'
-                      ? theme.emerald
+                      ? theme.emeraldBg
                       : phase === 'error'
-                      ? theme.rose
+                      ? theme.roseBg
                       : isDark
-                      ? 'rgba(255, 255, 255, 0.12)'
-                      : 'rgba(0, 0, 0, 0.08)',
+                      ? 'rgba(156, 147, 255, 0.08)'
+                      : 'rgba(124, 101, 193, 0.06)',
                 },
               ]}
             >
               {phase === 'confirmed' ? (
-                <MaterialIcons name="check" size={38} color={theme.emerald} />
+                <View style={styles.iconCircle}>
+                  <LucideCheck size={36} color={theme.emerald} strokeWidth={3} />
+                </View>
               ) : phase === 'broadcasting' ? (
-                <ActivityIndicator size="large" color={theme.accent} />
+                <ActivityIndicator size="large" color={isDark ? '#9C93FF' : '#7C65C1'} />
               ) : (
-                <PrecisionFingerprintSensor
-                  size={46}
-                  color={
-                    currentStep === 2
-                      ? theme.amberText
-                      : isDark
-                      ? '#A5B4FC'
-                      : '#4F46E5'
-                  }
-                />
+                <BiometricScanGraphic size={76} dark={isDark} />
               )}
-            </View>
-          </TouchableOpacity>
+            </Animated.View>
 
-          {/* Minimal 2-Passkey Stepper */}
-          {isQuorumRequired ? (
-            <View style={styles.stepProgressRow}>
-              <View style={styles.stepPill}>
+            {/* Multi-Step Passkey Tracker for 2-of-2 Quorum */}
+            {isQuorumRequired ? (
+              <View style={styles.quorumStepRow}>
+                {/* Step 1: Primary Passkey */}
                 <View
                   style={[
-                    styles.stepDot,
-                    {
-                      backgroundColor:
-                        phase === 'confirmed' || currentStep === 2 ? theme.emerald : theme.accent,
-                    },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.stepPillText,
-                    {
-                      color:
-                        phase === 'confirmed' || currentStep === 2
-                          ? theme.emeraldText
-                          : theme.textPrimary,
-                    },
+                    styles.quorumStepItem,
+                    currentStep === 1 && phase !== 'idle' && phase !== 'confirmed' && styles.quorumStepActive,
+                    (currentStep === 2 || phase === 'confirmed') && styles.quorumStepComplete,
                   ]}
                 >
-                  1. {biometricName}
-                </Text>
-              </View>
+                  <View style={styles.quorumStepIcon}>
+                    {(currentStep === 2 || phase === 'confirmed') ? (
+                      <MaterialIcons name="check" size={13} color={theme.emeraldText} />
+                    ) : (
+                      <LucideFingerprint
+                        size={14}
+                        color={currentStep === 1 && phase !== 'idle' ? (isDark ? '#9C93FF' : '#7C65C1') : theme.textMuted}
+                      />
+                    )}
+                  </View>
+                  <Text
+                    style={[
+                      styles.quorumStepText,
+                      currentStep === 1 && phase !== 'idle' && { color: isDark ? '#9C93FF' : '#7C65C1', fontWeight: '700' },
+                      (currentStep === 2 || phase === 'confirmed') && { color: theme.emeraldText, fontWeight: '700' },
+                    ]}
+                  >
+                    1. Primary Key
+                  </Text>
+                </View>
 
-              <View
+                {/* Connector Arrow */}
+                <MaterialIcons name="chevron-right" size={16} color={theme.borderDefault} />
+
+                {/* Step 2: Secondary Passkey */}
+                <View
+                  style={[
+                    styles.quorumStepItem,
+                    currentStep === 2 && phase === 'verifying_secondary' && styles.quorumStepActive,
+                    phase === 'confirmed' && styles.quorumStepComplete,
+                  ]}
+                >
+                  <View style={styles.quorumStepIcon}>
+                    {phase === 'confirmed' ? (
+                      <MaterialIcons name="check" size={13} color={theme.emeraldText} />
+                    ) : (
+                      <LucideKeyRound
+                        size={14}
+                        color={currentStep === 2 ? (isDark ? '#9C93FF' : '#7C65C1') : theme.textMuted}
+                      />
+                    )}
+                  </View>
+                  <Text
+                    style={[
+                      styles.quorumStepText,
+                      currentStep === 2 && phase === 'verifying_secondary' && { color: isDark ? '#9C93FF' : '#7C65C1', fontWeight: '700' },
+                      phase === 'confirmed' && { color: theme.emeraldText, fontWeight: '700' },
+                    ]}
+                  >
+                    {securityMode === 'vault' ? '2. Vault Key' : '2. Backup Key'}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Dynamic Status Instruction */}
+            <Text style={styles.statusInstruction}>
+              {phase === 'idle'
+                ? 'Tap below to authorize with device biometrics'
+                : phase === 'verifying_primary'
+                ? 'Touch fingerprint sensor or glance at camera…'
+                : phase === 'verifying_secondary'
+                ? securityMode === 'vault'
+                  ? 'Touch Vault Key or secondary device to complete quorum…'
+                  : 'Confirm with secondary backup passkey…'
+                : phase === 'broadcasting'
+                ? 'Signatures verified. Submitting to Solana Devnet…'
+                : phase === 'confirmed'
+                ? 'Transaction confirmed on-chain!'
+                : 'Authentication cancelled or failed'}
+            </Text>
+
+            {errorMessage ? (
+              <View style={styles.errorBox}>
+                <MaterialIcons name="error-outline" size={15} color={theme.roseText} />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actionGroup}>
+            {phase !== 'confirmed' ? (
+              <TouchableOpacity
                 style={[
-                  styles.stepLine,
+                  styles.primaryAuthBtn,
                   {
                     backgroundColor:
-                      currentStep === 2 || phase === 'confirmed'
-                        ? theme.emerald
-                        : theme.borderDefault,
+                      phase === 'verifying_primary' || phase === 'verifying_secondary' || phase === 'broadcasting'
+                        ? isDark
+                          ? 'rgba(156, 147, 255, 0.25)'
+                          : 'rgba(124, 101, 193, 0.25)'
+                        : isDark
+                        ? '#FFFFFF'
+                        : '#000000',
                   },
                 ]}
-              />
-
-              <View style={styles.stepPill}>
-                <View
-                  style={[
-                    styles.stepDot,
-                    {
-                      backgroundColor:
-                        phase === 'confirmed'
-                          ? theme.emerald
-                          : currentStep === 2
-                          ? theme.amberText
-                          : theme.borderDefault,
-                    },
-                  ]}
-                />
+                onPress={handleStartAuth}
+                disabled={phase === 'verifying_primary' || phase === 'verifying_secondary' || phase === 'broadcasting'}
+                activeOpacity={0.8}
+              >
+                {phase === 'verifying_primary' || phase === 'verifying_secondary' || phase === 'broadcasting' ? (
+                  <ActivityIndicator size="small" color={isDark ? '#9C93FF' : '#7C65C1'} />
+                ) : (
+                  <LucideFingerprint size={20} color={isDark ? '#000000' : '#FFFFFF'} strokeWidth={2.2} />
+                )}
                 <Text
                   style={[
-                    styles.stepPillText,
+                    styles.primaryAuthBtnText,
                     {
                       color:
-                        phase === 'confirmed'
-                          ? theme.emeraldText
-                          : currentStep === 2
-                          ? theme.amberText
-                          : theme.textMuted,
+                        phase === 'verifying_primary' || phase === 'verifying_secondary' || phase === 'broadcasting'
+                          ? isDark
+                            ? '#9C93FF'
+                            : '#7C65C1'
+                          : isDark
+                          ? '#000000'
+                          : '#FFFFFF',
                     },
                   ]}
                 >
-                  2. {securityMode === 'vault' ? 'Vault Key' : 'Backup Key'}
+                  {phase === 'error'
+                    ? 'Retry Biometric Authentication'
+                    : isQuorumRequired
+                    ? 'Authenticate 2-of-2 Passkeys'
+                    : 'Authenticate with Passkey'}
                 </Text>
-              </View>
-            </View>
-          ) : null}
+              </TouchableOpacity>
+            ) : null}
 
-          {/* Context Helper Status */}
-          <Text style={[styles.sensorHintText, { color: theme.textSecondary }]}>
-            {phase === 'idle'
-              ? `Touch sensor or tap below to sign with ${biometricName}`
-              : phase === 'verifying_primary'
-              ? `Verifying ${biometricName}…`
-              : phase === 'verifying_secondary'
-              ? securityMode === 'vault'
-                ? 'Touch Vault Key or YubiKey to complete quorum…'
-                : 'Confirm with secondary backup key…'
-              : phase === 'broadcasting'
-              ? 'Broadcasting cryptographic proof to Solana…'
-              : phase === 'confirmed'
-              ? 'Cryptographic passkey signature verified on-chain!'
-              : 'Authentication cancelled or failed'}
-          </Text>
-
-          {errorMessage ? (
-            <View style={[styles.errorBox, { backgroundColor: theme.roseBg, borderColor: theme.roseBorder }]}>
-              <MaterialIcons name="error-outline" size={14} color={theme.roseText} />
-              <Text style={[styles.errorBoxText, { color: theme.roseText }]}>{errorMessage}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Action Button Section */}
-        <View style={styles.actionSection}>
-          {phase !== 'confirmed' ? (
-            <PrismDepthButton
-              title={
-                isAuthenticating
-                  ? 'Verifying Signature…'
-                  : phase === 'error'
-                  ? `Retry ${biometricName}`
-                  : isQuorumRequired
-                  ? currentStep === 2
-                    ? 'Approve with Backup Key'
-                    : `Authorize with ${biometricName}`
-                  : `Authorize with ${biometricName}`
-              }
-              size="large"
-              loading={isAuthenticating}
-              disabled={isAuthenticating}
-              onPress={handleStartAuth}
-            />
-          ) : null}
-
-          <TouchableOpacity
-            style={styles.cancelLink}
-            onPress={onClose}
-            disabled={isAuthenticating}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.cancelLinkText, { color: theme.textMuted }]}>
-              {phase === 'confirmed' ? 'Done' : 'Cancel'}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={onClose}
+              disabled={phase === 'verifying_primary' || phase === 'verifying_secondary' || phase === 'broadcasting'}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.cancelBtnText}>{phase === 'confirmed' ? 'Done' : 'Cancel'}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-    </View>
   )
 
   if (asModal) {
@@ -531,197 +453,221 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderTopRightRadius: radius.xl,
       borderWidth: 1,
       borderColor: theme.borderDefault,
-      paddingHorizontal: 22,
+      paddingHorizontal: 20,
       paddingTop: 12,
       paddingBottom: Platform.OS === 'ios' ? 36 : 24,
     },
     dragHandle: {
-      width: 36,
+      width: 40,
       height: 4,
       borderRadius: radius.pill,
       backgroundColor: theme.borderDefault,
       alignSelf: 'center',
-      marginBottom: 14,
+      marginBottom: 16,
     },
     headerRow: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
-      marginBottom: 12,
+      marginBottom: 10,
     },
-    badgeWrapper: {
-      flex: 1,
+    sheetTitle: {
+      fontSize: typeScale.title,
+      fontWeight: '700',
+      color: theme.textPrimary,
+      letterSpacing: -0.2,
+    },
+    sheetSubtitle: {
+      fontSize: typeScale.footnote,
+      color: theme.textSecondary,
+      marginTop: 2,
+    },
+    closeBtn: {
+      padding: 4,
     },
     quorumBadge: {
       flexDirection: 'row',
       alignItems: 'center',
       alignSelf: 'flex-start',
-      gap: 5,
-      paddingHorizontal: 9,
-      paddingVertical: 4,
+      gap: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
       borderRadius: radius.pill,
       borderWidth: 1,
+      marginBottom: 14,
     },
     quorumBadgeText: {
       fontSize: typeScale.caption,
       fontWeight: '700',
     },
-    closeBtn: {
-      padding: 4,
+    summaryCard: {
+      backgroundColor: theme.bgElevated,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: theme.borderDefault,
+      padding: 14,
+      marginBottom: 16,
     },
-
-    // Hero Section
-    heroSection: {
+    amountBlock: {
       alignItems: 'center',
-      paddingVertical: 6,
-      marginBottom: 14,
+      paddingVertical: 4,
     },
-    heroAmountText: {
-      fontSize: 32,
+    amountSolText: {
+      fontSize: 26,
       fontWeight: '800',
       color: theme.textPrimary,
-      letterSpacing: -0.6,
+      letterSpacing: -0.5,
     },
-    heroSubtitleText: {
-      fontSize: typeScale.body,
+    amountFiatText: {
+      fontSize: typeScale.footnote,
       color: theme.textSecondary,
-      marginTop: 3,
-      textAlign: 'center',
+      marginTop: 2,
     },
-
-    // Context Strip (clean, single layer)
-    contextStrip: {
+    recipientRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-around',
-      borderRadius: radius.md,
-      borderWidth: 1,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
-      marginBottom: 20,
+      gap: 6,
+      marginTop: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radius.sm,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
     },
-    contextItem: {
-      alignItems: 'center',
-      flex: 1,
-    },
-    contextLabel: {
-      fontSize: typeScale.micro,
+    summaryLabel: {
+      fontSize: typeScale.caption,
       color: theme.textMuted,
       fontWeight: '600',
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-      marginBottom: 2,
     },
-    contextValue: {
+    recipientValue: {
       fontSize: typeScale.caption,
-      fontWeight: '700',
+      color: theme.textPrimary,
+      fontWeight: '600',
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     },
-    contextDivider: {
-      width: 1,
-      height: 22,
+    metaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      borderTopWidth: 1,
+      borderTopColor: theme.borderSubtle,
+      paddingTop: 10,
+      marginTop: 10,
     },
-
-    // Sensor Section
-    sensorSection: {
+    metaItem: {
+      alignItems: 'flex-start',
+    },
+    metaLabel: {
+      fontSize: typeScale.caption,
+      color: theme.textMuted,
+    },
+    metaValue: {
+      fontSize: typeScale.footnote,
+      color: theme.textSecondary,
+      fontWeight: '600',
+      marginTop: 2,
+    },
+    scannerWrapper: {
       alignItems: 'center',
-      paddingVertical: 8,
-      marginBottom: 16,
+      paddingVertical: 12,
     },
-    sensorTouchTarget: {
+    scannerAura: {
       width: 104,
       height: 104,
+      borderRadius: 52,
+      borderWidth: 2,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 16,
+      marginBottom: 14,
     },
-    sensorAuraRing: {
-      position: 'absolute',
-      width: 100,
-      height: 100,
-      borderRadius: 50,
-      borderWidth: 1.5,
-      opacity: 0.7,
-    },
-    sensorDisc: {
-      width: 82,
-      height: 82,
-      borderRadius: 41,
-      borderWidth: 1.5,
+    iconCircle: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
       alignItems: 'center',
       justifyContent: 'center',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#6366F1',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 8,
-        },
-        android: {
-          elevation: 3,
-        },
-      }),
     },
-
-    // Step Progress Row
-    stepProgressRow: {
+    quorumStepRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
+      gap: 10,
       marginBottom: 12,
-      gap: 8,
     },
-    stepPill: {
+    quorumStepItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
+      gap: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: theme.borderSubtle,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)',
     },
-    stepDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
+    quorumStepActive: {
+      borderColor: isDark ? '#9C93FF' : '#7C65C1',
+      backgroundColor: isDark ? 'rgba(156, 147, 255, 0.12)' : 'rgba(124, 101, 193, 0.10)',
     },
-    stepPillText: {
+    quorumStepComplete: {
+      borderColor: theme.emeraldBorder,
+      backgroundColor: theme.emeraldBg,
+    },
+    quorumStepIcon: {
+      width: 18,
+      height: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    quorumStepText: {
       fontSize: typeScale.caption,
-      fontWeight: '700',
+      color: theme.textMuted,
+      fontWeight: '600',
     },
-    stepLine: {
-      width: 20,
-      height: 1.5,
-    },
-
-    // Hint & Error
-    sensorHintText: {
+    statusInstruction: {
       fontSize: typeScale.footnote,
+      color: theme.textSecondary,
       textAlign: 'center',
-      lineHeight: 18,
-      paddingHorizontal: 12,
+      minHeight: 20,
     },
     errorBox: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      marginTop: 10,
+      marginTop: 8,
       paddingHorizontal: 12,
       paddingVertical: 6,
-      borderRadius: radius.sm,
+      backgroundColor: theme.roseBg,
+      borderColor: theme.roseBorder,
       borderWidth: 1,
+      borderRadius: radius.sm,
     },
-    errorBoxText: {
-      fontSize: typeScale.micro,
-      fontWeight: '600',
+    errorText: {
+      fontSize: typeScale.caption,
+      color: theme.roseText,
+      fontWeight: '500',
     },
-
-    // Action Section
-    actionSection: {
-      gap: 8,
-      marginTop: 4,
+    actionGroup: {
+      marginTop: 14,
+      gap: 10,
     },
-    cancelLink: {
+    primaryAuthBtn: {
+      height: 50,
+      borderRadius: radius.md,
+      flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 10,
+      justifyContent: 'center',
+      gap: 8,
     },
-    cancelLinkText: {
+    primaryAuthBtnText: {
       fontSize: typeScale.body,
+      fontWeight: '700',
+    },
+    cancelBtn: {
+      height: 44,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cancelBtnText: {
+      fontSize: typeScale.footnote,
+      color: theme.textMuted,
       fontWeight: '600',
     },
   })
