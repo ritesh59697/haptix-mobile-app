@@ -558,6 +558,7 @@ const createStyles = (theme: ThemeTokens) =>
     agentChipSelectorRow: {
       flexDirection: 'row',
       gap: space.sm,
+      width: '100%',
     },
     agentRecipientInput: {
       borderWidth: 1,
@@ -572,14 +573,19 @@ const createStyles = (theme: ThemeTokens) =>
       marginTop: 6,
     },
     agentBudgetChip: {
-      ...CHIP_SHAPE,
       flex: 1,
+      minHeight: 42,
+      borderRadius: radius.md,
       alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 4,
+      paddingVertical: 8,
       borderWidth: 1,
     },
     agentBudgetChipText: {
-      fontSize: typeScale.body,
+      fontSize: 13,
       fontWeight: '600',
+      textAlign: 'center',
     },
     agentActionCard: {
       borderWidth: 1,
