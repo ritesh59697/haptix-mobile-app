@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   StatusBar,
 } from 'react-native'
-import { HaptixBrandMark } from '@/components/haptix/haptix-icons'
+import { HaptixBrandMark, HaptixLogoText } from '@/components/haptix/haptix-icons'
 
 interface HaptixAppLoaderProps {
   message?: string
@@ -85,11 +85,13 @@ export function HaptixAppLoader({
             },
           ]}
         >
-          <HaptixBrandMark size={44} color="#FFFFFF" />
+          <HaptixBrandMark size={38} />
         </Animated.View>
 
-        {/* App Title */}
-        <Text style={styles.title}>HAPTIX</Text>
+        {/* App Title - New Logotype */}
+        <View style={styles.titleWrap}>
+          <HaptixLogoText height={24} />
+        </View>
 
         {/* Subtitle Badge */}
         <View style={styles.badge}>
@@ -146,6 +148,11 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 8,
     marginBottom: 20,
+  },
+  titleWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   title: {
     fontSize: 22,

@@ -37,7 +37,7 @@ import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet } fr
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
-import { HaptixBrandMark } from '@/components/haptix/haptix-icons'
+import { HaptixBrandMark, HaptixLogoText } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { useAppTheme } from '@/components/theme/theme-context'
 import {
@@ -633,11 +633,11 @@ export default function SignIn() {
     >
       <StatusBar style="light" />
 
-      {/* 1. TOP BAR: Brand Logo + HAPTIX in Left Top Corner */}
+      {/* 1. TOP BAR: Brand Logo + Text in Left Top Corner */}
       <View style={styles.topBrandRow}>
         <View style={styles.heroBrandPill}>
-          <HaptixBrandMark size={24} color="#FFFFFF" />
-          <Text style={styles.heroBrandName}>HAPTIX</Text>
+          <HaptixBrandMark size={28} />
+          <HaptixLogoText height={20} />
         </View>
       </View>
 

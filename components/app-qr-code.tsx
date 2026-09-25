@@ -201,7 +201,7 @@ export function AppQrCode({
 
             {/* Central Brand Badge */}
             <View style={styles.centerBadge}>
-              <HaptixBrandMark size={16} color="#FFFFFF" />
+              <HaptixBrandMark size={14} />
             </View>
 
             {/* Floating Copied HUD Overlay */}
