@@ -39,6 +39,7 @@ import { ellipsify } from '@/utils/ellipsify'
 import { useAppTheme } from '@/components/theme/theme-context'
 import {
   HeroOrbLight,
+  HeroSplashArt,
   BiometricScanGraphic,
 } from '@/components/haptix/haptix-onboarding-graphics'
 import { HaptixAppLoader } from '@/components/haptix/haptix-app-loader'
@@ -635,31 +636,42 @@ export default function SignIn() {
       </View>
 
       <View style={styles.heroTopRow}>
+        <View style={styles.heroBrandPill}>
+          <HaptixBrandMark size={28} color={p.heroInk} />
+          <Text style={styles.heroBrandName}>HAPTIX</Text>
+        </View>
+
         <TouchableOpacity
-          style={styles.heroSettings}
+          style={styles.heroThemeToggle}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
             setShowThemeSheet(true)
           }}
+          activeOpacity={0.75}
         >
-          <MaterialIcons name="settings" size={19} color={p.heroInk} />
+          <MaterialIcons
+            name={isDark ? 'light-mode' : 'dark-mode'}
+            size={18}
+            color={p.heroInk}
+          />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.heroLogoBlock}>
-        <HaptixBrandMark size={44} color={p.heroInk} />
-        <Text style={styles.heroWordmark}>HAPTIX</Text>
-      </View>
-
       <View style={styles.heroCenterArt}>
-        <HeroOrbLight size={316} />
+        {isDark ? <HeroSplashArt size={220} /> : <HeroOrbLight size={220} />}
       </View>
 
       <View style={styles.heroBottomBlock}>
-        <Text style={styles.heroTitleText}>
-          A smarter way{'\n'}to own <Text style={styles.heroTitleAccent}>crypto</Text>
-        </Text>
+        <View style={styles.heroTextWrap}>
+          <Text style={styles.heroTitleText}>
+            A smarter way{'\n'}to own <Text style={styles.heroTitleAccent}>crypto</Text>
+          </Text>
+          <Text style={styles.heroSubtitleText}>
+            Hardware-backed passkeys on Solana.{'\n'}No seed phrases to write down or lose.
+          </Text>
+        </View>
 
+        {/* PRIMARY CTA: Create New Wallet */}
         <TouchableOpacity
           style={[styles.heroButton, styles.heroButtonPrimary]}
           onPress={() => {
@@ -669,32 +681,41 @@ export default function SignIn() {
           activeOpacity={0.9}
         >
           <Text style={[styles.heroButtonText, { color: p.onPrimary }]}>Create New Wallet</Text>
-          <MaterialIcons name="arrow-forward" size={20} color={p.onPrimary} style={styles.heroButtonArrow} />
+          <MaterialIcons name="arrow-forward" size={19} color={p.onPrimary} style={styles.heroButtonArrow} />
         </TouchableOpacity>
 
+        {/* SECONDARY CTA: Sign In to Existing Wallet */}
         <TouchableOpacity
           style={[styles.heroButton, styles.heroButtonSecondary]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
             openSignInSheet()
           }}
-          activeOpacity={0.9}
+          activeOpacity={0.85}
         >
-          <Text style={[styles.heroButtonText, { color: p.heroInk }]}>Sign In to Existing Wallet</Text>
-          <MaterialIcons name="arrow-forward" size={20} color={p.heroInk} style={styles.heroButtonArrow} />
+          <Text style={[styles.heroButtonTextSecondary, { color: p.heroInk }]}>I already have a wallet</Text>
+          <MaterialIcons name="arrow-forward" size={17} color={p.heroInk} style={styles.heroButtonArrow} />
         </TouchableOpacity>
 
+        {/* TERTIARY / RESCUE: Lost device? Recover with Guardian */}
         <TouchableOpacity
-          style={[styles.heroButton, styles.heroButtonTertiary]}
+          style={styles.heroRecoveryLink}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
             setShowRecoveryModal(true)
           }}
-          activeOpacity={0.85}
+          activeOpacity={0.7}
         >
-          <MaterialIcons name="security" size={18} color={p.heroAccent} style={{ marginRight: 6 }} />
-          <Text style={[styles.heroButtonText, { color: p.heroInk }]}>Recover Lost Wallet</Text>
+          <MaterialIcons name="security" size={14} color={p.heroAccent} />
+          <Text style={[styles.heroRecoveryText, { color: p.inkSecondary }]}>
+            Lost device? <Text style={{ color: p.heroAccent, fontWeight: '700' }}>Recover with Guardian</Text>
+          </Text>
         </TouchableOpacity>
+
+        {/* Legal caption note */}
+        <Text style={[styles.heroLegalText, { color: p.inkMuted }]}>
+          By continuing, you agree to our Terms of Service &amp; Privacy Policy
+        </Text>
       </View>
 
       {/* CREATE WALLET MODAL */}
@@ -1148,47 +1169,113 @@ const createStyles = (p: OnboardingPalette) =>
       borderRadius: 9,
       backgroundColor: p.decorDotSoft,
     },
-    heroTopRow: { height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
-    heroSettings: {
-      width: 44,
-      height: 44,
-      borderRadius: 15,
+    heroTopRow: {
+      height: 48,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    heroBrandPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 9,
+    },
+    heroBrandName: {
+      color: p.heroInk,
+      fontSize: 14.5,
+      fontWeight: '800',
+      letterSpacing: 3,
+    },
+    heroThemeToggle: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       backgroundColor: p.controlBg,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heroLogoBlock: { alignItems: 'center', marginTop: 16 },
-    heroWordmark: { color: p.heroInk, fontSize: 15, fontWeight: '700', letterSpacing: 5, marginTop: 12 },
-    heroCenterArt: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    heroBottomBlock: { width: '100%' },
+    heroCenterArt: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 14,
+    },
+    heroBottomBlock: {
+      width: '100%',
+    },
+    heroTextWrap: {
+      marginBottom: 22,
+    },
     heroTitleText: {
       color: p.heroInk,
-      fontSize: 34,
-      fontWeight: '700',
-      lineHeight: 41,
-      letterSpacing: -0.9,
-      marginBottom: 26,
+      fontSize: 32,
+      fontWeight: '800',
+      lineHeight: 38,
+      letterSpacing: -0.8,
     },
-    heroTitleAccent: { color: p.heroAccent },
+    heroTitleAccent: {
+      color: p.heroAccent,
+    },
+    heroSubtitleText: {
+      color: p.inkSecondary,
+      fontSize: 13.5,
+      lineHeight: 19,
+      marginTop: 8,
+      fontWeight: '400',
+    },
     heroButton: {
       width: '100%',
-      height: 56,
-      borderRadius: 28,
+      borderRadius: 26,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 12,
     },
-    heroButtonPrimary: { backgroundColor: p.primaryBg },
-    heroButtonSecondary: { backgroundColor: p.secondaryBg },
-    heroButtonTertiary: {
-      backgroundColor: 'transparent',
+    heroButtonPrimary: {
+      height: 52,
+      backgroundColor: p.primaryBg,
+      marginBottom: 10,
+      shadowColor: p.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 10,
+      elevation: 2,
+    },
+    heroButtonSecondary: {
+      height: 48,
+      backgroundColor: p.secondaryBg,
       borderWidth: 1,
       borderColor: p.border,
-      marginBottom: 4,
+      marginBottom: 14,
     },
-    heroButtonText: { fontSize: 16.5, fontWeight: '600', letterSpacing: -0.2 },
-    heroButtonArrow: { position: 'absolute', right: 22 },
+    heroButtonText: {
+      fontSize: 15.5,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    heroButtonTextSecondary: {
+      fontSize: 14.5,
+      fontWeight: '600',
+      letterSpacing: -0.1,
+    },
+    heroButtonArrow: {
+      position: 'absolute',
+      right: 20,
+    },
+    heroRecoveryLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 6,
+      marginBottom: 14,
+    },
+    heroRecoveryText: {
+      fontSize: 12.5,
+    },
+    heroLegalText: {
+      fontSize: 11,
+      textAlign: 'center',
+      lineHeight: 15,
+    },
     sheetBackdrop: { flex: 1, backgroundColor: p.sheetBackdrop, justifyContent: 'flex-end' },
     sheetCard: {
       backgroundColor: p.sheetBg,
