@@ -13,10 +13,13 @@ import {
   ScrollView,
   Modal,
   Pressable,
+  ImageBackground,
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Clipboard from '@/utils/clipboard'
+
+const ONBOARDING_BG = require('@/assets/images/onboarding-bg.jpg')
 import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { AppConfig } from '@/constants/app-config'
 import { saveWallet, getSavedWallet, createSmartWalletRecord } from '@/utils/haptix-wallet-storage'
@@ -619,25 +622,20 @@ export default function SignIn() {
   }
 
   return (
-    <View
+    <ImageBackground
+      source={ONBOARDING_BG}
       style={[
         styles.heroContainer,
-        { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom + 16, 32) },
+        { paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom + 12, 28) },
       ]}
+      resizeMode="cover"
     >
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style="light" />
 
-      {/* Decorative background */}
-      <View pointerEvents="none" style={styles.heroDecor}>
-        <View style={styles.heroDecorGlow} />
-        <View style={styles.heroDecorArc} />
-        <View style={styles.heroDecorDotLeft} />
-        <View style={styles.heroDecorDotRight} />
-      </View>
-
+      {/* Top Header: Brand & Theme Toggle */}
       <View style={styles.heroTopRow}>
         <View style={styles.heroBrandPill}>
-          <HaptixBrandMark size={28} color={p.heroInk} />
+          <HaptixBrandMark size={28} color="#FFFFFF" />
           <Text style={styles.heroBrandName}>HAPTIX</Text>
         </View>
 
@@ -652,15 +650,15 @@ export default function SignIn() {
           <MaterialIcons
             name={isDark ? 'light-mode' : 'dark-mode'}
             size={18}
-            color={p.heroInk}
+            color="#FFFFFF"
           />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.heroCenterArt}>
-        {isDark ? <HeroSplashArt size={220} /> : <HeroOrbLight size={220} />}
-      </View>
+      {/* Center Spacer: Showcases the 4K fluid gradient waves with room to breathe */}
+      <View style={styles.heroArtSpacer} />
 
+      {/* Bottom Content: Clean Typography + High-Contrast 3-Tier Buttons */}
       <View style={styles.heroBottomBlock}>
         <View style={styles.heroTextWrap}>
           <Text style={styles.heroTitleText}>
@@ -680,8 +678,8 @@ export default function SignIn() {
           }}
           activeOpacity={0.9}
         >
-          <Text style={[styles.heroButtonText, { color: p.onPrimary }]}>Create New Wallet</Text>
-          <MaterialIcons name="arrow-forward" size={19} color={p.onPrimary} style={styles.heroButtonArrow} />
+          <Text style={[styles.heroButtonText, { color: '#09090B' }]}>Create New Wallet</Text>
+          <MaterialIcons name="arrow-forward" size={19} color="#09090B" style={styles.heroButtonArrow} />
         </TouchableOpacity>
 
         {/* SECONDARY CTA: Sign In to Existing Wallet */}
@@ -693,8 +691,8 @@ export default function SignIn() {
           }}
           activeOpacity={0.85}
         >
-          <Text style={[styles.heroButtonTextSecondary, { color: p.heroInk }]}>I already have a wallet</Text>
-          <MaterialIcons name="arrow-forward" size={17} color={p.heroInk} style={styles.heroButtonArrow} />
+          <Text style={[styles.heroButtonTextSecondary, { color: '#FFFFFF' }]}>I already have a wallet</Text>
+          <MaterialIcons name="arrow-forward" size={17} color="#FFFFFF" style={styles.heroButtonArrow} />
         </TouchableOpacity>
 
         {/* TERTIARY / RESCUE: Lost device? Recover with Guardian */}
@@ -706,14 +704,14 @@ export default function SignIn() {
           }}
           activeOpacity={0.7}
         >
-          <MaterialIcons name="security" size={14} color={p.heroAccent} />
-          <Text style={[styles.heroRecoveryText, { color: p.inkSecondary }]}>
-            Lost device? <Text style={{ color: p.heroAccent, fontWeight: '700' }}>Recover with Guardian</Text>
+          <MaterialIcons name="security" size={14} color="#A5B4FC" />
+          <Text style={[styles.heroRecoveryText, { color: 'rgba(255, 255, 255, 0.75)' }]}>
+            Lost device? <Text style={{ color: '#C7D2FE', fontWeight: '700' }}>Recover with Guardian</Text>
           </Text>
         </TouchableOpacity>
 
         {/* Legal caption note */}
-        <Text style={[styles.heroLegalText, { color: p.inkMuted }]}>
+        <Text style={[styles.heroLegalText, { color: 'rgba(255, 255, 255, 0.45)' }]}>
           By continuing, you agree to our Terms of Service &amp; Privacy Policy
         </Text>
       </View>
@@ -1124,50 +1122,17 @@ export default function SignIn() {
           router.replace('/(tabs)')
         }}
       />
-    </View>
+    </ImageBackground>
   )
 }
 
 const createStyles = (p: OnboardingPalette) =>
   StyleSheet.create({
-    heroContainer: { flex: 1, backgroundColor: p.heroBg, paddingHorizontal: 24 },
-    heroDecor: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
-    heroDecorGlow: {
-      position: 'absolute',
-      top: -70,
-      right: -130,
-      width: 380,
-      height: 380,
-      borderRadius: 190,
-      backgroundColor: p.decorGlow,
-    },
-    heroDecorArc: {
-      position: 'absolute',
-      top: 90,
-      left: -170,
-      width: 420,
-      height: 420,
-      borderRadius: 210,
-      borderWidth: 1.5,
-      borderColor: p.decorArc,
-    },
-    heroDecorDotLeft: {
-      position: 'absolute',
-      top: '25%',
-      left: 26,
-      width: 26,
-      height: 26,
-      borderRadius: 13,
-      backgroundColor: p.decorDotStrong,
-    },
-    heroDecorDotRight: {
-      position: 'absolute',
-      top: '31%',
-      right: 22,
-      width: 18,
-      height: 18,
-      borderRadius: 9,
-      backgroundColor: p.decorDotSoft,
+    heroContainer: {
+      flex: 1,
+      backgroundColor: '#07060D',
+      paddingHorizontal: 24,
+      justifyContent: 'space-between',
     },
     heroTopRow: {
       height: 48,
@@ -1181,7 +1146,7 @@ const createStyles = (p: OnboardingPalette) =>
       gap: 9,
     },
     heroBrandName: {
-      color: p.heroInk,
+      color: '#FFFFFF',
       fontSize: 14.5,
       fontWeight: '800',
       letterSpacing: 3,
@@ -1190,35 +1155,36 @@ const createStyles = (p: OnboardingPalette) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: p.controlBg,
+      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.18)',
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heroCenterArt: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 14,
+    heroArtSpacer: {
+      flex: 1,
+      minHeight: 120,
     },
     heroBottomBlock: {
       width: '100%',
     },
     heroTextWrap: {
-      marginBottom: 22,
+      marginBottom: 24,
     },
     heroTitleText: {
-      color: p.heroInk,
-      fontSize: 32,
+      color: '#FFFFFF',
+      fontSize: 34,
       fontWeight: '800',
-      lineHeight: 38,
+      lineHeight: 40,
       letterSpacing: -0.8,
     },
     heroTitleAccent: {
-      color: p.heroAccent,
+      color: '#A5B4FC',
     },
     heroSubtitleText: {
-      color: p.inkSecondary,
-      fontSize: 13.5,
-      lineHeight: 19,
+      color: 'rgba(255, 255, 255, 0.72)',
+      fontSize: 14,
+      lineHeight: 20,
       marginTop: 8,
       fontWeight: '400',
     },
@@ -1231,19 +1197,19 @@ const createStyles = (p: OnboardingPalette) =>
     },
     heroButtonPrimary: {
       height: 52,
-      backgroundColor: p.primaryBg,
+      backgroundColor: '#FFFFFF',
       marginBottom: 10,
-      shadowColor: p.shadow,
+      shadowColor: '#000000',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 10,
-      elevation: 2,
+      shadowOpacity: 0.25,
+      shadowRadius: 12,
+      elevation: 4,
     },
     heroButtonSecondary: {
       height: 48,
-      backgroundColor: p.secondaryBg,
+      backgroundColor: 'rgba(255, 255, 255, 0.10)',
       borderWidth: 1,
-      borderColor: p.border,
+      borderColor: 'rgba(255, 255, 255, 0.22)',
       marginBottom: 14,
     },
     heroButtonText: {
