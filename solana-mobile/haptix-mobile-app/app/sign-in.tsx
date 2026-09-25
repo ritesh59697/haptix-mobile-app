@@ -42,6 +42,7 @@ import {
   BiometricScanGraphic,
 } from '@/components/haptix/haptix-onboarding-graphics'
 import { HaptixAppLoader } from '@/components/haptix/haptix-app-loader'
+import { HaptixRecoveryFlowSheet } from '@/components/haptix/haptix-recovery-flow-sheet'
 import { StatusBar } from 'expo-status-bar'
 
 interface OnboardingPalette {
@@ -183,6 +184,7 @@ export default function SignIn() {
   const [showThemeSheet, setShowThemeSheet] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSignInModal, setShowSignInModal] = useState(false)
+  const [showRecoveryModal, setShowRecoveryModal] = useState(false)
 
   const [isCreating, setIsCreating] = useState(false)
   const [creationStep, setCreationStep] = useState<0 | 1 | 2 | 3>(0)
@@ -475,8 +477,18 @@ export default function SignIn() {
       if (!primaryAttempt) {
         dialog.alert(
           'Wrong Passkey',
-          `That passkey does not belong to ${ellipsify(targetAddress, 6)}.\n\nPick the passkey you created for this wallet and try again.`,
-          undefined,
+          `That passkey does not belong to ${ellipsify(targetAddress, 6)}.\n\nIf the device with your original passkey was lost or stolen, you can recover this wallet through its Guardian.`,
+          [
+            { text: 'Try Again', style: 'cancel' },
+            {
+              text: 'Recover Lost Wallet',
+              style: 'default',
+              onPress: () => {
+                setShowSignInModal(false)
+                setShowRecoveryModal(true)
+              },
+            },
+          ],
           { status: 'error' },
         )
         return
@@ -489,7 +501,17 @@ export default function SignIn() {
             'the primary key, and the backup only ever adds to it.\n\n' +
             `Pick the Primary passkey for ${ellipsify(targetAddress, 6)} instead.\n\n` +
             'If the primary passkey is gone for good, this wallet has to be recovered through its guardian.',
-          undefined,
+          [
+            { text: 'Try Again', style: 'cancel' },
+            {
+              text: 'Recover Lost Wallet',
+              style: 'default',
+              onPress: () => {
+                setShowSignInModal(false)
+                setShowRecoveryModal(true)
+              },
+            },
+          ],
           { status: 'warning' },
         )
         return
@@ -660,6 +682,18 @@ export default function SignIn() {
         >
           <Text style={[styles.heroButtonText, { color: p.heroInk }]}>Sign In to Existing Wallet</Text>
           <MaterialIcons name="arrow-forward" size={20} color={p.heroInk} style={styles.heroButtonArrow} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.heroButton, styles.heroButtonTertiary]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            setShowRecoveryModal(true)
+          }}
+          activeOpacity={0.85}
+        >
+          <MaterialIcons name="security" size={18} color={p.heroAccent} style={{ marginRight: 6 }} />
+          <Text style={[styles.heroButtonText, { color: p.heroInk }]}>Recover Lost Wallet</Text>
         </TouchableOpacity>
       </View>
 
@@ -1057,6 +1091,18 @@ export default function SignIn() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* RECOVER LOST WALLET MODAL */}
+      <HaptixRecoveryFlowSheet
+        visible={showRecoveryModal}
+        initialTargetAddress={restoreAddress}
+        onClose={() => setShowRecoveryModal(false)}
+        onRecoveryComplete={async (recovered) => {
+          setShowRecoveryModal(false)
+          await updateWallet(recovered)
+          router.replace('/(tabs)')
+        }}
+      />
     </View>
   )
 }
@@ -1135,6 +1181,12 @@ const createStyles = (p: OnboardingPalette) =>
     },
     heroButtonPrimary: { backgroundColor: p.primaryBg },
     heroButtonSecondary: { backgroundColor: p.secondaryBg },
+    heroButtonTertiary: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: p.border,
+      marginBottom: 4,
+    },
     heroButtonText: { fontSize: 16.5, fontWeight: '600', letterSpacing: -0.2 },
     heroButtonArrow: { position: 'absolute', right: 22 },
     sheetBackdrop: { flex: 1, backgroundColor: p.sheetBackdrop, justifyContent: 'flex-end' },
