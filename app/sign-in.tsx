@@ -623,34 +623,17 @@ export default function SignIn() {
   }
 
   return (
-    <View
+    <ImageBackground
+      source={ONBOARDING_BG}
       style={[
         styles.heroContainer,
-        { paddingTop: Math.max(insets.top, 16), paddingBottom: Math.max(insets.bottom + 12, 24) },
+        { paddingTop: Math.max(insets.top + 8, 28), paddingBottom: Math.max(insets.bottom + 12, 24) },
       ]}
+      resizeMode="cover"
     >
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style="light" />
 
-      {/* Top Bar with subtle Theme Switcher */}
-      <View style={styles.superTopRow}>
-        <View style={{ flex: 1 }} />
-        <TouchableOpacity
-          style={styles.superThemeToggle}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            setShowThemeSheet(true)
-          }}
-          activeOpacity={0.7}
-        >
-          <MaterialIcons
-            name={isDark ? 'light-mode' : 'dark-mode'}
-            size={18}
-            color={p.heroInk}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* 1. TOP HEADER: 3D Squircle App Icon + Centered Welcome Title */}
+      {/* 1. TOP HEADER: Black Squircle App Icon + Centered Welcome Title */}
       <View style={styles.superHeaderBlock}>
         <View style={styles.superIconSquircle}>
           <HaptixBrandMark size={32} color="#FFFFFF" />
@@ -663,11 +646,11 @@ export default function SignIn() {
 
       {/* 2. MIDDLE ART SECTION: Creative Doodles + Centered Tagline */}
       <View style={styles.superMiddleSection}>
-        <SuperlistDoodleArt color={isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.07)'} />
+        <SuperlistDoodleArt color="rgba(255, 255, 255, 0.14)" />
 
         <View style={styles.superTaglineWrap}>
           <Text style={styles.superTaglineHeading}>
-            A smarter way{'\n'}to own <Text style={{ color: p.heroAccent }}>crypto</Text>
+            A smarter way{'\n'}to own <Text style={{ color: '#93C5FD' }}>crypto</Text>
           </Text>
           <Text style={styles.superTaglineSub}>
             Hardware-backed passkeys on Solana.{'\n'}No seed phrases to write down or lose.
@@ -686,8 +669,8 @@ export default function SignIn() {
           }}
           activeOpacity={0.9}
         >
-          <Text style={[styles.superBtnText, { color: p.onPrimary }]}>Create New Wallet</Text>
-          <MaterialIcons name="arrow-forward" size={18} color={p.onPrimary} style={styles.superBtnArrow} />
+          <Text style={[styles.superBtnText, { color: '#FFFFFF' }]}>Create New Wallet</Text>
+          <MaterialIcons name="arrow-forward" size={18} color="#FFFFFF" style={styles.superBtnArrow} />
         </TouchableOpacity>
 
         {/* SECONDARY CTA: I already have a wallet */}
@@ -699,8 +682,8 @@ export default function SignIn() {
           }}
           activeOpacity={0.85}
         >
-          <Text style={[styles.superBtnText, { color: p.heroInk }]}>I already have a wallet</Text>
-          <MaterialIcons name="arrow-forward" size={18} color={p.heroInk} style={styles.superBtnArrow} />
+          <Text style={[styles.superBtnText, { color: '#09080F' }]}>I already have a wallet</Text>
+          <MaterialIcons name="arrow-forward" size={18} color="#09080F" style={styles.superBtnArrow} />
         </TouchableOpacity>
 
         {/* RESCUE / LOST DEVICE: Previous design with shield icon & guardian recovery link */}
@@ -712,15 +695,17 @@ export default function SignIn() {
           }}
           activeOpacity={0.7}
         >
-          <MaterialIcons name="security" size={15} color={p.heroAccent} />
+          <MaterialIcons name="security" size={15} color="#1D4ED8" />
           <Text style={styles.heroRecoveryText}>
             Lost device? <Text style={styles.heroRecoveryHighlight}>Recover with Guardian</Text>
           </Text>
         </TouchableOpacity>
 
-        {/* Legal Caption */}
+        {/* Legal Caption with Underlined Links */}
         <Text style={styles.superLegalText}>
-          By continuing, you agree to our Terms of Service &amp; Privacy Policy
+          By continuing, you agree to our{' '}
+          <Text style={styles.superLegalLink}>Terms of Service</Text> &amp;{' '}
+          <Text style={styles.superLegalLink}>Privacy Policy</Text>
         </Text>
       </View>
 
@@ -1130,7 +1115,7 @@ export default function SignIn() {
           router.replace('/(tabs)')
         }}
       />
-    </View>
+    </ImageBackground>
   )
 }
 
@@ -1138,44 +1123,32 @@ const createStyles = (p: OnboardingPalette) =>
   StyleSheet.create({
     heroContainer: {
       flex: 1,
-      backgroundColor: p.heroBg,
+      backgroundColor: '#000000',
       paddingHorizontal: 24,
       justifyContent: 'space-between',
     },
-    superTopRow: {
-      height: 40,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-    },
-    superThemeToggle: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: p.controlBg,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     superHeaderBlock: {
       alignItems: 'center',
-      marginTop: 2,
+      marginTop: 8,
     },
     superIconSquircle: {
-      width: 58,
-      height: 58,
+      width: 60,
+      height: 60,
       borderRadius: 18,
-      backgroundColor: '#E11D48',
+      backgroundColor: '#000000',
+      borderWidth: 1.5,
+      borderColor: 'rgba(255, 255, 255, 0.25)',
       alignItems: 'center',
       justifyContent: 'center',
-      shadowColor: '#BE123C',
+      shadowColor: '#000000',
       shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.35,
+      shadowOpacity: 0.5,
       shadowRadius: 10,
       elevation: 6,
       marginBottom: 16,
     },
     superTitleText: {
-      color: p.heroInk,
+      color: '#FFFFFF',
       fontSize: 38,
       fontWeight: '800',
       lineHeight: 44,
@@ -1194,7 +1167,7 @@ const createStyles = (p: OnboardingPalette) =>
       paddingHorizontal: 20,
     },
     superTaglineHeading: {
-      color: p.heroInk,
+      color: '#FFFFFF',
       fontSize: 27,
       fontWeight: '800',
       lineHeight: 34,
@@ -1202,7 +1175,7 @@ const createStyles = (p: OnboardingPalette) =>
       textAlign: 'center',
     },
     superTaglineSub: {
-      color: p.inkSecondary,
+      color: 'rgba(255, 255, 255, 0.82)',
       fontSize: 14,
       lineHeight: 20,
       marginTop: 8,
@@ -1221,18 +1194,23 @@ const createStyles = (p: OnboardingPalette) =>
       marginBottom: 10,
     },
     superButtonDark: {
-      backgroundColor: p.primaryBg,
-      shadowColor: p.shadow,
+      backgroundColor: '#09080F',
+      shadowColor: '#000000',
       shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
+      shadowOpacity: 0.25,
       shadowRadius: 8,
-      elevation: 2,
+      elevation: 3,
     },
     superButtonLight: {
-      backgroundColor: p.secondaryBg,
+      backgroundColor: '#FFFFFF',
       borderWidth: 1,
-      borderColor: p.border,
+      borderColor: 'rgba(255, 255, 255, 0.85)',
       marginBottom: 8,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+      elevation: 2,
     },
     superBtnIcon: {
       marginRight: 8,
@@ -1257,17 +1235,22 @@ const createStyles = (p: OnboardingPalette) =>
     },
     heroRecoveryText: {
       fontSize: 13,
-      color: p.inkSecondary,
+      color: '#1E293B',
     },
     heroRecoveryHighlight: {
-      color: p.heroAccent,
+      color: '#1D4ED8',
       fontWeight: '700',
     },
     superLegalText: {
       fontSize: 11,
-      color: p.inkMuted,
+      color: 'rgba(15, 23, 42, 0.70)',
       textAlign: 'center',
-      lineHeight: 15,
+      lineHeight: 16,
+    },
+    superLegalLink: {
+      textDecorationLine: 'underline',
+      color: '#0F172A',
+      fontWeight: '600',
     },
     sheetBackdrop: { flex: 1, backgroundColor: p.sheetBackdrop, justifyContent: 'flex-end' },
     sheetCard: {
