@@ -1148,23 +1148,25 @@ const createStyles = (theme: ThemeTokens) =>
     qrContainer: {
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.accent,
-      borderRadius: radius.lg,
-      padding: 16,
       alignSelf: 'center',
-      marginBottom: 16,
+      marginBottom: 14,
     },
     addressDisplayBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       borderWidth: 1,
       borderRadius: radius.md,
       paddingHorizontal: 14,
-      paddingVertical: 10,
-      marginBottom: 18,
+      paddingVertical: 12,
+      marginBottom: 14,
+      gap: 8,
     },
     addressDisplayText: {
+      flex: 1,
       fontSize: typeScale.footnote,
       fontFamily: 'SpaceMono',
-      textAlign: 'center',
+      letterSpacing: -0.3,
     },
 
     modalSecondaryBtn: {

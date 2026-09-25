@@ -127,7 +127,7 @@ export function HaptixSendSheet({
   onTransferSent,
 }: HaptixSendSheetProps) {
   const insets = useSafeAreaInsets()
-  const { theme } = useAppTheme()
+  const { theme, isDark } = useAppTheme()
   const dialog = useHaptixDialog()
   const styles = useSendSheetStyles()
 
@@ -187,6 +187,7 @@ export function HaptixSendSheet({
     const direct = text.replace(/[\s\u200B-\u200D\uFEFF]+/g, '')
     if (isSolanaAddress(direct)) {
       setSendRecipient(direct)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
       return
     }
 
@@ -203,10 +204,12 @@ export function HaptixSendSheet({
         setSendRecipient(parsed.address)
         setSendRecipientSource(parsed.source)
         setSendRecipientAttempted(true)
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
         return
       }
       setRecipientAttemptError(parsed.error ?? 'That is not a Solana address.')
       setSendRecipientAttempted(true)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {})
       return
     }
 
@@ -708,19 +711,41 @@ export function HaptixSendSheet({
                   { label: '50%', fraction: 0.5 },
                   { label: '75%', fraction: 0.75 },
                   { label: 'MAX', fraction: 1 },
-                ].map((chip) => (
-                  <TouchableOpacity
-                    key={chip.label}
-                    style={[styles.percentChip, styles.input]}
-                    onPress={() => {
-                      Haptics.selectionAsync()
-                      const val = Math.max(0, maxSendableSol * chip.fraction)
-                      setSendAmountText(val > 0 ? val.toFixed(4) : '0')
-                    }}
-                  >
-                    <Text style={[styles.percentChipText, styles.textSecondary]}>{chip.label}</Text>
-                  </TouchableOpacity>
-                ))}
+                ].map((chip) => {
+                  const chipVal = Math.max(0, maxSendableSol * chip.fraction).toFixed(4)
+                  const isChipActive =
+                    maxSendableSol > 0 &&
+                    (sendAmountText === chipVal ||
+                      (chip.fraction === 1 && Math.abs(sendAmountNum - maxSendableSol) < 0.0001))
+                  return (
+                    <TouchableOpacity
+                      key={chip.label}
+                      style={[
+                        styles.percentChip,
+                        styles.input,
+                        isChipActive && {
+                          backgroundColor: isDark
+                            ? 'rgba(156, 147, 255, 0.18)'
+                            : 'rgba(124, 101, 193, 0.14)',
+                          borderColor: theme.accent,
+                        },
+                      ]}
+                      onPress={() => {
+                        Haptics.selectionAsync()
+                        setSendAmountText(chipVal)
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.percentChipText,
+                          isChipActive ? { color: theme.accent, fontWeight: '700' } : styles.textSecondary,
+                        ]}
+                      >
+                        {chip.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
               </View>
 
               {/* The button simply greyed out when the amount was over the balance, so an
@@ -750,7 +775,28 @@ export function HaptixSendSheet({
                 ) : null}
               </View>
 
-              <View style={[styles.inputBoxRow, styles.input]}>
+              <View
+                style={[
+                  styles.inputBoxRow,
+                  styles.input,
+                  recipientAddress
+                    ? {
+                        borderColor: theme.emeraldBorder,
+                        backgroundColor: isDark ? 'rgba(52, 211, 153, 0.06)' : 'rgba(16, 185, 129, 0.04)',
+                      }
+                    : showRecipientError && recipientParse.error
+                    ? {
+                        borderColor: theme.roseBorder,
+                        backgroundColor: isDark ? 'rgba(248, 113, 113, 0.06)' : 'rgba(239, 68, 68, 0.04)',
+                      }
+                    : isResolvingName
+                    ? {
+                        borderColor: theme.accent,
+                        backgroundColor: isDark ? 'rgba(124, 101, 193, 0.06)' : 'rgba(124, 101, 193, 0.04)',
+                      }
+                    : null,
+                ]}
+              >
                 <TextInput
                   style={[styles.modalInput, styles.textPrimary]}
                   value={sendRecipient}
@@ -787,6 +833,7 @@ export function HaptixSendSheet({
                   <TouchableOpacity
                     style={styles.clearActionBtn}
                     onPress={() => {
+                      Haptics.selectionAsync()
                       setSendRecipient('')
                       setSendRecipientSource(null)
                       setRecipientAttemptError('')
@@ -804,7 +851,9 @@ export function HaptixSendSheet({
                   style={[styles.pasteActionBtn, { backgroundColor: theme.bgElevated }]}
                   onPress={handlePasteRecipient}
                   accessibilityLabel="Paste address from clipboard"
+                  activeOpacity={0.7}
                 >
+                  <MaterialIcons name="content-paste" size={13} color={theme.accent} />
                   <Text style={[styles.pasteActionText, { color: theme.accent }]}>Paste</Text>
                 </TouchableOpacity>
               </View>
@@ -1030,19 +1079,19 @@ export function HaptixSendSheet({
                     <MaterialIcons
                       name={isSendQuorumRequired ? (wallet?.securityMode === 'vault' ? 'devices' : 'security') : 'fingerprint'}
                       size={14}
-                      color={isSendQuorumRequired ? theme.amber : theme.textMuted}
+                      color={isSendQuorumRequired ? theme.amber : theme.emerald}
                     />
                     <Text
                       style={[
                         styles.securityBadgeText,
-                        { color: isSendQuorumRequired ? theme.amberText : theme.textSecondary },
+                        { color: isSendQuorumRequired ? theme.amberText : theme.emeraldText },
                       ]}
                     >
                       {isSendQuorumRequired
                         ? wallet?.securityMode === 'vault'
                           ? 'Phone + Vault Key'
                           : 'Both passkeys'
-                        : 'One passkey'}
+                        : 'Fast Path (1 passkey)'}
                     </Text>
                   </View>
                 </View>
@@ -1284,6 +1333,9 @@ const createSendSheetStyles = (theme: ThemeTokens) =>
     },
     pasteActionBtn: {
       ...CHIP_SHAPE,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
       backgroundColor: theme.bgElevated,
     },
     pasteActionText: {
