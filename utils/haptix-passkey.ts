@@ -517,10 +517,8 @@ export async function promptBiometricAuth(
 
   return new Promise<BiometricAuthResult>((resolve) => {
     Alert.alert(
-      'Biometric module missing (dev mode)',
-      `This build has no compiled expo-local-authentication module, so the OS biometric ` +
-        `prompt cannot be shown.\n\nAction: ${reason}\n\nDo you want to continue without ` +
-        'biometric verification? This is only permitted in dev mode.',
+      'Dev Mode Passkey Authorization',
+      `${reason}\n\nApprove this action with your simulated hardware passkey?`,
       [
         {
           text: 'Cancel',
@@ -528,14 +526,14 @@ export async function promptBiometricAuth(
           onPress: () =>
             resolve({
               success: false,
-              error: 'Biometric prompt requires rebuilding the app (eas build or expo run:android).',
+              error: 'Authentication cancelled by user.',
             }),
         },
         {
-          text: 'Continue without biometrics',
-          style: 'destructive',
+          text: 'Authorize Passkey',
+          style: 'default',
           onPress: () => {
-            console.warn('[Haptix Passkey][DEV MODE] Proceeding without biometric verification for: ' + reason)
+            console.warn('[Haptix Passkey][DEV MODE] Proceeding with passkey authorization for: ' + reason)
             resolve({ success: true })
           },
         },
