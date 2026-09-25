@@ -49,11 +49,6 @@ import {
   getCancelRecoverySignedMessage,
   getSetGuardianSignedMessage,
 } from '@/utils/haptix-client'
-import {
-  HaptixTimelockCountdownCard,
-  HaptixGuardianStatusCard,
-  HaptixRecoveryPipelineExplainer,
-} from '@/components/haptix/haptix-recovery-visualizer'
 import { radius, typeScale, ThemeTokens } from '@/theme/tokens'
 
 /**
@@ -510,108 +505,197 @@ export default function RecoverySettingsScreen() {
           </View>
         ) : null}
 
-        {/* 1. Timelock Countdown Visualizer (Only visible when a recovery is in flight) */}
+        {/* An in-flight recovery is the one thing on this screen that is time-critical, so
+            it sits above the configuration it would otherwise be buried under. */}
         {recoveryWindow ? (
-          <HaptixTimelockCountdownCard
-            secondsLeft={recoveryWindow.secondsLeft}
-            totalTimelockSeconds={Number(onChainWallet?.recoveryTimelock ?? 86400n)}
-            recoveryInitiatedAt={Number(onChainWallet?.recoveryInitiatedAt ?? 0n)}
-            stagedRecovery={stagedRecovery}
-            isBusy={recoveryBusy !== null}
-            busyAction={recoveryBusy}
-            onVeto={() => void runCancelRecovery()}
-            onExecute={() => {
-              if (recoveryBusy === null) handleExecuteRecovery()
-            }}
-            explorerUrl={walletAddress ? getExplorerUrl(`address/${walletAddress}`) : undefined}
+          <HaptixAlert
+            status="warning"
+            icon="lock-clock"
+            title={
+              recoveryWindow.secondsLeft > 0
+                ? `Recovery in flight · ${formatRemainingTime(recoveryWindow.secondsLeft)} left`
+                : 'Recovery in flight · timelock elapsed'
+            }
+            message={
+              recoveryWindow.secondsLeft > 0
+                ? 'The wallet is frozen. Veto with both passkeys, or wait out the window and execute.'
+                : 'Executing installs the proposed keys and unfreezes the wallet.'
+            }
           />
         ) : null}
 
-        {/* 2. Guardian Security Status Card */}
-        <HaptixGuardianStatusCard
-          guardianAddress={guardianAddress}
-          isOnChain={!!onChainWallet}
-          isGuardianOnThisDevice={!!guardianSigner}
-          timelockLabel={timelockLabel}
-          onToggleEditor={() => {
-            setShowGuardianEditor((prev) => !prev)
-          }}
-          isEditorOpen={showGuardianEditor}
-          isBusy={guardianBusy}
-          clusterUrl={guardianAddress ? getExplorerUrl(`account/${guardianAddress}`) : undefined}
-        />
-
-        {showGuardianEditor && onChainWallet && (
-          <View style={[styles.guardianEditor, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+        {/* 1. Guardian */}
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Guardian</Text>
             <View
               style={[
-                styles.guardianInputRow,
-                { backgroundColor: theme.bgInput, borderColor: theme.borderDefault },
+                styles.tag,
+                onChainWallet
+                  ? { backgroundColor: theme.emeraldBg, borderColor: theme.emeraldBorder }
+                  : { backgroundColor: theme.amberBg, borderColor: theme.amberBorder },
               ]}
             >
-              <TextInput
-                style={[styles.guardianInput, { color: theme.textPrimary }]}
-                value={guardianDraft}
-                onChangeText={setGuardianDraft}
-                placeholder="Paste the new guardian's Solana address"
-                placeholderTextColor={theme.textMuted}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!guardianBusy}
+              <Text style={[styles.tagText, { color: onChainWallet ? theme.emeraldText : theme.amberText }]}>
+                {onChainWallet ? 'Active' : 'Not on-chain yet'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>1 Guardian</Text>
+              <Text style={[styles.detailDesc, { color: theme.textMuted }]}>Cannot spend funds</Text>
+            </View>
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>{timelockLabel} Timelock</Text>
+              <Text style={[styles.detailDesc, { color: theme.textMuted }]}>Both passkeys can cancel it</Text>
+            </View>
+          </View>
+
+          {/* The program stores exactly one guardian and gives it no spending authority,
+              so show who it actually is rather than a capability badge. */}
+          <View style={[styles.guardianRow, { backgroundColor: theme.bgInput, borderColor: theme.borderDefault }]}>
+            <Text style={[styles.guardianLabel, { color: theme.textMuted }]}>GUARDIAN</Text>
+            <Text style={[styles.guardianValue, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="middle">
+              {onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'Set on first on-chain activation'}
+            </Text>
+            <Text style={[styles.guardianNote, { color: theme.textMuted }]}>
+              Can start a recovery and nothing else — it cannot move funds.
+            </Text>
+          </View>
+
+          {onChainWallet ? (
+            <>
+              <TouchableOpacity
+                style={styles.guardianToggle}
+                onPress={() => {
+                  Haptics.selectionAsync()
+                  setShowGuardianEditor((prev) => !prev)
+                }}
+                disabled={guardianBusy}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.guardianToggleText, { color: theme.textSecondary }]}>
+                  {showGuardianEditor ? 'Cancel guardian change' : 'Change guardian'}
+                </Text>
+                <MaterialIcons
+                  name={showGuardianEditor ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                  size={18}
+                  color={theme.textSecondary}
+                />
+              </TouchableOpacity>
+
+              {showGuardianEditor && (
+                <View style={[styles.guardianEditor, { borderColor: theme.borderDefault }]}>
+                  <View
+                    style={[
+                      styles.guardianInputRow,
+                      { backgroundColor: theme.bgInput, borderColor: theme.borderDefault },
+                    ]}
+                  >
+                    <TextInput
+                      style={[styles.guardianInput, { color: theme.textPrimary }]}
+                      value={guardianDraft}
+                      onChangeText={setGuardianDraft}
+                      placeholder="Paste the new guardian's Solana address"
+                      placeholderTextColor={theme.textMuted}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!guardianBusy}
+                    />
+                    {guardianDraft.length > 0 && (
+                      <TouchableOpacity
+                        onPress={() => setGuardianDraft('')}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Clear guardian address"
+                      >
+                        <MaterialIcons name="cancel" size={18} color={theme.textMuted} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.guardianHint,
+                      {
+                        color:
+                          guardianDraft.length > 0 && !guardianDraftParse.address ? theme.roseText : theme.textMuted,
+                      },
+                    ]}
+                  >
+                    {guardianDraft.trim().length === 0
+                      ? 'A link or a message containing an address is read the same way a bare address is. Needs both passkeys.'
+                      : (guardianDraftParse.error ??
+                        `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
+                  </Text>
+
+                  <DepthOutlineButton
+                    title={guardianBusy ? 'Changing…' : 'Update Guardian'}
+                    size="compact"
+                    disabled={guardianBusy || !guardianDraftParse.address}
+                    onPress={handleSetGuardian}
+                  />
+                </View>
+              )}
+            </>
+          ) : null}
+        </View>
+
+        {/* 2. The recovery itself. Without this the program could rotate keys all day and
+            no owner would ever be able to ask it to. */}
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Recovery</Text>
+          </View>
+
+          <Text style={[styles.bodyText, { color: theme.textSecondary }]}>
+            {!onChainWallet
+              ? 'The guardian is recorded when the account is first created on-chain, so there is nothing to recover yet.'
+              : recoveryWindow
+                ? 'A recovery is in flight. Veto it with both passkeys to keep your current keys, or execute it once the timelock has passed.'
+                : guardianSigner
+                  ? 'This build holds the guardian key, so it can start and veto a recovery — that is what makes the flow testable end to end.'
+                  : 'Recovery is started by the guardian from their own device. This build cannot sign as it.'}
+          </Text>
+
+          {recoveryWindow ? (
+            <View style={styles.actionColumn}>
+              {/* The owner's own answer, and the only one that leaves the wallet where it
+                  is. It leads because the alternative is a one-way door: executing installs
+                  keys this device may not hold, and nothing here can undo it. */}
+              <PrismDepthButton
+                title={recoveryBusy === 'cancel' ? 'Keeping your keys…' : 'Keep My Keys'}
+                size="compact"
+                disabled={recoveryBusy !== null}
+                onPress={() => void runCancelRecovery()}
               />
-              {guardianDraft.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => setGuardianDraft('')}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  accessibilityRole="button"
-                  accessibilityLabel="Clear guardian address"
-                >
-                  <MaterialIcons name="cancel" size={18} color={theme.textMuted} />
-                </TouchableOpacity>
+
+              {/* Executing is permissionless and irreversible, so once the window closes it
+                  is a hold rather than a tap. Inside the window the row carries only the
+                  deadline, disabled — and the disabled styling is what keeps an inert
+                  control from rendering like a live one. */}
+              {recoveryWindow.secondsLeft > 0 ? (
+                <DepthOutlineButton
+                  title={`Execute unlocks in ${formatRemainingTime(recoveryWindow.secondsLeft)}`}
+                  size="compact"
+                  disabled
+                />
+              ) : (
+                <HoldToConfirmButton
+                  variant="danger"
+                  label={recoveryBusy === 'execute' ? 'Executing…' : 'Hold to Execute Recovery'}
+                  confirmingLabel="Keep holding…"
+                  completedLabel="Executing…"
+                  holdDurationMs={1200}
+                  onConfirm={() => {
+                    if (recoveryBusy === null) handleExecuteRecovery()
+                  }}
+                />
               )}
             </View>
-
-            <Text
-              style={[
-                styles.guardianHint,
-                {
-                  color:
-                    guardianDraft.length > 0 && !guardianDraftParse.address ? theme.roseText : theme.textMuted,
-                },
-              ]}
-            >
-              {guardianDraft.trim().length === 0
-                ? 'A link or a message containing an address is read the same way a bare address is. Needs both passkeys.'
-                : (guardianDraftParse.error ??
-                  `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
-            </Text>
-
-            <DepthOutlineButton
-              title={guardianBusy ? 'Changing…' : 'Update Guardian'}
-              size="compact"
-              disabled={guardianBusy || !guardianDraftParse.address}
-              onPress={handleSetGuardian}
-            />
-          </View>
-        )}
-
-        {/* 3. Autonomous Recovery 3-Step Pipeline Explainer */}
-        <HaptixRecoveryPipelineExplainer timelockLabel={timelockLabel} />
-
-        {/* 4. Guardian Signer Dev Test Action */}
-        {!recoveryWindow && onChainWallet && guardianSigner && (
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
-            <View style={styles.cardHeader}>
-              <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Test Guardian Recovery</Text>
-              <View style={[styles.tag, { backgroundColor: theme.accentLight, borderColor: theme.accent }]}>
-                <Text style={[styles.tagText, { color: theme.accent }]}>Dev Key Present</Text>
-              </View>
-            </View>
-
-            <Text style={[styles.bodyText, { color: theme.textSecondary }]}>
-              This build holds the guardian key, so you can start a recovery and test the timelock countdown and owner veto flow end to end.
-            </Text>
-
+          ) : onChainWallet && guardianSigner ? (
             <View style={styles.actionColumn}>
               <DepthOutlineButton
                 title={recoveryBusy === 'initiate' ? 'Starting…' : 'Start Recovery (Guardian)'}
@@ -620,8 +704,8 @@ export default function RecoverySettingsScreen() {
                 onPress={handleStartRecovery}
               />
             </View>
-          </View>
-        )}
+          ) : null}
+        </View>
 
         <Text style={[styles.footnote, { color: theme.textMuted }]}>
           A recovery never moves the wallet: the address stays the same, so anything sent to it during the window is
