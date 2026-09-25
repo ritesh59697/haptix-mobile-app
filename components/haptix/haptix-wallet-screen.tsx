@@ -164,6 +164,7 @@ export function HaptixWalletScreen() {
 
   // Balances
   const [balance, setBalance] = useState<number>(0)
+  const [isInitialBalanceLoaded, setIsInitialBalanceLoaded] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
   // Loading States
@@ -281,6 +282,7 @@ export function HaptixWalletScreen() {
       const lamports = await connection.getBalance(pubkey)
       liveBalanceRef.current = true
       setBalance(lamports / LAMPORTS_PER_SOL)
+      setIsInitialBalanceLoaded(true)
       void saveCachedBalance(activeWallet.address, lamports)
       setRpcIssue(null)
 
@@ -293,6 +295,7 @@ export function HaptixWalletScreen() {
         }
       }
     } catch {
+      setIsInitialBalanceLoaded(true)
       // Rate limited, offline, or a dead endpoint: say so rather than reporting zero.
       setRpcIssue(
         `Could not reach the Solana ${network === 'devnet' ? 'devnet' : 'mainnet'} RPC. Balance may be out of date.`,
@@ -334,9 +337,13 @@ export function HaptixWalletScreen() {
     if (!address) return
     let cancelled = false
     liveBalanceRef.current = false
+    setIsInitialBalanceLoaded(false)
     loadCachedBalance(address).then((lamports) => {
-      if (cancelled || liveBalanceRef.current || lamports === null) return
-      setBalance(lamports / LAMPORTS_PER_SOL)
+      if (cancelled || liveBalanceRef.current) return
+      if (lamports !== null) {
+        setBalance(lamports / LAMPORTS_PER_SOL)
+        setIsInitialBalanceLoaded(true)
+      }
     })
     return () => {
       cancelled = true
@@ -1286,15 +1293,31 @@ export function HaptixWalletScreen() {
         </View>
 
         <View style={styles.heroBalanceContent}>
-          {isBalanceHidden ? (
-            <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>$ ••••••</Text>
+          {!isInitialBalanceLoaded ? (
+            <View style={styles.balanceSkeletonContainer}>
+              <View
+                style={[
+                  styles.balanceSkeletonLarge,
+                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' },
+                ]}
+              />
+              <View
+                style={[
+                  styles.balanceSkeletonSmall,
+                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)' },
+                ]}
+              />
+            </View>
+          ) : isBalanceHidden ? (
+            <>
+              <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>$ ••••••</Text>
+              <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>•••• SOL</Text>
+            </>
           ) : (
-            <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>${totalUsdBalance.toFixed(2)}</Text>
-          )}
-          {isBalanceHidden ? (
-            <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>•••• SOL</Text>
-          ) : (
-            <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>{balance.toFixed(4)} SOL</Text>
+            <>
+              <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>${totalUsdBalance.toFixed(2)}</Text>
+              <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>{balance.toFixed(4)} SOL</Text>
+            </>
           )}
         </View>
 

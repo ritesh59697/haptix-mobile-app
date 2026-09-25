@@ -42,25 +42,13 @@ function RootLayoutInner() {
   if (fontError) throw fontError
 
   const onLayoutRootView = useCallback(async () => {
-    console.log('onLayoutRootView')
-    if (loaded) {
-      console.log('loaded')
-      // This tells the splash screen to hide immediately! If we call this after
-      // `setAppIsReady`, then we may see a blank screen while the app is
-      // loading its initial state and rendering its first pixels. So instead,
-      // we hide the splash screen once we know the root view has already
-      // performed layout.
-      await SplashScreen.hideAsync()
-    }
-  }, [loaded])
+    // Layout completed. Splash hiding is coordinated with Auth hydration via AppSplashController.
+  }, [])
 
   if (!loaded) {
-    // Async font loading only occurs in development. This used to `return null`, which
-    // made a stalled font load indistinguishable from a crashed app: both are a blank
-    // screen. A spinner at least says which one you are looking at.
     return (
       <View style={styles.booting}>
-        <ActivityIndicator color="#5eead4" />
+        <ActivityIndicator color="#9C93FF" />
         <Text style={styles.bootingText}>Loading Haptix…</Text>
       </View>
     )
@@ -69,7 +57,7 @@ function RootLayoutInner() {
   return (
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <AppProviders>
-        <AppSplashController />
+        <AppSplashController fontsLoaded={loaded} />
         <RootNavigator />
         <StatusBar style="auto" />
       </AppProviders>
