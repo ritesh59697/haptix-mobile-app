@@ -666,17 +666,18 @@ export default function SignIn() {
         <SuperlistDoodleArt color={isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.07)'} />
 
         <View style={styles.superTaglineWrap}>
-          <Text style={styles.superTaglineHeading}>Made for speed.</Text>
-          <Text style={styles.superTaglineHeading}>Designed for Solana.</Text>
+          <Text style={styles.superTaglineHeading}>
+            A smarter way{'\n'}to own <Text style={{ color: p.heroAccent }}>crypto</Text>
+          </Text>
           <Text style={styles.superTaglineSub}>
-            Hardware-backed passkeys · Zero seed phrases
+            Hardware-backed passkeys on Solana.{'\n'}No seed phrases to write down or lose.
           </Text>
         </View>
       </View>
 
-      {/* 3. BOTTOM BUTTON STACK: 3 Pills with Left Icons (Matching Superlist!) */}
+      {/* 3. BOTTOM BUTTON STACK: 2 Action Pills + Previous Lost Device Link */}
       <View style={styles.superButtonStack}>
-        {/* Button 1: Create New Wallet */}
+        {/* PRIMARY CTA: Create New Wallet */}
         <TouchableOpacity
           style={[styles.superButton, styles.superButtonDark]}
           onPress={() => {
@@ -685,34 +686,36 @@ export default function SignIn() {
           }}
           activeOpacity={0.9}
         >
-          <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} style={styles.superBtnIcon} />
           <Text style={[styles.superBtnText, { color: p.onPrimary }]}>Create New Wallet</Text>
+          <MaterialIcons name="arrow-forward" size={18} color={p.onPrimary} style={styles.superBtnArrow} />
         </TouchableOpacity>
 
-        {/* Button 2: Sign In with Passkey */}
-        <TouchableOpacity
-          style={[styles.superButton, styles.superButtonDark]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            openSignInSheet()
-          }}
-          activeOpacity={0.9}
-        >
-          <MaterialIcons name="vpn-key" size={18} color={p.onPrimary} style={styles.superBtnIcon} />
-          <Text style={[styles.superBtnText, { color: p.onPrimary }]}>Sign In to Existing Wallet</Text>
-        </TouchableOpacity>
-
-        {/* Button 3: Recover Lost Wallet */}
+        {/* SECONDARY CTA: I already have a wallet */}
         <TouchableOpacity
           style={[styles.superButton, styles.superButtonLight]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            setShowRecoveryModal(true)
+            openSignInSheet()
           }}
           activeOpacity={0.85}
         >
-          <MaterialIcons name="security" size={18} color={p.heroInk} style={styles.superBtnIcon} />
-          <Text style={[styles.superBtnText, { color: p.heroInk }]}>Recover Lost Wallet</Text>
+          <Text style={[styles.superBtnText, { color: p.heroInk }]}>I already have a wallet</Text>
+          <MaterialIcons name="arrow-forward" size={18} color={p.heroInk} style={styles.superBtnArrow} />
+        </TouchableOpacity>
+
+        {/* RESCUE / LOST DEVICE: Previous design with shield icon & guardian recovery link */}
+        <TouchableOpacity
+          style={styles.heroRecoveryLink}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            setShowRecoveryModal(true)
+          }}
+          activeOpacity={0.7}
+        >
+          <MaterialIcons name="security" size={15} color={p.heroAccent} />
+          <Text style={styles.heroRecoveryText}>
+            Lost device? <Text style={styles.heroRecoveryHighlight}>Recover with Guardian</Text>
+          </Text>
         </TouchableOpacity>
 
         {/* Legal Caption */}
@@ -1192,15 +1195,17 @@ const createStyles = (p: OnboardingPalette) =>
     },
     superTaglineHeading: {
       color: p.heroInk,
-      fontSize: 18,
-      fontWeight: '700',
-      lineHeight: 25,
+      fontSize: 27,
+      fontWeight: '800',
+      lineHeight: 34,
+      letterSpacing: -0.6,
       textAlign: 'center',
     },
     superTaglineSub: {
       color: p.inkSecondary,
-      fontSize: 13,
-      marginTop: 6,
+      fontSize: 14,
+      lineHeight: 20,
+      marginTop: 8,
       textAlign: 'center',
     },
     superButtonStack: {
@@ -1227,15 +1232,36 @@ const createStyles = (p: OnboardingPalette) =>
       backgroundColor: p.secondaryBg,
       borderWidth: 1,
       borderColor: p.border,
-      marginBottom: 14,
+      marginBottom: 8,
     },
     superBtnIcon: {
       marginRight: 8,
+    },
+    superBtnArrow: {
+      position: 'absolute',
+      right: 20,
     },
     superBtnText: {
       fontSize: 15.5,
       fontWeight: '700',
       letterSpacing: -0.2,
+    },
+    heroRecoveryLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 8,
+      marginTop: 2,
+      marginBottom: 12,
+    },
+    heroRecoveryText: {
+      fontSize: 13,
+      color: p.inkSecondary,
+    },
+    heroRecoveryHighlight: {
+      color: p.heroAccent,
+      fontWeight: '700',
     },
     superLegalText: {
       fontSize: 11,
