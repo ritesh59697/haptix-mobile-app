@@ -37,7 +37,7 @@ import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet } fr
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
-import { HaptixBrandMark, HaptixLogoText } from '@/components/haptix/haptix-icons'
+import { HaptixBrandMark, HaptixLogoText, HaptixBrandLockupBlack } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { useAppTheme } from '@/components/theme/theme-context'
 import {
@@ -633,11 +633,10 @@ export default function SignIn() {
     >
       <StatusBar style="light" />
 
-      {/* 1. TOP BAR: Brand Logo + Text in Left Top Corner */}
+      {/* 1. TOP BAR: Merged Brand Logo + Text on Sleek Black Pill */}
       <View style={styles.topBrandRow}>
         <View style={styles.heroBrandPill}>
-          <HaptixBrandMark size={28} />
-          <HaptixLogoText height={20} />
+          <HaptixBrandLockupBlack height={22} />
         </View>
       </View>
 
@@ -1133,13 +1132,17 @@ const createStyles = (p: OnboardingPalette) =>
     heroBrandPill: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
-    },
-    heroBrandName: {
-      color: '#FFFFFF',
-      fontSize: 15,
-      fontWeight: '800',
-      letterSpacing: 3.5,
+      backgroundColor: '#000000',
+      borderRadius: 999,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderWidth: 1,
+      borderColor: 'rgba(255, 255, 255, 0.14)',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.6,
+      shadowRadius: 8,
+      elevation: 5,
     },
     superMiddleSection: {
       flex: 1,

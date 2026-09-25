@@ -74,6 +74,26 @@ export function HaptixBrandLockup({
   )
 }
 
+const HAPTIX_BRAND_LOCKUP_BLACK = require('@/assets/images/haptix-brand-lockup-black.png')
+
+// Merged Brand Logo + Logotype on Solid Black Background
+export function HaptixBrandLockupBlack({
+  height = 22,
+  style,
+}: {
+  height?: number
+  style?: StyleProp<ImageStyle>
+}) {
+  const width = Math.round(height * 3.98)
+  return (
+    <Image
+      source={HAPTIX_BRAND_LOCKUP_BLACK}
+      style={[{ width, height }, style]}
+      resizeMode="contain"
+    />
+  )
+}
+
 // Official Circle USDC Vector Logo
 export function UsdcTokenLogo({ size = 28 }: { size?: number }) {
   return (
