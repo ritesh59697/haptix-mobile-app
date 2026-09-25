@@ -633,10 +633,12 @@ export default function SignIn() {
     >
       <StatusBar style="light" />
 
-      {/* 1. TOP HEADER: Brand Logo Mark + HAPTIX Text (Matching img1) */}
-      <View style={styles.brandHeaderBlock}>
-        <HaptixBrandMark size={38} color="#FFFFFF" />
-        <Text style={styles.brandHeaderText}>H A P T I X</Text>
+      {/* 1. TOP BAR: Brand Logo + HAPTIX in Left Top Corner */}
+      <View style={styles.topBrandRow}>
+        <View style={styles.heroBrandPill}>
+          <HaptixBrandMark size={24} color="#FFFFFF" />
+          <Text style={styles.heroBrandName}>HAPTIX</Text>
+        </View>
       </View>
 
       {/* 2. MIDDLE SECTION: Clean Hero Headline + Value Proposition */}
@@ -1121,18 +1123,23 @@ const createStyles = (p: OnboardingPalette) =>
       paddingHorizontal: 24,
       justifyContent: 'space-between',
     },
-    brandHeaderBlock: {
+    topBrandRow: {
+      flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 14,
-      marginBottom: 4,
+      justifyContent: 'flex-start',
+      marginTop: 4,
+      marginBottom: 8,
     },
-    brandHeaderText: {
+    heroBrandPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    heroBrandName: {
       color: '#FFFFFF',
-      fontSize: 13.5,
+      fontSize: 15,
       fontWeight: '800',
-      letterSpacing: 4.5,
-      marginTop: 8,
-      textAlign: 'center',
+      letterSpacing: 3.5,
     },
     superMiddleSection: {
       flex: 1,
