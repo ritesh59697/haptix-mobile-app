@@ -633,10 +633,11 @@ export default function SignIn() {
     >
       <StatusBar style="light" />
 
-      {/* 1. TOP BAR: Merged Brand Logo + Text on Sleek Black Pill */}
+      {/* 1. TOP BAR: Brand Logo + Logo Text directly on wallpaper in Left Top Corner */}
       <View style={styles.topBrandRow}>
-        <View style={styles.heroBrandPill}>
-          <HaptixBrandLockupBlack height={22} />
+        <View style={styles.heroBrandRow}>
+          <HaptixBrandMark size={28} />
+          <HaptixLogoText height={20} />
         </View>
       </View>
 
@@ -1129,20 +1130,10 @@ const createStyles = (p: OnboardingPalette) =>
       marginTop: 4,
       marginBottom: 8,
     },
-    heroBrandPill: {
+    heroBrandRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#000000',
-      borderRadius: 999,
-      paddingHorizontal: 14,
-      paddingVertical: 7,
-      borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.14)',
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.6,
-      shadowRadius: 8,
-      elevation: 5,
+      gap: 10,
     },
     superMiddleSection: {
       flex: 1,
