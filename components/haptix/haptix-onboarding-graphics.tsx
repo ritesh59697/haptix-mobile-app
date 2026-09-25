@@ -496,6 +496,36 @@ export function OtherWalletLogo({ size = 32 }: { size?: number }) {
   )
 }
 
+export function SuperlistDoodleArt({ color = 'rgba(0, 0, 0, 0.08)' }: { color?: string }) {
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      <Svg width="100%" height="100%" viewBox="0 0 380 240" fill="none">
+        {/* Slanted dash */}
+        <Path d="M 24 55 L 64 95" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
+        {/* Left ring */}
+        <Circle cx="50" cy="145" r="36" stroke={color} strokeWidth="3.5" />
+        {/* Top-mid circle */}
+        <Circle cx="160" cy="85" r="22" stroke={color} strokeWidth="3.5" />
+        {/* Center triangle */}
+        <Path d="M 130 155 L 148 126 L 166 155 Z" stroke={color} strokeWidth="3" strokeLinejoin="round" />
+        {/* Hand-drawn energetic squiggle */}
+        <Path d="M 180 145 Q 200 95 218 145 T 255 145" stroke={color} strokeWidth="3.5" strokeLinecap="round" />
+        {/* Star asterisk */}
+        <Path
+          d="M 288 145 L 288 195 M 263 170 L 313 170 M 270 152 L 306 188 M 306 152 L 270 188"
+          stroke={color}
+          strokeWidth="3.2"
+          strokeLinecap="round"
+        />
+        {/* Right top circle */}
+        <Circle cx="345" cy="80" r="30" stroke={color} strokeWidth="3.5" />
+        {/* Right corner angle */}
+        <Path d="M 350 148 L 350 176 L 332 176" stroke={color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      </Svg>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
   scannerContainer: {
     alignItems: 'center',
