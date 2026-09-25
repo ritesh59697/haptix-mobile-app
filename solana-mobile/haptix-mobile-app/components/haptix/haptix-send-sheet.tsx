@@ -519,11 +519,19 @@ export function HaptixSendSheet({
         }\n\nSignature: ${ellipsify(sig, 8)}`,
         [
           {
-            text: 'View on Explorer',
-            onPress: () =>
-              Linking.openURL(
-                `https://explorer.solana.com/tx/${sig}?cluster=${network === 'devnet' ? 'devnet' : 'mainnet-beta'}`,
-              ),
+            text: 'Copy Link',
+            onPress: () => {
+              const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+              Clipboard.setString(`https://solscan.io/tx/${sig}${clusterParam}`)
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+            },
+          },
+          {
+            text: 'View on Solscan',
+            onPress: () => {
+              const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+              Linking.openURL(`https://solscan.io/tx/${sig}${clusterParam}`)
+            },
           },
           { text: 'Done', style: 'cancel' },
         ],
