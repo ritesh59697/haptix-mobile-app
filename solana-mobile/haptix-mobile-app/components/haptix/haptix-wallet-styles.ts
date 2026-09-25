@@ -253,6 +253,20 @@ const createStyles = (theme: ThemeTokens) =>
     heroBalanceContent: {
       marginBottom: 16,
     },
+    balanceSkeletonContainer: {
+      gap: 8,
+      paddingVertical: 4,
+    },
+    balanceSkeletonLarge: {
+      width: 170,
+      height: 38,
+      borderRadius: radius.md,
+    },
+    balanceSkeletonSmall: {
+      width: 110,
+      height: 18,
+      borderRadius: radius.sm,
+    },
     heroPrimaryBalance: {
       fontSize: typeScale.hero,
       fontWeight: '700',

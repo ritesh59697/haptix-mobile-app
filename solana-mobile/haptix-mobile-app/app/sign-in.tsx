@@ -41,6 +41,7 @@ import {
   HeroOrbLight,
   BiometricScanGraphic,
 } from '@/components/haptix/haptix-onboarding-graphics'
+import { HaptixAppLoader } from '@/components/haptix/haptix-app-loader'
 import { StatusBar } from 'expo-status-bar'
 
 interface OnboardingPalette {
@@ -135,9 +136,20 @@ const darkPalette: OnboardingPalette = {
 
 export default function SignIn() {
   const insets = useSafeAreaInsets()
-  const { updateWallet } = useAuth()
+  const { activeWallet, isLoading, updateWallet } = useAuth()
   const { themePreference, setThemePreference, isDark } = useAppTheme()
   const dialog = useHaptixDialog()
+
+  // Guard: If the wallet is already authenticated, redirect straight to tabs
+  useEffect(() => {
+    if (!isLoading && activeWallet) {
+      router.replace('/(tabs)')
+    }
+  }, [isLoading, activeWallet])
+
+  if (isLoading || activeWallet) {
+    return <HaptixAppLoader message={activeWallet ? 'Entering wallet…' : 'Loading smart wallet…'} />
+  }
 
   /**
    * Async `confirm`, because the recovery flow has to branch on the answer.
