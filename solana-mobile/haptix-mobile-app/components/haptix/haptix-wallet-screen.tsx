@@ -44,6 +44,7 @@ import {
   ThemeToggleButton,
   HoldToConfirmButton,
 } from '@/components/ui'
+import { HaptixBiometricPromptSheet } from './haptix-biometric-prompt-sheet'
 import {
   fetchHaptixWallet,
   createInitializeWalletInstruction,
@@ -217,6 +218,7 @@ export function HaptixWalletScreen() {
 
   // Agent Policy Customization Inputs
   const [isGrantingSession, setIsGrantingSession] = useState(false)
+  const [showAgentSessionPrompt, setShowAgentSessionPrompt] = useState(false)
   const [customAgentAllowance, setCustomAgentAllowance] = useState('0.25')
   const [customAgentValidHours, setCustomAgentValidHours] = useState('24')
   const [agentRecipient, setAgentRecipient] = useState('')
@@ -637,12 +639,20 @@ export function HaptixWalletScreen() {
   }
 
   // Grant Scoped AI Agent Session Key on Solana Devnet (2-of-2 Passkey Quorum)
-  const handleGrantCustomSession = async () => {
+  const handleInitiateGrantSession = () => {
     if (isFrozen) {
       dialog.alert('Wallet Locked', 'This wallet is locked, so new agent sessions cannot be created. Unlock it first.')
       return
     }
-    if (!activeWallet?.address) return
+    if (!activeWallet?.address) {
+      dialog.alert('Error', 'No active smart wallet found.')
+      return
+    }
+    setShowAgentSessionPrompt(true)
+  }
+
+  const handleExecuteGrantSession = async (onStepChange: (step: 1 | 2) => void) => {
+    if (!activeWallet?.address) throw new Error('No active smart wallet found.')
 
     const allowanceSol = parseFloat(customAgentAllowance) || 0.25
     const hours = parseInt(customAgentValidHours, 10) || 24
@@ -658,6 +668,8 @@ export function HaptixWalletScreen() {
 
       const grantMsg = getGrantAgentSignedMessage(ephemeralAgent.publicKey, allowanceLamports, validForSeconds)
       const primarySig = await signWithPasskey('primary', grantMsg, `Grant ${allowanceSol} SOL Session to Agent`)
+
+      onStepChange(2)
       const secondarySig = await signWithPasskey(
         'secondary',
         grantMsg,
@@ -730,25 +742,38 @@ export function HaptixWalletScreen() {
       }
       setTransactions((prev) => [newTx, ...prev])
 
-      dialog.alert(
-        'Agent Session Granted On-Chain',
-        `Authorized session key on Anchor with ${allowanceSol} SOL allowance.\nValid for: ${hours} hours\n\nSignature: ${ellipsify(sig, 8)}`,
-        [
-          {
-            text: 'View on Explorer',
-            onPress: () => Linking.openURL(`https://explorer.solana.com/tx/${sig}?cluster=devnet`),
-          },
-          { text: 'Done', style: 'default' },
-        ],
-      )
+      setTimeout(() => {
+        setShowAgentSessionPrompt(false)
+        setIsGrantingSession(false)
+
+        dialog.alert(
+          'Agent Session Granted On-Chain',
+          `Authorized session key on Anchor with ${allowanceSol} SOL allowance.\nValid for: ${hours} hours\n\nSignature: ${ellipsify(sig, 8)}`,
+          [
+            {
+              text: 'Copy Link',
+              onPress: () => {
+                const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+                Clipboard.setString(`https://solscan.io/tx/${sig}${clusterParam}`)
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+              },
+            },
+            {
+              text: 'View on Solscan',
+              onPress: () => {
+                const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+                Linking.openURL(`https://solscan.io/tx/${sig}${clusterParam}`)
+              },
+            },
+            { text: 'Done', style: 'default' },
+          ],
+        )
+      }, 1100)
     } catch (err: any) {
       console.error('[Grant Session Error]:', formatChainErrorForLog(err))
-      dialog.alert(
-        'Session Grant Failed',
-        describeChainError(err, 'The agent session could not be granted on-chain. Please try again.'),
-      )
-    } finally {
       setIsGrantingSession(false)
+      const errorText = describeChainError(err, 'The agent session could not be granted on-chain. Please try again.')
+      throw new Error(errorText)
     }
   }
 
@@ -1823,7 +1848,7 @@ export function HaptixWalletScreen() {
           <PrismDepthButton
             size="default"
             title={`Authorize ${customAgentAllowance} SOL · ${customAgentValidHours}h Session`}
-            onPress={handleGrantCustomSession}
+            onPress={handleInitiateGrantSession}
             loading={isGrantingSession}
             disabled={isGrantingSession}
           />
@@ -2829,6 +2854,22 @@ export function HaptixWalletScreen() {
           </View>
         </Modal>
       )}
+
+      {/* Agent Session Biometric Passkey Sheet */}
+      <HaptixBiometricPromptSheet
+        visible={showAgentSessionPrompt}
+        onClose={() => {
+          setShowAgentSessionPrompt(false)
+          setIsGrantingSession(false)
+        }}
+        actionType="agent_session"
+        agentAllowanceSol={parseFloat(customAgentAllowance) || 0.25}
+        agentValidHours={parseInt(customAgentValidHours, 10) || 24}
+        isQuorumRequired={true}
+        securityMode={activeWallet?.securityMode}
+        asModal={true}
+        onAuthorize={handleExecuteGrantSession}
+      />
 
       {/* FLOATING PILL DOCK NAVIGATION */}
       {!isLocked && <HaptixFloatingDock activeTab={dockTab} onSelectTab={handleDockSelect} />}
