@@ -38,13 +38,13 @@ export function HaptixBrandMark({ size = 24, style }: IconProps) {
 
 // Official Haptix Brand Logotype (New Typography)
 export function HaptixLogoText({
-  height = 20,
+  height = 22,
   style,
 }: {
   height?: number
   style?: StyleProp<ImageStyle>
 }) {
-  const width = Math.round(height * 3.0)
+  const width = Math.round(height * 3.6)
   return (
     <Image
       source={HAPTIX_LOGO_TEXT}
@@ -71,26 +71,6 @@ export function HaptixBrandLockup({
       <HaptixBrandMark size={iconSize} />
       <HaptixLogoText height={textHeight} />
     </View>
-  )
-}
-
-const HAPTIX_BRAND_LOCKUP_BLACK = require('@/assets/images/haptix-brand-lockup-black.png')
-
-// Merged Brand Logo + Logotype on Solid Black Background
-export function HaptixBrandLockupBlack({
-  height = 22,
-  style,
-}: {
-  height?: number
-  style?: StyleProp<ImageStyle>
-}) {
-  const width = Math.round(height * 3.98)
-  return (
-    <Image
-      source={HAPTIX_BRAND_LOCKUP_BLACK}
-      style={[{ width, height }, style]}
-      resizeMode="contain"
-    />
   )
 }
 
