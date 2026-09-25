@@ -52,6 +52,7 @@ import {
   parseGuardianAddress,
 } from '@/utils/haptix-client'
 import { useHaptixDialog } from './haptix-dialog'
+import { HaptixBiometricPromptSheet } from './haptix-biometric-prompt-sheet'
 import { radius, space, typeScale, ThemeTokens } from '@/theme/tokens'
 
 // The fee quoted before the cluster has answered. `estimateTransferFee` prices the real
@@ -132,6 +133,7 @@ export function HaptixSendSheet({
   const styles = useSendSheetStyles()
 
   const [isSending, setIsSending] = useState(false)
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
   const [sendErrorMsg, setSendErrorMsg] = useState('')
   const [sendRecipient, setSendRecipient] = useState('')
   const [sendAmountText, setSendAmountText] = useState('0.05')
@@ -328,8 +330,8 @@ export function HaptixSendSheet({
     )
   }
 
-  // On-chain Send Transaction via Haptix Anchor Program & Secp256r1 Precompile
-  const handleSendTransaction = async () => {
+  // Initiate send flow by validating inputs and opening the clean biometric prompt sheet
+  const handleInitiateSendFlow = () => {
     setSendErrorMsg('')
     if (isFrozen) {
       dialog.alert(
@@ -359,13 +361,9 @@ export function HaptixSendSheet({
       setSendRecipientSource(parsedRecipient.source)
     }
 
-    let toPubkey: PublicKey
     try {
-      toPubkey = new PublicKey(sendRecipient.trim())
+      new PublicKey(sendRecipient.trim())
     } catch {
-      // `parseRecipientInput` knows which mistake this is (0x address, .sol name, a
-      // character that base58 does not contain); saying "invalid address" for all of
-      // them was the reason a pasted link gave no clue what to fix.
       setSendRecipientAttempted(true)
       dialog.alert('Invalid Address', parsedRecipient.error ?? 'Please enter a valid Solana address.')
       return
@@ -376,7 +374,19 @@ export function HaptixSendSheet({
       return
     }
 
-    const walletPda = new PublicKey(wallet.address)
+    setShowBiometricPrompt(true)
+  }
+
+  // On-chain Send Transaction execution via Haptix Anchor Program & Secp256r1 Precompile
+  const handleExecuteSend = async (onStepChange: (step: 1 | 2) => void) => {
+    const amt = parseFloat(sendAmountText) || 0
+    const toPubkey = new PublicKey(sendRecipient.trim())
+    const activeWallet = wallet
+    if (!activeWallet?.address) {
+      throw new Error('No active smart wallet found.')
+    }
+
+    const walletPda = new PublicKey(activeWallet.address)
     const isHighRiskQuorum = amt > spendThreshold
     const amountLamports = BigInt(Math.round(amt * LAMPORTS_PER_SOL))
 
@@ -406,21 +416,21 @@ export function HaptixSendSheet({
 
       // Check if counterfactual PDA is already initialized on-chain
       const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
-      const needsInit = !onChain && !!(wallet.primaryPasskeyHex && wallet.secondaryPasskeyHex)
+      const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
 
       let txInstructions = []
 
       // If wallet is not yet on-chain, atomically initialize it first in the SAME transaction
       if (needsInit) {
-        const primaryPasskey = new Uint8Array(Buffer.from(wallet.primaryPasskeyHex, 'hex'))
-        const secondaryPasskey = new Uint8Array(Buffer.from(wallet.secondaryPasskeyHex, 'hex'))
+        const primaryPasskey = new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex'))
+        const secondaryPasskey = new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex'))
         const initIx = createInitializeWalletInstruction({
           payer: payer.publicKey,
           walletPda,
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: parseGuardianAddress(wallet.guardianAddress) ?? undefined,
+          guardian: parseGuardianAddress(activeWallet.guardianAddress) ?? undefined,
         })
         txInstructions.push(initIx)
       }
@@ -429,9 +439,10 @@ export function HaptixSendSheet({
       const secondarySigIxIndex = needsInit ? (isHighRiskQuorum ? 2 : undefined) : isHighRiskQuorum ? 1 : undefined
 
       if (isHighRiskQuorum) {
+        onStepChange(2)
         // 2. High-Risk: 2-of-2 passkey quorum required
         const secondaryPrompt =
-          wallet?.securityMode === 'vault'
+          activeWallet?.securityMode === 'vault'
             ? `Touch your Vault Key (Mac / YubiKey) to approve ${amt} SOL`
             : `Confirm with your backup key: ${amt} SOL`
         const secondarySig = await signWithPasskey('secondary', message, secondaryPrompt)
@@ -510,39 +521,42 @@ export function HaptixSendSheet({
         status: 'confirmed',
       })
 
-      onClose()
+      setTimeout(() => {
+        setShowBiometricPrompt(false)
+        setIsSending(false)
+        onClose()
 
-      dialog.alert(
-        'Transfer Confirmed On-Chain',
-        `Sent ${amt} SOL.\n\n${
-          isHighRiskQuorum ? 'Verified: both passkeys' : 'Verified: passkey'
-        }\n\nSignature: ${ellipsify(sig, 8)}`,
-        [
-          {
-            text: 'Copy Link',
-            onPress: () => {
-              const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-              Clipboard.setString(`https://solscan.io/tx/${sig}${clusterParam}`)
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+        dialog.alert(
+          'Transfer Confirmed On-Chain',
+          `Sent ${amt} SOL.\n\n${
+            isHighRiskQuorum ? 'Verified: both passkeys' : 'Verified: passkey'
+          }\n\nSignature: ${ellipsify(sig, 8)}`,
+          [
+            {
+              text: 'Copy Link',
+              onPress: () => {
+                const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+                Clipboard.setString(`https://solscan.io/tx/${sig}${clusterParam}`)
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+              },
             },
-          },
-          {
-            text: 'View on Solscan',
-            onPress: () => {
-              const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-              Linking.openURL(`https://solscan.io/tx/${sig}${clusterParam}`)
+            {
+              text: 'View on Solscan',
+              onPress: () => {
+                const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+                Linking.openURL(`https://solscan.io/tx/${sig}${clusterParam}`)
+              },
             },
-          },
-          { text: 'Done', style: 'cancel' },
-        ],
-      )
+            { text: 'Done', style: 'cancel' },
+          ],
+        )
+      }, 1100)
     } catch (err: any) {
       console.error('[Haptix Send] Execution error:', formatChainErrorForLog(err))
       const errorText = describeChainError(err, 'The transfer could not be completed on-chain. Please try again.')
       setSendErrorMsg(errorText)
-      dialog.alert('Transfer Failed', errorText)
-    } finally {
       setIsSending(false)
+      throw new Error(errorText)
     }
   }
 
@@ -1168,7 +1182,7 @@ export function HaptixSendSheet({
                       : 'Authorize with Both Passkeys'
                     : 'Sign & Send with Passkey'
                 }
-                onPress={handleSendTransaction}
+                onPress={handleInitiateSendFlow}
                 loading={isSending}
                 // A missing (or unusable) recipient is a reason not to send, so the button
                 // says so instead of appearing ready and failing after the tap.
@@ -1184,6 +1198,24 @@ export function HaptixSendSheet({
             </View>
           </ScrollView>
         </View>
+
+        {/* Clean Biometric Passkey Sheet (In-Modal Overlay) */}
+        <HaptixBiometricPromptSheet
+          visible={showBiometricPrompt}
+          onClose={() => {
+            setShowBiometricPrompt(false)
+            setIsSending(false)
+          }}
+          actionType="transfer"
+          amountSol={sendAmountNum}
+          solPriceUsd={solPriceUsd}
+          recipientAddress={sendRecipient}
+          recipientLabel={resolvedName || (savedContact ? savedContact.label : undefined)}
+          isQuorumRequired={isSendQuorumRequired}
+          securityMode={wallet?.securityMode ?? 'phone'}
+          asModal={false}
+          onAuthorize={handleExecuteSend}
+        />
       </KeyboardAvoidingView>
     </Modal>
   )
