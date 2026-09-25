@@ -2,10 +2,11 @@ import React, { useMemo } from 'react'
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { radius, typeScale } from '@/theme/tokens'
 
-export type PolicyTopic = 'agents' | 'security'
+export type PolicyTopic = 'agents' | 'security' | 'recovery'
 
 interface PolicyRow {
   term: string
@@ -195,16 +196,77 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
         },
       ],
     },
+    recovery: {
+      title: 'Guardian recovery & timelock',
+      intro: 'How you rescue this wallet if you lose your phone, with no seed phrases and no risk of stolen funds.',
+      sections: [
+        {
+          heading: 'Zero seed phrases',
+          rows: [
+            {
+              term: 'Smart contract recovery',
+              detail:
+                'Smart wallets eliminate seed phrase vulnerabilities. Instead of a 12-word phrase that can be leaked or phished, an on-chain guardian initiates recovery.',
+            },
+            {
+              term: 'Same wallet address',
+              detail:
+                'A recovery never moves the wallet: the address stays identical, so anything sent to it before or during the window is still yours afterwards.',
+            },
+          ],
+        },
+        {
+          heading: 'Guardian powers & limits',
+          rows: [
+            {
+              term: 'Propose-only authority',
+              detail:
+                'A guardian has exactly one power: starting a recovery with new proposed passkeys. A guardian cannot spend funds, sign transfers, or steal assets.',
+            },
+            {
+              term: 'Changing your guardian',
+              detail:
+                'You can update your guardian address at any time using your two device passkeys.',
+            },
+          ],
+        },
+        {
+          heading: 'Timelock & veto protection',
+          rows: [
+            {
+              term: 'Automatic wallet lock',
+              detail:
+                'Starting a recovery immediately freezes the wallet on-chain to protect against drainers while the timelock window runs.',
+            },
+            {
+              term: 'Timelock delay window',
+              detail:
+                'Recovery requires a configured delay (e.g. 24 hours). This guarantees you have time to notice and react if someone attempts an unauthorized recovery.',
+            },
+            {
+              term: 'Owner cancellation (Veto)',
+              detail:
+                'If an unauthorized recovery is initiated, you can cancel it immediately and unfreeze your wallet using both of your device passkeys.',
+            },
+            {
+              term: 'Execution after timelock',
+              detail:
+                'If the device was truly lost and the timelock elapses without a veto, the guardian can execute the recovery, rotating the passkeys to your new device.',
+            },
+          ],
+        },
+      ],
+    },
   }
 }
 
-interface HaptixPolicySheetProps {
+export interface HaptixPolicySheetProps {
   topic: PolicyTopic | null
-  threshold: number
+  threshold?: number
   onClose: () => void
 }
 
-export function HaptixPolicySheet({ topic, threshold, onClose }: HaptixPolicySheetProps) {
+export function HaptixPolicySheet({ topic, threshold = 0.1, onClose }: HaptixPolicySheetProps) {
   const insets = useSafeAreaInsets()
   const { theme } = useAppTheme()
   const content = useMemo(() => (topic ? buildPolicy(threshold)[topic] : null), [topic, threshold])
@@ -372,4 +434,48 @@ const styles = StyleSheet.create({
     fontSize: typeScale.title,
     fontWeight: '700',
   },
+  policyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  policyLinkText: {
+    fontSize: typeScale.caption,
+    fontWeight: '600',
+  },
 })
+
+export interface PolicyLinkButtonProps {
+  onPress: () => void
+  label?: string
+}
+
+export function PolicyLinkButton({ onPress, label = 'How this works' }: PolicyLinkButtonProps) {
+  const { theme } = useAppTheme()
+  return (
+    <TouchableOpacity
+      style={[
+        styles.policyLink,
+        {
+          borderColor: theme.borderDefault,
+          backgroundColor: theme.accentLight,
+        },
+      ]}
+      onPress={() => {
+        Haptics.selectionAsync().catch(() => {})
+        onPress()
+      }}
+      activeOpacity={0.7}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <MaterialIcons name="info-outline" size={13} color={theme.textSecondary} />
+      <Text style={[styles.policyLinkText, { color: theme.textSecondary }]}>{label}</Text>
+    </TouchableOpacity>
+  )
+}

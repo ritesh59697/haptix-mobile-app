@@ -23,6 +23,7 @@ import { useCluster } from '@/components/cluster/cluster-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { HaptixAlert } from '@/components/haptix/haptix-alert'
+import { HaptixPolicySheet, PolicyLinkButton } from '@/components/haptix/haptix-policy-sheet'
 import { DepthOutlineButton, HoldToConfirmButton, PrismDepthButton } from '@/components/ui'
 import { useGuardianSigner } from '@/hooks/use-guardian-signer'
 import { ellipsify } from '@/utils/ellipsify'
@@ -82,6 +83,7 @@ export default function RecoverySettingsScreen() {
   const [guardianDraft, setGuardianDraft] = useState('')
   const [showGuardianEditor, setShowGuardianEditor] = useState(false)
   const [guardianBusy, setGuardianBusy] = useState(false)
+  const [showPolicySheet, setShowPolicySheet] = useState(false)
   const [nowSeconds, setNowSeconds] = useState(() => Math.floor(Date.now() / 1000))
 
   const walletAddress = activeWallet?.address ?? null
@@ -486,7 +488,10 @@ export default function RecoverySettingsScreen() {
             <MaterialIcons name="arrow-back" size={18} color={theme.textPrimary} />
           </TouchableOpacity>
           <View style={styles.pageTitleText}>
-            <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Recovery</Text>
+            <View style={styles.titleWithPolicyRow}>
+              <Text style={[styles.pageTitle, { color: theme.textPrimary }]}>Recovery</Text>
+              <PolicyLinkButton onPress={() => setShowPolicySheet(true)} />
+            </View>
             <Text style={[styles.pageSubtitle, { color: theme.textMuted }]}>
               Who can rescue this wallet if you lose this device
             </Text>
@@ -712,6 +717,12 @@ export default function RecoverySettingsScreen() {
           still yours afterwards.
         </Text>
       </ScrollView>
+
+      {/* Recovery Policy Sheet */}
+      <HaptixPolicySheet
+        topic={showPolicySheet ? 'recovery' : null}
+        onClose={() => setShowPolicySheet(false)}
+      />
     </View>
   )
 }
@@ -730,6 +741,12 @@ const createStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
+    },
+    titleWithPolicyRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
     },
     backBtn: {
       width: 36,
