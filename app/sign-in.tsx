@@ -19,7 +19,7 @@ import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Clipboard from '@/utils/clipboard'
 
-const ONBOARDING_BG = require('@/assets/images/onboarding-bg.jpg')
+const ONBOARDING_BG = require('@/assets/images/onboarding-bg.png')
 import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { AppConfig } from '@/constants/app-config'
 import { saveWallet, getSavedWallet, createSmartWalletRecord } from '@/utils/haptix-wallet-storage'
@@ -630,12 +630,12 @@ export default function SignIn() {
       ]}
       resizeMode="cover"
     >
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* Top Header: Brand & Theme Toggle */}
       <View style={styles.heroTopRow}>
         <View style={styles.heroBrandPill}>
-          <HaptixBrandMark size={28} color="#FFFFFF" />
+          <HaptixBrandMark size={28} color="#131217" />
           <Text style={styles.heroBrandName}>HAPTIX</Text>
         </View>
 
@@ -650,7 +650,7 @@ export default function SignIn() {
           <MaterialIcons
             name={isDark ? 'light-mode' : 'dark-mode'}
             size={18}
-            color="#FFFFFF"
+            color="#131217"
           />
         </TouchableOpacity>
       </View>
@@ -1146,7 +1146,7 @@ const createStyles = (p: OnboardingPalette) =>
       gap: 9,
     },
     heroBrandName: {
-      color: '#FFFFFF',
+      color: '#131217',
       fontSize: 14.5,
       fontWeight: '800',
       letterSpacing: 3,
@@ -1155,9 +1155,9 @@ const createStyles = (p: OnboardingPalette) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+      backgroundColor: 'rgba(0, 0, 0, 0.06)',
       borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.18)',
+      borderColor: 'rgba(0, 0, 0, 0.10)',
       alignItems: 'center',
       justifyContent: 'center',
     },
