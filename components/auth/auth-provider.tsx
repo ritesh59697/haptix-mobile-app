@@ -6,6 +6,7 @@ import {
   loadWallets,
   saveWallet,
   removeWallet,
+  removeWalletByAddress,
   createSmartWalletRecord,
   setWalletLockState,
 } from '@/utils/haptix-wallet-storage'
@@ -25,11 +26,15 @@ export interface AuthState {
   /** Every wallet saved on this device, for the account switcher. */
   wallets: HaptixWalletAccount[]
   switchWallet: (address: string) => Promise<boolean>
-  createWallet: (name?: string) => Promise<HaptixWalletAccount>
+  createWallet: (
+    name?: string,
+    options?: { mode?: 'everyday' | 'vault'; spendThreshold?: number },
+  ) => Promise<HaptixWalletAccount>
   restoreWallet: () => Promise<HaptixWalletAccount>
   lockWallet: () => Promise<void>
   unlockWallet: () => Promise<boolean>
   updateWallet: (updated: HaptixWalletAccount) => Promise<void>
+  removeAccount: (address: string) => Promise<void>
   signOut: () => Promise<void>
   isLoading: boolean
 }
@@ -107,11 +112,25 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setWallets(await loadWallets())
   }
 
-  const handleCreateWallet = async (name?: string): Promise<HaptixWalletAccount> => {
+  const handleCreateWallet = async (
+    name?: string,
+    options?: { mode?: 'everyday' | 'vault'; spendThreshold?: number },
+  ): Promise<HaptixWalletAccount> => {
+    const isFirstWallet = wallets.length === 0
+    const finalName = name?.trim() || `Account ${wallets.length + 1}`
+    const mode = options?.mode || 'everyday'
+    const forceNew = !isFirstWallet
+
     // Generate device-bound Secp256r1 keys in OS secure storage
-    const finalName = name || 'Personal Smart Wallet'
-    const primary = await getOrCreatePrimaryPasskey(finalName)
-    const secondary = await getOrCreateSecondaryPasskey(finalName)
+    const primary = await getOrCreatePrimaryPasskey(finalName, { forceNew })
+    const secondary = await getOrCreateSecondaryPasskey(finalName, { forceNew })
+
+    const threshold =
+      options?.spendThreshold !== undefined
+        ? options.spendThreshold
+        : mode === 'vault'
+          ? 0.0
+          : 0.1
 
     const created = await createSmartWalletRecord({
       name: finalName,
@@ -121,7 +140,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       secondaryCredentialId: credentialIdForRecord(secondary),
       primaryLabel: primary.label,
       secondaryLabel: secondary.label,
-      spendThreshold: 0.1,
+      spendThreshold: threshold,
+      securityMode: mode,
     })
 
     setActiveWallet(created)
@@ -223,6 +243,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return true
   }
 
+  const handleRemoveAccount = async (address: string) => {
+    await Promise.all([clearTxHistory(address), clearCachedBalance(address)])
+    const nextWallet = await removeWalletByAddress(address)
+    if (nextWallet) {
+      await handleSwitchWallet(nextWallet.address)
+    } else {
+      setActiveWallet(null)
+      setIsLocked(false)
+    }
+    await refreshWallets()
+  }
+
   const handleSignOut = async () => {
     // Signing out means forgetting this device, so the cached chain data goes too. The
     // history is keyed by address and would otherwise still be readable on a shared
@@ -249,6 +281,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       lockWallet: handleLockWallet,
       unlockWallet: handleUnlockWallet,
       updateWallet: handleUpdateWallet,
+      removeAccount: handleRemoveAccount,
       signOut: handleSignOut,
       isLoading: isInitializing,
     }),

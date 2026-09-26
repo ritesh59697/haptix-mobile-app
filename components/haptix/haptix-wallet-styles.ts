@@ -97,6 +97,12 @@ const createStyles = (theme: ThemeTokens) =>
     identityTextGroup: {
       justifyContent: 'center',
     },
+    accountSwitcherTrigger: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      maxWidth: 180,
+    },
     headerWalletName: {
       fontSize: typeScale.title,
       fontWeight: '700',

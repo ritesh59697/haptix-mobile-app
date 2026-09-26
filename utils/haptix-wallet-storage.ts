@@ -129,6 +129,34 @@ export async function removeWallet(): Promise<void> {
   }
 }
 
+/**
+ * Removes a single account by address while leaving other accounts intact.
+ * Returns the next active wallet, or null if no accounts remain.
+ */
+export async function removeWalletByAddress(address: string): Promise<HaptixWalletAccount | null> {
+  try {
+    const wallets = await loadWallets()
+    const remaining = wallets.filter((w) => w.address !== address)
+    await AsyncStorage.setItem(WALLETS_KEY, JSON.stringify(remaining))
+
+    const activeAddress = await AsyncStorage.getItem(ACTIVE_ADDRESS_KEY)
+    if (activeAddress === address) {
+      if (remaining.length > 0) {
+        const next = remaining[0]
+        await AsyncStorage.setItem(ACTIVE_ADDRESS_KEY, next.address)
+        return next
+      } else {
+        await AsyncStorage.removeItem(ACTIVE_ADDRESS_KEY)
+        return null
+      }
+    }
+    return remaining.find((w) => w.address === activeAddress) ?? null
+  } catch (err) {
+    console.error('[Haptix Storage] Failed to remove wallet by address', err)
+    return null
+  }
+}
+
 export async function setWalletLockState(isLocked: boolean): Promise<void> {
   const current = await getSavedWallet()
   if (current) {

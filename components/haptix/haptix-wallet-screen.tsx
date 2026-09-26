@@ -98,6 +98,7 @@ import {
 import { HaptixFloatingDock, DockTabId } from './haptix-floating-dock'
 import { HaptixIosTabs, IosTabItem } from './haptix-ios-tabs'
 import { HaptixPolicySheet, PolicyLinkButton, PolicyTopic } from './haptix-policy-sheet'
+import { HaptixAccountSwitcherSheet } from './haptix-account-switcher-sheet'
 import { HaptixSendSheet } from './haptix-send-sheet'
 import { HaptixTokenDetailSheet } from './haptix-token-detail-sheet'
 import { HaptixSwapSheet } from './haptix-swap-sheet'
@@ -192,6 +193,7 @@ export function HaptixWalletScreen() {
   const [showOverflowMenu, setShowOverflowMenu] = useState(false)
   const [showTxDetailModal, setShowTxDetailModal] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionRecord | null>(null)
+  const [isAccountSwitcherOpen, setIsAccountSwitcherOpen] = useState(false)
 
   const [copiedTxLink, setCopiedTxLink] = useState(false)
   const copyTxLinkTimeoutRef = useRef<any>(null)
@@ -2273,9 +2275,21 @@ export function HaptixWalletScreen() {
           </TouchableOpacity>
 
           <View style={styles.identityTextGroup}>
-            <Text style={[styles.headerWalletName, styles.textPrimary]} numberOfLines={1}>
-              {activeWallet?.name || 'Haptix Wallet'}
-            </Text>
+            <TouchableOpacity
+              style={styles.accountSwitcherTrigger}
+              onPress={() => {
+                Haptics.selectionAsync()
+                setIsAccountSwitcherOpen(true)
+              }}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`Switch account, currently ${activeWallet?.name || 'Haptix Wallet'}`}
+            >
+              <Text style={[styles.headerWalletName, styles.textPrimary]} numberOfLines={1}>
+                {activeWallet?.name || 'Haptix Wallet'}
+              </Text>
+              <MaterialIcons name="keyboard-arrow-down" size={17} color={theme.textSecondary} />
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.addressCopyChip, styles.card]}
               onPress={handleCopyWalletAddress}
@@ -2853,6 +2867,14 @@ export function HaptixWalletScreen() {
       {/* UNIFIED POLICY / HELP SHEET                                          */}
       {/* ==================================================================== */}
       <HaptixPolicySheet topic={policyTopic} threshold={spendThreshold} onClose={() => setPolicyTopic(null)} />
+
+      {/* ==================================================================== */}
+      {/* ACCOUNT SWITCHER & CREATION SHEET                                    */}
+      {/* ==================================================================== */}
+      <HaptixAccountSwitcherSheet
+        visible={isAccountSwitcherOpen}
+        onClose={() => setIsAccountSwitcherOpen(false)}
+      />
 
       {/* ==================================================================== */}
       {/* 9. SAFE LOCK FULLSCREEN OVERLAY                                      */}

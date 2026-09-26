@@ -1379,41 +1379,50 @@ export async function applyWalletCredentials(wallet: {
  * plaintext key is migrated rather than discarded, so existing wallets keep the same
  * address). Only wallets that do not already have a key get a platform passkey.
  */
-export async function getOrCreatePrimaryPasskey(walletName: string = 'Haptix Wallet'): Promise<PasskeyInfo> {
+export async function getOrCreatePrimaryPasskey(
+  walletName: string = 'Haptix Wallet',
+  options?: { forceNew?: boolean },
+): Promise<PasskeyInfo> {
   await removeLegacyVaults()
 
-  const migratedPubkey = await migrateLegacyPlaintextScalar('primary')
-  const existingPubHex = migratedPubkey ?? (await AsyncStorage.getItem(PUBKEY_KEY_PRIMARY))
+  if (!options?.forceNew) {
+    const migratedPubkey = await migrateLegacyPlaintextScalar('primary')
+    const existingPubHex = migratedPubkey ?? (await AsyncStorage.getItem(PUBKEY_KEY_PRIMARY))
 
-  // A wallet whose on-chain PDA was derived from a software key must keep signing
-  // with that exact scalar, so the legacy path is checked first and left alone.
-  if (existingPubHex && (await readMode('primary')) === 'software') {
-    const scalar = await readScalar('primary')
-    if (scalar) {
-      const publicKeyHex = compressedPubkeyHex(scalar)
-      await AsyncStorage.setItem(PUBKEY_KEY_PRIMARY, publicKeyHex)
-      await writeMode('primary', 'software')
-      return {
-        id: 'primary',
-        credentialId: (await AsyncStorage.getItem(CREDENTIAL_KEY_PRIMARY)) ?? '',
-        publicKey: hexToBytes(publicKeyHex),
-        publicKeyHex,
-        label: DEVICE_KEY_LABELS.primary,
-        hasBiometrics: true,
-        mode: 'software',
-        hardwareBacked: false,
+    // A wallet whose on-chain PDA was derived from a software key must keep signing
+    // with that exact scalar, so the legacy path is checked first and left alone.
+    if (existingPubHex && (await readMode('primary')) === 'software') {
+      const scalar = await readScalar('primary')
+      if (scalar) {
+        const publicKeyHex = compressedPubkeyHex(scalar)
+        await AsyncStorage.setItem(PUBKEY_KEY_PRIMARY, publicKeyHex)
+        await writeMode('primary', 'software')
+        return {
+          id: 'primary',
+          credentialId: (await AsyncStorage.getItem(CREDENTIAL_KEY_PRIMARY)) ?? '',
+          publicKey: hexToBytes(publicKeyHex),
+          publicKeyHex,
+          label: DEVICE_KEY_LABELS.primary,
+          hasBiometrics: true,
+          mode: 'software',
+          hardwareBacked: false,
+        }
       }
     }
+
+    if (Platform.OS === 'web') {
+      return await registerWebAuthnPasskey('primary', walletName)
+    }
+
+    // Reuse before creating: see getRegisteredHardwarePasskey. Returning the wallet the
+    // device already holds is what keeps the address (and the funds at it) stable.
+    const registered = await getRegisteredHardwarePasskey('primary')
+    if (registered) return registered
   }
 
   if (Platform.OS === 'web') {
     return await registerWebAuthnPasskey('primary', walletName)
   }
-
-  // Reuse before creating: see getRegisteredHardwarePasskey. Returning the wallet the
-  // device already holds is what keeps the address (and the funds at it) stable.
-  const registered = await getRegisteredHardwarePasskey('primary')
-  if (registered) return registered
 
   return await registerHardwarePasskey('primary', walletName)
 }
@@ -1430,29 +1439,43 @@ export async function getOrCreateSecondaryPasskey(
   walletName: string = 'Haptix Wallet',
   options?: {
     attachment?: 'platform' | 'securityKey' | 'any'
+    forceNew?: boolean
   },
 ): Promise<PasskeyInfo> {
   const attachment = options?.attachment ?? 'platform'
-  const migratedPubkey = await migrateLegacyPlaintextScalar('secondary')
-  const existingPubHex = migratedPubkey ?? (await AsyncStorage.getItem(PUBKEY_KEY_SECONDARY))
+  if (!options?.forceNew) {
+    const migratedPubkey = await migrateLegacyPlaintextScalar('secondary')
+    const existingPubHex = migratedPubkey ?? (await AsyncStorage.getItem(PUBKEY_KEY_SECONDARY))
 
-  if (existingPubHex && (await readMode('secondary')) === 'software') {
-    const scalar = await readScalar('secondary')
-    if (scalar) {
-      const publicKeyHex = compressedPubkeyHex(scalar)
-      await AsyncStorage.setItem(PUBKEY_KEY_SECONDARY, publicKeyHex)
-      await writeMode('secondary', 'software')
-      return {
-        id: 'secondary',
-        credentialId: (await AsyncStorage.getItem(CREDENTIAL_KEY_SECONDARY)) ?? '',
-        publicKey: hexToBytes(publicKeyHex),
-        publicKeyHex,
-        label: DEVICE_KEY_LABELS.secondary,
-        hasBiometrics: true,
-        mode: 'software',
-        hardwareBacked: false,
+    if (existingPubHex && (await readMode('secondary')) === 'software') {
+      const scalar = await readScalar('secondary')
+      if (scalar) {
+        const publicKeyHex = compressedPubkeyHex(scalar)
+        await AsyncStorage.setItem(PUBKEY_KEY_SECONDARY, publicKeyHex)
+        await writeMode('secondary', 'software')
+        return {
+          id: 'secondary',
+          credentialId: (await AsyncStorage.getItem(CREDENTIAL_KEY_SECONDARY)) ?? '',
+          publicKey: hexToBytes(publicKeyHex),
+          publicKeyHex,
+          label: DEVICE_KEY_LABELS.secondary,
+          hasBiometrics: true,
+          mode: 'software',
+          hardwareBacked: false,
+        }
       }
     }
+
+    if (Platform.OS === 'web') {
+      return await registerWebAuthnPasskey(
+        'secondary',
+        walletName,
+        attachment === 'platform' ? 'platform' : 'cross-platform',
+      )
+    }
+
+    const registered = await getRegisteredHardwarePasskey('secondary')
+    if (registered) return registered
   }
 
   if (Platform.OS === 'web') {
@@ -1462,9 +1485,6 @@ export async function getOrCreateSecondaryPasskey(
       attachment === 'platform' ? 'platform' : 'cross-platform',
     )
   }
-
-  const registered = await getRegisteredHardwarePasskey('secondary')
-  if (registered) return registered
 
   return await registerHardwarePasskey('secondary', walletName, attachment)
 }
