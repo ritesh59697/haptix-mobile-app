@@ -6,41 +6,49 @@
 <title>Haptix Vault — Mac Secure Enclave</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: light dark;
-    --bg: #0b0b0a;
-    --card: #151412;
-    --border: rgba(255, 255, 255, 0.09);
-    --border-strong: rgba(255, 255, 255, 0.16);
-    --text-1: #f5f4f2;
-    --text-2: #98958d;
-    --text-3: #63615a;
-    --key-bg: #1d1c19;
-    --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 20px 40px -20px rgba(0, 0, 0, 0.6);
-    --accent-ok: #3ddc84;
-    --accent-ok-bg: rgba(61, 220, 132, 0.12);
-    --overlay: rgba(0, 0, 0, 0.55);
-    --radius-card: 20px;
+    --bg: #09090b;
+    --bg-radial: rgba(255, 255, 255, 0.035);
+    --card: #121215;
+    --card-inner: #18181c;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text-1: #f4f4f5;
+    --text-2: #a1a1aa;
+    --text-3: #71717a;
+    --key-bg: #18181c;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 64px -16px rgba(0, 0, 0, 0.8), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+    --accent-ok: #34d399;
+    --accent-ok-bg: rgba(52, 211, 153, 0.12);
+    --overlay: rgba(0, 0, 0, 0.65);
+    --btn-primary-bg: #f4f4f5;
+    --btn-primary-text: #09090b;
+    --radius-card: 22px;
     --radius-ctrl: 12px;
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   }
 
   :root[data-theme="light"] {
-    --bg: #f7f7f6;
+    --bg: #f5f5f7;
+    --bg-radial: rgba(0, 0, 0, 0.025);
     --card: #ffffff;
-    --border: rgba(15, 15, 15, 0.09);
-    --border-strong: rgba(15, 15, 15, 0.14);
-    --text-1: #111110;
-    --text-2: #67655f;
-    --text-3: #a2a09a;
-    --key-bg: #f4f3f1;
-    --shadow: 0 1px 2px rgba(20, 18, 14, 0.04), 0 12px 32px -16px rgba(20, 18, 14, 0.12);
-    --accent-ok: #1f8a4c;
-    --accent-ok-bg: rgba(31, 138, 76, 0.10);
-    --overlay: rgba(20, 18, 14, 0.32);
+    --card-inner: #f8f8fa;
+    --border: rgba(0, 0, 0, 0.08);
+    --border-strong: rgba(0, 0, 0, 0.14);
+    --text-1: #09090b;
+    --text-2: #52525b;
+    --text-3: #a1a1aa;
+    --key-bg: #f4f4f5;
+    --shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 20px 48px -12px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.03);
+    --accent-ok: #059669;
+    --accent-ok-bg: rgba(16, 185, 129, 0.10);
+    --overlay: rgba(15, 23, 42, 0.35);
+    --btn-primary-bg: #09090b;
+    --btn-primary-text: #ffffff;
   }
 
   * { box-sizing: border-box; }
@@ -48,54 +56,56 @@
 
   body {
     margin: 0;
-    background: var(--bg);
+    background-color: var(--bg);
+    background-image: radial-gradient(circle at 50% 38%, var(--bg-radial) 0%, transparent 68%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     color: var(--text-1);
     min-height: 100%;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px;
-    padding-top: max(24px, env(safe-area-inset-top, 0px));
-    padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
-    transition: background 0.3s var(--ease), color 0.3s var(--ease);
+    padding: 32px 24px;
+    transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
   }
 
   .stage {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     width: 100%;
-    max-width: 400px;
+    max-width: 480px;
   }
 
-  /* ---------- Card ---------- */
+  /* ---------- Main Card ---------- */
   .card {
     width: 100%;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow);
-    padding: 24px;
+    padding: 32px 30px 28px;
     position: relative;
-    transition: background 0.3s var(--ease), border-color 0.3s var(--ease);
+    transition: background 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
   }
 
   .card-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 22px;
+    margin-bottom: 24px;
   }
 
   .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
   }
 
   .mark-img {
-    height: 22px;
+    height: 24px;
     width: auto;
     object-fit: contain;
   }
@@ -105,14 +115,14 @@
   }
 
   .mark {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     flex-shrink: 0;
     color: var(--text-1);
   }
 
   .brand-text h1 {
-    font-size: 14.5px;
+    font-size: 15px;
     font-weight: 600;
     letter-spacing: -0.01em;
     margin: 0;
@@ -122,7 +132,7 @@
   .brand-text p {
     font-size: 12px;
     color: var(--text-3);
-    margin: 1px 0 0;
+    margin: 2px 0 0;
     line-height: 1.2;
   }
 
@@ -130,9 +140,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 9px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
     border: 1px solid var(--border);
     background: transparent;
     color: var(--text-2);
@@ -140,9 +150,48 @@
     transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.15s var(--ease);
   }
 
-  .icon-btn:hover { background: var(--key-bg); color: var(--text-1); }
+  .icon-btn:hover { background: var(--key-bg); color: var(--text-1); border-color: var(--border-strong); }
   .icon-btn:active { transform: scale(0.94); }
-  .icon-btn svg { width: 15px; height: 15px; }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* ---------- Hardware Badge Visual ---------- */
+  .hardware-anchor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 8px 0 16px;
+  }
+
+  .hardware-icon-box {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-1);
+    margin-bottom: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .hardware-title {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 4px;
+    color: var(--text-1);
+  }
+
+  .hardware-subtitle {
+    font-size: 13px;
+    color: var(--text-2);
+    margin: 0;
+    max-width: 340px;
+    line-height: 1.45;
+  }
 
   /* ---------- State swap ---------- */
   .state-view { position: relative; }
@@ -150,13 +199,13 @@
   .state {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 20px;
   }
 
   .state[hidden] { display: none !important; }
 
   .state-enter {
-    animation: rise 0.35s var(--ease);
+    animation: rise 0.32s var(--ease);
   }
 
   @keyframes rise {
@@ -168,14 +217,16 @@
   .listen-row {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     color: var(--text-2);
-    font-size: 12.5px;
+    font-size: 13px;
+    padding: 4px 0;
   }
 
   .pulse-dot {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: var(--text-2);
     animation: breathe 2.4s ease-in-out infinite;
@@ -189,23 +240,28 @@
   .field-label {
     font-size: 12px;
     color: var(--text-3);
-    margin: 0 0 6px;
+    margin: 0 0 7px;
   }
 
   .key-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
     background: var(--key-bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-ctrl);
-    padding: 11px 12px;
+    padding: 12px 14px;
+    transition: border-color 0.15s var(--ease);
+  }
+
+  .key-row:hover {
+    border-color: var(--border-strong);
   }
 
   .key-value {
     font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-    font-size: 12px;
+    font-size: 12.5px;
     color: var(--text-1);
     letter-spacing: -0.01em;
     overflow: hidden;
@@ -217,8 +273,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: 8px;
     border: none;
     background: transparent;
@@ -229,15 +285,50 @@
   }
 
   .copy-btn:hover { background: var(--border); color: var(--text-1); }
-  .copy-btn svg { width: 14px; height: 14px; }
+  .copy-btn svg { width: 15px; height: 15px; }
   .copy-btn .check-icon { display: none; color: var(--accent-ok); }
   .copy-btn.copied .copy-icon { display: none; }
   .copy-btn.copied .check-icon { display: inline-flex; }
 
+  /* ---------- Micro Spec Row ---------- */
+  .spec-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border: 1px solid var(--border);
+    background: var(--card-inner);
+    border-radius: var(--radius-ctrl);
+    padding: 10px 14px;
+  }
+
+  .spec-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .spec-item:not(:first-child) {
+    border-left: 1px solid var(--border);
+    padding-left: 14px;
+  }
+
+  .spec-label {
+    font-size: 11px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+  }
+
+  .spec-val {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-1);
+  }
+
   .helper-row {
     display: flex;
     justify-content: center;
-    padding-top: 2px;
+    padding-top: 4px;
   }
 
   .link-btn {
@@ -250,39 +341,43 @@
     font-size: 12.5px;
     font-family: inherit;
     cursor: pointer;
-    padding: 4px 2px;
-    transition: color 0.15s var(--ease);
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: color 0.15s var(--ease), background 0.15s var(--ease);
   }
 
-  .link-btn:hover { color: var(--text-1); }
-  .link-btn svg { width: 13px; height: 13px; }
+  .link-btn:hover { color: var(--text-1); background: var(--key-bg); }
+  .link-btn svg { width: 14px; height: 14px; }
 
   /* ---------- Approval state ---------- */
   .hero {
     text-align: center;
-    padding: 6px 0 4px;
+    padding: 8px 0 6px;
   }
 
   .hero-eyebrow {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--text-2);
-    margin: 0 0 8px;
+    margin: 0 0 10px;
+    font-weight: 500;
   }
 
   .hero-amount {
-    font-size: 34px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
     font-variant-numeric: tabular-nums;
     margin: 0;
     line-height: 1.15;
+    color: var(--text-1);
   }
 
   .hero-fiat {
-    font-size: 13.5px;
+    font-size: 14px;
     color: var(--text-3);
-    margin: 4px 0 0;
+    margin: 5px 0 0;
     font-variant-numeric: tabular-nums;
+    font-weight: 500;
   }
 
   .details {
@@ -290,13 +385,14 @@
     border-radius: var(--radius-ctrl);
     overflow: hidden;
     margin: 0;
+    background: var(--card-inner);
   }
 
   .detail-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 11px 13px;
+    padding: 12px 14px;
     font-size: 13px;
   }
 
@@ -308,6 +404,7 @@
     margin: 0;
     font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
     font-size: 12px;
+    font-weight: 500;
   }
 
   .detail-row dd.plain { font-family: inherit; font-size: 13px; }
@@ -316,26 +413,37 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 9px;
+    gap: 10px;
     width: 100%;
     border: none;
     border-radius: var(--radius-ctrl);
-    background: var(--text-1);
-    color: var(--bg);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
     font-family: inherit;
-    font-size: 14.5px;
+    font-size: 15px;
     font-weight: 600;
     letter-spacing: -0.01em;
-    padding: 13px 16px;
+    padding: 14px 18px;
     cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
   }
 
-  .auth-btn:hover { opacity: 0.88; }
-  .auth-btn:active { transform: scale(0.985); }
-  .auth-btn svg { width: 18px; height: 18px; }
-  .auth-btn.busy { opacity: 0.75; cursor: default; }
+  .auth-btn:hover { opacity: 0.90; transform: translateY(-1px); }
+  .auth-btn:active { transform: translateY(0) scale(0.99); }
+  .auth-btn svg { width: 19px; height: 19px; }
+  .auth-btn.busy { opacity: 0.75; cursor: default; transform: none; }
   .auth-btn.busy .biometric-icon { animation: spin 0.9s linear infinite; }
+
+  .key-shortcut-hint {
+    font-size: 11px;
+    opacity: 0.6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid currentColor;
+    margin-left: 2px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -344,10 +452,12 @@
     background: none;
     border: none;
     color: var(--text-3);
-    font-size: 12.5px;
+    font-size: 13px;
     font-family: inherit;
     cursor: pointer;
-    padding: 2px 6px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color 0.15s var(--ease);
   }
   .decline-btn:hover { color: var(--text-2); }
 
@@ -357,13 +467,13 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 10px;
-    padding: 14px 0 6px;
+    gap: 12px;
+    padding: 18px 0 8px;
   }
 
   .confirm-badge {
-    width: 42px;
-    height: 42px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: var(--accent-ok-bg);
     color: var(--accent-ok);
@@ -372,21 +482,21 @@
     justify-content: center;
   }
 
-  .confirm-badge svg { width: 20px; height: 20px; }
+  .confirm-badge svg { width: 24px; height: 24px; }
 
   .confirm h2 {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
     margin: 0;
     letter-spacing: -0.01em;
   }
 
   .confirm p {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--text-2);
     margin: 0;
-    max-width: 320px;
-    line-height: 1.4;
+    max-width: 340px;
+    line-height: 1.45;
   }
 
   /* ---------- Un-enrolled view ---------- */
@@ -395,12 +505,12 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 12px;
-    padding: 6px 0;
+    gap: 14px;
+    padding: 8px 0;
   }
 
   .enroll-wrap p {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--text-2);
     margin: 0;
     line-height: 1.45;
@@ -412,9 +522,9 @@
     background: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.2);
     color: #ef4444;
-    padding: 10px 12px;
+    padding: 11px 13px;
     border-radius: var(--radius-ctrl);
-    font-size: 12px;
+    font-size: 12.5px;
     line-height: 1.4;
   }
 
@@ -428,7 +538,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 24px;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s var(--ease);
@@ -439,12 +549,12 @@
 
   .modal {
     width: 100%;
-    max-width: 380px;
+    max-width: 400px;
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 18px;
+    border-radius: 20px;
     box-shadow: var(--shadow);
-    padding: 22px;
+    padding: 26px;
     transform: translateY(10px) scale(0.98);
     opacity: 0;
     transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
@@ -456,11 +566,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
   }
 
   .modal-head h2 {
-    font-size: 15px;
+    font-size: 15.5px;
     font-weight: 600;
     margin: 0;
     letter-spacing: -0.01em;
@@ -472,20 +582,20 @@
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 13px;
+    gap: 14px;
   }
 
   .modal li {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     font-size: 13px;
     color: var(--text-2);
     line-height: 1.5;
   }
 
   .modal li svg {
-    width: 15px;
-    height: 15px;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
     margin-top: 2px;
     color: var(--text-1);
@@ -496,14 +606,14 @@
   /* ---------- Toast ---------- */
   .toast {
     position: fixed;
-    bottom: 24px;
+    bottom: 28px;
     background: var(--text-1);
     color: var(--bg);
-    padding: 7px 14px;
+    padding: 8px 16px;
     border-radius: 9999px;
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 500;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
     opacity: 0;
     transform: translateY(12px);
     transition: all 0.2s var(--ease);
@@ -516,8 +626,37 @@
     transform: translateY(0);
   }
 
-  @media (max-width: 380px) {
-    .hero-amount { font-size: 28px; }
+  /* ---------- Discreet Bottom Toolbar ---------- */
+  .bottom-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  .sim-toggle-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-3);
+    font-family: inherit;
+    font-size: 11.5px;
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .sim-toggle-btn:hover {
+    color: var(--text-2);
+    border-color: var(--border-strong);
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 24px 20px; }
+    .hero-amount { font-size: 32px; }
+    .spec-row { grid-template-columns: 1fr; gap: 8px; }
+    .spec-item:not(:first-child) { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 8px; }
   }
 </style>
 </head>
@@ -549,6 +688,19 @@
       </button>
     </div>
 
+    <!-- Visual Hardware Anchor -->
+    <div class="hardware-anchor">
+      <div class="hardware-icon-box">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+      </div>
+      <h2 class="hardware-title">Apple Secure Enclave</h2>
+      <p class="hardware-subtitle">Hardware-isolated passkey for secondary transaction quorum</p>
+    </div>
+
     <div class="state-view">
 
       <!-- STATE A: Idle (Default) -->
@@ -574,6 +726,22 @@
           </div>
         </div>
 
+        <!-- Spec Grid -->
+        <div class="spec-row">
+          <div class="spec-item">
+            <span class="spec-label">Quorum</span>
+            <span class="spec-val">2-of-2 Hardware</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Trigger</span>
+            <span class="spec-val">> 0.10 SOL</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Curve</span>
+            <span class="spec-val">Secp256r1</span>
+          </div>
+        </div>
+
         <!-- If no key enrolled yet -->
         <div id="unEnrolledSection" class="enroll-wrap" style="display:none;">
           <p>This Mac has not enrolled a Secure Enclave passkey yet.</p>
@@ -595,7 +763,7 @@
         </div>
       </section>
 
-      <!-- STATE B: Approval request (Appears when transfer is received) -->
+      <!-- STATE B: Approval request (Appears when transfer arrives) -->
       <section class="state" id="stateRequest" hidden aria-label="Approval request">
         <div class="hero">
           <p class="hero-eyebrow">Transfer requested from your phone</p>
@@ -612,6 +780,10 @@
             <dt>Network</dt>
             <dd class="plain">Solana Devnet</dd>
           </div>
+          <div class="detail-row">
+            <dt>Security</dt>
+            <dd class="plain">2-of-2 Passkey Quorum</dd>
+          </div>
         </dl>
 
         <button class="auth-btn" id="authBtn" type="button">
@@ -622,6 +794,7 @@
             <path d="M12 10a2 2 0 0 0-2 2c0 3-.6 4.9-1.6 6.4M12 10a2 2 0 0 1 2 2c0 1.2-.1 2.2-.27 3.1"/>
           </svg>
           <span id="authBtnLabel">Authorize with Touch ID</span>
+          <span class="key-shortcut-hint">↵</span>
         </button>
 
         <div class="decline-row">
@@ -633,12 +806,12 @@
       <section class="state" id="stateApproved" hidden aria-label="Approved">
         <div class="confirm">
           <div class="confirm-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 12.5l5 5 11-11"/>
             </svg>
           </div>
           <h2>Transfer authorized</h2>
-          <p>Signature sent back to your phone over the out-of-band channel.</p>
+          <p>Signature relayed back to your phone via out-of-band channel.</p>
         </div>
       </section>
 
@@ -647,6 +820,13 @@
 
     </div>
   </main>
+
+  <!-- Discreet Bottom Toolbar -->
+  <footer class="bottom-bar">
+    <span>Relay active on port 8082</span>
+    <span>·</span>
+    <button class="sim-toggle-btn" id="previewToggleBtn" type="button">Preview Approval View</button>
+  </footer>
 </div>
 
 <!-- Modal: How dual-device signing works -->
@@ -661,15 +841,15 @@
     <ul>
       <li>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="9" height="16" rx="2"/><path d="M9.5 15.8h2"/></svg>
-        <span><strong>Your phone requests, it can't approve.</strong> Transfers over 0.1 SOL need a second device to sign off.</span>
+        <span><strong>Your phone requests, it can't approve.</strong> Transfers over 0.1 SOL automatically require this second device to sign off.</span>
       </li>
       <li>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5.5c0 4.6-3 7.9-7 9.5-4-1.6-7-4.9-7-9.5V6l7-3Z"/></svg>
-        <span><strong>This Mac holds the other key.</strong> Touch ID unlocks a Secure Enclave key that never leaves the chip.</span>
+        <span><strong>This Mac holds the secondary key.</strong> Touch ID unlocks an Apple Secure Enclave key that physically never leaves the chip.</span>
       </li>
       <li>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
-        <span><strong>Approval travels out-of-band.</strong> The two devices never share a network path, so one compromised device isn't enough.</span>
+        <span><strong>Approval travels out-of-band.</strong> Both signatures are combined on Solana using the native Secp256r1 precompile.</span>
       </li>
     </ul>
   </div>
@@ -784,6 +964,7 @@
   var reqRecipient = document.getElementById('reqRecipient');
   var errorBox = document.getElementById('errorBox');
   var toast = document.getElementById('toast');
+  var previewToggleBtn = document.getElementById('previewToggleBtn');
 
   // Modal elements
   var overlay = document.getElementById('modalOverlay');
@@ -843,7 +1024,7 @@
         if (parsed.publicKeyHex) {
           rawFullPubKey = parsed.publicKeyHex;
           var hex = parsed.publicKeyHex;
-          pubkeyText.textContent = hex.length > 20 ? (hex.slice(0, 8) + '...' + hex.slice(-8)) : hex;
+          pubkeyText.textContent = hex.length > 24 ? (hex.slice(0, 10) + '...' + hex.slice(-10)) : hex;
           pubkeyText.title = hex;
           enrolledKeySection.style.display = 'block';
           unEnrolledSection.style.display = 'none';
@@ -929,7 +1110,7 @@
     reqAmount.textContent = tx.amountSol + ' SOL';
     var usdEst = (tx.amountSol * 145).toFixed(2);
     reqUsdVal.textContent = '≈ $' + usdEst + ' USD';
-    reqRecipient.textContent = tx.recipient ? (tx.recipient.slice(0, 6) + '...' + tx.recipient.slice(-4)) : 'Hou6...';
+    reqRecipient.textContent = tx.recipient ? (tx.recipient.slice(0, 8) + '...' + tx.recipient.slice(-6)) : 'Hou6dz...dYp5';
     errorBox.style.display = 'none';
     showState(stateRequest);
   }
@@ -967,16 +1148,59 @@
   setInterval(pollPending, 900);
   pollPending();
 
+  // Preview button toggle
+  var isPreviewing = false;
+  previewToggleBtn.addEventListener('click', function () {
+    if (!isPreviewing) {
+      displayPendingRequest({
+        id: 'preview_sample',
+        amountSol: 0.1018,
+        recipient: 'Hou6dzvLqK8wX9mPtNy3GvB2k7eL4dYp5',
+        messageHex: '0x1234567890abcdef'
+      });
+      previewToggleBtn.textContent = 'Back to Idle View';
+      isPreviewing = true;
+    } else {
+      showState(stateIdle);
+      currentPending = null;
+      previewToggleBtn.textContent = 'Preview Approval View';
+      isPreviewing = false;
+    }
+  });
+
   // Decline Handler
   declineBtn.addEventListener('click', function () {
     currentPending = null;
     showState(stateIdle);
+    if (isPreviewing) {
+      previewToggleBtn.textContent = 'Preview Approval View';
+      isPreviewing = false;
+    }
   });
 
   // Touch ID Signing Handler
   authBtn.addEventListener('click', async function () {
     if (authBtn.classList.contains('busy') || !currentPending) return;
     errorBox.style.display = 'none';
+
+    // If simulating in preview mode without real challenge, show simulation success
+    if (currentPending.id === 'preview_sample') {
+      authBtn.classList.add('busy');
+      authBtnLabel.textContent = 'Verifying with Touch ID…';
+      setTimeout(function () {
+        authBtn.classList.remove('busy');
+        authBtnLabel.textContent = 'Authorize with Touch ID';
+        showState(stateApproved);
+        showToast('Authorized with Touch ID');
+        setTimeout(function () {
+          showState(stateIdle);
+          currentPending = null;
+          previewToggleBtn.textContent = 'Preview Approval View';
+          isPreviewing = false;
+        }, 3200);
+      }, 1000);
+      return;
+    }
 
     var vaultData = localStorage.getItem('haptix_mac_vault_key');
     if (!vaultData) {
@@ -1027,6 +1251,7 @@
       authBtn.classList.remove('busy');
       authBtnLabel.textContent = 'Authorize with Touch ID';
       showState(stateApproved);
+      showToast('Authorized in Secure Enclave');
 
       setTimeout(function () {
         showState(stateIdle);
