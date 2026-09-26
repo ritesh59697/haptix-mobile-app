@@ -1,1304 +1,1054 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="utf-8">
-  <title>Haptix Vault — Apple Secure Enclave Hardware Key</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #000000;
-      --bg-surface: #0A0B10;
-      --card: #0F111A;
-      --card-elevated: #161826;
-      --card-inner: #090A0E;
-      --border-subtle: rgba(255, 255, 255, 0.07);
-      --border-default: rgba(255, 255, 255, 0.12);
-      --border-highlight: rgba(255, 255, 255, 0.22);
-      --text-primary: #FFFFFF;
-      --text-secondary: #94A3B8;
-      --text-muted: #64748B;
-      --accent-white: #FFFFFF;
-      --emerald: #10B981;
-      --emerald-bg: rgba(16, 185, 129, 0.10);
-      --emerald-border: rgba(16, 185, 129, 0.28);
-      --emerald-text: #34D399;
-      --amber: #F59E0B;
-      --amber-bg: rgba(245, 158, 11, 0.10);
-      --amber-border: rgba(245, 158, 11, 0.32);
-      --amber-text: #FBBF24;
-      --rose: #F43F5E;
-      --rose-bg: rgba(244, 63, 94, 0.10);
-      --rose-border: rgba(244, 63, 94, 0.28);
-      --rose-text: #FDA4AF;
-      --cyan-flare: rgba(56, 189, 248, 0.25);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    body {
-      background: var(--bg);
-      color: var(--text-primary);
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-      overflow-x: hidden;
-      padding-bottom: 60px;
-    }
-
-    /* Ambient background glows matching Haptix app */
-    .ambient-glow-top {
-      position: fixed;
-      top: -180px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 700px;
-      height: 400px;
-      background: radial-gradient(ellipse at 50% 30%, rgba(99, 102, 241, 0.12) 0%, rgba(16, 185, 129, 0.04) 50%, transparent 75%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* Top Navigation Bar */
-    .navbar {
-      width: 100%;
-      max-width: 860px;
-      padding: 22px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: relative;
-      z-index: 10;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .brand-lockup {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-    }
-
-    .brand-logo-img {
-      height: 28px;
-      width: auto;
-      object-fit: contain;
-    }
-
-    .brand-title-wrap {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .brand-title {
-      font-family: 'Outfit', sans-serif;
-      font-size: 17px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .brand-badge {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10.5px;
-      font-weight: 600;
-      text-transform: uppercase;
-      padding: 2px 7px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-subtle);
-      letter-spacing: 0.04em;
-    }
-
-    .nav-status-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .status-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 11px;
-      border-radius: 9999px;
-      font-size: 11.5px;
-      font-weight: 600;
-      background: var(--card);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-    }
-
-    .pulse-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--emerald);
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
-      animation: pulse-beacon 2s infinite ease-in-out;
-    }
-
-    .pulse-dot-amber {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--amber);
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
-      animation: pulse-beacon 1.2s infinite ease-in-out;
-    }
-
-    @keyframes pulse-beacon {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.5; transform: scale(0.85); }
-    }
-
-    /* Main Container */
-    .main-content {
-      width: 100%;
-      max-width: 860px;
-      padding: 32px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-      position: relative;
-      z-index: 1;
-    }
-
-    /* Dual-Device Trust Architecture Visualizer */
-    .architecture-banner {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 20px;
-      padding: 22px 28px;
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: 20px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
-    }
-
-    .arch-device {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .arch-icon-box {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: var(--card-elevated);
-      border: 1px solid var(--border-default);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .arch-meta h3 {
-      font-size: 13.5px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 2px;
-    }
-
-    .arch-meta p {
-      font-size: 11.5px;
-      color: var(--text-muted);
-    }
-
-    .arch-bridge {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      padding: 0 12px;
-    }
-
-    .arch-bridge-pill {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--emerald-text);
-      background: var(--emerald-bg);
-      border: 1px solid var(--emerald-border);
-      padding: 3px 9px;
-      border-radius: 9999px;
-      letter-spacing: 0.04em;
-    }
-
-    .arch-bridge-line {
-      width: 140px;
-      height: 2px;
-      background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.8), rgba(16, 185, 129, 0.1));
-      position: relative;
-    }
-
-    .arch-bridge-line::after {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: 0;
-      width: 12px;
-      height: 6px;
-      background: #FFFFFF;
-      border-radius: 3px;
-      box-shadow: 0 0 8px #FFFFFF;
-      animation: packet-stream 2.8s infinite linear;
-    }
-
-    @keyframes packet-stream {
-      0% { left: 0%; opacity: 0; }
-      20% { opacity: 1; }
-      80% { opacity: 1; }
-      100% { left: 95%; opacity: 0; }
-    }
-
-    /* URGENT / ACTIVE SIGNING HERO CARD */
-    .approval-hero-card {
-      background: linear-gradient(180deg, #151624 0%, #0D0E17 100%);
-      border: 1px solid var(--amber-border);
-      border-radius: 24px;
-      padding: 36px 32px;
-      position: relative;
-      box-shadow: 0 24px 64px rgba(245, 158, 11, 0.08), 0 0 0 1px rgba(245, 158, 11, 0.15);
-      animation: appear-slide 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes appear-slide {
-      from { opacity: 0; transform: translateY(-10px) scale(0.99); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    .approval-top-banner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-      padding-bottom: 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .quorum-trigger-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      background: var(--amber-bg);
-      border: 1px solid var(--amber-border);
-      padding: 6px 14px;
-      border-radius: 9999px;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--amber-text);
-      letter-spacing: -0.01em;
-    }
-
-    .transfer-hero-amount {
-      font-family: 'Outfit', sans-serif;
-      font-size: 46px;
-      font-weight: 800;
-      color: #FFFFFF;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-      text-align: center;
-      margin: 12px 0 6px 0;
-    }
-
-    .transfer-hero-usd {
-      font-size: 14px;
-      color: var(--text-muted);
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
-    .transfer-meta-grid {
-      background: rgba(0, 0, 0, 0.45);
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      padding: 16px 20px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 28px;
-    }
-
-    .meta-item {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .meta-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      font-weight: 700;
-      color: var(--text-muted);
-      letter-spacing: 0.05em;
-    }
-
-    .meta-value {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12.5px;
-      color: #93C5FD;
-      word-break: break-all;
-    }
-
-    /* Biometric Touch ID Sensor Component (Matching mobile biometric sheet) */
-    .biometric-sensor-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      margin: 10px 0 26px 0;
-    }
-
-    .sensor-disc-container {
-      position: relative;
-      width: 90px;
-      height: 90px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .sensor-aura {
-      position: absolute;
-      width: 86px;
-      height: 86px;
-      border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.4);
-      animation: sensor-pulse 2s infinite ease-in-out;
-      pointer-events: none;
-    }
-
-    @keyframes sensor-pulse {
-      0%, 100% { transform: scale(1); opacity: 0.2; }
-      50% { transform: scale(1.18); opacity: 0.8; }
-    }
-
-    .sensor-disc {
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      background: var(--card-elevated);
-      border: 1.5px solid var(--border-highlight);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
-      z-index: 1;
-    }
-
-    /* Prism Depth Button (Signature OpenSourceUI / Haptix component) */
-    .prism-button {
-      position: relative;
-      width: 100%;
-      background: #FFFFFF;
-      color: #000000;
-      border: none;
-      padding: 18px 28px;
-      border-radius: 14px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 15.5px;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      box-shadow: 0 12px 28px rgba(255, 255, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .prism-button:hover {
-      background: #F4F4F5;
-      transform: translateY(-2px);
-      box-shadow: 0 16px 36px rgba(255, 255, 255, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    }
-
-    .prism-button:active {
-      transform: translateY(1px) scale(0.985);
-      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
-    }
-
-    .prism-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* Success state after Touch ID verification */
-    .signed-success-banner {
-      display: none;
-      background: var(--emerald-bg);
-      border: 1px solid var(--emerald-border);
-      border-radius: 14px;
-      padding: 16px 20px;
-      text-align: center;
-      animation: appear-slide 0.3s ease;
-    }
-
-    .signed-success-title {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--emerald-text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-
-    .signed-success-subtitle {
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-
-    /* Idle Radar Card */
-    .idle-radar-card {
-      background: var(--card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 24px;
-      padding: 40px 32px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
-    }
-
-    .radar-icon-wrap {
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 18px;
-      position: relative;
-    }
-
-    .radar-rings {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      animation: radar-sweep 2.8s infinite cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes radar-sweep {
-      0% { transform: scale(1); opacity: 0.8; }
-      100% { transform: scale(1.6); opacity: 0; }
-    }
-
-    .idle-title {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 6px;
-    }
-
-    .idle-desc {
-      font-size: 13.5px;
-      color: var(--text-secondary);
-      max-width: 440px;
-      line-height: 1.55;
-    }
-
-    /* Hardware Enclave Certification Card */
-    .enclave-cert-card {
-      background: var(--card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 20px;
-      padding: 24px 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    .cert-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .cert-title-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .apple-chip-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border-subtle);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .cert-specs-table {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      background: var(--card-inner);
-      border: 1px solid var(--border-subtle);
-      border-radius: 14px;
-      padding: 14px 16px;
-    }
-
-    .spec-box h4 {
-      font-size: 10.5px;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-      margin-bottom: 2px;
-    }
-
-    .spec-box p {
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    /* Public Key Display Box */
-    .key-display-panel {
-      background: var(--card-inner);
-      border: 1px solid var(--border-subtle);
-      border-radius: 14px;
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .key-code-wrap {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11.5px;
-      color: #60A5FA;
-      word-break: break-all;
-      line-height: 1.45;
-    }
-
-    .btn-copy-chip {
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-primary);
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
-      transition: background 0.15s;
-    }
-
-    .btn-copy-chip:hover {
-      background: rgba(255, 255, 255, 0.12);
-    }
-
-    /* Enrollment CTA if not yet enrolled */
-    #enrollPromptSection {
-      background: var(--card);
-      border: 1px dashed var(--border-highlight);
-      border-radius: 20px;
-      padding: 32px;
-      text-align: center;
-    }
-
-    /* Live Cryptographic Audit Terminal */
-    .audit-terminal-card {
-      background: #050608;
-      border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
-    }
-
-    .terminal-header {
-      background: #0B0D12;
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .terminal-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .terminal-body {
-      padding: 14px 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      line-height: 1.7;
-      max-height: 140px;
-      overflow-y: auto;
-      color: #94A3B8;
-    }
-
-    .log-line {
-      display: flex;
-      gap: 10px;
-    }
-
-    .log-time {
-      color: var(--text-muted);
-      user-select: none;
-    }
-
-    .log-msg-success { color: var(--emerald-text); }
-    .log-msg-warning { color: var(--amber-text); }
-    .log-msg-info { color: #93C5FD; }
-
-    /* Toast notification */
-    #toastNotice {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(40px);
-      background: #FFFFFF;
-      color: #000000;
-      padding: 10px 18px;
-      border-radius: 9999px;
-      font-size: 13px;
-      font-weight: 700;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #toastNotice.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
-
-    #errorBox {
-      display: none;
-      background: var(--rose-bg);
-      border: 1px solid var(--rose-border);
-      color: var(--rose-text);
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 12.5px;
-      margin-top: 14px;
-      line-height: 1.45;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Haptix Vault — Mac Secure Enclave</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0b0b0a;
+    --card: #151412;
+    --border: rgba(255, 255, 255, 0.09);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --text-1: #f5f4f2;
+    --text-2: #98958d;
+    --text-3: #63615a;
+    --key-bg: #1d1c19;
+    --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 20px 40px -20px rgba(0, 0, 0, 0.6);
+    --accent-ok: #3ddc84;
+    --accent-ok-bg: rgba(61, 220, 132, 0.12);
+    --overlay: rgba(0, 0, 0, 0.55);
+    --radius-card: 20px;
+    --radius-ctrl: 12px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f7f7f6;
+    --card: #ffffff;
+    --border: rgba(15, 15, 15, 0.09);
+    --border-strong: rgba(15, 15, 15, 0.14);
+    --text-1: #111110;
+    --text-2: #67655f;
+    --text-3: #a2a09a;
+    --key-bg: #f4f3f1;
+    --shadow: 0 1px 2px rgba(20, 18, 14, 0.04), 0 12px 32px -16px rgba(20, 18, 14, 0.12);
+    --accent-ok: #1f8a4c;
+    --accent-ok-bg: rgba(31, 138, 76, 0.10);
+    --overlay: rgba(20, 18, 14, 0.32);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-1);
+    min-height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    padding-top: max(24px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+    transition: background 0.3s var(--ease), color 0.3s var(--ease);
+  }
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    max-width: 400px;
+  }
+
+  /* ---------- Card ---------- */
+  .card {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    position: relative;
+    transition: background 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mark-img {
+    height: 22px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  [data-theme="light"] .mark-img {
+    filter: invert(1);
+  }
+
+  .mark {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    color: var(--text-1);
+  }
+
+  .brand-text h1 {
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .brand-text p {
+    font-size: 12px;
+    color: var(--text-3);
+    margin: 1px 0 0;
+    line-height: 1.2;
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.15s var(--ease);
+  }
+
+  .icon-btn:hover { background: var(--key-bg); color: var(--text-1); }
+  .icon-btn:active { transform: scale(0.94); }
+  .icon-btn svg { width: 15px; height: 15px; }
+
+  /* ---------- State swap ---------- */
+  .state-view { position: relative; }
+
+  .state {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .state[hidden] { display: none !important; }
+
+  .state-enter {
+    animation: rise 0.35s var(--ease);
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Idle state ---------- */
+  .listen-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-2);
+    font-size: 12.5px;
+  }
+
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-2);
+    animation: breathe 2.4s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.35; transform: scale(0.95); }
+    50% { opacity: 0.95; transform: scale(1.05); }
+  }
+
+  .field-label {
+    font-size: 12px;
+    color: var(--text-3);
+    margin: 0 0 6px;
+  }
+
+  .key-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--key-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-ctrl);
+    padding: 11px 12px;
+  }
+
+  .key-value {
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: 12px;
+    color: var(--text-1);
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  }
+
+  .copy-btn:hover { background: var(--border); color: var(--text-1); }
+  .copy-btn svg { width: 14px; height: 14px; }
+  .copy-btn .check-icon { display: none; color: var(--accent-ok); }
+  .copy-btn.copied .copy-icon { display: none; }
+  .copy-btn.copied .check-icon { display: inline-flex; }
+
+  .helper-row {
+    display: flex;
+    justify-content: center;
+    padding-top: 2px;
+  }
+
+  .link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--text-2);
+    font-size: 12.5px;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 4px 2px;
+    transition: color 0.15s var(--ease);
+  }
+
+  .link-btn:hover { color: var(--text-1); }
+  .link-btn svg { width: 13px; height: 13px; }
+
+  /* ---------- Approval state ---------- */
+  .hero {
+    text-align: center;
+    padding: 6px 0 4px;
+  }
+
+  .hero-eyebrow {
+    font-size: 12.5px;
+    color: var(--text-2);
+    margin: 0 0 8px;
+  }
+
+  .hero-amount {
+    font-size: 34px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  .hero-fiat {
+    font-size: 13.5px;
+    color: var(--text-3);
+    margin: 4px 0 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .details {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-ctrl);
+    overflow: hidden;
+    margin: 0;
+  }
+
+  .detail-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 13px;
+    font-size: 13px;
+  }
+
+  .detail-row + .detail-row { border-top: 1px solid var(--border); }
+
+  .detail-row dt { color: var(--text-2); margin: 0; font-weight: 400; }
+  .detail-row dd {
+    color: var(--text-1);
+    margin: 0;
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: 12px;
+  }
+
+  .detail-row dd.plain { font-family: inherit; font-size: 13px; }
+
+  .auth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
+    border: none;
+    border-radius: var(--radius-ctrl);
+    background: var(--text-1);
+    color: var(--bg);
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    padding: 13px 16px;
+    cursor: pointer;
+    transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+  }
+
+  .auth-btn:hover { opacity: 0.88; }
+  .auth-btn:active { transform: scale(0.985); }
+  .auth-btn svg { width: 18px; height: 18px; }
+  .auth-btn.busy { opacity: 0.75; cursor: default; }
+  .auth-btn.busy .biometric-icon { animation: spin 0.9s linear infinite; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .decline-row { display: flex; justify-content: center; }
+  .decline-btn {
+    background: none;
+    border: none;
+    color: var(--text-3);
+    font-size: 12.5px;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 2px 6px;
+  }
+  .decline-btn:hover { color: var(--text-2); }
+
+  /* ---------- Approved confirmation ---------- */
+  .confirm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 14px 0 6px;
+  }
+
+  .confirm-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--accent-ok-bg);
+    color: var(--accent-ok);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .confirm-badge svg { width: 20px; height: 20px; }
+
+  .confirm h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .confirm p {
+    font-size: 12.5px;
+    color: var(--text-2);
+    margin: 0;
+    max-width: 320px;
+    line-height: 1.4;
+  }
+
+  /* ---------- Un-enrolled view ---------- */
+  .enroll-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    padding: 6px 0;
+  }
+
+  .enroll-wrap p {
+    font-size: 12.5px;
+    color: var(--text-2);
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  /* ---------- Error Box ---------- */
+  .error-box {
+    display: none;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    padding: 10px 12px;
+    border-radius: var(--radius-ctrl);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s var(--ease);
+    z-index: 100;
+  }
+
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    width: 100%;
+    max-width: 380px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    padding: 22px;
+    transform: translateY(10px) scale(0.98);
+    opacity: 0;
+    transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
+  }
+
+  .modal-overlay.open .modal { transform: translateY(0) scale(1); opacity: 1; }
+
+  .modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .modal-head h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .modal ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  .modal li {
+    display: flex;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+
+  .modal li svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--text-1);
+  }
+
+  .modal li strong { color: var(--text-1); font-weight: 500; }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    background: var(--text-1);
+    color: var(--bg);
+    padding: 7px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 500;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all 0.2s var(--ease);
+    pointer-events: none;
+    z-index: 200;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (max-width: 380px) {
+    .hero-amount { font-size: 28px; }
+  }
+</style>
 </head>
 <body>
-  <div class="ambient-glow-top"></div>
 
-  <!-- Top Navigation Bar -->
-  <header class="navbar">
-    <a href="#" class="brand-lockup">
-      <img src="/haptix-logo-white.png" alt="Haptix Logo" class="brand-logo-img" onerror="this.style.display='none'">
-      <div class="brand-title-wrap">
-        <div class="brand-title">
-          Haptix
-          <span class="brand-badge">Vault Enclave</span>
-        </div>
-      </div>
-    </a>
-
-    <div class="nav-status-group">
-      <div class="status-chip" title="Active Solana Devnet Counterfactual Account">
-        <span class="pulse-dot"></span>
-        <span>Solana Devnet</span>
-      </div>
-      <div class="status-chip" id="relayStatusChip">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-        <span id="relayStatusText">Relay: 8082 Active</span>
-      </div>
-    </div>
-  </header>
-
-  <!-- Main Container -->
-  <main class="main-content">
-    <!-- Architecture Visualizer -->
-    <div class="architecture-banner">
-      <div class="arch-device">
-        <div class="arch-icon-box">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-        </div>
-        <div class="arch-meta">
-          <h3>Android Phone</h3>
-          <p>Primary Key · Local Biometrics</p>
-        </div>
-      </div>
-
-      <div class="arch-bridge">
-        <span class="arch-bridge-pill" id="quorumStatePill">2-of-2 Quorum Armed</span>
-        <div class="arch-bridge-line"></div>
-      </div>
-
-      <div class="arch-device" style="justify-content: flex-end; text-align: right;">
-        <div class="arch-meta">
-          <h3>MacBook Pro</h3>
-          <p>Secondary Key · Apple Secure Enclave</p>
-        </div>
-        <div class="arch-icon-box">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2"/><line x1="2" x2="22" y1="20" y2="20"/></svg>
-        </div>
-      </div>
-    </div>
-
-    <!-- PENDING APPROVAL HERO CARD (Displays when phone initiates high-value send) -->
-    <section id="approvalHeroCard" class="approval-hero-card" style="display: none;">
-      <div class="approval-top-banner">
-        <div class="quorum-trigger-badge">
-          <span class="pulse-dot-amber"></span>
-          <span>Quorum Authorization Requested</span>
-        </div>
-        <div class="status-chip" style="background: rgba(0,0,0,0.4);">
-          <span>Spend Threshold > 0.1 SOL</span>
-        </div>
-      </div>
-
-      <div class="transfer-hero-amount" id="reqAmount">0.1018 SOL</div>
-      <div class="transfer-hero-usd" id="reqUsdVal">≈ $14.76 USD · Solana Devnet</div>
-
-      <div class="transfer-meta-grid">
-        <div class="meta-item">
-          <span class="meta-label">Recipient Address</span>
-          <span class="meta-value" id="reqRecipient">Hou6dz...dYp5</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">Signed Payload Hash</span>
-          <span class="meta-value" id="reqChallenge">0x...</span>
-        </div>
-      </div>
-
-      <div class="biometric-sensor-section">
-        <div class="sensor-disc-container">
-          <div class="sensor-aura"></div>
-          <div class="sensor-disc">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
-              <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
-              <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
-              <path d="M2 12a10 10 0 0 1 18-6"/>
-              <path d="M2 16h.01"/>
-              <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
-              <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
-              <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
-              <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <button id="btnSignTouchId" class="prism-button">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2a10 10 0 0 0-10 10c0 4.4 2.9 8.2 7 9.5V17H7v-2h2v-1.5c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.2 0-1.7.8-1.7 1.6V15h2.7l-.4 2h-2.3v4.5c4.1-1.3 7-5.1 7-9.5A10 10 0 0 0 12 2z"/>
+<div class="stage">
+  <main class="card">
+    <div class="card-top">
+      <div class="brand">
+        <img src="/haptix-logo-white.png" alt="Haptix" class="mark-img" onerror="this.style.display='none'; document.getElementById('fallbackMark').style.display='block';">
+        <svg id="fallbackMark" class="mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+          <rect x="2" y="2" width="28" height="28" rx="9" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M11 15.5V12a5 5 0 0 1 10 0v3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          <rect x="9.5" y="15.5" width="13" height="9" rx="2.4" stroke="currentColor" stroke-width="1.6"/>
         </svg>
-        <span>Authorize with Mac Touch ID</span>
+        <div class="brand-text">
+          <h1>Haptix Vault</h1>
+          <p>Mac Secure Enclave</p>
+        </div>
+      </div>
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle color theme" type="button" title="Toggle Light / Dark theme">
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4.2"/>
+          <path d="M12 2.5v2.3M12 19.2v2.3M4.4 4.4l1.6 1.6M18 18l1.6 1.6M2.5 12h2.3M19.2 12h2.3M4.4 19.6l1.6-1.6M18 6l1.6-1.6"/>
+        </svg>
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>
+        </svg>
       </button>
+    </div>
 
-      <!-- Signature success banner -->
-      <div id="signedSuccess" class="signed-success-banner">
-        <div class="signed-success-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-          <span>Authorized in Apple Secure Enclave</span>
+    <div class="state-view">
+
+      <!-- STATE A: Idle (Default) -->
+      <section class="state" id="stateIdle" aria-label="Ready">
+        <div class="listen-row">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          <span>Listening for requests from your phone</span>
         </div>
-        <p class="signed-success-subtitle">Compact Secp256r1 low-S assertion relayed to your Android phone.</p>
-      </div>
 
-      <div id="errorBox"></div>
-    </section>
-
-    <!-- IDLE RADAR CARD (Shown when listening for transfers) -->
-    <section id="idleRadarCard" class="idle-radar-card">
-      <div class="radar-icon-wrap">
-        <div class="radar-rings"></div>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--emerald-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          <path d="m9 12 2 2 4-4"/>
-        </svg>
-      </div>
-      <h2 class="idle-title">Vault Hardware Enclave Active</h2>
-      <p class="idle-desc">
-        Your Mac is monitoring for high-value transactions from your phone. Any transfer exceeding your <strong>0.1 SOL threshold</strong> will automatically illuminate this portal and prompt for Mac Touch ID.
-      </p>
-    </section>
-
-    <!-- ENROLLED HARDWARE CERTIFICATE -->
-    <section id="enrolledDetails" class="enclave-cert-card" style="display: none;">
-      <div class="cert-header">
-        <div class="cert-title-group">
-          <div class="apple-chip-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
-          </div>
-          <div>
-            <h3 style="font-size: 15px; font-weight: 700;">Enclave Certificate</h3>
-            <p style="font-size: 12px; color: var(--text-muted);">Hardware-backed WebAuthn Authenticator</p>
+        <div id="enrolledKeySection">
+          <p class="field-label">Co-signer public key</p>
+          <div class="key-row">
+            <span class="key-value" id="pubkeyText">02...</span>
+            <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
+              <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
+                <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 12.5l5 5 11-11"/>
+              </svg>
+            </button>
           </div>
         </div>
-        <span class="status-chip" style="background: var(--emerald-bg); border-color: var(--emerald-border); color: var(--emerald-text);">
-          <span class="pulse-dot"></span>
-          <span>Armed & Registered</span>
-        </span>
-      </div>
 
-      <div class="cert-specs-table">
-        <div class="spec-box">
-          <h4>Security Architecture</h4>
-          <p>Apple Secure Enclave</p>
-        </div>
-        <div class="spec-box">
-          <h4>Algorithm</h4>
-          <p>Secp256r1 (P-256)</p>
-        </div>
-        <div class="spec-box">
-          <h4>Quorum Policy</h4>
-          <p>2-of-2 Hardware Key</p>
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.04em;">
-          Vault Public Key (Secp256r1 Compressed):
-        </div>
-        <div class="key-display-panel">
-          <div class="key-code-wrap" id="pubKeyHexDisplay">02...</div>
-          <button id="btnCopyKey" class="btn-copy-chip">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-            <span>Copy Key</span>
+        <!-- If no key enrolled yet -->
+        <div id="unEnrolledSection" class="enroll-wrap" style="display:none;">
+          <p>This Mac has not enrolled a Secure Enclave passkey yet.</p>
+          <button class="auth-btn" id="enrollBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+              <path d="M12 3.2a8.8 8.8 0 0 0-8.8 8.8c0 1.9.4 3.2 1 4.6M12 3.2a8.8 8.8 0 0 1 8.8 8.8c0 .9-.05 1.6-.16 2.3"/>
+              <path d="M7 20.3A8.75 8.75 0 0 1 3.7 14M17 20.3a8.8 8.8 0 0 0 2.9-4.2"/>
+              <path d="M12 6.6a5.4 5.4 0 0 0-5.4 5.4c0 2.7.6 4.3 1.4 5.6M12 6.6a5.4 5.4 0 0 1 5.4 5.4c0 .8-.04 1.5-.13 2.1"/>
+            </svg>
+            <span id="enrollBtnText">Enroll Mac Touch ID</span>
           </button>
         </div>
-      </div>
-    </section>
 
-    <!-- ENROLLMENT CTA (Only if key hasn't been enrolled yet) -->
-    <section id="enrollPromptSection" style="display: none;">
-      <h3 style="font-size: 17px; font-weight: 700; margin-bottom: 8px;">No Mac Vault Passkey Registered</h3>
-      <p style="font-size: 13px; color: var(--text-secondary); max-width: 460px; margin: 0 auto 20px auto;">
-        Enroll this MacBook's Apple Secure Enclave as the secondary hardware key for your Haptix 2-of-2 Vault.
-      </p>
-      <button id="btnEnroll" class="prism-button" style="max-width: 320px; margin: 0 auto;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a10 10 0 0 0-10 10c0 4.4 2.9 8.2 7 9.5V17H7v-2h2v-1.5c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.2 0-1.7.8-1.7 1.6V15h2.7l-.4 2h-2.3v4.5c4.1-1.3 7-5.1 7-9.5A10 10 0 0 0 12 2z"/></svg>
-        <span>Enroll Mac Touch ID</span>
-      </button>
-    </section>
+        <div class="helper-row">
+          <button class="link-btn" id="howItWorksBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5" stroke-linecap="round"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/></svg>
+            How this works
+          </button>
+        </div>
+      </section>
 
-    <!-- LIVE CRYPTOGRAPHIC AUDIT TERMINAL -->
-    <section class="audit-terminal-card">
-      <div class="terminal-header">
-        <div class="terminal-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-          <span>Cryptographic Audit Terminal</span>
+      <!-- STATE B: Approval request (Appears when transfer is received) -->
+      <section class="state" id="stateRequest" hidden aria-label="Approval request">
+        <div class="hero">
+          <p class="hero-eyebrow">Transfer requested from your phone</p>
+          <p class="hero-amount" id="reqAmount">0.1018 SOL</p>
+          <p class="hero-fiat" id="reqUsdVal">≈ $14.76 USD</p>
         </div>
-        <span class="status-chip" style="font-size: 10px; padding: 2px 7px;">Real-time</span>
-      </div>
-      <div class="terminal-body" id="auditTerminalBody">
-        <div class="log-line">
-          <span class="log-time">[00:00:00]</span>
-          <span class="log-msg-info">Haptix Vault Enclave initialized</span>
+
+        <dl class="details">
+          <div class="detail-row">
+            <dt>Recipient</dt>
+            <dd id="reqRecipient">Hou6dz...dYp5</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Network</dt>
+            <dd class="plain">Solana Devnet</dd>
+          </div>
+        </dl>
+
+        <button class="auth-btn" id="authBtn" type="button">
+          <svg class="biometric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+            <path d="M12 3.2a8.8 8.8 0 0 0-8.8 8.8c0 1.9.4 3.2 1 4.6M12 3.2a8.8 8.8 0 0 1 8.8 8.8c0 .9-.05 1.6-.16 2.3"/>
+            <path d="M7 20.3A8.75 8.75 0 0 1 3.7 14M17 20.3a8.8 8.8 0 0 0 2.9-4.2"/>
+            <path d="M12 6.6a5.4 5.4 0 0 0-5.4 5.4c0 2.7.6 4.3 1.4 5.6M12 6.6a5.4 5.4 0 0 1 5.4 5.4c0 .8-.04 1.5-.13 2.1"/>
+            <path d="M12 10a2 2 0 0 0-2 2c0 3-.6 4.9-1.6 6.4M12 10a2 2 0 0 1 2 2c0 1.2-.1 2.2-.27 3.1"/>
+          </svg>
+          <span id="authBtnLabel">Authorize with Touch ID</span>
+        </button>
+
+        <div class="decline-row">
+          <button class="decline-btn" id="declineBtn" type="button">Decline</button>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <!-- STATE C: Approved confirmation -->
+      <section class="state" id="stateApproved" hidden aria-label="Approved">
+        <div class="confirm">
+          <div class="confirm-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 12.5l5 5 11-11"/>
+            </svg>
+          </div>
+          <h2>Transfer authorized</h2>
+          <p>Signature sent back to your phone over the out-of-band channel.</p>
+        </div>
+      </section>
+
+      <!-- Error box -->
+      <div id="errorBox" class="error-box"></div>
+
+    </div>
   </main>
+</div>
 
-  <!-- Interactive Toast Notification -->
-  <div id="toastNotice">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-    <span id="toastMsg">Copied to clipboard</span>
+<!-- Modal: How dual-device signing works -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle">How dual-device signing works</h2>
+      <button class="icon-btn" id="modalClose" aria-label="Close" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>
+    </div>
+    <ul>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="9" height="16" rx="2"/><path d="M9.5 15.8h2"/></svg>
+        <span><strong>Your phone requests, it can't approve.</strong> Transfers over 0.1 SOL need a second device to sign off.</span>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5.5c0 4.6-3 7.9-7 9.5-4-1.6-7-4.9-7-9.5V6l7-3Z"/></svg>
+        <span><strong>This Mac holds the other key.</strong> Touch ID unlocks a Secure Enclave key that never leaves the chip.</span>
+      </li>
+      <li>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+        <span><strong>Approval travels out-of-band.</strong> The two devices never share a network path, so one compromised device isn't enough.</span>
+      </li>
+    </ul>
   </div>
+</div>
 
-  <script>
-    // --- Cryptographic Utilities ---
-    function bytesToHex(bytes) {
-      return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+<!-- Toast notification -->
+<div id="toast" class="toast">Copied to clipboard</div>
+
+<script>
+(function () {
+  // --- Cryptographic Helpers ---
+  function bytesToHex(bytes) {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function hexToBytes(hex) {
+    const clean = hex.startsWith('0x') ? hex.slice(2) : hex;
+    const bytes = new Uint8Array(clean.length / 2);
+    for (let i = 0; i < clean.length; i += 2) {
+      bytes[i / 2] = parseInt(clean.substring(i, i + 2), 16);
+    }
+    return bytes;
+  }
+
+  function base64UrlToBytes(base64url) {
+    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice(0, (3 * base64url.length) % 4);
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function parseDerSignature(derBytes) {
+    let offset = 2;
+    if (derBytes[1] & 0x80) offset += (derBytes[1] & 0x7f);
+
+    if (derBytes[offset] !== 0x02) throw new Error("Expected 0x02 for r");
+    offset++;
+    const rLen = derBytes[offset++];
+    let r = derBytes.subarray(offset, offset + rLen);
+    offset += rLen;
+    if (r.length > 32 && r[0] === 0) r = r.subarray(1);
+    const rPadded = new Uint8Array(32);
+    rPadded.set(r, 32 - r.length);
+
+    if (derBytes[offset] !== 0x02) throw new Error("Expected 0x02 for s");
+    offset++;
+    const sLen = derBytes[offset++];
+    let s = derBytes.subarray(offset, offset + sLen);
+    if (s.length > 32 && s[0] === 0) s = s.subarray(1);
+    const sPadded = new Uint8Array(32);
+    sPadded.set(s, 32 - s.length);
+
+    const n = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551n;
+    const halfN = n / 2n;
+    let sVal = BigInt("0x" + bytesToHex(sPadded));
+    if (sVal > halfN) {
+      sVal = n - sVal;
+      const hex = sVal.toString(16).padStart(64, "0");
+      sPadded.set(hexToBytes(hex));
     }
 
-    function hexToBytes(hex) {
-      const clean = hex.startsWith('0x') ? hex.slice(2) : hex;
-      const bytes = new Uint8Array(clean.length / 2);
-      for (let i = 0; i < clean.length; i += 2) {
-        bytes[i / 2] = parseInt(clean.substring(i, i + 2), 16);
-      }
-      return bytes;
-    }
+    const compact = new Uint8Array(64);
+    compact.set(rPadded, 0);
+    compact.set(sPadded, 32);
+    return compact;
+  }
 
-    function base64UrlToBytes(base64url) {
-      const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice(0, (3 * base64url.length) % 4);
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      return bytes;
-    }
+  // --- Theme Handling ---
+  var root = document.documentElement;
+  var themeToggle = document.getElementById('themeToggle');
+  var sunIcon = themeToggle.querySelector('.sun-icon');
+  var moonIcon = themeToggle.querySelector('.moon-icon');
 
-    function parseDerSignature(derBytes) {
-      let offset = 2;
-      if (derBytes[1] & 0x80) offset += (derBytes[1] & 0x7f);
+  function applyThemeIcons(theme) {
+    var isDark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    sunIcon.style.display = isDark ? 'block' : 'none';
+    moonIcon.style.display = isDark ? 'none' : 'block';
+  }
 
-      if (derBytes[offset] !== 0x02) throw new Error("Expected 0x02 for r");
-      offset++;
-      const rLen = derBytes[offset++];
-      let r = derBytes.subarray(offset, offset + rLen);
-      offset += rLen;
-      if (r.length > 32 && r[0] === 0) r = r.subarray(1);
-      const rPadded = new Uint8Array(32);
-      rPadded.set(r, 32 - r.length);
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('haptix_vault_theme'); } catch (e) {}
+  if (!savedTheme) {
+    savedTheme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  root.setAttribute('data-theme', savedTheme);
+  applyThemeIcons(savedTheme);
 
-      if (derBytes[offset] !== 0x02) throw new Error("Expected 0x02 for s");
-      offset++;
-      const sLen = derBytes[offset++];
-      let s = derBytes.subarray(offset, offset + sLen);
-      if (s.length > 32 && s[0] === 0) s = s.subarray(1);
-      const sPadded = new Uint8Array(32);
-      sPadded.set(s, 32 - s.length);
+  themeToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    applyThemeIcons(next);
+    try { localStorage.setItem('haptix_vault_theme', next); } catch (e) {}
+  });
 
-      const n = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551n;
-      const halfN = n / 2n;
-      let sVal = BigInt("0x" + bytesToHex(sPadded));
-      if (sVal > halfN) {
-        sVal = n - sVal;
-        const hex = sVal.toString(16).padStart(64, "0");
-        sPadded.set(hexToBytes(hex));
-      }
+  // --- DOM Elements ---
+  var stateIdle = document.getElementById('stateIdle');
+  var stateRequest = document.getElementById('stateRequest');
+  var stateApproved = document.getElementById('stateApproved');
+  var enrolledKeySection = document.getElementById('enrolledKeySection');
+  var unEnrolledSection = document.getElementById('unEnrolledSection');
+  var pubkeyText = document.getElementById('pubkeyText');
+  var copyBtn = document.getElementById('copyBtn');
+  var enrollBtn = document.getElementById('enrollBtn');
+  var enrollBtnText = document.getElementById('enrollBtnText');
+  var authBtn = document.getElementById('authBtn');
+  var authBtnLabel = document.getElementById('authBtnLabel');
+  var declineBtn = document.getElementById('declineBtn');
+  var reqAmount = document.getElementById('reqAmount');
+  var reqUsdVal = document.getElementById('reqUsdVal');
+  var reqRecipient = document.getElementById('reqRecipient');
+  var errorBox = document.getElementById('errorBox');
+  var toast = document.getElementById('toast');
 
-      const compact = new Uint8Array(64);
-      compact.set(rPadded, 0);
-      compact.set(sPadded, 32);
-      return compact;
-    }
+  // Modal elements
+  var overlay = document.getElementById('modalOverlay');
+  var howItWorksBtn = document.getElementById('howItWorksBtn');
+  var modalClose = document.getElementById('modalClose');
 
-    // --- UI Elements ---
-    const approvalHeroCard = document.getElementById('approvalHeroCard');
-    const idleRadarCard = document.getElementById('idleRadarCard');
-    const enrolledDetails = document.getElementById('enrolledDetails');
-    const enrollPromptSection = document.getElementById('enrollPromptSection');
-    const pubKeyHexDisplay = document.getElementById('pubKeyHexDisplay');
-    const btnCopyKey = document.getElementById('btnCopyKey');
-    const btnEnroll = document.getElementById('btnEnroll');
-    const btnSignTouchId = document.getElementById('btnSignTouchId');
-    const signedSuccess = document.getElementById('signedSuccess');
-    const reqAmount = document.getElementById('reqAmount');
-    const reqUsdVal = document.getElementById('reqUsdVal');
-    const reqRecipient = document.getElementById('reqRecipient');
-    const reqChallenge = document.getElementById('reqChallenge');
-    const errorBox = document.getElementById('errorBox');
-    const auditTerminalBody = document.getElementById('auditTerminalBody');
-    const toastNotice = document.getElementById('toastNotice');
-    const toastMsg = document.getElementById('toastMsg');
-    const quorumStatePill = document.getElementById('quorumStatePill');
+  var currentPending = null;
+  var rawFullPubKey = '';
 
-    let currentPending = null;
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.add('show');
+    setTimeout(function () { toast.classList.remove('show'); }, 1800);
+  }
 
-    // --- Logger ---
-    function logEvent(msg, type = 'info') {
-      const now = new Date();
-      const timeStr = now.toTimeString().split(' ')[0];
-      const div = document.createElement('div');
-      div.className = 'log-line';
-      const typeClass = type === 'success' ? 'log-msg-success' : type === 'warning' ? 'log-msg-warning' : 'log-msg-info';
-      div.innerHTML = `<span class="log-time">[${timeStr}]</span> <span class="${typeClass}">${msg}</span>`;
-      auditTerminalBody.appendChild(div);
-      auditTerminalBody.scrollTop = auditTerminalBody.scrollHeight;
-    }
+  function showState(el) {
+    [stateIdle, stateRequest, stateApproved].forEach(function (s) {
+      s.hidden = (s !== el);
+      s.classList.remove('state-enter');
+    });
+    void el.offsetWidth;
+    el.classList.add('state-enter');
+  }
 
-    function showToast(text) {
-      toastMsg.textContent = text;
-      toastNotice.classList.add('show');
-      setTimeout(() => toastNotice.classList.remove('show'), 2200);
-    }
+  // --- Modal Events ---
+  howItWorksBtn.addEventListener('click', function () {
+    overlay.classList.add('open');
+  });
+  modalClose.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal();
+  });
+  function closeModal() { overlay.classList.remove('open'); }
 
-    // Harmonic Audio Chime (Soft Apple-grade notification sound)
-    function playHarmonicChime() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.14); // A5
-        gain.gain.setValueAtTime(0.14, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.36);
-      } catch {}
-    }
-
-    const relayHost = window.location.hostname || 'localhost';
-    const relayOrigin = `http://${relayHost}:8082`;
-
-    // --- Boot Initialization ---
-    const storedVault = localStorage.getItem('haptix_mac_vault_key');
-    if (storedVault) {
-      try {
-        const parsed = JSON.parse(storedVault);
-        if (parsed.publicKeyHex) {
-          pubKeyHexDisplay.textContent = parsed.publicKeyHex;
-          enrolledDetails.style.display = 'flex';
-          enrollPromptSection.style.display = 'none';
-          logEvent(`Enclave passkey loaded: ${parsed.publicKeyHex.slice(0, 10)}...${parsed.publicKeyHex.slice(-6)}`, 'success');
-        }
-      } catch {
-        enrollPromptSection.style.display = 'block';
-      }
+  // --- Copy Button ---
+  copyBtn.addEventListener('click', function () {
+    if (!rawFullPubKey) return;
+    var done = function () {
+      copyBtn.classList.add('copied');
+      showToast('Public key copied');
+      setTimeout(function () { copyBtn.classList.remove('copied'); }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(rawFullPubKey).then(done).catch(done);
     } else {
-      enrollPromptSection.style.display = 'block';
-      logEvent('No enrolled Mac passkey found in localStorage. Please enroll.', 'warning');
+      done();
     }
+  });
 
-    // Copy Key Handler
-    btnCopyKey.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(pubKeyHexDisplay.textContent);
-      showToast('Vault Public Key copied');
-      logEvent('Vault public key copied to clipboard');
-    });
-
-    // Enrollment Handler
-    btnEnroll.addEventListener('click', async () => {
-      errorBox.style.display = 'none';
+  // --- Load Stored Key ---
+  function loadStoredKey() {
+    var stored = localStorage.getItem('haptix_mac_vault_key');
+    if (stored) {
       try {
-        btnEnroll.disabled = true;
-        btnEnroll.textContent = 'Touch ID Prompt Active...';
-        logEvent('Requesting Apple Secure Enclave credential creation...', 'info');
-
-        const challenge = crypto.getRandomValues(new Uint8Array(32));
-        const credential = await navigator.credentials.create({
-          publicKey: {
-            challenge,
-            rp: {
-              name: 'Haptix Wallet Vault',
-              id: window.location.hostname || 'localhost'
-            },
-            user: {
-              id: crypto.getRandomValues(new Uint8Array(16)),
-              name: 'Mac Touch ID Vault Key',
-              displayName: 'Mac Touch ID (Haptix Vault)'
-            },
-            pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
-            authenticatorSelection: {
-              authenticatorAttachment: 'platform',
-              userVerification: 'required',
-              residentKey: 'preferred'
-            },
-            timeout: 60000,
-            attestation: 'none'
-          }
-        });
-
-        if (!credential) throw new Error('Enclave credential creation was cancelled.');
-
-        let compressedHex = '';
-        if (typeof credential.response.getPublicKey === 'function') {
-          const spki = new Uint8Array(credential.response.getPublicKey());
-          const uncompressed = spki.slice(-65);
-          if (uncompressed[0] === 0x04) {
-            const x = uncompressed.slice(1, 33);
-            const yLast = uncompressed[64];
-            const prefix = (yLast % 2 === 0) ? '02' : '03';
-            compressedHex = prefix + bytesToHex(x);
-          }
+        var parsed = JSON.parse(stored);
+        if (parsed.publicKeyHex) {
+          rawFullPubKey = parsed.publicKeyHex;
+          var hex = parsed.publicKeyHex;
+          pubkeyText.textContent = hex.length > 20 ? (hex.slice(0, 8) + '...' + hex.slice(-8)) : hex;
+          pubkeyText.title = hex;
+          enrolledKeySection.style.display = 'block';
+          unEnrolledSection.style.display = 'none';
+          return;
         }
-
-        if (!compressedHex) throw new Error('Could not derive compressed public key from SPKI.');
-
-        const vaultMeta = {
-          credentialId: credential.id,
-          publicKeyHex: compressedHex,
-          createdAt: Date.now()
-        };
-        localStorage.setItem('haptix_mac_vault_key', JSON.stringify(vaultMeta));
-
-        pubKeyHexDisplay.textContent = compressedHex;
-        enrolledDetails.style.display = 'flex';
-        enrollPromptSection.style.display = 'none';
-        showToast('Mac Touch ID Enclave Enrolled');
-        logEvent(`Successfully enrolled hardware key: ${compressedHex}`, 'success');
-      } catch (err) {
-        errorBox.textContent = err.message || 'Touch ID enrollment failed.';
-        errorBox.style.display = 'block';
-        btnEnroll.disabled = false;
-        btnEnroll.textContent = 'Enroll Mac Touch ID';
-        logEvent(`Enrollment error: ${err.message}`, 'warning');
-      }
-    });
-
-    // Check for Pending Transfers (via Relay or URL parameters)
-    async function checkForPending() {
-      // 1. URL parameters
-      const params = new URLSearchParams(window.location.search);
-      const urlMsg = params.get('msg');
-      const urlAmt = params.get('amt');
-      const urlTo = params.get('to');
-      if (urlMsg && urlAmt) {
-        displayPendingRequest({
-          messageHex: urlMsg,
-          amountSol: parseFloat(urlAmt),
-          recipient: urlTo || 'Hou6dz...dYp5'
-        });
-        return;
-      }
-
-      // 2. Poll relay server on port 8082
-      try {
-        const res = await fetch(`${relayOrigin}/pending-tx`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.pending && (!currentPending || currentPending.id !== data.pending.id)) {
-            playHarmonicChime();
-            displayPendingRequest(data.pending);
-            logEvent(`Incoming quorum request: ${data.pending.amountSol} SOL to ${data.pending.recipient.slice(0, 6)}...`, 'warning');
-          } else if (!data.pending && currentPending && !currentPending.signed) {
-            approvalHeroCard.style.display = 'none';
-            idleRadarCard.style.display = 'flex';
-            quorumStatePill.textContent = '2-of-2 Quorum Armed';
-            quorumStatePill.style.color = 'var(--emerald-text)';
-            currentPending = null;
-          }
-        }
-      } catch {}
+      } catch (e) {}
     }
+    enrolledKeySection.style.display = 'none';
+    unEnrolledSection.style.display = 'flex';
+  }
+  loadStoredKey();
 
-    function displayPendingRequest(tx) {
-      currentPending = tx;
-      reqAmount.textContent = `${tx.amountSol} SOL`;
-      const usdEst = (tx.amountSol * 145).toFixed(2);
-      reqUsdVal.textContent = `≈ $${usdEst} USD · Solana Devnet`;
+  // --- Enrollment Handler ---
+  enrollBtn.addEventListener('click', async function () {
+    errorBox.style.display = 'none';
+    try {
+      enrollBtn.classList.add('busy');
+      enrollBtnText.textContent = 'Touch ID Sensor Active...';
 
-      reqRecipient.textContent = tx.recipient ? `${tx.recipient.slice(0, 8)}...${tx.recipient.slice(-6)}` : 'Hou6...';
-      reqChallenge.textContent = tx.messageHex ? `${tx.messageHex.slice(0, 20)}...` : '0x...';
-
-      idleRadarCard.style.display = 'none';
-      approvalHeroCard.style.display = 'block';
-      signedSuccess.style.display = 'none';
-      btnSignTouchId.style.display = 'flex';
-      btnSignTouchId.disabled = false;
-
-      quorumStatePill.textContent = 'AUTHORIZATION REQUESTED';
-      quorumStatePill.style.color = 'var(--amber-text)';
-    }
-
-    // Touch ID Signing Handler
-    btnSignTouchId.addEventListener('click', async () => {
-      errorBox.style.display = 'none';
-      if (!currentPending) return;
-
-      const vaultData = localStorage.getItem('haptix_mac_vault_key');
-      if (!vaultData) {
-        errorBox.textContent = 'No Mac Touch ID passkey enrolled. Enroll above first.';
-        errorBox.style.display = 'block';
-        return;
-      }
-
-      const meta = JSON.parse(vaultData);
-      try {
-        btnSignTouchId.disabled = true;
-        btnSignTouchId.querySelector('span').textContent = 'Touch ID Sensor Active...';
-        logEvent('Prompting Apple Touch ID sensor...', 'info');
-
-        const challengeBytes = hexToBytes(currentPending.messageHex);
-        const assertion = await navigator.credentials.get({
-          publicKey: {
-            challenge: challengeBytes,
-            rpId: window.location.hostname || 'localhost',
-            allowCredentials: [{
-              type: 'public-key',
-              id: base64UrlToBytes(meta.credentialId)
-            }],
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: challenge,
+          rp: {
+            name: 'Haptix Wallet Vault',
+            id: window.location.hostname || 'localhost'
+          },
+          user: {
+            id: crypto.getRandomValues(new Uint8Array(16)),
+            name: 'Mac Touch ID Vault Key',
+            displayName: 'Mac Touch ID (Haptix Vault)'
+          },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: {
+            authenticatorAttachment: 'platform',
             userVerification: 'required',
-            timeout: 60000
-          }
-        });
+            residentKey: 'preferred'
+          },
+          timeout: 60000,
+          attestation: 'none'
+        }
+      });
 
-        if (!assertion) throw new Error('Touch ID was cancelled.');
+      if (!credential) throw new Error('Enclave credential creation cancelled.');
 
-        logEvent('Touch ID approved. Normalizing Secp256r1 low-S assertion...', 'info');
-
-        const derSignature = new Uint8Array(assertion.response.signature);
-        const compactSig = parseDerSignature(derSignature);
-        const authData = new Uint8Array(assertion.response.authenticatorData);
-        const clientDataJSON = new Uint8Array(assertion.response.clientDataJSON);
-
-        const payload = {
-          signatureHex: bytesToHex(compactSig),
-          authenticatorDataHex: bytesToHex(authData),
-          clientDataJSONHex: bytesToHex(clientDataJSON)
-        };
-
-        logEvent(`P-256 signature generated: ${payload.signatureHex.slice(0, 16)}...`, 'success');
-
-        // Relay to phone
-        await fetch(`${relayOrigin}/submit-signature`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).catch(() => {});
-
-        logEvent('Signature submitted to local relay. Phone quorum satisfied!', 'success');
-
-        currentPending.signed = true;
-        btnSignTouchId.style.display = 'none';
-        signedSuccess.style.display = 'block';
-        showToast('Authorized with Touch ID');
-
-        quorumStatePill.textContent = 'TRANSFER VERIFIED';
-        quorumStatePill.style.color = 'var(--emerald-text)';
-      } catch (err) {
-        console.error('Signing error:', err);
-        errorBox.textContent = err.message || 'Touch ID verification failed.';
-        errorBox.style.display = 'block';
-        btnSignTouchId.disabled = false;
-        btnSignTouchId.querySelector('span').textContent = 'Authorize with Mac Touch ID';
-        logEvent(`Touch ID verification cancelled: ${err.message}`, 'warning');
+      let compressedHex = '';
+      if (typeof credential.response.getPublicKey === 'function') {
+        const spki = new Uint8Array(credential.response.getPublicKey());
+        const uncompressed = spki.slice(-65);
+        if (uncompressed[0] === 0x04) {
+          const x = uncompressed.slice(1, 33);
+          const yLast = uncompressed[64];
+          const prefix = (yLast % 2 === 0) ? '02' : '03';
+          compressedHex = prefix + bytesToHex(x);
+        }
       }
-    });
 
-    // Keyboard shortcut: Press Enter to trigger Touch ID when approval card is visible
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && currentPending && !currentPending.signed && !btnSignTouchId.disabled) {
-        btnSignTouchId.click();
+      if (!compressedHex) throw new Error('Could not derive compressed public key.');
+
+      const vaultMeta = {
+        credentialId: credential.id,
+        publicKeyHex: compressedHex,
+        createdAt: Date.now()
+      };
+      localStorage.setItem('haptix_mac_vault_key', JSON.stringify(vaultMeta));
+      loadStoredKey();
+      showToast('Enrolled in Apple Secure Enclave');
+    } catch (err) {
+      errorBox.textContent = err.message || 'Touch ID enrollment failed.';
+      errorBox.style.display = 'block';
+    } finally {
+      enrollBtn.classList.remove('busy');
+      enrollBtnText.textContent = 'Enroll Mac Touch ID';
+    }
+  });
+
+  // --- Relay Polling & Pending Requests ---
+  var relayHost = window.location.hostname || 'localhost';
+  var relayOrigin = 'http://' + relayHost + ':8082';
+
+  function displayPendingRequest(tx) {
+    currentPending = tx;
+    reqAmount.textContent = tx.amountSol + ' SOL';
+    var usdEst = (tx.amountSol * 145).toFixed(2);
+    reqUsdVal.textContent = '≈ $' + usdEst + ' USD';
+    reqRecipient.textContent = tx.recipient ? (tx.recipient.slice(0, 6) + '...' + tx.recipient.slice(-4)) : 'Hou6...';
+    errorBox.style.display = 'none';
+    showState(stateRequest);
+  }
+
+  async function pollPending() {
+    // 1. URL params check
+    var params = new URLSearchParams(window.location.search);
+    var urlMsg = params.get('msg');
+    var urlAmt = params.get('amt');
+    var urlTo = params.get('to');
+    if (urlMsg && urlAmt) {
+      displayPendingRequest({
+        messageHex: urlMsg,
+        amountSol: parseFloat(urlAmt),
+        recipient: urlTo || 'Hou6dz...dYp5'
+      });
+      return;
+    }
+
+    // 2. Local relay on 8082
+    try {
+      var res = await fetch(relayOrigin + '/pending-tx');
+      if (res.ok) {
+        var data = await res.json();
+        if (data.pending && (!currentPending || currentPending.id !== data.pending.id)) {
+          displayPendingRequest(data.pending);
+        } else if (!data.pending && currentPending && !currentPending.signed) {
+          showState(stateIdle);
+          currentPending = null;
+        }
       }
-    });
+    } catch (e) {}
+  }
 
-    setInterval(checkForPending, 900);
-    checkForPending();
-  </script>
+  setInterval(pollPending, 900);
+  pollPending();
+
+  // Decline Handler
+  declineBtn.addEventListener('click', function () {
+    currentPending = null;
+    showState(stateIdle);
+  });
+
+  // Touch ID Signing Handler
+  authBtn.addEventListener('click', async function () {
+    if (authBtn.classList.contains('busy') || !currentPending) return;
+    errorBox.style.display = 'none';
+
+    var vaultData = localStorage.getItem('haptix_mac_vault_key');
+    if (!vaultData) {
+      errorBox.textContent = 'No Mac Touch ID passkey enrolled yet. Enroll above.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    var meta = JSON.parse(vaultData);
+    try {
+      authBtn.classList.add('busy');
+      authBtnLabel.textContent = 'Verifying with Touch ID…';
+
+      var challengeBytes = hexToBytes(currentPending.messageHex);
+      var assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: challengeBytes,
+          rpId: window.location.hostname || 'localhost',
+          allowCredentials: [{
+            type: 'public-key',
+            id: base64UrlToBytes(meta.credentialId)
+          }],
+          userVerification: 'required',
+          timeout: 60000
+        }
+      });
+
+      if (!assertion) throw new Error('Touch ID was cancelled.');
+
+      var derSignature = new Uint8Array(assertion.response.signature);
+      var compactSig = parseDerSignature(derSignature);
+      var authData = new Uint8Array(assertion.response.authenticatorData);
+      var clientDataJSON = new Uint8Array(assertion.response.clientDataJSON);
+
+      var payload = {
+        signatureHex: bytesToHex(compactSig),
+        authenticatorDataHex: bytesToHex(authData),
+        clientDataJSONHex: bytesToHex(clientDataJSON)
+      };
+
+      await fetch(relayOrigin + '/submit-signature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(function () {});
+
+      currentPending.signed = true;
+      authBtn.classList.remove('busy');
+      authBtnLabel.textContent = 'Authorize with Touch ID';
+      showState(stateApproved);
+
+      setTimeout(function () {
+        showState(stateIdle);
+        currentPending = null;
+      }, 3500);
+
+    } catch (err) {
+      authBtn.classList.remove('busy');
+      authBtnLabel.textContent = 'Authorize with Touch ID';
+      errorBox.textContent = err.message || 'Touch ID verification failed.';
+      errorBox.style.display = 'block';
+    }
+  });
+
+  // Enter shortcut
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && currentPending && !currentPending.signed && !authBtn.classList.contains('busy')) {
+      authBtn.click();
+    }
+  });
+
+})();
+</script>
 </body>
 </html>
