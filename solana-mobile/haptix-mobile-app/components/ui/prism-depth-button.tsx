@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   Animated,
-  ActivityIndicator,
   Platform,
   StyleProp,
   ViewStyle,
@@ -14,6 +13,7 @@ import {
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { typeScale } from '@/theme/tokens'
+import { SpinLoader } from './spin-loader'
 
 export interface PrismDepthButtonProps {
   children?: React.ReactNode
@@ -136,7 +136,7 @@ export function PrismDepthButton({
         )}
 
         {loading ? (
-          <ActivityIndicator size="small" color={inkColor} />
+          <SpinLoader size="sm" color={inkColor} strokeWidth={2.4} />
         ) : (
           <View style={styles.contentRow}>
             {icon && <View style={styles.iconContainer}>{icon}</View>}

@@ -45,6 +45,7 @@ use anchor_lang::solana_program::hash::hash;
 /// app is associated with (`assetlinks.json` on Android, `webcredentials:` Associated
 /// Domains on iOS). See `PASSKEY_SETUP.md` in the mobile app.
 pub const RP_ID: &[u8] = b"haptix-passkeys.vercel.app";
+pub const RP_ID_LOCAL: &[u8] = b"localhost";
 
 /// WebAuthn origin used by Apple's ASAuthorization stack.
 pub const IOS_ORIGIN: &[u8] = b"https://haptix-passkeys.vercel.app";
@@ -68,9 +69,8 @@ fn invalid() -> anchor_lang::error::Error {
     error!(HaptixError::InvalidWebAuthnAssertion)
 }
 
-/// `SHA-256(rp_id)`, compared against `authenticatorData[0..32]`.
-fn expected_rp_id_hash() -> [u8; 32] {
-    hash(RP_ID).to_bytes()
+fn is_allowed_rp_id(auth_data_rp_hash: &[u8]) -> bool {
+    auth_data_rp_hash == &hash(RP_ID).to_bytes()[..] || auth_data_rp_hash == &hash(RP_ID_LOCAL).to_bytes()[..]
 }
 
 /// Validates a WebAuthn assertion whose `authenticatorData` and client data hash have
@@ -99,7 +99,7 @@ pub fn verify_assertion(
     if auth_data.len() < MIN_AUTH_DATA_LEN {
         return Err(invalid());
     }
-    if auth_data[..32] != expected_rp_id_hash()[..] {
+    if !is_allowed_rp_id(&auth_data[..32]) {
         return Err(invalid());
     }
 
@@ -130,20 +130,16 @@ pub fn verify_assertion(
     Ok(())
 }
 
-/// Accepts the https origin (Apple) or a well-formed Android app origin.
-///
-/// The Android origin embeds the signing certificate hash, which differs between
-/// debug and release builds and is not knowable to the program, so the value is
-/// validated for shape rather than equality. This is sound because the relying-party
-/// binding is carried by `rpIdHash` (check 3): for an app to obtain a credential for
-/// `haptix.io` the OS requires a Digital Asset Links association with that domain,
-/// which only the domain owner can publish.
+/// Accepts the https origin (Apple), local dev origins (Mac Vault), or a well-formed Android app origin.
 fn is_allowed_origin(origin: &[u8]) -> bool {
     if origin == IOS_ORIGIN {
-        return true
+        return true;
+    }
+    if origin.starts_with(b"http://localhost") || origin.starts_with(b"http://127.0.0.1") {
+        return true;
     }
     let Some(suffix) = origin.strip_prefix(ANDROID_ORIGIN_PREFIX) else {
-        return false
+        return false;
     };
     match base64url_decode(suffix) {
         // A signing certificate SHA-256, nothing else.

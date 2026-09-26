@@ -22,7 +22,8 @@ import Clipboard from '@/utils/clipboard'
 const ONBOARDING_BG = require('@/assets/images/onboarding-bg.png')
 import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { AppConfig } from '@/constants/app-config'
-import { saveWallet, getSavedWallet, createSmartWalletRecord } from '@/utils/haptix-wallet-storage'
+import { saveWallet, getSavedWallet, createSmartWalletRecord, loadWallets, HaptixWalletAccount } from '@/utils/haptix-wallet-storage'
+import { hexToBytes } from '@noble/curves/abstract/utils'
 import {
   bindHardwarePasskey,
   credentialIdForRecord,
@@ -31,9 +32,10 @@ import {
   getOrCreateSecondaryPasskey,
   matchLocalSoftwareKey,
   promptBiometricAuth,
+  PasskeyInfo,
 } from '@/utils/haptix-passkey'
-import { matchWebAuthnAssertion } from '@/utils/secp256r1-instruction'
-import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet } from '@/utils/haptix-client'
+import { matchWebAuthnAssertion, assertionMatchesPublicKey } from '@/utils/secp256r1-instruction'
+import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet, HAPTIX_PROGRAM_ID } from '@/utils/haptix-client'
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
@@ -153,10 +155,6 @@ export default function SignIn() {
     }
   }, [isLoading, activeWallet])
 
-  if (isLoading || activeWallet) {
-    return <HaptixAppLoader message={activeWallet ? 'Entering wallet…' : 'Loading smart wallet…'} />
-  }
-
   /**
    * Async `confirm`, because the recovery flow has to branch on the answer.
    *
@@ -200,6 +198,8 @@ export default function SignIn() {
   const [secondaryKeyName, setSecondaryKeyName] = useState('Backup Key')
   const [guardianInput, setGuardianInput] = useState('')
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [vaultKeySource, setVaultKeySource] = useState<'mac' | 'hardware'>('mac')
+  const [macVaultKeyHex, setMacVaultKeyHex] = useState('')
 
   // The guardian is the one address that can ever start a recovery, so it is validated
   // the same way a recipient is: a pasted explorer link or message gets its address
@@ -216,6 +216,10 @@ export default function SignIn() {
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [restoreAddress, setRestoreAddress] = useState('')
   const [showAddressInput, setShowAddressInput] = useState(false)
+  const [savedWallets, setSavedWallets] = useState<HaptixWalletAccount[]>([])
+  const [showGuardianLookup, setShowGuardianLookup] = useState(false)
+  const [guardianLookupInput, setGuardianLookupInput] = useState('')
+  const [isSearchingGuardian, setIsSearchingGuardian] = useState(false)
   /**
    * Whether this app container already holds a wallet record. `null` until the first
    * read. Drives the wording of the address field: the record lives in AsyncStorage,
@@ -291,10 +295,37 @@ export default function SignIn() {
       setCreationStep(2)
       await new Promise((r) => setTimeout(r, 600))
 
-      // 2. Generate Secondary (platform on-device vs. cross-platform security key)
-      const secondary = await getOrCreateSecondaryPasskey(secondaryName, {
-        attachment: securityMode === 'vault' ? 'securityKey' : 'platform',
-      })
+      // 2. Generate Secondary (Mac Touch ID vs. Security Key vs. Everyday Platform)
+      let secondary: PasskeyInfo
+      if (securityMode === 'vault' && vaultKeySource === 'mac') {
+        const cleanHex = macVaultKeyHex.trim().startsWith('0x')
+          ? macVaultKeyHex.trim().slice(2)
+          : macVaultKeyHex.trim()
+        if (!cleanHex || cleanHex.length !== 66 || (!cleanHex.startsWith('02') && !cleanHex.startsWith('03'))) {
+          dialog.alert(
+            'Mac Touch ID Public Key Required',
+            'Please open http://localhost:8081/vault.html on your Mac, tap "Enroll with Touch ID", and paste the 33-byte public key hex into the Mac Key field.',
+          )
+          setIsCreating(false)
+          setCreationStep(0)
+          return
+        }
+        secondary = {
+          id: 'secondary',
+          credentialId: 'mac_vault_' + cleanHex.slice(0, 16),
+          publicKey: hexToBytes(cleanHex),
+          publicKeyHex: cleanHex,
+          label: 'Mac Touch ID (Vault Key)',
+          hasBiometrics: true,
+          mode: 'hardware',
+          hardwareBacked: true,
+        }
+        await bindHardwarePasskey('secondary', secondary.credentialId, secondary.publicKeyHex)
+      } else {
+        secondary = await getOrCreateSecondaryPasskey(secondaryName, {
+          attachment: securityMode === 'vault' ? 'securityKey' : 'platform',
+        })
+      }
 
       setCreationStep(3)
 
@@ -379,40 +410,103 @@ export default function SignIn() {
       const typedInput = showAddressInput ? restoreAddress.trim() : ''
       const typedAddress = typedInput ? (restoreParse.address ?? '') : ''
 
-      const saved = await getSavedWallet()
-      if (saved) {
-        // Typing a *different* address means "bring that wallet onto this device", not
-        // "rename this one". The old code overwrote the saved record's address, which left
-        // the app pointing at an account whose keys are not on this device: every balance
-        // was read from an address it could never sign for. Falling through to recovery
-        // instead means the account is only trusted once a passkey has been checked
-        // against it.
-        if (!typedInput || typedAddress === saved.address) {
-          const auth = await promptBiometricAuth('Authenticate with biometric passkey to sign in')
-          if (!auth.success) {
-            dialog.alert('Authentication Failed', auth.error || 'Biometric verification was not completed.')
-            return
-          }
+      const allWallets = await loadWallets().catch(() => [])
+      const saved = await getSavedWallet().catch(() => null)
+      const targetSearch = typedAddress || restoreAddress.trim()
+      const matchingSaved = (!typedInput && saved)
+        ? saved
+        : (allWallets.find((w) => w.address === targetSearch) ?? (saved?.address === targetSearch ? saved : null))
 
-          await updateWallet(saved)
-          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-          setShowSignInModal(false)
-          router.replace('/(tabs)')
+      if (matchingSaved) {
+        const auth = await promptBiometricAuth('Authenticate with biometric passkey to sign in')
+        if (!auth.success) {
+          dialog.alert('Authentication Failed', auth.error || 'Biometric verification was not completed.')
           return
         }
+
+        await updateWallet(matchingSaved)
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        setShowSignInModal(false)
+        router.replace('/(tabs)')
+        return
       }
 
-      const targetAddress = typedAddress
+      let targetAddress = typedAddress
       if (!targetAddress) {
-        dialog.alert(
-          'Address Required',
-          // The parser's own diagnosis is far more useful than a generic message: it names
-          // the wrong chain, the `.sol` name, or the truncated copy that was actually the
-          // problem. The fallback explains why the address cannot come from the passkey.
-          restoreParse.error ??
-            'Your passkey is on this device, but the address it belongs to is not. A passkey never hands back the public key it was created with, so there is nothing here to work your wallet out from - the address has to come to us from you, and the passkey is then checked against it.\n\nPaste the smart wallet address below.',
-        )
-        setShowAddressInput(true)
+        // Zero-Input Passkey Discovery:
+        // When no address is specified, prompt the device's hardware authenticator directly.
+        // Once the user authenticates with fingerprint/passkey, match the cryptographic
+        // assertion against on-chain accounts to identify their exact wallet PDA automatically.
+        let picked: { credentialId: string; assertion: any }
+        try {
+          picked = await getDiscoverablePlatformAssertion()
+        } catch (err: any) {
+          dialog.alert('Authentication Cancelled', err?.message || 'Biometric verification was not completed.')
+          return
+        }
+
+        const connection = new Connection(AppConfig.devnetRpcUrl, { commitment: 'confirmed' })
+        const accounts = await connection.getProgramAccounts(HAPTIX_PROGRAM_ID, {
+          dataSlice: { offset: 9, length: 66 },
+        })
+
+        let matchedPda: PublicKey | null = null
+        let matchedKeyHex: string | null = null
+        let matchedRole: 'primary' | 'secondary' = 'primary'
+
+        for (const acc of accounts) {
+          const primaryKey = acc.account.data.subarray(0, 33)
+          const secondaryKey = acc.account.data.subarray(33, 66)
+          if (assertionMatchesPublicKey(picked.assertion, primaryKey)) {
+            matchedPda = acc.pubkey
+            matchedKeyHex = Buffer.from(primaryKey).toString('hex')
+            matchedRole = 'primary'
+            break
+          }
+          if (assertionMatchesPublicKey(picked.assertion, secondaryKey)) {
+            matchedPda = acc.pubkey
+            matchedKeyHex = Buffer.from(secondaryKey).toString('hex')
+            matchedRole = 'secondary'
+            break
+          }
+        }
+
+        if (!matchedPda) {
+          dialog.alert(
+            'Wallet Not Found On-Chain',
+            'Your passkey was authenticated, but no smart wallet matching this passkey was found on Devnet.\n\nIf you created this wallet on another network or with a custom address, please paste your wallet address or search by Guardian.',
+          )
+          setShowAddressInput(true)
+          return
+        }
+
+        const onchainState = await fetchHaptixWallet(connection, matchedPda)
+        if (!onchainState) {
+          dialog.alert('Wallet Error', 'Found wallet PDA, but could not load its on-chain account state.')
+          return
+        }
+
+        await bindHardwarePasskey(matchedRole, picked.credentialId, matchedKeyHex!)
+
+        const restored = await createSmartWalletRecord({
+          name: 'My Haptix Wallet',
+          primaryPasskeyHex: Buffer.from(onchainState.primaryPasskey).toString('hex'),
+          secondaryPasskeyHex: Buffer.from(onchainState.secondaryPasskey).toString('hex'),
+          primaryCredentialId: matchedRole === 'primary' ? picked.credentialId : undefined,
+          secondaryCredentialId: matchedRole === 'secondary' ? picked.credentialId : undefined,
+          primaryLabel: 'Platform passkey (primary)',
+          secondaryLabel: 'Platform passkey (backup)',
+          spendThreshold: Number(onchainState.spendThresholdLamports) / LAMPORTS_PER_SOL,
+          network: 'devnet',
+        })
+        restored.address = matchedPda.toBase58()
+        restored.isInitializedOnChain = true
+        await saveWallet(restored)
+        await updateWallet(restored)
+
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        setShowSignInModal(false)
+        router.replace('/(tabs)')
         return
       }
 
@@ -526,29 +620,50 @@ export default function SignIn() {
       // but only up to the spending limit. Said in those terms rather than as "needs both
       // keys for high-value transfers", which reads as a nice-to-have and got declined.
       const bound: { primary?: string; secondary?: string } = { primary: primaryAttempt.credentialId }
-      const wantsSecondKey = await confirmDialog(
+      let wantsSecondKey = await confirmDialog(
         'Add The Backup Key?',
         `Primary key bound.\n\nYour wallet has a second, backup key. Without it you can still send up to ${spendLimitSol} SOL. Anything above that, unlocking the wallet, and cancelling a recovery all need both keys.\n\nAdd the backup key now?`,
         'Select Backup Passkey',
       )
-      if (wantsSecondKey) {
+
+      while (wantsSecondKey && !bound.secondary) {
         const second = await bindOne('secondary')
         if (second?.role === 'secondary') {
           bound.secondary = second.credentialId
-        } else if (second) {
+          break
+        }
+
+        const isPrimaryKey = second?.role === 'primary'
+        const title = isPrimaryKey ? 'Selected Primary Passkey' : 'Unrecognized Passkey'
+        const reason = isPrimaryKey
+          ? 'You selected the Primary passkey again instead of the Backup key. On-chain security requires two distinct passkeys.'
+          : "That passkey does not match this wallet's Backup key."
+
+        const choice = await new Promise<'retry' | 'skip' | 'cancel'>((resolve) => {
+          let settled = false
+          const finish = (val: 'retry' | 'skip' | 'cancel') => {
+            if (settled) return
+            settled = true
+            resolve(val)
+          }
           dialog.alert(
-            'Backup Key Not Bound',
-            'You picked the Primary passkey again, so the Backup key was not bound. You can add it later from Settings.',
-            undefined,
-            { status: 'warning' },
+            title,
+            `${reason}\n\nWould you like to try selecting your Backup key again, or proceed in Everyday Mode (spending limited to ${spendLimitSol} SOL)?`,
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => finish('cancel') },
+              { text: 'Proceed Without It', style: 'default', onPress: () => finish('skip') },
+              { text: 'Try Again', style: 'default', onPress: () => finish('retry') },
+            ],
+            { onDismiss: () => finish('cancel'), status: 'warning' },
           )
+        })
+
+        if (choice === 'retry') {
+          continue
+        } else if (choice === 'skip') {
+          break
         } else {
-          dialog.alert(
-            'Backup Key Not Bound',
-            "That passkey is not this wallet's Backup key, so it was not bound. You can add it later from Settings.",
-            undefined,
-            { status: 'warning' },
-          )
+          return
         }
       }
 
@@ -614,12 +729,63 @@ export default function SignIn() {
    */
   const openSignInSheet = async () => {
     setShowSignInModal(true)
+    const wallets = await loadWallets().catch(() => [])
+    setSavedWallets(wallets)
     const saved = await getSavedWallet().catch(() => null)
-    setDeviceHasWallet(!!saved)
-    if (saved) return
+    setDeviceHasWallet(!!saved || wallets.length > 0)
+    if (saved) {
+      setRestoreAddress(saved.address)
+      return
+    }
+    if (wallets.length > 0) {
+      setRestoreAddress(wallets[0].address)
+      return
+    }
 
     setShowAddressInput(true)
-    await fillFromClipboard()
+    // Note: Clipboard is only read when user explicitly taps the "Paste" button
+  }
+
+  const handleSearchByGuardian = async () => {
+    const raw = guardianLookupInput.trim()
+    if (!raw) return
+    try {
+      setIsSearchingGuardian(true)
+      const guardianKey = new PublicKey(raw)
+      const connection = new Connection(AppConfig.devnetRpcUrl, 'confirmed')
+      // On-chain Wallet account layout: guardian is at byte offset 83
+      const accounts = await connection.getProgramAccounts(HAPTIX_PROGRAM_ID, {
+        filters: [
+          {
+            memcmp: {
+              offset: 83,
+              bytes: guardianKey.toBase58(),
+            },
+          },
+        ],
+      })
+      if (!accounts.length) {
+        dialog.alert('No Wallets Found', 'No Haptix smart wallet was found with this guardian on Devnet.')
+        return
+      }
+      const foundAddress = accounts[0].pubkey.toBase58()
+      setRestoreAddress(foundAddress)
+      setShowAddressInput(true)
+      setShowGuardianLookup(false)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      dialog.alert(
+        'Wallet Found!',
+        `Found smart wallet:\n${ellipsify(foundAddress, 6)} (${foundAddress})\n\nAddress has been filled. Tap "Sign in with Biometrics" to unlock.`,
+      )
+    } catch (err: any) {
+      dialog.alert('Search Error', err?.message || 'Invalid guardian address')
+    } finally {
+      setIsSearchingGuardian(false)
+    }
+  }
+
+  if (isLoading || activeWallet) {
+    return <HaptixAppLoader message={activeWallet ? 'Entering wallet…' : 'Loading smart wallet…'} />
   }
 
   return (
@@ -783,11 +949,104 @@ export default function SignIn() {
                     </View>
 
                     {securityMode === 'vault' && (
-                      <View style={styles.vaultExplainer}>
-                        <MaterialIcons name="info-outline" size={16} color={p.heroInk} />
-                        <Text style={styles.vaultExplainerText}>
-                          <Text style={{ fontWeight: '700' }}>Vault Mode</Text>: Daily spends use FaceID on this phone. Sends above your limit will require your external key (MacBook TouchID / Hardware Key like OneKey).
-                        </Text>
+                      <View style={{ marginTop: 10 }}>
+                        <View style={styles.vaultExplainer}>
+                          <MaterialIcons name="info-outline" size={16} color={p.heroInk} />
+                          <Text style={styles.vaultExplainerText}>
+                            <Text style={{ fontWeight: '700' }}>Vault Mode</Text>: Daily spends use fingerprint on this phone. Sends above your limit will require your Mac Touch ID.
+                          </Text>
+                        </View>
+
+                        <Text style={[styles.inputLabel, { marginTop: 14, marginBottom: 6 }]}>Vault Key Device</Text>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              Haptics.selectionAsync()
+                              setVaultKeySource('mac')
+                              setSecondaryKeyName('Mac Touch ID (Vault Key)')
+                            }}
+                            style={[
+                              styles.vaultSourceCard,
+                              vaultKeySource === 'mac' && styles.vaultSourceCardActive,
+                            ]}
+                          >
+                            <MaterialIcons
+                              name="laptop-mac"
+                              size={20}
+                              color={vaultKeySource === 'mac' ? p.heroInk : p.inkMuted}
+                            />
+                            <Text
+                              style={[
+                                styles.vaultSourceTitle,
+                                vaultKeySource === 'mac' && styles.vaultSourceTitleActive,
+                              ]}
+                            >
+                              Mac Touch ID
+                            </Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={() => {
+                              Haptics.selectionAsync()
+                              setVaultKeySource('hardware')
+                              setSecondaryKeyName('Vault Key (Security Key)')
+                            }}
+                            style={[
+                              styles.vaultSourceCard,
+                              vaultKeySource === 'hardware' && styles.vaultSourceCardActive,
+                            ]}
+                          >
+                            <MaterialIcons
+                              name="usb"
+                              size={20}
+                              color={vaultKeySource === 'hardware' ? p.heroInk : p.inkMuted}
+                            />
+                            <Text
+                              style={[
+                                styles.vaultSourceTitle,
+                                vaultKeySource === 'hardware' && styles.vaultSourceTitleActive,
+                              ]}
+                            >
+                              USB / NFC Key
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+
+                        {vaultKeySource === 'mac' && (
+                          <View style={styles.macVaultBox}>
+                            <Text style={styles.macVaultStep}>1. Open on your Mac browser:</Text>
+                            <View style={styles.macVaultUrlWrap}>
+                              <Text style={styles.macVaultUrlText}>http://localhost:8081/vault.html</Text>
+                            </View>
+                            <Text style={styles.macVaultStep}>
+                              2. Tap "Enroll with Touch ID" on your Mac, then paste the public key below:
+                            </Text>
+                            <View style={[styles.addressInputContainer, { marginTop: 6, marginBottom: 4 }]}>
+                              <TextInput
+                                style={styles.addressInput}
+                                value={macVaultKeyHex}
+                                onChangeText={setMacVaultKeyHex}
+                                placeholder="Paste 33-byte Mac public key (02...)"
+                                placeholderTextColor={p.inkMuted}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                              />
+                              <TouchableOpacity
+                                style={styles.pasteBadgeButton}
+                                onPress={async () => {
+                                  const text = await Clipboard.getString()
+                                  if (text) {
+                                    const clean = text.trim().startsWith('0x') ? text.trim().slice(2) : text.trim()
+                                    setMacVaultKeyHex(clean)
+                                    Haptics.selectionAsync()
+                                  }
+                                }}
+                              >
+                                <Text style={styles.pasteBadgeText}>Paste</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        )}
                       </View>
                     )}
                   </View>
@@ -984,6 +1243,54 @@ export default function SignIn() {
               </View>
               <Text style={styles.sheetDesc}>Authenticate with your biometric passkey.</Text>
 
+              {/* AUTO DISCOVERY NOTICE WHEN LOCAL STORAGE IS EMPTY */}
+              {savedWallets.length === 0 && (
+                <View style={styles.autoDiscoverNotice}>
+                  <MaterialIcons name="fingerprint" size={18} color={p.heroAccent} />
+                  <Text style={styles.autoDiscoverNoticeText}>
+                    Passkey on this device? Simply tap{' '}
+                    <Text style={{ fontWeight: '700', color: p.heroInk }}>Sign in with Biometrics</Text> below to
+                    automatically scan &amp; recover your wallet on-chain!
+                  </Text>
+                </View>
+              )}
+
+              {/* SAVED WALLETS ON THIS DEVICE */}
+              {savedWallets.length > 0 && (
+                <View style={styles.savedWalletsContainer}>
+                  <Text style={styles.savedWalletsHeader}>Saved Wallets on this Device</Text>
+                  {savedWallets.map((w) => {
+                    const isSelected = restoreAddress === w.address
+                    return (
+                      <TouchableOpacity
+                        key={w.address}
+                        style={[
+                          styles.savedWalletCard,
+                          isSelected && styles.savedWalletCardActive,
+                        ]}
+                        onPress={() => {
+                          Haptics.selectionAsync()
+                          setRestoreAddress(w.address)
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.savedWalletName, isSelected && styles.savedWalletNameActive]}>
+                            {w.name || 'Haptix Smart Wallet'}
+                          </Text>
+                          <Text style={styles.savedWalletAddress}>{ellipsify(w.address, 6)}</Text>
+                        </View>
+                        <MaterialIcons
+                          name={isSelected ? 'check-circle' : 'radio-button-unchecked'}
+                          size={20}
+                          color={isSelected ? p.heroAccent : p.inkMuted}
+                        />
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              )}
+
               <TouchableOpacity
                 style={styles.customAddressToggle}
                 onPress={() => {
@@ -993,10 +1300,12 @@ export default function SignIn() {
               >
                 <Text style={styles.customAddressToggleText}>
                   {showAddressInput
-                    ? 'Hide custom address'
+                    ? 'Hide custom address / search'
                     : deviceHasWallet === false
                       ? 'Wallet address required on this device'
-                      : 'Specify custom wallet address (Optional)'}
+                      : savedWallets.length > 0
+                        ? 'Or sign into another address / search'
+                        : 'Specify custom wallet address (Optional)'}
                 </Text>
                 <MaterialIcons
                   name={showAddressInput ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
@@ -1006,29 +1315,75 @@ export default function SignIn() {
               </TouchableOpacity>
 
               {showAddressInput && (
-                <View style={styles.addressInputContainer}>
-                  <TextInput
-                    style={styles.addressInput}
-                    value={restoreAddress}
-                    onChangeText={setRestoreAddress}
-                    placeholder="Paste Solana smart wallet address"
-                    placeholderTextColor={p.inkMuted}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  {restoreAddress.length > 0 ? (
-                    <TouchableOpacity
-                      onPress={() => setRestoreAddress('')}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <MaterialIcons name="cancel" size={18} color={p.inkMuted} />
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity style={styles.pasteBadgeButton} onPress={handlePasteAddress}>
-                      <Text style={styles.pasteBadgeText}>Paste</Text>
-                    </TouchableOpacity>
+                <>
+                  <View style={styles.addressInputContainer}>
+                    <TextInput
+                      style={styles.addressInput}
+                      value={restoreAddress}
+                      onChangeText={setRestoreAddress}
+                      placeholder="Paste Solana smart wallet address"
+                      placeholderTextColor={p.inkMuted}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    {restoreAddress.length > 0 ? (
+                      <TouchableOpacity
+                        onPress={() => setRestoreAddress('')}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <MaterialIcons name="cancel" size={18} color={p.inkMuted} />
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity style={styles.pasteBadgeButton} onPress={handlePasteAddress}>
+                        <Text style={styles.pasteBadgeText}>Paste</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {/* FORGOT ADDRESS: GUARDIAN SEARCH */}
+                  <TouchableOpacity
+                    style={styles.guardianSearchToggle}
+                    onPress={() => {
+                      Haptics.selectionAsync()
+                      setShowGuardianLookup((prev) => !prev)
+                    }}
+                  >
+                    <MaterialIcons name="search" size={16} color={p.link} />
+                    <Text style={styles.guardianSearchToggleText}>
+                      {showGuardianLookup ? 'Hide Guardian lookup' : 'Forgot address? Search on-chain by Guardian'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {showGuardianLookup && (
+                    <View style={styles.guardianSearchBox}>
+                      <Text style={styles.guardianSearchHelp}>
+                        Enter your Guardian's Solana address (e.g. your Phantom or friend's wallet) to find your smart wallet:
+                      </Text>
+                      <View style={[styles.addressInputContainer, { marginTop: 6, marginBottom: 8 }]}>
+                        <TextInput
+                          style={styles.addressInput}
+                          value={guardianLookupInput}
+                          onChangeText={setGuardianLookupInput}
+                          placeholder="Guardian Solana address"
+                          placeholderTextColor={p.inkMuted}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.guardianSearchBtn, isSearchingGuardian && { opacity: 0.7 }]}
+                        onPress={handleSearchByGuardian}
+                        disabled={isSearchingGuardian || !guardianLookupInput.trim()}
+                      >
+                        {isSearchingGuardian ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.guardianSearchBtnText}>Find My Wallet On-Chain</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
                   )}
-                </View>
+                </>
               )}
 
               {showAddressInput && restoreHint && (
@@ -1100,7 +1455,7 @@ export default function SignIn() {
       {/* RECOVER LOST WALLET MODAL */}
       <HaptixRecoveryFlowSheet
         visible={showRecoveryModal}
-        initialTargetAddress={restoreAddress}
+        initialTargetAddress=""
         onClose={() => setShowRecoveryModal(false)}
         onRecoveryComplete={async (recovered) => {
           setShowRecoveryModal(false)
@@ -1370,5 +1725,152 @@ const createStyles = (p: OnboardingPalette) =>
       fontSize: 13,
       fontWeight: '600',
       color: p.heroInk,
+    },
+    autoDiscoverNotice: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      backgroundColor: p.surfaceAlt,
+      borderRadius: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: p.border,
+      marginBottom: 14,
+    },
+    autoDiscoverNoticeText: {
+      flex: 1,
+      color: p.inkBody,
+      fontSize: 12,
+      lineHeight: 17,
+    },
+    savedWalletsContainer: {
+      marginBottom: 14,
+    },
+    savedWalletsHeader: {
+      color: p.heroInk,
+      fontSize: 13,
+      fontWeight: '600',
+      marginBottom: 8,
+    },
+    savedWalletCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      backgroundColor: p.surfaceAlt,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: p.border,
+      marginBottom: 8,
+    },
+    savedWalletCardActive: {
+      borderColor: p.heroAccent,
+      backgroundColor: p.surface,
+    },
+    savedWalletName: {
+      color: p.heroInk,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    savedWalletNameActive: {
+      color: p.heroAccent,
+    },
+    savedWalletAddress: {
+      color: p.inkMuted,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    guardianSearchToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 6,
+      marginBottom: 8,
+    },
+    guardianSearchToggleText: {
+      color: p.link,
+      fontSize: 12.5,
+      fontWeight: '600',
+    },
+    guardianSearchBox: {
+      backgroundColor: p.surfaceAlt,
+      borderRadius: 12,
+      padding: 12,
+      borderWidth: 1,
+      borderColor: p.border,
+      marginBottom: 12,
+    },
+    guardianSearchHelp: {
+      color: p.inkSecondary,
+      fontSize: 11.5,
+      lineHeight: 16,
+    },
+    guardianSearchBtn: {
+      backgroundColor: p.actionBg,
+      borderRadius: 8,
+      paddingVertical: 9,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    guardianSearchBtnText: {
+      color: p.onPrimary,
+      fontSize: 12.5,
+      fontWeight: '600',
+    },
+    vaultSourceCard: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      backgroundColor: p.surfaceAlt,
+      borderWidth: 1.5,
+      borderColor: p.border,
+      borderRadius: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 8,
+    },
+    vaultSourceCardActive: {
+      borderColor: p.actionBg,
+      backgroundColor: p.surface,
+    },
+    vaultSourceTitle: {
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: p.inkMuted,
+    },
+    vaultSourceTitleActive: {
+      color: p.heroInk,
+      fontWeight: '700',
+    },
+    macVaultBox: {
+      backgroundColor: p.surfaceAlt,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderRadius: 12,
+      padding: 12,
+      marginTop: 10,
+    },
+    macVaultStep: {
+      fontSize: 12,
+      color: p.inkSecondary,
+      lineHeight: 16,
+      marginBottom: 4,
+    },
+    macVaultUrlWrap: {
+      backgroundColor: p.surface,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderRadius: 8,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      marginBottom: 10,
+      marginTop: 2,
+    },
+    macVaultUrlText: {
+      fontSize: 11.5,
+      color: p.link,
+      fontWeight: '600',
     },
   })

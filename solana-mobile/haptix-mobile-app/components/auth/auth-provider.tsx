@@ -53,8 +53,6 @@ export function useAuth() {
  * the ids can be recovered without asking the user for a passkey.
  */
 async function backfillCredentials(wallet: HaptixWalletAccount): Promise<HaptixWalletAccount> {
-  if (wallet.primaryCredentialId && wallet.secondaryCredentialId) return wallet
-
   const bound = await applyWalletCredentials(wallet)
   if (bound.primary === wallet.primaryCredentialId && bound.secondary === wallet.secondaryCredentialId) {
     return wallet
@@ -77,20 +75,31 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   // Load saved smart wallet on boot
   useEffect(() => {
-    getSavedWallet()
-      .then(async (saved) => {
-        if (!saved) return
-        // A failed backfill must not stop the wallet from loading; the record is only
-        // missing an optimisation at that point.
-        const wallet = await backfillCredentials(saved).catch(() => saved)
-        setActiveWallet(wallet)
-        setIsLocked(Boolean(wallet.isLocked))
-      })
-      .then(loadWallets)
-      .then(setWallets)
-      .finally(() => {
-        setIsInitializing(false)
-      })
+    let mounted = true
+    async function boot() {
+      try {
+        const saved = await getSavedWallet()
+        if (saved && mounted) {
+          const wallet = await backfillCredentials(saved).catch(() => saved)
+          setActiveWallet(wallet)
+          setIsLocked(Boolean(wallet.isLocked))
+        }
+        if (mounted) {
+          const all = await loadWallets().catch(() => [])
+          setWallets(all)
+        }
+      } catch (err) {
+        console.error('[AuthProvider] Boot error:', err)
+      } finally {
+        if (mounted) {
+          setIsInitializing(false)
+        }
+      }
+    }
+    boot()
+    return () => {
+      mounted = false
+    }
   }, [])
 
   /** Keeps the switcher in step with storage after any create, restore or rename. */

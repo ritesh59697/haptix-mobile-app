@@ -183,6 +183,8 @@ export function HaptixBiometricPromptSheet({
               <MaterialIcons name="check" size={38} color={theme.emerald} />
             ) : phase === 'broadcasting' ? (
               <ActivityIndicator size="small" color={theme.accent} />
+            ) : phase === 'verifying_secondary' && securityMode === 'vault' ? (
+              <MaterialIcons name="laptop-mac" size={38} color={theme.accent} />
             ) : (
               <MaterialIcons name="fingerprint" size={42} color={theme.accent} />
             )}
@@ -210,7 +212,7 @@ export function HaptixBiometricPromptSheet({
             ? 'Scanning fingerprint…'
             : phase === 'verifying_secondary'
             ? currentStep === 2 && securityMode === 'vault'
-              ? 'Touch Vault Key to complete quorum…'
+              ? 'Touch Mac Touch ID to approve…'
               : 'Confirm with backup key…'
             : phase === 'broadcasting'
             ? 'Submitting to Solana…'

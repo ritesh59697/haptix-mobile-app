@@ -23,6 +23,7 @@ import {
 import { SettingsAppConfig } from '@/components/settings/settings-app-config'
 import { SettingsUiAccount } from '@/components/settings/settings-ui-account'
 import { SettingsUiCluster } from '@/components/settings/settings-ui-cluster'
+import { SettingsUiPasskeys } from '@/components/settings/settings-ui-passkeys'
 import { SettingsUiWallets } from '@/components/settings/settings-ui-wallets'
 import { deletePasskeys } from '@/utils/haptix-passkey'
 import { radius, typeScale } from '@/theme/tokens'
@@ -157,6 +158,16 @@ export default function TabSettingsScreen() {
             <SettingsUiWallets />
           </HaptixSettingsCard>
         ) : null}
+
+        <HaptixSettingsCard>
+          <HaptixSettingsHeader
+            title="Passkeys & Security"
+            badge={activeWallet?.secondaryCredentialId ? '2 of 2 Bound' : '1 of 2 Bound'}
+            badgeTone={activeWallet?.secondaryCredentialId ? 'success' : 'danger'}
+            description="Hardware passkeys authorized to sign transactions for this smart wallet."
+          />
+          <SettingsUiPasskeys />
+        </HaptixSettingsCard>
 
         <HaptixSettingsCard>
           <HaptixSettingsHeader

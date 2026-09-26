@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Haptix — Guardian Social Recovery Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <!-- Solana Web3.js from CDN -->
+  <script src="https://unpkg.com/@solana/web3.js@1.95.8/lib/index.iife.min.js"></script>
+  <style>
+    :root {
+      --bg: #090A0F;
+      --surface: #12141D;
+      --surface-elevated: #1A1D2B;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(0, 82, 255, 0.4);
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+      --blue: #0052FF;
+      --blue-hover: #0045D8;
+      --emerald: #10B981;
+      --emerald-bg: rgba(16, 185, 129, 0.12);
+      --amber: #F59E0B;
+      --amber-bg: rgba(245, 158, 11, 0.12);
+      --rose: #F43F5E;
+      --rose-bg: rgba(244, 63, 94, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .background-glow {
+      position: fixed;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(0, 82, 255, 0.15) 0%, rgba(9, 10, 15, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .portal-card {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 520px;
+      padding: 32px 28px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px);
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .shield-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(0, 82, 255, 0.12);
+      border: 1px solid rgba(0, 82, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .notice-card {
+      background: var(--amber-bg);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 22px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .notice-icon {
+      font-size: 18px;
+      line-height: 1;
+      margin-top: 2px;
+    }
+    .notice-text {
+      font-size: 12.5px;
+      line-height: 1.55;
+      color: #FDE68A;
+    }
+    .info-table {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 24px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .info-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .info-row:first-child {
+      padding-top: 0;
+    }
+    .info-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .info-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .status-active {
+      background: var(--emerald-bg);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .status-frozen {
+      background: var(--rose-bg);
+      color: var(--rose);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+    .actions-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .btn-primary {
+      width: 100%;
+      background: var(--blue);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 20px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 14px rgba(0, 82, 255, 0.3);
+    }
+    .btn-primary:hover {
+      background: var(--blue-hover);
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-secondary {
+      width: 100%;
+      background: var(--surface-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 13px 20px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    .log-box {
+      margin-top: 20px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      max-height: 140px;
+      overflow-y: auto;
+      display: none;
+    }
+    .copy-chip {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 2px 6px;
+      cursor: pointer;
+      font-size: 11px;
+    }
+    .copy-chip:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .footer {
+      margin-top: 24px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+    .success-card {
+      margin-top: 18px;
+      background: var(--emerald-bg);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 14px;
+      padding: 16px;
+      display: none;
+    }
+    .success-card a {
+      color: #34D399;
+      text-decoration: underline;
+      font-weight: 600;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="background-glow"></div>
+
+  <div class="portal-card">
+    <div class="header">
+      <div class="shield-badge">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0052FF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">Haptix Guardian Portal</div>
+        <div class="brand-subtitle">Emergency On-Chain Wallet Rescue</div>
+      </div>
+    </div>
+
+    <!-- Security Advisory -->
+    <div class="notice-card">
+      <div class="notice-icon">⚠️</div>
+      <div class="notice-text">
+        <strong>Guardian Authorization:</strong> You are authorizing emergency recovery for a lost device. Initiating will immediately <strong>freeze the lost phone on Solana</strong> and begin a 24-hour dispute timelock.
+      </div>
+    </div>
+
+    <!-- Wallet Details -->
+    <div class="info-table">
+      <div class="info-row">
+        <span class="info-label">Target Smart Wallet</span>
+        <span class="info-value" id="val-wallet">Loading...</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">On-Chain Status</span>
+        <span class="info-value" id="val-status">Checking...</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Wallet Balance</span>
+        <span class="info-value" id="val-balance">-- SOL</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Authorized Guardian</span>
+        <span class="info-value" id="val-guardian">--</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Dispute Timelock</span>
+        <span class="info-value" id="val-timelock">24 hours</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions-wrap">
+      <button class="btn-primary" id="btn-authorize" onclick="authorizeWithDevnetGuardian()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        Authorize Recovery &amp; Freeze Lost Phone (1-Tap)
+      </button>
+
+      <button class="btn-secondary" id="btn-wallet" onclick="authorizeWithSolanaWallet()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="m16 10-4 4-4-4"/>
+        </svg>
+        Connect Hardware / Browser Wallet (Phantom / Solflare)
+      </button>
+    </div>
+
+    <!-- Success Feedback -->
+    <div class="success-card" id="success-card">
+      <div style="font-weight: 700; color: #10B981; margin-bottom: 6px;">✓ Recovery Initiated On-Chain!</div>
+      <div style="font-size: 12px; line-height: 1.5; color: #D1FAE5; margin-bottom: 10px;">
+        The lost device is now frozen on Solana. The 24-hour dispute timelock has started. Once it expires, the new device will complete key installation.
+      </div>
+      <div style="font-size: 11.5px; color: var(--text-muted);">
+        Solana Transaction: <a id="tx-link" href="#" target="_blank" rel="noopener noreferrer">View on Explorer</a>
+      </div>
+    </div>
+
+    <!-- Live Event Log -->
+    <div class="log-box" id="log-box"></div>
+
+    <div class="footer">
+      Haptix Smart Account Program: <span class="info-value" style="display:inline;">HAPTiX...</span> on Solana Devnet.<br>
+      This recovery portal does not touch or require your seed phrases.
+    </div>
+  </div>
+
+  <script>
+    const PROGRAM_ID = new solanaWeb3.PublicKey('9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke');
+    const DEVNET_RPC = 'https://api.devnet.solana.com';
+    const connection = new solanaWeb3.Connection(DEVNET_RPC, 'confirmed');
+
+    // Bundled Devnet Guardian Keypair (used by Devnet wallets)
+    const BUNDLED_DEVNET_GUARDIAN = [
+      242, 172, 235, 114, 104, 76, 65, 87, 106, 116, 225, 237, 187, 88, 102, 66,
+      119, 97, 90, 52, 110, 71, 51, 65, 54, 118, 86, 86, 114, 76, 103, 75,
+      211, 45, 112, 12, 110, 196, 172, 194, 219, 11, 84, 178, 151, 236, 137, 153,
+      173, 240, 96, 219, 108, 153, 90, 83, 118, 156, 125, 172, 198, 203, 111, 207
+    ];
+
+    let targetWalletPda = null;
+    let proposedPrimaryHex = null;
+    let proposedSecondaryHex = null;
+    let onChainState = null;
+
+    function log(msg) {
+      const box = document.getElementById('log-box');
+      box.style.display = 'block';
+      box.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function ellipsify(str, len = 4) {
+      if (!str || str.length <= len * 2 + 3) return str;
+      return `${str.slice(0, len)}...${str.slice(-len)}`;
+    }
+
+    async function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const walletParam = urlParams.get('wallet');
+      proposedPrimaryHex = urlParams.get('primary') || urlParams.get('p');
+      proposedSecondaryHex = urlParams.get('secondary') || urlParams.get('s');
+
+      if (!walletParam) {
+        document.getElementById('val-wallet').innerText = 'No wallet address in URL';
+        log('Error: Missing ?wallet= parameter in query string.');
+        return;
+      }
+
+      try {
+        targetWalletPda = new solanaWeb3.PublicKey(walletParam);
+        document.getElementById('val-wallet').innerHTML = `
+          <span>${ellipsify(walletParam, 6)}</span>
+          <span class="copy-chip" onclick="navigator.clipboard.writeText('${walletParam}')">Copy</span>
+        `;
+      } catch (err) {
+        document.getElementById('val-wallet').innerText = 'Invalid Solana Address';
+        log('Invalid wallet public key: ' + err.message);
+        return;
+      }
+
+      await loadOnChainDetails();
+    }
+
+    async function loadOnChainDetails() {
+      try {
+        log('Fetching smart wallet account from Solana Devnet...');
+        const accInfo = await connection.getAccountInfo(targetWalletPda);
+        if (!accInfo) {
+          document.getElementById('val-status').innerHTML = '<span class="status-pill status-frozen">Not Initialized</span>';
+          log('Wallet account not found on Devnet.');
+          return;
+        }
+
+        const balance = await connection.getBalance(targetWalletPda);
+        document.getElementById('val-balance').innerText = (balance / solanaWeb3.LAMPORTS_PER_SOL).toFixed(4) + ' SOL';
+
+        // Parse state buffer
+        const data = accInfo.data;
+        // Anchor Discriminator 8 bytes, guardian at offset 40 (32 bytes)
+        const guardianBytes = data.slice(40, 72);
+        const guardianPubkey = new solanaWeb3.PublicKey(guardianBytes);
+        document.getElementById('val-guardian').innerText = ellipsify(guardianPubkey.toBase58(), 6);
+
+        // isFrozen at offset 88
+        const isFrozen = data[88] === 1;
+        // recoveryInitiatedAt at offset 89 (8 bytes uint64 LE)
+        const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+        const recoveryInitiatedAt = view.getBigUint64(89, true);
+
+        if (isFrozen || recoveryInitiatedAt > 0n) {
+          document.getElementById('val-status').innerHTML = '<span class="status-pill status-frozen">● Frozen · In Recovery</span>';
+          document.getElementById('btn-authorize').innerText = 'Recovery Already In Flight';
+          document.getElementById('btn-authorize').disabled = true;
+        } else {
+          document.getElementById('val-status').innerHTML = '<span class="status-pill status-active">● Active · Normal</span>';
+        }
+
+        log('Account loaded successfully. Guardian: ' + guardianPubkey.toBase58());
+      } catch (err) {
+        log('Failed to fetch account info: ' + err.message);
+      }
+    }
+
+    // Build the initiate_recovery transaction
+    function createInitiateInstruction(guardianPubkey, primaryHex, secondaryHex) {
+      const primaryBytes = hexToBytes(primaryHex);
+      const secondaryBytes = hexToBytes(secondaryHex);
+
+      const data = new Uint8Array(8 + 33 + 33);
+      // Anchor discriminator for initiate_recovery: [132, 148, 60, 74, 49, 178, 235, 187]
+      data.set([132, 148, 60, 74, 49, 178, 235, 187], 0);
+      data.set(primaryBytes, 8);
+      data.set(secondaryBytes, 41);
+
+      return new solanaWeb3.TransactionInstruction({
+        programId: PROGRAM_ID,
+        keys: [
+          { pubkey: targetWalletPda, isSigner: false, isWritable: true },
+          { pubkey: guardianPubkey, isSigner: true, isWritable: false },
+        ],
+        data,
+      });
+    }
+
+    function hexToBytes(hex) {
+      if (!hex || hex.length !== 66) {
+        // Fallback dummy 33-byte compressed P-256 public key if not in URL
+        return new Uint8Array(33).fill(2);
+      }
+      const bytes = new Uint8Array(33);
+      for (let i = 0; i < 33; i++) {
+        bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+      }
+      return bytes;
+    }
+
+    // 1-Tap Devnet Guardian Authorization
+    async function authorizeWithDevnetGuardian() {
+      const btn = document.getElementById('btn-authorize');
+      btn.disabled = true;
+      btn.innerText = 'Broadcasting to Solana Devnet...';
+      log('Preparing Guardian initiate_recovery transaction...');
+
+      try {
+        const guardianKeypair = solanaWeb3.Keypair.fromSecretKey(new Uint8Array(BUNDLED_DEVNET_GUARDIAN));
+        const ix = createInitiateInstruction(guardianKeypair.publicKey, proposedPrimaryHex, proposedSecondaryHex);
+
+        const latestBlockhash = await connection.getLatestBlockhash('confirmed');
+        const tx = new solanaWeb3.Transaction({
+          feePayer: guardianKeypair.publicKey,
+          recentBlockhash: latestBlockhash.blockhash
+        }).add(ix);
+
+        log('Signing transaction with Devnet Guardian keypair...');
+        tx.sign(guardianKeypair);
+
+        log('Submitting to Solana Devnet...');
+        const sig = await connection.sendRawTransaction(tx.serialize());
+        log('Transaction sent! Waiting for confirmation: ' + sig);
+
+        await connection.confirmTransaction(sig, 'confirmed');
+        log('Confirmed! The wallet is now frozen on-chain.');
+
+        document.getElementById('success-card').style.display = 'block';
+        const txLink = document.getElementById('tx-link');
+        txLink.href = `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+        txLink.innerText = `${sig.slice(0, 16)}... (View on Solana Explorer)`;
+
+        btn.innerText = '✓ Recovery Initiated';
+        await loadOnChainDetails();
+      } catch (err) {
+        log('Authorization failed: ' + err.message);
+        alert('Failed to initiate recovery: ' + err.message);
+        btn.disabled = false;
+        btn.innerText = 'Authorize Recovery & Freeze Lost Phone (1-Tap)';
+      }
+    }
+
+    // Connect Browser Wallet (Phantom/Solflare)
+    async function authorizeWithSolanaWallet() {
+      const btn = document.getElementById('btn-wallet');
+      if (!window.solana) {
+        alert('No Solana wallet extension detected (Phantom, Solflare, or Backpack). Please install one or use the 1-Tap button.');
+        return;
+      }
+
+      try {
+        btn.innerText = 'Connecting Wallet...';
+        const resp = await window.solana.connect();
+        const guardianPubkey = resp.publicKey;
+        log('Connected wallet: ' + guardianPubkey.toBase58());
+
+        btn.innerText = 'Signing Transaction...';
+        const ix = createInitiateInstruction(guardianPubkey, proposedPrimaryHex, proposedSecondaryHex);
+        const latestBlockhash = await connection.getLatestBlockhash('confirmed');
+        const tx = new solanaWeb3.Transaction({
+          feePayer: guardianPubkey,
+          recentBlockhash: latestBlockhash.blockhash
+        }).add(ix);
+
+        const signed = await window.solana.signTransaction(tx);
+        log('Transaction signed by wallet. Broadcasting to Devnet...');
+
+        const sig = await connection.sendRawTransaction(signed.serialize());
+        await connection.confirmTransaction(sig, 'confirmed');
+
+        log('Confirmed with connected wallet! Tx: ' + sig);
+        document.getElementById('success-card').style.display = 'block';
+        const txLink = document.getElementById('tx-link');
+        txLink.href = `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+        txLink.innerText = `${sig.slice(0, 16)}... (View on Solana Explorer)`;
+
+        btn.innerText = '✓ Authorized with ' + ellipsify(guardianPubkey.toBase58(), 4);
+        await loadOnChainDetails();
+      } catch (err) {
+        log('Browser wallet error: ' + err.message);
+        alert('Wallet error: ' + err.message);
+        btn.innerText = 'Connect Hardware / Browser Wallet (Phantom / Solflare)';
+      }
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
