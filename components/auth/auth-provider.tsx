@@ -28,7 +28,13 @@ export interface AuthState {
   switchWallet: (address: string) => Promise<boolean>
   createWallet: (
     name?: string,
-    options?: { mode?: 'everyday' | 'vault'; spendThreshold?: number },
+    options?: {
+      mode?: 'everyday' | 'vault'
+      spendThreshold?: number
+      primaryLabel?: string
+      secondaryLabel?: string
+      guardianAddress?: string
+    },
   ) => Promise<HaptixWalletAccount>
   restoreWallet: () => Promise<HaptixWalletAccount>
   lockWallet: () => Promise<void>
@@ -114,7 +120,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const handleCreateWallet = async (
     name?: string,
-    options?: { mode?: 'everyday' | 'vault'; spendThreshold?: number },
+    options?: {
+      mode?: 'everyday' | 'vault'
+      spendThreshold?: number
+      primaryLabel?: string
+      secondaryLabel?: string
+      guardianAddress?: string
+    },
   ): Promise<HaptixWalletAccount> => {
     const isFirstWallet = wallets.length === 0
     const finalName = name?.trim() || `Account ${wallets.length + 1}`
@@ -138,8 +150,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       secondaryPasskeyHex: secondary.publicKeyHex,
       primaryCredentialId: credentialIdForRecord(primary),
       secondaryCredentialId: credentialIdForRecord(secondary),
-      primaryLabel: primary.label,
-      secondaryLabel: secondary.label,
+      primaryLabel: options?.primaryLabel || primary.label,
+      secondaryLabel: options?.secondaryLabel || secondary.label,
+      guardianAddress: options?.guardianAddress,
       spendThreshold: threshold,
       securityMode: mode,
     })

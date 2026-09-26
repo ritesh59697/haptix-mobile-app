@@ -101,15 +101,14 @@ const createStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 3,
-      maxWidth: 180,
+      maxWidth: 140,
+      flexShrink: 1,
     },
     headerWalletName: {
       fontSize: typeScale.title,
       fontWeight: '700',
       letterSpacing: -0.2,
-      // Was 140, measured against the old 15dp title. The name truncates on one
-      // line, so the cap has to grow with the type it caps: 140 * (17/15).
-      maxWidth: 160,
+      maxWidth: 120,
     },
     addressCopyChip: {
       ...TAG_SHAPE,

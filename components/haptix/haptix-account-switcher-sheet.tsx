@@ -17,6 +17,7 @@ import { useAuth } from '@/components/auth/auth-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { ellipsify } from '@/utils/ellipsify'
+import { isSolanaAddress } from '@/utils/solana-address'
 import { loadCachedBalance } from '@/utils/haptix-tx-history'
 import { LucideShieldCheck, LucideSmartphone, LucideCheck } from './haptix-icons'
 import { PrismDepthButton } from '@/components/ui'
@@ -27,6 +28,8 @@ interface HaptixAccountSwitcherSheetProps {
   onClose: () => void
 }
 
+const THRESHOLD_OPTIONS = [0.05, 0.1, 0.25, 0.5]
+
 export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSwitcherSheetProps) {
   const insets = useSafeAreaInsets()
   const { theme } = useAppTheme()
@@ -35,8 +38,18 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
 
   const [switchingTo, setSwitchingTo] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
+
+  // Account creation form state
   const [newAccountName, setNewAccountName] = useState('')
   const [selectedMode, setSelectedMode] = useState<'everyday' | 'vault'>('everyday')
+  const [spendLimit, setSpendLimit] = useState(0.1)
+
+  // Advanced settings state
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [primaryKeyLabel, setPrimaryKeyLabel] = useState('')
+  const [secondaryKeyLabel, setSecondaryKeyLabel] = useState('')
+  const [guardianAddress, setGuardianAddress] = useState('')
+
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false)
   const [balances, setBalances] = useState<Record<string, number>>({})
 
@@ -92,7 +105,15 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
 
   const handleStartCreate = () => {
     Haptics.selectionAsync()
-    setNewAccountName(selectedMode === 'vault' ? `Vault Account ${wallets.length + 1}` : `Account ${wallets.length + 1}`)
+    const defaultName =
+      selectedMode === 'vault'
+        ? `Hardware Vault ${wallets.length + 1}`
+        : `Everyday Account ${wallets.length + 1}`
+    setNewAccountName(defaultName)
+    setPrimaryKeyLabel('Device Biometrics (Primary)')
+    setSecondaryKeyLabel('Mac Secure Enclave / Backup Key')
+    setGuardianAddress('')
+    setShowAdvanced(false)
     setIsCreating(true)
   }
 
@@ -100,33 +121,57 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
     Haptics.selectionAsync()
     setIsCreating(false)
     setNewAccountName('')
+    setShowAdvanced(false)
   }
 
   const handleConfirmCreate = async () => {
-    const finalName = newAccountName.trim() || (selectedMode === 'vault' ? 'Hardware Vault' : 'Everyday Account')
+    const finalName =
+      newAccountName.trim() ||
+      (selectedMode === 'vault' ? 'Hardware Vault' : 'Everyday Account')
+
+    if (guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim())) {
+      dialog.alert(
+        'Invalid Guardian Address',
+        'Please enter a valid 32-to-44 character base58 Solana address, or leave it blank.',
+        undefined,
+        { status: 'warning' },
+      )
+      return
+    }
+
     try {
       setIsSubmittingCreate(true)
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
 
       await createWallet(finalName, {
         mode: selectedMode,
-        spendThreshold: selectedMode === 'vault' ? 0.0 : 0.1,
+        spendThreshold: selectedMode === 'vault' ? 0.0 : spendLimit,
+        primaryLabel: primaryKeyLabel.trim() || undefined,
+        secondaryLabel: secondaryKeyLabel.trim() || undefined,
+        guardianAddress: guardianAddress.trim() || undefined,
       })
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setIsCreating(false)
       setNewAccountName('')
+      setShowAdvanced(false)
       onClose()
 
       dialog.alert(
         'Account Created',
-        `"${finalName}" is now active in ${selectedMode === 'vault' ? 'Vault (2-of-2 Hardware)' : 'Everyday'} mode.`,
+        `"${finalName}" is now active in ${
+          selectedMode === 'vault' ? 'Vault (2-of-2 Hardware)' : 'Everyday'
+        } mode.`,
         undefined,
         { status: 'success' },
       )
     } catch (err: any) {
       const msg = err?.message || ''
-      if (msg.includes('cancelled') || msg.includes('canceled') || msg.includes('User cancelled')) {
+      if (
+        msg.includes('cancelled') ||
+        msg.includes('canceled') ||
+        msg.includes('User cancelled')
+      ) {
         return
       }
       dialog.alert('Creation Failed', msg || 'Could not create account passkey.', undefined, {
@@ -159,11 +204,11 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
           <View style={styles.header}>
             <View>
               <Text style={[styles.title, { color: theme.textPrimary }]}>
-                {isCreating ? 'Create New Account' : 'Smart Accounts'}
+                {isCreating ? 'Create Account' : 'Smart Accounts'}
               </Text>
               <Text style={[styles.subtitle, { color: theme.textMuted }]}>
                 {isCreating
-                  ? 'Backed by Apple/Android Hardware Passkeys'
+                  ? 'Configure security, policy and hardware keys'
                   : `${wallets.length} ${wallets.length === 1 ? 'account' : 'accounts'} on this device`}
               </Text>
             </View>
@@ -178,7 +223,9 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
           </View>
 
           {!isCreating ? (
-            /* --- 1. ACCOUNT LIST VIEW --- */
+            /* ================================================================ */
+            /* 1. ACCOUNT LIST VIEW (ZERO OVERLAPPING GUARANTEED)               */
+            /* ================================================================ */
             <ScrollView
               style={styles.scrollList}
               showsVerticalScrollIndicator={false}
@@ -188,7 +235,11 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                 const isActive = wallet.address === activeWallet?.address
                 const isSwitching = switchingTo === wallet.address
                 const isVault = wallet.securityMode === 'vault'
-                const balance = balances[wallet.address]
+                const rawLamports = balances[wallet.address]
+                const solBalance =
+                  rawLamports !== undefined && rawLamports !== null
+                    ? rawLamports / 1e9
+                    : null
 
                 return (
                   <TouchableOpacity
@@ -221,29 +272,14 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                       )}
                     </View>
 
-                    {/* Middle Info */}
-                    <View style={styles.accountInfo}>
-                      <View style={styles.nameRow}>
-                        <Text
-                          style={[styles.accountName, { color: theme.textPrimary }]}
-                          numberOfLines={1}
-                        >
-                          {wallet.name}
-                        </Text>
-                        {isActive && (
-                          <View
-                            style={[
-                              styles.activeChip,
-                              { backgroundColor: theme.accent, borderColor: theme.borderDefault },
-                            ]}
-                          >
-                            <LucideCheck size={10} color={theme.accentForeground} />
-                            <Text style={[styles.activeChipText, { color: theme.accentForeground }]}>
-                              Active
-                            </Text>
-                          </View>
-                        )}
-                      </View>
+                    {/* Middle Column (Name on top, Meta on bottom) */}
+                    <View style={styles.accountMiddleCol}>
+                      <Text
+                        style={[styles.accountName, { color: theme.textPrimary }]}
+                        numberOfLines={1}
+                      >
+                        {wallet.name}
+                      </Text>
 
                       <View style={styles.metaRow}>
                         <Text style={[styles.accountAddress, { color: theme.textMuted }]}>
@@ -256,28 +292,46 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                             { color: isVault ? theme.amberText : theme.textSecondary },
                           ]}
                         >
-                          {isVault ? '2-of-2 Vault' : 'Everyday'}
+                          {isVault ? 'Vault (2-of-2)' : 'Everyday'}
                         </Text>
                       </View>
                     </View>
 
-                    {/* Right: Balance / Switching Spinner */}
-                    <View style={styles.accountTrailing}>
+                    {/* Right Column (Balance on top, Status / Chevron on bottom) */}
+                    <View style={styles.accountRightCol}>
                       {isSwitching ? (
                         <ActivityIndicator size="small" color={theme.accent} />
                       ) : (
-                        <View style={styles.balanceCol}>
-                          {balance !== undefined ? (
-                            <Text style={[styles.balanceText, { color: theme.textPrimary }]}>
-                              {balance.toFixed(3)} SOL
-                            </Text>
-                          ) : null}
-                          <MaterialIcons
-                            name={isActive ? 'check' : 'chevron-right'}
-                            size={18}
-                            color={isActive ? theme.accent : theme.textMuted}
-                          />
-                        </View>
+                        <>
+                          <Text style={[styles.balanceText, { color: theme.textPrimary }]}>
+                            {solBalance !== null ? `${solBalance.toFixed(4)} SOL` : '—'}
+                          </Text>
+
+                          {isActive ? (
+                            <View
+                              style={[
+                                styles.activeBadge,
+                                { backgroundColor: theme.accent, borderColor: theme.borderDefault },
+                              ]}
+                            >
+                              <LucideCheck size={9} color={theme.accentForeground} />
+                              <Text
+                                style={[
+                                  styles.activeBadgeText,
+                                  { color: theme.accentForeground },
+                                ]}
+                              >
+                                Active
+                              </Text>
+                            </View>
+                          ) : (
+                            <MaterialIcons
+                              name="chevron-right"
+                              size={16}
+                              color={theme.textMuted}
+                            />
+                          )}
+                        </>
                       )}
                     </View>
                   </TouchableOpacity>
@@ -306,15 +360,22 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                     Add New Account
                   </Text>
                   <Text style={[styles.addAccountSubtitle, { color: theme.textMuted }]}>
-                    Create an Everyday or Hardware Vault account
+                    Configure security mode, limits, and hardware keys
                   </Text>
                 </View>
               </TouchableOpacity>
             </ScrollView>
           ) : (
-            /* --- 2. CREATE ACCOUNT FORM --- */
-            <View style={styles.createFormContainer}>
-              {/* Account Name Field */}
+            /* ================================================================ */
+            /* 2. RICH, TRANSPARENT ACCOUNT CREATION EXPERIENCE                */
+            /* ================================================================ */
+            <ScrollView
+              style={styles.scrollList}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Account Name */}
               <View style={styles.formGroup}>
                 <Text style={[styles.inputLabel, { color: theme.textMuted }]}>ACCOUNT NAME</Text>
                 <TextInput
@@ -328,14 +389,14 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                   ]}
                   value={newAccountName}
                   onChangeText={setNewAccountName}
-                  placeholder="e.g. Savings Vault or Trading"
+                  placeholder="e.g., Savings Vault or Trading"
                   placeholderTextColor={theme.textMuted}
                   autoCapitalize="words"
                   autoFocus={true}
                 />
               </View>
 
-              {/* Mode Selection Tiles */}
+              {/* Security Policy Selector Tiles */}
               <View style={styles.formGroup}>
                 <Text style={[styles.inputLabel, { color: theme.textMuted }]}>SECURITY POLICY</Text>
                 <View style={styles.modeCardsRow}>
@@ -368,7 +429,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                       Everyday Mode
                     </Text>
                     <Text style={[styles.modeTileDesc, { color: theme.textSecondary }]}>
-                      Fast 1-fingerprint biometrics up to 0.1 SOL. Ideal for daily sends & dApps.
+                      Fast single-fingerprint biometrics. Ideal for daily micro-sends & dApps.
                     </Text>
                   </TouchableOpacity>
 
@@ -398,13 +459,172 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                       <LucideShieldCheck size={18} color={theme.amberText} />
                     </View>
                     <Text style={[styles.modeTileTitle, { color: theme.textPrimary }]}>
-                      Vault Mode
+                      Vault Mode (2-of-2)
                     </Text>
                     <Text style={[styles.modeTileDesc, { color: theme.textSecondary }]}>
-                      2-of-2 multisig with your Mac Secure Enclave. Ultra-secure for savings.
+                      Strict 2-of-2 hardware quorum with your Mac Secure Enclave for maximum cold security.
                     </Text>
                   </TouchableOpacity>
                 </View>
+              </View>
+
+              {/* Spending Limit Configuration (Everyday Mode Only) */}
+              {selectedMode === 'everyday' && (
+                <View style={styles.formGroup}>
+                  <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                    ONE-KEY BIOMETRIC THRESHOLD
+                  </Text>
+                  <View style={styles.thresholdChipsRow}>
+                    {THRESHOLD_OPTIONS.map((val) => {
+                      const isSelected = spendLimit === val
+                      return (
+                        <TouchableOpacity
+                          key={val}
+                          style={[
+                            styles.thresholdChip,
+                            {
+                              backgroundColor: isSelected ? theme.accent : theme.bgElevated,
+                              borderColor: isSelected ? theme.accent : theme.borderDefault,
+                            },
+                          ]}
+                          onPress={() => {
+                            Haptics.selectionAsync()
+                            setSpendLimit(val)
+                          }}
+                          activeOpacity={0.75}
+                        >
+                          <Text
+                            style={[
+                              styles.thresholdChipText,
+                              { color: isSelected ? theme.accentForeground : theme.textPrimary },
+                            ]}
+                          >
+                            {val} SOL
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+                  <Text style={[styles.fieldHint, { color: theme.textMuted }]}>
+                    Transfers exceeding {spendLimit} SOL will automatically require 2-of-2 quorum.
+                  </Text>
+                </View>
+              )}
+
+              {/* Collapsible Advanced Settings */}
+              <TouchableOpacity
+                style={[
+                  styles.advancedToggleBtn,
+                  { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
+                ]}
+                onPress={() => {
+                  Haptics.selectionAsync()
+                  setShowAdvanced((prev) => !prev)
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.advancedToggleLeft}>
+                  <MaterialIcons name="tune" size={17} color={theme.textPrimary} />
+                  <Text style={[styles.advancedToggleText, { color: theme.textPrimary }]}>
+                    {showAdvanced ? 'Hide Advanced Settings' : 'Advanced Settings (Key Labels, Guardian)'}
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name={showAdvanced ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                  size={18}
+                  color={theme.textMuted}
+                />
+              </TouchableOpacity>
+
+              {showAdvanced && (
+                <View style={styles.advancedGroup}>
+                  {/* Primary Key Label */}
+                  <View style={styles.formGroup}>
+                    <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                      PRIMARY KEY LABEL
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.inputField,
+                        {
+                          backgroundColor: theme.bgElevated,
+                          color: theme.textPrimary,
+                          borderColor: theme.borderDefault,
+                        },
+                      ]}
+                      value={primaryKeyLabel}
+                      onChangeText={setPrimaryKeyLabel}
+                      placeholder="e.g. Device Biometrics"
+                      placeholderTextColor={theme.textMuted}
+                    />
+                  </View>
+
+                  {/* Secondary Key Label */}
+                  <View style={styles.formGroup}>
+                    <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                      BACKUP / SECONDARY KEY LABEL
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.inputField,
+                        {
+                          backgroundColor: theme.bgElevated,
+                          color: theme.textPrimary,
+                          borderColor: theme.borderDefault,
+                        },
+                      ]}
+                      value={secondaryKeyLabel}
+                      onChangeText={setSecondaryKeyLabel}
+                      placeholder="e.g. Mac Secure Enclave"
+                      placeholderTextColor={theme.textMuted}
+                    />
+                  </View>
+
+                  {/* Recovery Guardian Address */}
+                  <View style={styles.formGroup}>
+                    <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                      RECOVERY GUARDIAN ADDRESS (OPTIONAL)
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.inputField,
+                        {
+                          backgroundColor: theme.bgElevated,
+                          color: theme.textPrimary,
+                          borderColor:
+                            guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim())
+                              ? theme.rose
+                              : theme.borderDefault,
+                        },
+                      ]}
+                      value={guardianAddress}
+                      onChangeText={setGuardianAddress}
+                      placeholder="Trusted Solana wallet address for recovery"
+                      placeholderTextColor={theme.textMuted}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    {guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim()) && (
+                      <Text style={[styles.fieldError, { color: theme.roseText }]}>
+                        Invalid Solana address
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              )}
+
+              {/* Hardware Biometric Notice */}
+              <View
+                style={[
+                  styles.biometricNoticeBox,
+                  { backgroundColor: theme.bgElevated, borderColor: theme.borderSubtle },
+                ]}
+              >
+                <MaterialIcons name="fingerprint" size={20} color={theme.textPrimary} />
+                <Text style={[styles.biometricNoticeText, { color: theme.textSecondary }]}>
+                  Tapping "Create Account" will prompt your phone's fingerprint sensor to mint your
+                  hardware-backed Secp256r1 passkey inside the secure enclave.
+                </Text>
               </View>
 
               {/* Action Buttons */}
@@ -419,20 +639,20 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                   activeOpacity={0.7}
                 >
                   <Text style={[styles.cancelBtnText, { color: theme.textSecondary }]}>
-                    Back
+                    Cancel
                   </Text>
                 </TouchableOpacity>
 
                 <View style={styles.submitBtnWrap}>
                   <PrismDepthButton
-                    title={isSubmittingCreate ? 'Generating Passkey…' : 'Create Account'}
+                    title={isSubmittingCreate ? 'Minting Passkey…' : 'Create with Biometrics'}
                     onPress={handleConfirmCreate}
                     disabled={isSubmittingCreate}
                     loading={isSubmittingCreate}
                   />
                 </View>
               </View>
-            </View>
+            </ScrollView>
           )}
         </View>
       </View>
@@ -453,7 +673,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderRightWidth: 1,
     paddingTop: 10,
-    maxHeight: '85%',
+    maxHeight: '90%',
   },
   dragHandle: {
     width: 36,
@@ -491,55 +711,41 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 16,
-    gap: 10,
+    gap: 12,
   },
+
+  /* Card Layout: 3 Columns (Avatar, Middle, Right) */
   accountCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderRadius: 16,
     borderWidth: 1,
     gap: 12,
   },
   accountAvatar: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  accountInfo: {
+  accountMiddleCol: {
     flex: 1,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    gap: 3,
   },
   accountName: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '600',
     letterSpacing: -0.01,
-  },
-  activeChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  activeChipText: {
-    fontSize: 10.5,
-    fontWeight: '700',
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 3,
   },
   accountAddress: {
     fontFamily: 'JetBrains Mono',
@@ -552,20 +758,32 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '600',
   },
-  accountTrailing: {
+  accountRightCol: {
     alignItems: 'flex-end',
     justifyContent: 'center',
-  },
-  balanceCol: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   balanceText: {
     fontFamily: 'JetBrains Mono',
-    fontSize: 12.5,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.02,
   },
+  activeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  activeBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+
+  /* Add button */
   addAccountBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -595,13 +813,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 1,
   },
-  createFormContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    gap: 16,
-  },
+
+  /* Form Elements */
   formGroup: {
-    gap: 8,
+    gap: 7,
   },
   inputLabel: {
     fontSize: 11,
@@ -613,9 +828,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     paddingHorizontal: 14,
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '500',
   },
+  fieldHint: {
+    fontSize: 11.5,
+    lineHeight: 15,
+  },
+  fieldError: {
+    fontSize: 11.5,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+
+  /* Mode selection tiles */
   modeCardsRow: {
     gap: 10,
   },
@@ -643,6 +869,65 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     marginTop: 2,
   },
+
+  /* Threshold Pills */
+  thresholdChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  thresholdChip: {
+    flex: 1,
+    height: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thresholdChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  /* Advanced Accordion Toggle */
+  advancedToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 4,
+  },
+  advancedToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  advancedToggleText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+  },
+  advancedGroup: {
+    gap: 12,
+    paddingTop: 4,
+  },
+
+  /* Biometric notice box */
+  biometricNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  biometricNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16,
+  },
+
+  /* Form actions */
   createActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
