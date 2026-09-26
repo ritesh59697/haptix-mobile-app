@@ -956,7 +956,7 @@ function modeKey(id: 'primary' | 'secondary'): string {
   return id === 'primary' ? MODE_KEY_PRIMARY : MODE_KEY_SECONDARY
 }
 
-async function writeMode(id: 'primary' | 'secondary', mode: PasskeyMode): Promise<void> {
+export async function writeMode(id: 'primary' | 'secondary', mode: PasskeyMode): Promise<void> {
   try {
     await AsyncStorage.setItem(modeKey(id), mode)
   } catch (err) {
@@ -1273,6 +1273,18 @@ export async function bindHardwarePasskey(
 }
 
 /**
+ * Binds a software passkey for a role, pointing the public key slot at it and
+ * marking mode as software.
+ */
+export async function bindSoftwarePasskey(
+  id: 'primary' | 'secondary',
+  publicKeyHex: string,
+): Promise<void> {
+  await AsyncStorage.setItem(pubkeyKey(id), publicKeyHex)
+  await writeMode(id, 'software')
+}
+
+/**
  * The credential id worth persisting in a wallet record, if any.
  *
  * A software key has no platform credential: its scalar sits in secure storage and its
@@ -1340,20 +1352,21 @@ export async function applyWalletCredentials(wallet: {
       continue
     }
 
-    // No id in the record. The device slot can still be this wallet's own key -- the shape
-    // of every wallet saved before records carried credential ids -- but only trust it
-    // when it already holds this wallet's public key. A slot holding some *other* key
-    // would sign with the wrong credential and fail the on-chain signature check.
-    if ((await AsyncStorage.getItem(pubkeyKey(role))) !== expected) continue
-
+    // Check if this device has a matching software scalar in SecureStore
     const scalar = await readScalar(role)
-    if (scalar && compressedPubkeyHex(scalar) === expected) continue
+    if (scalar && compressedPubkeyHex(scalar) === expected) {
+      await AsyncStorage.setItem(pubkeyKey(role), expected)
+      await writeMode(role, 'software')
+      continue
+    }
 
+    // Check if the hardware credential already stored on device matches expected
     const deviceCredentialId = await AsyncStorage.getItem(credentialKey(role))
-    if (!deviceCredentialId) continue
-
-    await writeMode(role, 'hardware')
-    bound[role] = deviceCredentialId
+    const currentPubkey = await AsyncStorage.getItem(pubkeyKey(role))
+    if (deviceCredentialId && currentPubkey === expected) {
+      await writeMode(role, 'hardware')
+      bound[role] = deviceCredentialId
+    }
   }
 
   return bound

@@ -11,7 +11,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  NativeModules,
 } from 'react-native'
+import { hexToBytes } from '@noble/curves/abstract/utils'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction } from '@solana/web3.js'
 import { Buffer } from 'buffer'
@@ -39,7 +41,13 @@ import {
 } from '@/utils/contact-list'
 import { deleteContact, loadContacts, saveContact, touchContact } from '@/utils/haptix-address-book'
 import { createSecp256r1Instruction } from '@/utils/secp256r1-instruction'
-import { signWithPasskey } from '@/utils/haptix-passkey'
+import { signWithPasskey, PasskeySignature } from '@/utils/haptix-passkey'
+import {
+  findActiveRelayHost,
+  queueVaultTransfer,
+  pollVaultSignature,
+  parseManualSignaturePayload,
+} from '@/utils/haptix-vault-relay'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { TransactionRecord } from '@/utils/haptix-tx-history'
@@ -445,7 +453,77 @@ export function HaptixSendSheet({
           activeWallet?.securityMode === 'vault'
             ? `Touch your Vault Key (Mac / YubiKey) to approve ${amt} SOL`
             : `Confirm with your backup key: ${amt} SOL`
-        const secondarySig = await signWithPasskey('secondary', message, secondaryPrompt)
+
+        let secondarySig: PasskeySignature
+        if (activeWallet?.securityMode === 'vault') {
+          let macSig: PasskeySignature | null = null
+          const relayHost = await findActiveRelayHost()
+          const messageHex = Buffer.from(message).toString('hex')
+
+          // Check if clipboard already has a valid signature code (from vault.html)
+          const clipboardText = await Clipboard.getString().catch(() => '')
+          const clipboardSig = clipboardText ? parseManualSignaturePayload(clipboardText) : null
+          if (clipboardSig && activeWallet?.secondaryPasskeyHex) {
+            macSig = {
+              signature: hexToBytes(clipboardSig.signatureHex),
+              publicKey: hexToBytes(activeWallet.secondaryPasskeyHex),
+              authenticatorData: hexToBytes(clipboardSig.authenticatorDataHex),
+              clientDataJSON: hexToBytes(clipboardSig.clientDataJSONHex),
+            }
+          }
+
+          if (!macSig) {
+            try {
+              const txId = await queueVaultTransfer({
+                relayHost,
+                messageHex,
+                amountSol: amt,
+                recipient: toPubkey.toBase58(),
+                walletPda: walletPda.toBase58(),
+              })
+
+              const sigPayload = await pollVaultSignature(relayHost, txId, {
+                timeoutMs: 80000,
+                pollIntervalMs: 800,
+              })
+
+              if (sigPayload && activeWallet?.secondaryPasskeyHex) {
+                macSig = {
+                  signature: hexToBytes(sigPayload.signatureHex),
+                  publicKey: hexToBytes(activeWallet.secondaryPasskeyHex),
+                  authenticatorData: hexToBytes(sigPayload.authenticatorDataHex),
+                  clientDataJSON: hexToBytes(sigPayload.clientDataJSONHex),
+                }
+              }
+            } catch (relayErr) {
+              console.warn('[Haptix Send] Vault relay connection failed:', relayErr)
+            }
+          }
+
+          if (!macSig) {
+            // Second check: check if user copied signature to clipboard while waiting
+            const lateClip = await Clipboard.getString().catch(() => '')
+            const lateSig = lateClip ? parseManualSignaturePayload(lateClip) : null
+            if (lateSig && activeWallet?.secondaryPasskeyHex) {
+              macSig = {
+                signature: hexToBytes(lateSig.signatureHex),
+                publicKey: hexToBytes(activeWallet.secondaryPasskeyHex),
+                authenticatorData: hexToBytes(lateSig.authenticatorDataHex),
+                clientDataJSON: hexToBytes(lateSig.clientDataJSONHex),
+              }
+            }
+          }
+
+          if (!macSig) {
+            throw new Error(
+              `Mac Touch ID authorization was not completed. Please open http://${relayHost}:8081/vault.html on your Mac and approve the transfer with Touch ID.`
+            )
+          }
+
+          secondarySig = macSig
+        } else {
+          secondarySig = await signWithPasskey('secondary', message, secondaryPrompt)
+        }
 
         const precompileSecondary = createSecp256r1Instruction({
           ...secondarySig,

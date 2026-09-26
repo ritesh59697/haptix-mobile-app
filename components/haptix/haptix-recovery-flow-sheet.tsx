@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Modal,
   View,
@@ -7,10 +7,13 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  ActivityIndicator,
-  Linking,
   Pressable,
+  Share,
+  Linking,
+  NativeModules,
 } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Buffer } from 'buffer'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
@@ -20,11 +23,15 @@ import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { AppQrCode } from '@/components/app-qr-code'
 import { HaptixCountdown } from '@/components/haptix/haptix-countdown'
+import { HaptixIosTabs, IosTabItem } from '@/components/haptix/haptix-ios-tabs'
+import { SpinLoader } from '@/components/ui/spin-loader'
 import { AppConfig } from '@/constants/app-config'
 import {
   WalletState,
   createInitiateRecoveryInstruction,
   createExecuteRecoveryInstruction,
+  createCancelRecoveryInstruction,
+  getCancelRecoverySignedMessage,
   fetchHaptixWallet,
 } from '@/utils/haptix-client'
 import {
@@ -32,13 +39,20 @@ import {
   stageRecoveryKeys,
   commitStagedRecoveryKeys,
   loadStagedRecoveryKeys,
+  signWithPasskey,
+  discardStagedRecoveryKeys,
+  applyWalletCredentials,
+  bindHardwarePasskey,
+  bindSoftwarePasskey,
+  matchLocalSoftwareKey,
+  getDiscoverablePlatformAssertion,
 } from '@/utils/haptix-passkey'
-import { createSmartWalletRecord, saveWallet, HaptixWalletAccount } from '@/utils/haptix-wallet-storage'
+import { matchWebAuthnAssertion, createSecp256r1Instruction } from '@/utils/secp256r1-instruction'
+import { createSmartWalletRecord, saveWallet, loadWallets, HaptixWalletAccount } from '@/utils/haptix-wallet-storage'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
 import { ellipsify } from '@/utils/ellipsify'
 import { describeTimelock } from '@/utils/recovery-timelock'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
-import { radius, typeScale } from '@/theme/tokens'
 
 interface HaptixRecoveryFlowSheetProps {
   visible: boolean
@@ -47,7 +61,12 @@ interface HaptixRecoveryFlowSheetProps {
   onRecoveryComplete: (recoveredWallet: HaptixWalletAccount) => void
 }
 
-type GuardianSigningTab = 'devnet' | 'hardware'
+type GuardianSigningTab = 'devnet' | 'web'
+
+const GUARDIAN_TABS: IosTabItem<GuardianSigningTab>[] = [
+  { id: 'devnet', label: 'In-App Devnet (1-Tap)' },
+  { id: 'web', label: 'Guardian Web Portal & Link' },
+]
 
 export function HaptixRecoveryFlowSheet({
   visible,
@@ -64,13 +83,16 @@ export function HaptixRecoveryFlowSheet({
   const [isInspecting, setIsInspecting] = useState(false)
   const [stagedKeys, setStagedKeys] = useState<StagedRecoveryKeys | null>(null)
   const [signingTab, setSigningTab] = useState<GuardianSigningTab>('devnet')
-  const [actionBusy, setActionBusy] = useState<null | 'initiate' | 'execute'>(null)
+  const [actionBusy, setActionBusy] = useState<null | 'initiate' | 'execute' | 'cancel'>(null)
   const [nowSeconds, setNowSeconds] = useState(() => Math.floor(Date.now() / 1000))
   const [copiedPayload, setCopiedPayload] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+  const [showAdvancedCli, setShowAdvancedCli] = useState(false)
+  const [showDemoWallets, setShowDemoWallets] = useState(false)
 
   const connection = useMemo(() => new Connection(AppConfig.devnetRpcUrl, 'confirmed'), [])
 
-  // Auto-fill initial address if given
+  // Auto-fill initial address if explicitly provided
   useEffect(() => {
     if (initialTargetAddress && visible) {
       setWalletInput(initialTargetAddress)
@@ -83,7 +105,6 @@ export function HaptixRecoveryFlowSheet({
     if (!visible || !onChainWallet?.recoveryInitiatedAt) return
     const interval = setInterval(() => {
       setNowSeconds(Math.floor(Date.now() / 1000))
-      // Re-fetch on-chain state every 3s to detect when dispute window closes or veto occurs
       if (onChainWallet.pda) {
         fetchHaptixWallet(connection, onChainWallet.pda).then((updated) => {
           if (updated) setOnChainWallet(updated)
@@ -103,6 +124,21 @@ export function HaptixRecoveryFlowSheet({
     const progressPct = totalDuration > 0 ? Math.min(100, Math.round((elapsed / totalDuration) * 100)) : 100
     return { unlockAt, secondsLeft, isElapsed: secondsLeft === 0, progressPct }
   }, [onChainWallet, nowSeconds])
+
+  // Explicit user paste action (reads clipboard only on explicit click)
+  const handlePasteAddress = async () => {
+    try {
+      const text = await Clipboard.getString()
+      if (text && text.trim()) {
+        setWalletInput(text.trim())
+        await Haptics.selectionAsync()
+      } else {
+        dialog.alert('Clipboard Empty', 'No text found on clipboard.')
+      }
+    } catch {
+      dialog.alert('Clipboard Error', 'Could not read from clipboard.')
+    }
+  }
 
   // Inspect on-chain wallet
   const handleInspectWallet = async (addressToTest?: string) => {
@@ -135,6 +171,24 @@ export function HaptixRecoveryFlowSheet({
       setOnChainWallet(state)
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
 
+      // Automatically apply credentials if this device already holds this wallet
+      const wallets = await loadWallets().catch(() => [])
+      const matched = wallets.find((w) => w.address === state.pda.toBase58())
+      if (matched) {
+        await applyWalletCredentials(matched).catch(() => {})
+      } else {
+        const onChainKeys = {
+          primary: new Uint8Array(state.primaryPasskey),
+          secondary: new Uint8Array(state.secondaryPasskey),
+        }
+        const softwareRole = await matchLocalSoftwareKey(onChainKeys).catch(() => null)
+        if (softwareRole === 'primary') {
+          await bindSoftwarePasskey('primary', Buffer.from(state.primaryPasskey).toString('hex')).catch(() => {})
+        } else if (softwareRole === 'secondary') {
+          await bindSoftwarePasskey('secondary', Buffer.from(state.secondaryPasskey).toString('hex')).catch(() => {})
+        }
+      }
+
       // Ensure replacement keys are staged for this device
       const existing = await loadStagedRecoveryKeys()
       if (existing) {
@@ -151,8 +205,31 @@ export function HaptixRecoveryFlowSheet({
     }
   }
 
-  // Handle 1-Tap Devnet Guardian Initiate
+  // Handle Guardian Initiate with mandatory confirmation
   const handleInitiateDevnet = async () => {
+    if (!onChainWallet || !stagedKeys) return
+
+    dialog.alert(
+      'Freeze Lost Phone & Start Recovery?',
+      'This will broadcast an on-chain transaction signed by the Guardian on Solana.\n\n' +
+      '⚠️ Important Security Notice:\n' +
+      '• The lost phone is immediately FROZEN on-chain and cannot send funds.\n' +
+      '• A ' + describeTimelock(onChainWallet.recoveryTimelock) + ' dispute timelock begins to protect your account.\n' +
+      '• If you still hold your original phone, you can veto this recovery at any time using your passkeys.\n\n' +
+      'Do you want to proceed and freeze the lost device?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm & Freeze Wallet',
+          style: 'destructive',
+          onPress: () => void runInitiateDevnet(),
+        },
+      ],
+      { status: 'warning' },
+    )
+  }
+
+  const runInitiateDevnet = async () => {
     if (!onChainWallet || !stagedKeys) return
     setActionBusy('initiate')
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
@@ -195,6 +272,146 @@ export function HaptixRecoveryFlowSheet({
     } catch (err: any) {
       console.error('[Haptix Recovery Sheet] Initiate error:', formatChainErrorForLog(err))
       dialog.alert('Initiate Failed', describeChainError(err, 'Could not initiate recovery on-chain.'))
+    } finally {
+      setActionBusy(null)
+    }
+  }
+
+  // Handle Veto / Cancel Recovery on-chain with robust credential resolution
+  const handleCancelRecovery = async () => {
+    if (!onChainWallet) return
+
+    dialog.alert(
+      'Veto Recovery & Unfreeze Wallet?',
+      'If you have access to your hardware passkeys, you can veto this recovery on-chain right now.\n\n' +
+      '• The guardian’s proposed keys will be discarded.\n' +
+      '• The freeze will be lifted immediately.\n' +
+      '• Your wallet returns to normal active status.\n\n' +
+      'Both of your hardware passkeys will be requested to verify your identity as the owner.',
+      [
+        { text: 'Keep Frozen', style: 'cancel' },
+        {
+          text: 'Veto & Unfreeze',
+          style: 'destructive',
+          onPress: () => void runCancelRecovery(),
+        },
+      ],
+      { status: 'warning' },
+    )
+  }
+
+  const runCancelRecovery = async () => {
+    if (!onChainWallet) return
+    setActionBusy('cancel')
+    try {
+      const walletPda = onChainWallet.pda
+      const message = getCancelRecoverySignedMessage()
+
+      // 1. Ensure local saved credentials for this wallet are bound
+      const wallets = await loadWallets().catch(() => [])
+      const matched = wallets.find((w) => w.address === walletPda.toBase58())
+      if (matched) {
+        await applyWalletCredentials(matched).catch(() => {})
+      }
+
+      const onChainPrimaryHex = Buffer.from(onChainWallet.primaryPasskey).toString('hex')
+      const onChainSecondaryHex = Buffer.from(onChainWallet.secondaryPasskey).toString('hex')
+      const onChainKeys = {
+        primary: new Uint8Array(onChainWallet.primaryPasskey),
+        secondary: new Uint8Array(onChainWallet.secondaryPasskey),
+      }
+
+      // 2. Verify or resolve Primary passkey
+      let currentPrimary = await AsyncStorage.getItem('@haptix_passkey_pubkey_primary')
+      if (!currentPrimary || currentPrimary !== onChainPrimaryHex) {
+        // Check if this device holds a local software scalar in SecureStore
+        const softwareRole = await matchLocalSoftwareKey(onChainKeys).catch(() => null)
+        if (softwareRole === 'primary') {
+          await bindSoftwarePasskey('primary', onChainPrimaryHex)
+        } else if (matched?.primaryCredentialId) {
+          await bindHardwarePasskey('primary', matched.primaryCredentialId, onChainPrimaryHex)
+        } else {
+          const picked = await getDiscoverablePlatformAssertion()
+          const matchedRole = matchWebAuthnAssertion(picked.assertion, onChainKeys)
+          if (matchedRole === 'primary') {
+            await bindHardwarePasskey('primary', picked.credentialId, onChainPrimaryHex)
+          } else if (matchedRole === 'secondary') {
+            await bindHardwarePasskey('secondary', picked.credentialId, onChainSecondaryHex)
+          } else {
+            throw new Error('The passkey selected does not match this wallet.')
+          }
+        }
+      }
+
+      // 3. Verify or resolve Secondary passkey
+      let currentSecondary = await AsyncStorage.getItem('@haptix_passkey_pubkey_secondary')
+      if (!currentSecondary || currentSecondary !== onChainSecondaryHex) {
+        const softwareRole = await matchLocalSoftwareKey(onChainKeys).catch(() => null)
+        if (softwareRole === 'secondary') {
+          await bindSoftwarePasskey('secondary', onChainSecondaryHex)
+        } else if (matched?.secondaryCredentialId) {
+          await bindHardwarePasskey('secondary', matched.secondaryCredentialId, onChainSecondaryHex)
+        } else if (onChainPrimaryHex === onChainSecondaryHex) {
+          // Single-key or reused key setup: duplicate primary's bound credentials
+          const primaryCred = await AsyncStorage.getItem('@haptix_passkey_credential_primary')
+          if (primaryCred) {
+            await bindHardwarePasskey('secondary', primaryCred, onChainSecondaryHex)
+          } else {
+            await bindSoftwarePasskey('secondary', onChainSecondaryHex)
+          }
+        } else {
+          const picked = await getDiscoverablePlatformAssertion()
+          const matchedRole = matchWebAuthnAssertion(picked.assertion, onChainKeys)
+          if (matchedRole === 'secondary' || (matchedRole === 'primary' && onChainPrimaryHex === onChainSecondaryHex)) {
+            await bindHardwarePasskey('secondary', picked.credentialId, onChainSecondaryHex)
+          } else {
+            throw new Error("The passkey selected does not match this wallet's Backup Quorum key.")
+          }
+        }
+      }
+
+      // 4. Sign veto with both passkeys
+      const primarySig = await signWithPasskey('primary', message, 'Veto Guardian Recovery (Primary)')
+      const secondarySig = await signWithPasskey(
+        'secondary',
+        message,
+        'Confirm cancelling the recovery with your backup key',
+      )
+
+      const precompilePrimary = createSecp256r1Instruction({ ...primarySig, message })
+      const precompileSecondary = createSecp256r1Instruction({ ...secondarySig, message })
+      const cancelIx = createCancelRecoveryInstruction({ walletPda, primarySigIxIndex: 0, secondarySigIxIndex: 1 })
+
+      const payer = await getFundedDevnetPayer(connection)
+      const latestBlockhash = await connection.getLatestBlockhash('confirmed')
+      const tx = new Transaction({ feePayer: payer.publicKey, recentBlockhash: latestBlockhash.blockhash }).add(
+        precompilePrimary,
+        precompileSecondary,
+        cancelIx,
+      )
+      const sig = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: 'confirmed' })
+
+      await discardStagedRecoveryKeys()
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      const updated = await fetchHaptixWallet(connection, walletPda)
+      if (updated) setOnChainWallet(updated)
+
+      dialog.alert(
+        'Recovery Vetoed & Unfrozen',
+        `The recovery was successfully cancelled on-chain with your hardware passkeys. Your wallet is now unfrozen and fully active.\n\nTx: ${ellipsify(sig, 8)}`,
+        undefined,
+        { status: 'success' },
+      )
+    } catch (err: any) {
+      console.error('[Haptix Recovery Sheet] Cancel error:', formatChainErrorForLog(err))
+      const msg = err?.message || ''
+      if (msg.includes('cancelled') || msg.includes('canceled') || msg.includes('User cancelled')) {
+        return
+      }
+      dialog.alert(
+        'Veto Failed',
+        describeChainError(err, 'Could not cancel recovery on-chain. If you are not on the original device with this wallet\'s passkeys, veto from your original phone in Settings > Recovery.'),
+      )
     } finally {
       setActionBusy(null)
     }
@@ -259,6 +476,58 @@ export function HaptixRecoveryFlowSheet({
     }
   }
 
+  // User-friendly Guardian Web Recovery Link
+  const guardianWebUrl = useMemo(() => {
+    if (!onChainWallet) return ''
+    const pda = onChainWallet.pda.toBase58()
+    const p = stagedKeys?.primaryPublicKeyHex ?? ''
+    const s = stagedKeys?.secondaryPublicKeyHex ?? ''
+
+    // Resolve local bundler host for immediate local testing if in dev mode
+    let devHost = 'localhost:8081'
+    const scriptURL = (NativeModules as any)?.SourceCode?.scriptURL
+    if (typeof scriptURL === 'string') {
+      const match = scriptURL.match(/^https?:\/\/([^/]+)/)
+      if (match && match[1]) devHost = match[1]
+    }
+
+    if (__DEV__ || AppConfig.devMode) {
+      return `http://${devHost}/recover.html?wallet=${pda}&p=${p}&s=${s}`
+    }
+
+    return `https://haptix-passkeys.vercel.app/recover.html?wallet=${pda}&p=${p}&s=${s}`
+  }, [onChainWallet, stagedKeys])
+
+  const handleCopyWebLink = () => {
+    if (!guardianWebUrl) return
+    Clipboard.setString(guardianWebUrl)
+    setCopiedLink(true)
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+    setTimeout(() => setCopiedLink(false), 2500)
+  }
+
+  const handleShareWebLink = async () => {
+    if (!guardianWebUrl || !onChainWallet) return
+    try {
+      await Share.share({
+        title: 'Haptix Wallet Recovery Request',
+        message: `Emergency Guardian Recovery: My phone was lost or damaged. Please authorize on-chain recovery for my Haptix smart account:\n\n${guardianWebUrl}`,
+        url: guardianWebUrl,
+      })
+    } catch {
+      handleCopyWebLink()
+    }
+  }
+
+  const handleOpenWebPortal = async () => {
+    if (!guardianWebUrl) return
+    try {
+      await Linking.openURL(guardianWebUrl)
+    } catch {
+      dialog.alert('Error', 'Could not open browser.')
+    }
+  }
+
   // Format CLI / Mac payload for hardware guardian
   const hardwareCliCommand = useMemo(() => {
     if (!onChainWallet || !stagedKeys) return ''
@@ -279,11 +548,14 @@ export function HaptixRecoveryFlowSheet({
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={[styles.sheetCard, { backgroundColor: theme.bgCard, paddingBottom: Math.max(insets.bottom, 24) }]}>
           
+          {/* DRAG HANDLE */}
+          <View style={[styles.sheetHandle, { backgroundColor: theme.borderDefault }]} />
+
           {/* HEADER */}
-          <View style={styles.sheetHeader}>
+          <View style={[styles.sheetHeader, { borderBottomColor: theme.borderSubtle }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View style={[styles.headerIconWrap, { backgroundColor: 'rgba(99, 102, 241, 0.12)' }]}>
-                <MaterialIcons name="security" size={20} color="#6366F1" />
+              <View style={[styles.headerIconWrap, { backgroundColor: theme.accentLight }]}>
+                <MaterialIcons name="security" size={20} color={theme.textPrimary} />
               </View>
               <View>
                 <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>Recover Lost Wallet</Text>
@@ -291,69 +563,182 @@ export function HaptixRecoveryFlowSheet({
               </View>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <MaterialIcons name="close" size={24} color={theme.textMuted} />
+              <MaterialIcons name="close" size={22} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
+
+            {/* EDUCATIONAL GUIDE (SHOWN WHEN NO WALLET INSPECTED) */}
+            {!onChainWallet && (
+              <View style={[styles.guideCard, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
+                <View style={styles.guideHeader}>
+                  <MaterialIcons name="info-outline" size={18} color={theme.textPrimary} />
+                  <Text style={[styles.guideTitle, { color: theme.textPrimary }]}>
+                    How Seedless Recovery Works
+                  </Text>
+                </View>
+                <Text style={[styles.guideIntro, { color: theme.textSecondary }]}>
+                  Haptix smart accounts on Solana do not rely on seed phrases. If your device is lost, stolen, or broken, your designated Guardian rescues your account:
+                </Text>
+
+                <View style={styles.stepsList}>
+                  <View style={styles.stepItem}>
+                    <View style={[styles.stepNumberBadge, { backgroundColor: theme.accentLight }]}>
+                      <Text style={[styles.stepNumberText, { color: theme.textPrimary }]}>1</Text>
+                    </View>
+                    <View style={styles.stepTextWrap}>
+                      <Text style={[styles.stepItemTitle, { color: theme.textPrimary }]}>Enter Wallet Address</Text>
+                      <Text style={[styles.stepItemDesc, { color: theme.textMuted }]}>
+                        Identify your on-chain smart wallet on Solana.
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.stepItem}>
+                    <View style={[styles.stepNumberBadge, { backgroundColor: theme.accentLight }]}>
+                      <Text style={[styles.stepNumberText, { color: theme.textPrimary }]}>2</Text>
+                    </View>
+                    <View style={styles.stepTextWrap}>
+                      <Text style={[styles.stepItemTitle, { color: theme.textPrimary }]}>Guardian Freezes Lost Phone</Text>
+                      <Text style={[styles.stepItemDesc, { color: theme.textMuted }]}>
+                        Your Guardian broadcasts an on-chain freeze transaction to protect your balance.
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.stepItem}>
+                    <View style={[styles.stepNumberBadge, { backgroundColor: theme.accentLight }]}>
+                      <Text style={[styles.stepNumberText, { color: theme.textPrimary }]}>3</Text>
+                    </View>
+                    <View style={styles.stepTextWrap}>
+                      <Text style={[styles.stepItemTitle, { color: theme.textPrimary }]}>24-Hour Dispute Window</Text>
+                      <Text style={[styles.stepItemDesc, { color: theme.textMuted }]}>
+                        A safety timelock prevents rogue takeovers. The real owner can veto if triggered by mistake.
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.stepItem}>
+                    <View style={[styles.stepNumberBadge, { backgroundColor: theme.accentLight }]}>
+                      <Text style={[styles.stepNumberText, { color: theme.textPrimary }]}>4</Text>
+                    </View>
+                    <View style={styles.stepTextWrap}>
+                      <Text style={[styles.stepItemTitle, { color: theme.textPrimary }]}>Finalize on New Device</Text>
+                      <Text style={[styles.stepItemDesc, { color: theme.textMuted }]}>
+                        Once the timelock expires, your new device's biometric passkeys take full control.
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Where to find address hint */}
+                <View style={[styles.hintBox, { backgroundColor: theme.bgCard, borderColor: theme.borderSubtle }]}>
+                  <Text style={[styles.hintText, { color: theme.textMuted }]}>
+                    Can't find your address? Look up past transaction receipts from an exchange, Solana Explorer, or ask your guardian.
+                  </Text>
+                </View>
+              </View>
+            )}
 
             {/* STEP 1: TARGET WALLET INPUT */}
             <View style={styles.sectionBlock}>
-              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>1. Lost Wallet Address (PDA)</Text>
+              <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                {onChainWallet ? 'Target Smart Wallet Address' : '1. Enter Lost Wallet Address (PDA)'}
+              </Text>
               <View style={styles.inputRow}>
-                <TextInput
+                <View
                   style={[
-                    styles.textInput,
+                    styles.inputFieldContainer,
                     {
                       backgroundColor: theme.bgElevated,
                       borderColor: theme.borderDefault,
-                      color: theme.textPrimary,
                     },
                   ]}
-                  value={walletInput}
-                  onChangeText={setWalletInput}
-                  placeholder="Paste Solana smart wallet address"
-                  placeholderTextColor={theme.textMuted}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+                >
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      {
+                        color: theme.textPrimary,
+                      },
+                    ]}
+                    value={walletInput}
+                    onChangeText={setWalletInput}
+                    placeholder="Paste Solana smart wallet address"
+                    placeholderTextColor={theme.textMuted}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <TouchableOpacity
+                    style={[styles.pasteButton, { backgroundColor: theme.accentLight }]}
+                    onPress={handlePasteAddress}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <MaterialIcons name="content-paste" size={14} color={theme.textSecondary} />
+                    <Text style={[styles.pasteButtonText, { color: theme.textSecondary }]}>Paste</Text>
+                  </TouchableOpacity>
+                </View>
+
                 <TouchableOpacity
-                  style={[styles.inspectButton, { backgroundColor: theme.textPrimary }]}
+                  style={[
+                    styles.inspectButton,
+                    { backgroundColor: theme.accent },
+                    isInspecting && { opacity: 0.7 },
+                  ]}
                   onPress={() => void handleInspectWallet()}
                   disabled={isInspecting}
                   activeOpacity={0.8}
                 >
                   {isInspecting ? (
-                    <ActivityIndicator size="small" color={theme.bgApp} />
+                    <SpinLoader size="sm" color={theme.accentForeground} strokeWidth={2.4} />
                   ) : (
-                    <Text style={[styles.inspectButtonText, { color: theme.bgApp }]}>Inspect</Text>
+                    <Text style={[styles.inspectButtonText, { color: theme.accentForeground }]}>Inspect</Text>
                   )}
                 </TouchableOpacity>
               </View>
 
-              {/* Quick Test Wallet Buttons */}
-              <View style={styles.quickTestRow}>
-                <TouchableOpacity
-                  style={[styles.quickChip, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
-                  onPress={() => {
-                    Haptics.selectionAsync().catch(() => {})
-                    setWalletInput('GQyNg1h6tqn1PNjYxYyeyAQ4qYZ7kqQrJBrWyp99J9Lj')
-                    void handleInspectWallet('GQyNg1h6tqn1PNjYxYyeyAQ4qYZ7kqQrJBrWyp99J9Lj')
-                  }}
-                >
-                  <Text style={[styles.quickChipText, { color: theme.textSecondary }]}>Load Test (GQyNg...)</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.quickChip, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
-                  onPress={() => {
-                    Haptics.selectionAsync().catch(() => {})
-                    setWalletInput('HziZimWjrC3TZCSPA8EzqJCCnsk7hUxu8QVpxCjs3kNb')
-                    void handleInspectWallet('HziZimWjrC3TZCSPA8EzqJCCnsk7hUxu8QVpxCjs3kNb')
-                  }}
-                >
-                  <Text style={[styles.quickChipText, { color: theme.textSecondary }]}>Load Test (HziZi...)</Text>
-                </TouchableOpacity>
-              </View>
+              {/* Developer Test Chips Accordion */}
+              <TouchableOpacity
+                style={styles.demoToggle}
+                onPress={() => setShowDemoWallets(!showDemoWallets)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.demoToggleText, { color: theme.textMuted }]}>
+                  {showDemoWallets ? 'Hide demo test accounts' : 'Need a test wallet on Devnet? Tap here'}
+                </Text>
+                <MaterialIcons
+                  name={showDemoWallets ? 'expand-less' : 'expand-more'}
+                  size={16}
+                  color={theme.textMuted}
+                />
+              </TouchableOpacity>
+
+              {showDemoWallets && (
+                <View style={styles.quickTestRow}>
+                  <TouchableOpacity
+                    style={[styles.quickChip, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+                    onPress={() => {
+                      Haptics.selectionAsync().catch(() => {})
+                      setWalletInput('GQyNg1h6tqn1PNjYxYyeyAQ4qYZ7kqQrJBrWyp99J9Lj')
+                      void handleInspectWallet('GQyNg1h6tqn1PNjYxYyeyAQ4qYZ7kqQrJBrWyp99J9Lj')
+                    }}
+                  >
+                    <Text style={[styles.quickChipText, { color: theme.textSecondary }]}>Load Test (GQyNg...)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.quickChip, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+                    onPress={() => {
+                      Haptics.selectionAsync().catch(() => {})
+                      setWalletInput('HziZimWjrC3TZCSPA8EzqJCCnsk7hUxu8QVpxCjs3kNb')
+                      void handleInspectWallet('HziZimWjrC3TZCSPA8EzqJCCnsk7hUxu8QVpxCjs3kNb')
+                    }}
+                  >
+                    <Text style={[styles.quickChipText, { color: theme.textSecondary }]}>Load Test (HziZi...)</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
             {/* STEP 2: ON-CHAIN STATUS DIAGNOSTIC */}
@@ -408,7 +793,7 @@ export function HaptixRecoveryFlowSheet({
               </View>
             )}
 
-            {/* STEP 3: DISPUTE COUNTDOWN (IF RECOVERY IN FLIGHT) */}
+            {/* STEP 3: DISPUTE COUNTDOWN & VETO OPTION (IF RECOVERY IN FLIGHT) */}
             {recoveryWindow && !recoveryWindow.isElapsed && (
               <View style={[styles.countdownBlock, { backgroundColor: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.25)' }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -429,6 +814,39 @@ export function HaptixRecoveryFlowSheet({
                 <Text style={[styles.countdownDesc, { color: theme.textSecondary }]}>
                   The lost phone is frozen on-chain and cannot send funds. Once this dispute timer reaches zero, you can finalize key rotation below.
                 </Text>
+
+                {/* VETO / UNFREEZE ACTION */}
+                <View style={[styles.vetoCard, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                    <MaterialIcons name="shield" size={16} color={theme.emerald} />
+                    <Text style={[styles.vetoTitle, { color: theme.textPrimary }]}>
+                      Did you freeze this wallet by mistake?
+                    </Text>
+                  </View>
+                  <Text style={[styles.vetoDesc, { color: theme.textMuted }]}>
+                    If you still have your hardware passkeys, you can veto this recovery on-chain right now to unfreeze your wallet.
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.vetoBtn, { borderColor: theme.emerald, backgroundColor: theme.emeraldBg }]}
+                    onPress={handleCancelRecovery}
+                    disabled={actionBusy !== null}
+                    activeOpacity={0.8}
+                  >
+                    {actionBusy === 'cancel' ? (
+                      <SpinLoader size="sm" color={theme.emeraldText} strokeWidth={2.4} />
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <MaterialIcons name="lock-open" size={16} color={theme.emeraldText} />
+                        <Text style={[styles.vetoBtnText, { color: theme.emeraldText }]}>
+                          Veto Recovery (Unfreeze Wallet Now)
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <Text style={[styles.vetoSubHint, { color: theme.textMuted }]}>
+                    Or on your original phone: Settings &gt; Guardian &amp; Recovery &gt; "Keep My Keys"
+                  </Text>
+                </View>
               </View>
             )}
 
@@ -437,61 +855,58 @@ export function HaptixRecoveryFlowSheet({
               <View style={styles.sectionBlock}>
                 <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>2. Authorize Recovery as Guardian</Text>
                 
-                {/* Method Tabs */}
-                <View style={[styles.tabBar, { backgroundColor: theme.bgElevated }]}>
-                  <TouchableOpacity
-                    style={[styles.tabBtn, signingTab === 'devnet' && { backgroundColor: theme.bgCard }]}
-                    onPress={() => {
-                      Haptics.selectionAsync().catch(() => {})
-                      setSigningTab('devnet')
-                    }}
-                  >
-                    <MaterialIcons
-                      name="bolt"
-                      size={15}
-                      color={signingTab === 'devnet' ? theme.textPrimary : theme.textMuted}
-                    />
-                    <Text style={[styles.tabBtnText, { color: signingTab === 'devnet' ? theme.textPrimary : theme.textMuted }]}>
-                      Devnet Quick (1-Tap)
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.tabBtn, signingTab === 'hardware' && { backgroundColor: theme.bgCard }]}
-                    onPress={() => {
-                      Haptics.selectionAsync().catch(() => {})
-                      setSigningTab('hardware')
-                    }}
-                  >
-                    <MaterialIcons
-                      name="vpn-key"
-                      size={15}
-                      color={signingTab === 'hardware' ? theme.textPrimary : theme.textMuted}
-                    />
-                    <Text style={[styles.tabBtnText, { color: signingTab === 'hardware' ? theme.textPrimary : theme.textMuted }]}>
-                      Mac / Hardware (OneKey)
-                    </Text>
-                  </TouchableOpacity>
+                {/* Clear Explanation of Who Signs */}
+                <View style={[styles.noticeBox, { backgroundColor: theme.accentLight, borderColor: theme.borderSubtle }]}>
+                  <MaterialIcons name="shield" size={16} color={theme.textPrimary} />
+                  <Text style={[styles.noticeText, { color: theme.textSecondary }]}>
+                    Why does the Guardian sign? Because your phone is lost! The Guardian signs on Solana to initiate the rescue without needing your lost phone's passkeys.
+                  </Text>
                 </View>
 
-                {/* Tab 1: 1-Tap Devnet Guardian */}
+                {/* Method Selector with HaptixIosTabs */}
+                <View style={styles.methodSelectorWrap}>
+                  <Text style={[styles.methodSelectorLabel, { color: theme.textSecondary }]}>
+                    Guardian Signing Method:
+                  </Text>
+                  <HaptixIosTabs
+                    tabs={GUARDIAN_TABS}
+                    activeTab={signingTab}
+                    onChange={(tab) => setSigningTab(tab as GuardianSigningTab)}
+                  />
+                </View>
+
+                {/* Tab 1: In-App Devnet Guardian */}
                 {signingTab === 'devnet' && (
                   <View style={[styles.tabContent, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
                     <Text style={[styles.tabDesc, { color: theme.textSecondary }]}>
-                      The Devnet Guardian signs initiate_recovery directly. The smart contract freezes your lost phone and stages your new phone's biometric passkeys.
+                      In Devnet mode, a pre-configured Guardian keypair will broadcast the freeze transaction on Solana.
                     </Text>
+
+                    {/* Pre-action Warning Banner */}
+                    <View style={[styles.freezeWarningCard, { backgroundColor: theme.amberBg, borderColor: theme.amberBorder }]}>
+                      <MaterialIcons name="warning" size={16} color={theme.amber} />
+                      <Text style={[styles.freezeWarningText, { color: theme.amberText }]}>
+                        Action will immediately FREEZE the lost phone on Solana. A {describeTimelock(onChainWallet.recoveryTimelock)} dispute timelock will begin.
+                      </Text>
+                    </View>
+
                     <TouchableOpacity
-                      style={[styles.primaryActionBtn, { backgroundColor: theme.textPrimary }, actionBusy && { opacity: 0.7 }]}
+                      style={[
+                        styles.primaryActionBtn,
+                        { backgroundColor: theme.accent },
+                        actionBusy && { opacity: 0.7 },
+                      ]}
                       onPress={handleInitiateDevnet}
                       disabled={actionBusy !== null}
                       activeOpacity={0.85}
                     >
                       {actionBusy === 'initiate' ? (
-                        <ActivityIndicator color={theme.bgApp} />
+                        <SpinLoader size="sm" color={theme.accentForeground} strokeWidth={2.4} />
                       ) : (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <MaterialIcons name="flash-on" size={18} color={theme.bgApp} />
-                          <Text style={[styles.primaryActionBtnText, { color: theme.bgApp }]}>
-                            Authorize as Guardian (1-Tap)
+                          <MaterialIcons name="lock" size={18} color={theme.accentForeground} />
+                          <Text style={[styles.primaryActionBtnText, { color: theme.accentForeground }]}>
+                            Initiate Recovery &amp; Freeze Lost Phone
                           </Text>
                         </View>
                       )}
@@ -499,48 +914,133 @@ export function HaptixRecoveryFlowSheet({
                   </View>
                 )}
 
-                {/* Tab 2: Hardware Wallet / Mac Signing Ceremony */}
-                {signingTab === 'hardware' && (
+                {/* Tab 2: Guardian Web Portal & Link */}
+                {signingTab === 'web' && (
                   <View style={[styles.tabContent, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
                     <Text style={[styles.tabDesc, { color: theme.textSecondary }]}>
-                      Run this command on your Mac (or with OneKey/Ledger connected) to sign initiate_recovery. This phone is actively listening for the transaction:
+                      Share this secure recovery link or QR code with your Guardian. They can authorize from any laptop, Mac, or phone browser with 1-click — no terminal or command line required:
                     </Text>
 
-                    {/* QR Code for Cross-Device Scan */}
+                    {/* QR Code for Direct Web Portal Access */}
                     <View style={{ alignItems: 'center', marginVertical: 12 }}>
-                      <View style={{ padding: 10, backgroundColor: '#FFFFFF', borderRadius: 12 }}>
-                        <AppQrCode value={hardwareCliCommand || 'HaptixGuardian'} size={140} showTapHint={false} />
+                      <View style={{ padding: 12, backgroundColor: '#FFFFFF', borderRadius: 16 }}>
+                        <AppQrCode value={guardianWebUrl || 'https://haptix-passkeys.vercel.app'} size={145} showTapHint={false} />
                       </View>
                       <Text style={[styles.qrHint, { color: theme.textMuted }]}>
-                        Scan from laptop or copy command below
+                        Scan with laptop or phone camera to open Web Portal
                       </Text>
                     </View>
 
-                    {/* Copyable CLI Snippet */}
+                    {/* Web Link Display Card */}
+                    <View style={[styles.webLinkCard, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <MaterialIcons name="link" size={14} color={theme.accent} />
+                          <Text style={[styles.webLinkLabel, { color: theme.accent }]}>GUARDIAN RECOVERY LINK</Text>
+                        </View>
+                        {copiedLink && (
+                          <Text style={{ fontSize: 11, color: theme.emerald, fontWeight: '700' }}>Copied!</Text>
+                        )}
+                      </View>
+                      <Text style={[styles.webLinkUrl, { color: theme.textPrimary }]} numberOfLines={2}>
+                        {guardianWebUrl}
+                      </Text>
+                    </View>
+
+                    {/* Action Buttons: Copy Link, Share, Open Web */}
+                    <View style={styles.webActionRow}>
+                      <TouchableOpacity
+                        style={[
+                          styles.webActionBtn,
+                          { backgroundColor: theme.accent, borderColor: theme.accent },
+                        ]}
+                        onPress={handleCopyWebLink}
+                        activeOpacity={0.8}
+                      >
+                        <MaterialIcons
+                          name={copiedLink ? 'check' : 'content-copy'}
+                          size={15}
+                          color={theme.accentForeground}
+                        />
+                        <Text style={[styles.webActionBtnText, { color: theme.accentForeground }]}>
+                          {copiedLink ? 'Copied' : 'Copy Link'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.webActionBtn,
+                          { backgroundColor: theme.bgCard, borderColor: theme.borderDefault },
+                        ]}
+                        onPress={handleShareWebLink}
+                        activeOpacity={0.8}
+                      >
+                        <MaterialIcons name="share" size={15} color={theme.textPrimary} />
+                        <Text style={[styles.webActionBtnText, { color: theme.textPrimary }]}>
+                          Share
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.webActionBtn,
+                          { backgroundColor: theme.bgCard, borderColor: theme.borderDefault },
+                        ]}
+                        onPress={handleOpenWebPortal}
+                        activeOpacity={0.8}
+                      >
+                        <MaterialIcons name="open-in-browser" size={16} color={theme.textPrimary} />
+                        <Text style={[styles.webActionBtnText, { color: theme.textPrimary }]}>
+                          Open Web
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Expandable Developer CLI Option */}
                     <TouchableOpacity
-                      style={[styles.codeBox, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}
-                      onPress={handleCopyCliCommand}
+                      style={[styles.cliToggleRow, { borderTopColor: theme.borderSubtle }]}
+                      onPress={() => setShowAdvancedCli(!showAdvancedCli)}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.codeText, { color: theme.textPrimary }]} numberOfLines={2}>
-                        {hardwareCliCommand}
-                      </Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
-                        <MaterialIcons
-                          name={copiedPayload ? 'check' : 'content-copy'}
-                          size={14}
-                          color={copiedPayload ? theme.emerald : theme.accent}
-                        />
-                        <Text
-                          style={[
-                            styles.copyHint,
-                            { color: copiedPayload ? theme.emerald : theme.accent },
-                          ]}
-                        >
-                          {copiedPayload ? 'Copied to clipboard' : 'Tap to copy CLI command'}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <MaterialIcons name="terminal" size={14} color={theme.textMuted} />
+                        <Text style={[styles.cliToggleText, { color: theme.textMuted }]}>
+                          Advanced: Developer CLI command
                         </Text>
                       </View>
+                      <MaterialIcons
+                        name={showAdvancedCli ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                        size={18}
+                        color={theme.textMuted}
+                      />
                     </TouchableOpacity>
+
+                    {showAdvancedCli && (
+                      <TouchableOpacity
+                        style={[styles.codeBox, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault, marginTop: 8 }]}
+                        onPress={handleCopyCliCommand}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.codeText, { color: theme.textPrimary }]} numberOfLines={2}>
+                          {hardwareCliCommand}
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
+                          <MaterialIcons
+                            name={copiedPayload ? 'check' : 'content-copy'}
+                            size={14}
+                            color={copiedPayload ? theme.emerald : theme.accent}
+                          />
+                          <Text
+                            style={[
+                              styles.copyHint,
+                              { color: copiedPayload ? theme.emerald : theme.accent },
+                            ]}
+                          >
+                            {copiedPayload ? 'Copied CLI command' : 'Tap to copy CLI command'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </View>
@@ -568,7 +1068,7 @@ export function HaptixRecoveryFlowSheet({
                   activeOpacity={0.85}
                 >
                   {actionBusy === 'execute' ? (
-                    <ActivityIndicator color="#FFFFFF" />
+                    <SpinLoader size="sm" color="#FFFFFF" strokeWidth={2.4} />
                   ) : (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <MaterialIcons name="lock-open" size={20} color="#FFFFFF" />
@@ -598,8 +1098,16 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 20,
-    paddingTop: 18,
-    maxHeight: '90%',
+    paddingTop: 12,
+    height: '88%',
+    maxHeight: '94%',
+  },
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 12,
   },
   sheetHeader: {
     flexDirection: 'row',
@@ -608,7 +1116,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   headerIconWrap: {
     width: 36,
@@ -625,36 +1132,132 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 1,
   },
+  guideCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 14,
+  },
+  guideHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+  },
+  guideTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  guideIntro: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 12,
+  },
+  stepsList: {
+    gap: 10,
+    marginBottom: 10,
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  stepNumberBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  stepNumberText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  stepTextWrap: {
+    flex: 1,
+  },
+  stepItemTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  stepItemDesc: {
+    fontSize: 11.5,
+    lineHeight: 15,
+    marginTop: 1,
+  },
+  hintBox: {
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 4,
+  },
+  hintText: {
+    fontSize: 11,
+    lineHeight: 15,
+  },
   sectionBlock: {
-    marginTop: 12,
+    marginTop: 4,
+    marginBottom: 12,
   },
   inputLabel: {
     fontSize: 12.5,
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   inputRow: {
     flexDirection: 'row',
     gap: 8,
+    alignItems: 'center',
+  },
+  inputFieldContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    height: 46,
   },
   textInput: {
     flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 13.5,
+    fontSize: 13,
     fontFamily: 'monospace',
+    paddingVertical: 8,
+  },
+  pasteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  pasteButtonText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   inspectButton: {
-    paddingHorizontal: 16,
+    height: 46,
+    paddingHorizontal: 18,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 84,
   },
   inspectButtonText: {
     fontSize: 13,
     fontWeight: '700',
+  },
+  demoToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  demoToggleText: {
+    fontSize: 11,
+    fontWeight: '500',
   },
   quickTestRow: {
     flexDirection: 'row',
@@ -671,11 +1274,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
   },
+  noticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  noticeText: {
+    flex: 1,
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  methodSelectorWrap: {
+    marginBottom: 10,
+  },
+  methodSelectorLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
   diagnosticCard: {
     borderRadius: 16,
     borderWidth: 1,
     padding: 14,
-    marginTop: 14,
+    marginBottom: 14,
   },
   diagnosticRow: {
     flexDirection: 'row',
@@ -699,7 +1324,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     padding: 16,
-    marginTop: 14,
+    marginBottom: 14,
     alignItems: 'center',
   },
   countdownTitle: {
@@ -728,25 +1353,40 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 16,
+    marginBottom: 12,
   },
-  tabBar: {
-    flexDirection: 'row',
-    borderRadius: 10,
-    padding: 3,
-    marginVertical: 8,
+  vetoCard: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 4,
   },
-  tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
+  vetoTitle: {
+    fontSize: 12.5,
+    fontWeight: '700',
+  },
+  vetoDesc: {
+    fontSize: 11,
+    lineHeight: 15,
+    marginBottom: 10,
+  },
+  vetoBtn: {
+    width: '100%',
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 7,
-    borderRadius: 8,
   },
-  tabBtnText: {
+  vetoBtnText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  vetoSubHint: {
+    fontSize: 10.5,
+    textAlign: 'center',
+    marginTop: 6,
   },
   tabContent: {
     borderRadius: 14,
@@ -757,7 +1397,22 @@ const styles = StyleSheet.create({
   tabDesc: {
     fontSize: 12.5,
     lineHeight: 17,
+    marginBottom: 10,
+  },
+  freezeWarningCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    padding: 10,
     marginBottom: 12,
+  },
+  freezeWarningText: {
+    flex: 1,
+    fontSize: 11.5,
+    lineHeight: 16,
+    fontWeight: '600',
   },
   primaryActionBtn: {
     width: '100%',
@@ -787,11 +1442,58 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 6,
   },
+  webLinkCard: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginVertical: 8,
+  },
+  webLinkLabel: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  webLinkUrl: {
+    fontSize: 11.5,
+    fontFamily: 'monospace',
+    lineHeight: 16,
+  },
+  webActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  webActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  webActionBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  cliToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    marginTop: 4,
+    borderTopWidth: 1,
+  },
+  cliToggleText: {
+    fontSize: 11.5,
+    fontWeight: '500',
+  },
   finalizeCard: {
     borderRadius: 18,
     borderWidth: 1,
     padding: 18,
-    marginTop: 14,
+    marginBottom: 14,
   },
   emeraldIconWrap: {
     width: 44,

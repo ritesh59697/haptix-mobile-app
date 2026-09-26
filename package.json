@@ -17,7 +17,8 @@
     "test": "npx -y tsx tests/solana-address.test.ts && npx -y tsx tests/contact-list.test.ts && npx -y tsx tests/solana-fees.test.ts && npx -y tsx tests/secp256r1-layout.test.ts && npx -y tsx tests/passkey-recovery.test.ts && npx -y tsx tests/wallet-seed.test.ts && npx -y tsx tests/activity-display.test.ts && npx -y tsx tests/env-inlining.test.ts && npx -y tsx tests/recovery-devnet.test.ts && npx -y tsx tests/integration-test.ts && npx -y tsx tests/set-guardian.test.ts && npx -y tsx tests/set-spend-threshold.test.ts",
     "test:recovery": "npx -y tsx tests/recovery-devnet.test.ts",
     "web": "expo start --web",
-    "guardian": "npx -y tsx tools/haptix-guardian.ts"
+    "guardian": "npx -y tsx tools/haptix-guardian.ts",
+    "relay": "npx -y tsx tools/haptix-relay.ts"
   },
   "displayName": "Haptix",
   "description": "Next-Gen Passkey Smart Wallet for Solana Mobile with hardware-enforced 2-of-2 multisig, on-chain spending limits, and session keys.",
