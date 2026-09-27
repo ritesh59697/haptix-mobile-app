@@ -2377,7 +2377,7 @@ export function HaptixWalletScreen() {
 
       {/* Freeze banner */}
       {isFrozen && (
-        <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 10, maxWidth: 440, width: '100%', alignSelf: 'center' }}>
           <HaptixAlert
             status="error"
             icon="lock"
@@ -2407,7 +2407,7 @@ export function HaptixWalletScreen() {
 
       {/* RPC degraded banner */}
       {rpcIssue && (
-        <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 10, maxWidth: 440, width: '100%', alignSelf: 'center' }}>
           <HaptixAlert
             status="warning"
             icon="cloud-off"

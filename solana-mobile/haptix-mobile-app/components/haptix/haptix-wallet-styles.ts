@@ -69,6 +69,9 @@ const createStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      maxWidth: 440,
+      width: '100%',
+      alignSelf: 'center',
     },
     headerLeftGroup: {
       flexDirection: 'row',
