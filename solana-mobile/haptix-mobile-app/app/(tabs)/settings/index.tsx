@@ -32,7 +32,6 @@ import { saveWallet } from '@/utils/haptix-wallet-storage'
 import { fundDevnetWallet } from '@/utils/haptix-funder'
 import { ellipsify } from '@/utils/ellipsify'
 import { setString as copyToClipboard } from '@/utils/clipboard'
-import { SpinLoader } from '@/components/ui'
 
 type AppearanceMode = 'system' | 'light' | 'dark'
 
@@ -43,14 +42,13 @@ const APPEARANCE_LABELS: Record<AppearanceMode, string> = {
 }
 
 /**
- * Settings Screen — Restored Hardware Passkeys & Native Security Architecture
+ * Settings Screen — Rabby-style Pitch Black Architecture
  *
- * Implements high-density, luxury-dark rhythm matching Image 3:
- *  - Dedicated Hardware Passkeys card with 2-of-2 Hardware Quorum badge.
- *  - Platform passkey primary & backup rows with public key inspect/link.
- *  - Security & Governance with Spending limits, Guardian recovery, and Lock wallet.
- *  - Network & Paymaster with Devnet Paymaster (Sponsored badge) and Security Policy.
- *  - Squircle icon tiles (#16161A, 38x38, r:10) and rich 2-line row subtitles.
+ * Preserves the exact user-preferred design:
+ *  - Pitch black background & sleek dark cards.
+ *  - Pure electric blue line icons directly placed (no boxes).
+ *  - Clean single-line row rhythm with inline value tags & chevron.
+ *  - Restored full Hardware Passkey quorum (Primary & Backup linking), Safe Lock, and Paymaster.
  */
 export default function TabSettingsScreen() {
   const router = useRouter()
@@ -264,16 +262,16 @@ export default function TabSettingsScreen() {
     )
   }
 
-  const cardBg = isDark ? '#0D0D10' : theme.bgCard
-  const cardBorder = isDark ? '#222226' : theme.borderDefault
-  const tileBg = isDark ? '#16161A' : '#F1F2F4'
-  const tileIconColor = isDark ? '#8A99AD' : '#556375'
-  const dividerColor = isDark ? '#1C1C22' : theme.borderSubtle
+  const screenBg = isDark ? '#000000' : theme.bgApp
+  const cardBg = isDark ? '#0C0C0E' : theme.bgCard
+  const cardBorder = isDark ? '#1C1C20' : theme.borderDefault
+  const dividerColor = isDark ? '#18181C' : theme.borderSubtle
+  const headerBorderColor = isDark ? '#18181C' : theme.borderSubtle
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.bgApp }]}>
-      {/* Settings Header */}
-      <View style={[styles.header, { paddingTop: headerPaddingTop, borderBottomColor: theme.borderSubtle }]}>
+    <View style={[styles.container, { backgroundColor: screenBg }]}>
+      {/* Rabby-style Header */}
+      <View style={[styles.header, { paddingTop: headerPaddingTop, borderBottomColor: headerBorderColor }]}>
         <TouchableOpacity
           style={styles.backBtn}
           onPress={handleBack}
@@ -292,7 +290,7 @@ export default function TabSettingsScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 24) + 32 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* SECTION 1: Features */}
+        {/* SECTION 1: Features (Rabby Style) */}
         <View style={styles.sectionWrap}>
           <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Features</Text>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
@@ -305,15 +303,8 @@ export default function TabSettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="account-balance-wallet" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Manage Wallets</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Switch active account or create new vaults.
-                </Text>
-              </View>
+              <MaterialIcons name="account-balance-wallet" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Manage Wallets</Text>
               <Text style={[styles.rowValue, { color: theme.textMuted }]} numberOfLines={1}>
                 {activeWallet ? activeWallet.name : 'No wallet'}
               </Text>
@@ -328,15 +319,8 @@ export default function TabSettingsScreen() {
               onPress={handleCopyAddress}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="content-copy" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Wallet Address</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Copy public Solana smart wallet address.
-                </Text>
-              </View>
+              <MaterialIcons name="content-copy" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Wallet Address</Text>
               <Text style={[styles.rowValue, { color: hasCopied ? theme.emeraldText : theme.textMuted }]}>
                 {hasCopied ? 'Copied!' : activeWallet ? ellipsify(activeWallet.address, 6) : '—'}
               </Text>
@@ -345,54 +329,21 @@ export default function TabSettingsScreen() {
           </View>
         </View>
 
-        {/* SECTION 2: Hardware Passkeys (Image 3 Top Card) */}
+        {/* SECTION 2: Settings (Rabby Style with Blue Icons & Restored Security) */}
         <View style={styles.sectionWrap}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Settings</Text>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-            {/* Card Header with 2-of-2 Hardware Quorum Badge */}
-            <View style={[styles.cardHeader, { borderBottomColor: dividerColor }]}>
-              <View style={styles.cardHeaderTop}>
-                <Text style={[styles.cardHeaderTitle, { color: theme.textPrimary }]}>Hardware Passkeys</Text>
-                <View
-                  style={[
-                    styles.quorumBadge,
-                    {
-                      backgroundColor: hasBackupBound ? 'rgba(16, 185, 129, 0.12)' : 'rgba(59, 130, 246, 0.12)',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.quorumBadgeText,
-                      { color: hasBackupBound ? '#10B981' : '#3B82F6' },
-                    ]}
-                  >
-                    {hasBackupBound ? '2-of-2 Hardware Quorum' : '1-of-2 Everyday Mode'}
-                  </Text>
-                </View>
-              </View>
-              <Text style={[styles.cardHeaderDesc, { color: theme.textMuted }]}>
-                Biometric credentials stored in this device's hardware chip.
-              </Text>
-            </View>
-
             {/* Platform passkey (primary) */}
             <TouchableOpacity
               style={styles.row}
               onPress={handleShowPrimaryDetails}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="fingerprint" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Platform passkey (primary)</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Active • {activeWallet?.primaryPasskeyHex ? ellipsify(activeWallet.primaryPasskeyHex, 6) : 'Configured'}
-                </Text>
-              </View>
-              <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>Active</Text>
-              </View>
+              <MaterialIcons name="fingerprint" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Platform passkey (primary)</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>
+                {activeWallet?.primaryPasskeyHex ? `Active · ${ellipsify(activeWallet.primaryPasskeyHex, 4)}` : 'Active'}
+              </Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
@@ -405,48 +356,30 @@ export default function TabSettingsScreen() {
               activeOpacity={0.7}
               disabled={isBindingBackup}
             >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="vpn-key" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Platform passkey (backup)</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  {hasBackupBound
-                    ? `Active • ${ellipsify(activeWallet?.secondaryPasskeyHex || '', 6)}`
-                    : 'Not linked to this device. Tap to link key.'}
-                </Text>
-              </View>
+              <MaterialIcons name="vpn-key" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Platform passkey (backup)</Text>
               {isBindingBackup ? (
-                <SpinLoader size="sm" color={theme.accent} strokeWidth={2.4} />
+                <ActivityIndicator size="small" color={theme.accent} style={styles.rowSpinner} />
               ) : (
-                <View
+                <Text
                   style={[
-                    styles.activeBadge,
-                    {
-                      backgroundColor: hasBackupBound ? 'rgba(16, 185, 129, 0.12)' : 'rgba(59, 130, 246, 0.14)',
-                    },
+                    styles.rowValue,
+                    { color: hasBackupBound ? theme.textMuted : theme.emeraldText },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.activeBadgeText,
-                      { color: hasBackupBound ? '#10B981' : '#3B82F6' },
-                    ]}
-                  >
-                    {hasBackupBound ? 'Active' : 'Link Key'}
-                  </Text>
-                </View>
+                  {hasBackupBound
+                    ? activeWallet?.secondaryPasskeyHex
+                      ? `Active · ${ellipsify(activeWallet.secondaryPasskeyHex, 4)}`
+                      : 'Active'
+                    : 'Link Key'}
+                </Text>
               )}
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
-          </View>
-        </View>
 
-        {/* SECTION 3: Security & Governance (Image 3 Middle Card) */}
-        <View style={styles.sectionWrap}>
-          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Security & Governance</Text>
-          <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-            {/* Spending limit: ≤ 0.1 SOL */}
+            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+
+            {/* Spending Limit */}
             <TouchableOpacity
               style={styles.row}
               onPress={() => {
@@ -455,23 +388,17 @@ export default function TabSettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="speed" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>
-                  Spending limit: ≤ {activeWallet?.spendThreshold ?? 0.1} SOL
-                </Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Threshold for 1-tap passkey. Higher transfers require 2-of-2 quorum.
-                </Text>
-              </View>
+              <MaterialIcons name="speed" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Spending Limit</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>
+                ≤ {activeWallet?.spendThreshold ?? 0.1} SOL
+              </Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
-            {/* Guardian & social recovery */}
+            {/* Guardian & Social Recovery */}
             <TouchableOpacity
               style={styles.row}
               onPress={() => {
@@ -480,86 +407,36 @@ export default function TabSettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="supervisor-account" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Guardian & social recovery</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Designate trusted recovery guardian or veto unauthorized recovery.
-                </Text>
-              </View>
+              <MaterialIcons name="supervisor-account" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Guardian & Recovery</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
-            {/* Lock wallet (Safe Lock) */}
+            {/* Lock Wallet (Safe Lock) */}
             <TouchableOpacity
               style={styles.row}
               onPress={handleLockWallet}
               activeOpacity={0.7}
               disabled={isLocked}
             >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="lock-outline" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Lock wallet (Safe Lock)</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Require hardware biometric passkey before the next signature.
-                </Text>
-              </View>
+              <MaterialIcons name="lock-outline" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Lock wallet (Safe Lock)</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
-          </View>
-        </View>
 
-        {/* SECTION 4: Network & Paymaster (Image 3 Bottom Card) */}
-        <View style={styles.sectionWrap}>
-          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Network & Paymaster</Text>
-          <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+
             {/* Devnet Paymaster */}
             <TouchableOpacity
               style={styles.row}
               onPress={handleShowPaymasterDetails}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="local-gas-station" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Devnet Paymaster</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Zero-SOL account onboarding & gasless fees
-                </Text>
-              </View>
-              <View style={styles.sponsoredBadge}>
-                <Text style={styles.sponsoredBadgeText}>Sponsored</Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
-            </TouchableOpacity>
-
-            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
-
-            {/* How security works */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={() => {
-                Haptics.selectionAsync()
-                setPolicyTopic('security')
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="menu-book" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>How security works</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Explore limits, passkeys, and multi-layer quorum rules.
-                </Text>
-              </View>
+              <MaterialIcons name="local-gas-station" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Devnet Paymaster</Text>
+              <Text style={[styles.rowValue, { color: '#10B981', fontWeight: '600' }]}>Sponsored</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
@@ -571,16 +448,25 @@ export default function TabSettingsScreen() {
               onPress={handleSelectCluster}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="hub" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Network Cluster</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Active RPC endpoint for balances and transactions.
-                </Text>
-              </View>
+              <MaterialIcons name="hub" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Network Cluster</Text>
               <Text style={[styles.rowValue, { color: theme.textMuted }]}>{selectedCluster.name}</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+
+            {/* Theme Mode */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleToggleTheme}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="brightness-medium" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Theme Mode</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>
+                {APPEARANCE_LABELS[themePreference]}
+              </Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
@@ -595,15 +481,8 @@ export default function TabSettingsScreen() {
                   activeOpacity={0.7}
                   disabled={isRequestingFaucet}
                 >
-                  <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                    <MaterialIcons name="water-drop" size={20} color={tileIconColor} />
-                  </View>
-                  <View style={styles.rowContent}>
-                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Devnet Airdrop</Text>
-                    <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                      Request free testnet SOL to your account.
-                    </Text>
-                  </View>
+                  <MaterialIcons name="local-gas-station" size={20} color={theme.accent} />
+                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Devnet Airdrop</Text>
                   {isRequestingFaucet ? (
                     <ActivityIndicator size="small" color={theme.accent} />
                   ) : (
@@ -625,15 +504,8 @@ export default function TabSettingsScreen() {
                   }}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                    <MaterialIcons name="open-in-new" size={20} color={tileIconColor} />
-                  </View>
-                  <View style={styles.rowContent}>
-                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Solana Explorer</Text>
-                    <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                      View on-chain account state and history.
-                    </Text>
-                  </View>
+                  <MaterialIcons name="open-in-new" size={20} color={theme.accent} />
+                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Solana Explorer</Text>
                   <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
               </>
@@ -641,34 +513,21 @@ export default function TabSettingsScreen() {
           </View>
         </View>
 
-        {/* SECTION 5: About Us */}
+        {/* SECTION 3: About Us (Rabby Style) */}
         <View style={styles.sectionWrap}>
           <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>About Us</Text>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
-            {/* Theme Mode */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleToggleTheme}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="brightness-medium" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Theme Mode</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Toggle system, dark, or light appearance.
-                </Text>
-              </View>
-              <Text style={[styles.rowValue, { color: theme.textMuted }]}>
-                {APPEARANCE_LABELS[themePreference]}
-              </Text>
+            {/* Current Version */}
+            <View style={styles.row}>
+              <MaterialIcons name="info-outline" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Current Version</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>1.0.0 (SMS)</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
-            </TouchableOpacity>
+            </View>
 
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
-            {/* Source & Docs */}
+            {/* Follow Us / GitHub */}
             <TouchableOpacity
               style={styles.row}
               onPress={() => {
@@ -677,37 +536,30 @@ export default function TabSettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="code" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Source & Docs</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  GitHub repository and technical architecture.
-                </Text>
-              </View>
+              <MaterialIcons name="code" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Source & Docs</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
-            {/* Current Version */}
-            <View style={styles.row}>
-              <View style={[styles.iconTile, { backgroundColor: tileBg }]}>
-                <MaterialIcons name="info-outline" size={20} color={tileIconColor} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Current Version</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Haptix Smart Wallet mobile client.
-                </Text>
-              </View>
-              <Text style={[styles.rowValue, { color: theme.textMuted }]}>1.0.0 (SMS)</Text>
-            </View>
+            {/* Security Architecture */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                setPolicyTopic('security')
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="menu-book" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Security Architecture</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
           </View>
         </View>
 
-        {/* SECTION 6: Standalone Device Actions */}
+        {/* SECTION 4: Standalone Device Actions (Rabby Style) */}
         <View style={styles.sectionWrap}>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* Remove Wallet from Device */}
@@ -716,15 +568,8 @@ export default function TabSettingsScreen() {
               onPress={handleRemoveWallet}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconTile, { backgroundColor: isDark ? 'rgba(244, 63, 94, 0.12)' : '#FEE2E2' }]}>
-                <MaterialIcons name="delete-outline" size={20} color={theme.rose} />
-              </View>
-              <View style={styles.rowContent}>
-                <Text style={[styles.rowTitle, { color: theme.rose }]}>Remove Wallet from Device</Text>
-                <Text style={[styles.rowSubtitle, { color: theme.textMuted }]}>
-                  Deletes on-device key material and disconnects.
-                </Text>
-              </View>
+              <MaterialIcons name="delete-outline" size={20} color={theme.rose} />
+              <Text style={[styles.rowTitle, { color: theme.rose }]}>Remove Wallet from Device</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.rose} />
             </TouchableOpacity>
           </View>
@@ -798,97 +643,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
   },
-  cardHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 13,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  cardHeaderTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardHeaderTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: -0.3,
-  },
-  cardHeaderDesc: {
-    fontSize: 12.5,
-    lineHeight: 17,
-    marginTop: 4,
-  },
-  quorumBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
-    borderRadius: 6,
-  },
-  quorumBadgeText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    letterSpacing: -0.1,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 13,
-    gap: 12,
-  },
-  iconTile: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rowContent: {
-    flex: 1,
-    gap: 2,
+    paddingVertical: 15,
+    gap: 13,
   },
   rowTitle: {
-    fontSize: 14.5,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
     letterSpacing: -0.2,
   },
-  rowSubtitle: {
-    fontSize: 12,
-    lineHeight: 16,
-  },
   rowValue: {
-    fontSize: 13,
+    fontSize: 13.5,
     marginRight: 2,
   },
-  activeBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    paddingHorizontal: 7.5,
-    paddingVertical: 3,
-    borderRadius: 6,
+  rowSpinner: {
     marginRight: 4,
-  },
-  activeBadgeText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#10B981',
-    letterSpacing: -0.1,
-  },
-  sponsoredBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
-    paddingHorizontal: 7.5,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginRight: 4,
-  },
-  sponsoredBadgeText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-    color: '#10B981',
-    letterSpacing: -0.1,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    marginLeft: 66,
+    marginLeft: 49,
   },
   watermarkWrap: {
     flexDirection: 'row',
@@ -905,4 +682,3 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 })
-
