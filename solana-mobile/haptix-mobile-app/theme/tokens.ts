@@ -93,20 +93,20 @@ export const darkTokens: ThemeTokens = {
 export const lightTokens: ThemeTokens = {
   mode: 'light',
   isDark: false,
-  bgApp: '#FFFFFF', // Clean White
-  bgCard: '#FAFAFA', // Subtle Off-White
-  bgElevated: '#F4F4F5',
+  bgApp: '#F6F6F8', // Soft off-white canvas matching mockup
+  bgCard: '#FFFFFF', // Pure White Cards
+  bgElevated: '#FFFFFF',
   bgInput: '#FFFFFF',
-  borderSubtle: '#F4F4F5',
-  borderDefault: '#E4E4E7',
-  borderFocus: '#000000',
-  textPrimary: '#000000',
-  textSecondary: '#52525B',
-  textMuted: '#A1A1AA',
-  accent: '#000000', // Pure Black Accent
-  accentLight: 'rgba(0, 0, 0, 0.05)',
-  accentGlow: 'rgba(0, 0, 0, 0.10)',
-  accentForeground: '#FFFFFF', // Crisp White Text on Black
+  borderSubtle: '#EEEEF0',
+  borderDefault: '#E5E5EA',
+  borderFocus: '#4F6BFF',
+  textPrimary: '#09090B',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  accent: '#4F6BFF', // Vibrant Royal Blue Accent matching mockup (#4F6BFF)
+  accentLight: 'rgba(79, 107, 255, 0.12)',
+  accentGlow: 'rgba(79, 107, 255, 0.25)',
+  accentForeground: '#FFFFFF', // Crisp White Text on Blue
   onTone: '#FFFFFF',
   amber: '#D97706',
   amberBg: '#FEF3C7',

@@ -17,17 +17,17 @@ interface ThemeContextValue {
 const STORAGE_KEY = '@haptix_theme_preference'
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: darkTokens,
-  colorScheme: 'dark',
-  isDark: true,
-  themePreference: 'dark',
+  theme: lightTokens,
+  colorScheme: 'light',
+  isDark: false,
+  themePreference: 'light',
   setThemePreference: async () => {},
   toggleTheme: async () => {},
 })
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const deviceColorScheme = useDeviceColorScheme()
-  const [themePreference, setThemePreferenceState] = useState<ThemeMode>('dark')
+  const [themePreference, setThemePreferenceState] = useState<ThemeMode>('light')
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)

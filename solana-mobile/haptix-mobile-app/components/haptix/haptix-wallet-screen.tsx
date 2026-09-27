@@ -237,6 +237,7 @@ export function HaptixWalletScreen() {
     setShowTxDetailModal(true)
   }, [])
   const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
+  const [homeSubTab, setHomeSubTab] = useState<'assets' | 'watchlist'>('assets')
 
   // Agent Policy Customization Inputs
   const [isGrantingSession, setIsGrantingSession] = useState(false)
@@ -1410,7 +1411,7 @@ export function HaptixWalletScreen() {
           )}
         </View>
 
-        {/* ACTION BUTTONS (Send · Swap · Receive) */}
+        {/* ACTION BUTTONS (Send · Swap · Receive · Faucet) */}
         <View style={styles.heroActionsRow}>
           {/* Send */}
           <TouchableOpacity
@@ -1421,7 +1422,9 @@ export function HaptixWalletScreen() {
             }}
             activeOpacity={0.78}
           >
-            <ActionSendIcon size={15} color={theme.textPrimary} />
+            <View style={styles.actionIconContainer}>
+              <MaterialIcons name="near-me" size={20} color={theme.textPrimary} />
+            </View>
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Send</Text>
           </TouchableOpacity>
 
@@ -1435,7 +1438,9 @@ export function HaptixWalletScreen() {
             }}
             activeOpacity={0.78}
           >
-            <MaterialIcons name="swap-horiz" size={18} color={theme.textPrimary} />
+            <View style={styles.actionIconContainer}>
+              <MaterialIcons name="swap-horiz" size={22} color={theme.textPrimary} />
+            </View>
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Swap</Text>
           </TouchableOpacity>
 
@@ -1448,19 +1453,125 @@ export function HaptixWalletScreen() {
             }}
             activeOpacity={0.78}
           >
-            <ActionReceiveIcon size={15} color={theme.textPrimary} />
+            <View style={styles.actionIconContainer}>
+              <MaterialIcons name="south-west" size={20} color={theme.textPrimary} />
+            </View>
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Receive</Text>
+          </TouchableOpacity>
+
+          {/* Faucet */}
+          <TouchableOpacity
+            style={[styles.heroActionBtn, styles.actionBtn]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+              handleRequestFaucet()
+            }}
+            disabled={isRequestingFaucet}
+            activeOpacity={0.78}
+          >
+            <View style={styles.actionIconContainer}>
+              {isRequestingFaucet ? (
+                <ActivityIndicator size="small" color={theme.accent} />
+              ) : (
+                <MaterialIcons name="local-gas-station" size={20} color={theme.textPrimary} />
+              )}
+            </View>
+            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>
+              {isRequestingFaucet ? '...' : 'Faucet'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* ASSETS SECTION HEADER */}
-      <View style={styles.homeSectionHeaderRow}>
-        <Text style={[styles.homeSectionTitle, styles.textPrimary]}>Assets</Text>
+      {/* SEGMENTED TAB SWITCHER (Assets · Watchlist) */}
+      <View style={styles.homeTabContainer}>
+        <TouchableOpacity
+          style={[
+            styles.homeTabPill,
+            homeSubTab === 'assets' && styles.homeTabPillActive,
+          ]}
+          onPress={() => {
+            Haptics.selectionAsync()
+            setHomeSubTab('assets')
+          }}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={[
+              styles.homeTabPillText,
+              homeSubTab === 'assets' ? styles.homeTabPillTextActive : styles.homeTabPillTextInactive,
+            ]}
+          >
+            Assets
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.homeTabPill,
+            homeSubTab === 'watchlist' && styles.homeTabPillActive,
+          ]}
+          onPress={() => {
+            Haptics.selectionAsync()
+            setHomeSubTab('watchlist')
+          }}
+          activeOpacity={0.8}
+        >
+          <Text
+            style={[
+              styles.homeTabPillText,
+              homeSubTab === 'watchlist' ? styles.homeTabPillTextActive : styles.homeTabPillTextInactive,
+            ]}
+          >
+            Watchlist
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* ASSETS LIST */}
-      <View style={[styles.assetList, styles.card]}>
+      {homeSubTab === 'watchlist' ? (
+        <View style={[styles.assetList, styles.card]}>
+          {market.tokens.filter((t) => t.symbol !== 'SOL').slice(0, 3).map((token, idx) => (
+            <React.Fragment key={token.symbol}>
+              {idx > 0 && <View style={[styles.assetDivider, styles.divider]} />}
+              <TouchableOpacity
+                style={styles.assetRow}
+                activeOpacity={0.7}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {})
+                  setSelectedDetailToken(token)
+                }}
+              >
+                <View style={styles.assetLeft}>
+                  <View
+                    style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+                  >
+                    <Text style={{ fontWeight: '700', fontSize: 13, color: theme.textPrimary }}>{token.symbol[0]}</Text>
+                  </View>
+                  <View>
+                    <Text style={[styles.assetPrimaryName, styles.textPrimary]}>{token.name}</Text>
+                    <Text style={[styles.assetSecondaryTag, styles.textMuted]}>{token.symbol}</Text>
+                  </View>
+                </View>
+                <View style={styles.assetRight}>
+                  <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{token.price}</Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: token.isPositive ? theme.emeraldText : theme.roseText,
+                      fontWeight: '600',
+                      marginTop: 2,
+                    }}
+                  >
+                    {token.change}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </React.Fragment>
+          ))}
+        </View>
+      ) : (
+        /* ASSETS LIST */
+        <View style={[styles.assetList, styles.card]}>
         {/* Solana (SOL) */}
         <TouchableOpacity
           style={styles.assetRow}
@@ -1611,7 +1722,8 @@ export function HaptixWalletScreen() {
             </View>
           </View>
         </TouchableOpacity>
-      </View>
+        </View>
+      )}
 
       {/* RECENT ACTIVITY SECTION */}
       <View style={styles.homeSectionHeaderRow}>
@@ -1620,7 +1732,7 @@ export function HaptixWalletScreen() {
           onPress={() => setDockTab('activity')}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Text style={[styles.homeSectionLink, { color: theme.textSecondary }]}>See all</Text>
+          <Text style={[styles.homeSectionLink, { color: '#4F6BFF', fontWeight: '600' }]}>See all</Text>
         </TouchableOpacity>
       </View>
 
@@ -1637,14 +1749,14 @@ export function HaptixWalletScreen() {
               <View
                 style={[
                   styles.activityIconCircle,
-                  { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
+                  { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault, borderRadius: 12 },
                 ]}
               >
-                <MaterialIcons name="call-made" size={18} color={theme.textPrimary} />
+                <MaterialIcons name="security" size={18} color={theme.textPrimary} />
               </View>
               <View>
-                <Text style={[styles.activityItemTitle, styles.textPrimary]}>Sent SOL</Text>
-                <Text style={styles.activityItemDate}>2:20 PM</Text>
+                <Text style={[styles.activityItemTitle, styles.textPrimary]}>On-chain setup</Text>
+                <Text style={styles.activityItemDate}>2:17 pm</Text>
               </View>
             </View>
             <Text style={[styles.activityAmount, styles.textMuted]}>—</Text>
@@ -2313,46 +2425,39 @@ export function HaptixWalletScreen() {
       <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
         <View style={styles.headerLeftGroup}>
           <TouchableOpacity
-            style={styles.avatarButton}
+            style={styles.accountSwitcherTrigger}
             onPress={() => {
               Haptics.selectionAsync()
               setIsAccountSwitcherOpen(true)
             }}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel={`Switch account, currently ${activeWallet?.name || 'My Haptix Wallet'}`}
+            accessibilityLabel={`Switch account, currently ${activeWallet?.name || 'My Haptix wallet'}`}
           >
-            <View style={[styles.avatarCircle, styles.elevatedCard]}>
-              <HaptixBrandMark size={22} />
-            </View>
+            <Text style={[styles.headerWalletName, styles.textPrimary]} numberOfLines={1}>
+              {activeWallet?.name || 'My Haptix wallet'}
+            </Text>
+            <MaterialIcons name="keyboard-arrow-down" size={20} color={theme.textPrimary} />
           </TouchableOpacity>
 
-          <View style={styles.identityTextGroup}>
+          <View style={styles.headerSubRow}>
             <TouchableOpacity
-              style={styles.accountSwitcherTrigger}
-              onPress={() => {
-                Haptics.selectionAsync()
-                setIsAccountSwitcherOpen(true)
-              }}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={`Switch account, currently ${activeWallet?.name || 'My Haptix Wallet'}`}
-            >
-              <Text style={[styles.headerWalletName, styles.textPrimary]} numberOfLines={1}>
-                {activeWallet?.name || 'My Haptix Wallet'}
-              </Text>
-              <MaterialIcons name="keyboard-arrow-down" size={18} color={theme.textSecondary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.addressCopyChip, styles.elevatedCard]}
+              style={styles.addressCopyChip}
               onPress={handleCopyWalletAddress}
               activeOpacity={0.7}
             >
-              <Text style={[styles.addressCopyText, styles.textMuted]}>
+              <Text style={[styles.addressCopyText, styles.textSecondary]}>
                 {hasCopiedAddress ? 'Copied!' : ellipsify(activeWallet?.address || '', 4)}
               </Text>
-              <CopyChipIcon size={11} color={hasCopiedAddress ? theme.emeraldText : theme.textMuted} />
+              <MaterialIcons
+                name="content-copy"
+                size={12}
+                color={hasCopiedAddress ? theme.emeraldText : theme.textSecondary}
+              />
             </TouchableOpacity>
+            <Text style={[styles.headerNetworkText, styles.textSecondary]}>
+              {network === 'devnet' ? 'Solana devnet' : 'Solana mainnet'}
+            </Text>
           </View>
         </View>
 
