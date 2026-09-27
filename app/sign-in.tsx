@@ -114,33 +114,33 @@ const lightPalette: OnboardingPalette = {
 }
 
 const darkPalette: OnboardingPalette = {
-  heroBg: '#08070F',
+  heroBg: '#000000',
   heroInk: '#F4F4F7',
   heroAccent: '#9C93FF',
-  onPrimary: '#0A0A0F',
+  onPrimary: '#000000',
   primaryBg: '#FFFFFF',
   actionBg: '#FFFFFF',
-  secondaryBg: '#1C1B23',
-  controlBg: '#1C1B23',
+  secondaryBg: '#111114',
+  controlBg: '#111114',
   decorGlow: 'rgba(140,130,255,0.06)',
   decorArc: 'rgba(140,130,255,0.18)',
   decorDotStrong: 'rgba(140,130,255,0.30)',
   decorDotSoft: 'rgba(140,130,255,0.22)',
-  sheetBackdrop: 'rgba(0,0,0,0.6)',
-  sheetBg: '#141419',
-  screenBg: '#0A0A0F',
-  surface: '#141419',
-  surfaceAlt: '#18181F',
-  border: 'rgba(255,255,255,0.10)',
+  sheetBackdrop: 'rgba(0,0,0,0.75)',
+  sheetBg: '#0A0A0D',
+  screenBg: '#000000',
+  surface: '#0D0D10',
+  surfaceAlt: '#050507',
+  border: '#222226',
   ink: '#F2F2F5',
   inkBody: '#B4B4BE',
-  inkSecondary: '#A0A0AC',
-  inkMuted: '#74747F',
-  link: '#8FA8FF',
-  linkSoftBg: 'rgba(108,140,255,0.14)',
+  inkSecondary: '#8E8E93',
+  inkMuted: '#636366',
+  link: '#4F6BFF',
+  linkSoftBg: 'rgba(79, 107, 255, 0.12)',
   success: '#34D399',
   danger: '#F87171',
-  shadow: 'rgba(0,0,0,0.6)',
+  shadow: 'rgba(0,0,0,0.8)',
 }
 
 export default function SignIn() {
@@ -183,7 +183,7 @@ export default function SignIn() {
     })
 
   const p = isDark ? darkPalette : lightPalette
-  const styles = useMemo(() => createStyles(p), [p])
+  const styles = useMemo(() => createStyles(p, isDark), [p, isDark])
 
   const [showThemeSheet, setShowThemeSheet] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -1231,12 +1231,16 @@ export default function SignIn() {
       <Modal visible={showSignInModal} animationType="slide" transparent={true}>
         <View style={styles.sheetBackdrop}>
           <View style={[styles.sheetCard, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-            <View
-              style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}
-            >
-              <Text style={styles.sheetTitle}>Sign In</Text>
-              <TouchableOpacity onPress={() => setShowSignInModal(false)}>
-                <MaterialIcons name="close" size={24} color={p.heroInk} />
+            {/* DRAG HANDLE */}
+            <View style={styles.sheetHandle} />
+
+            <View style={styles.sheetHeaderRow}>
+              <Text style={styles.sheetTitle}>Sign in</Text>
+              <TouchableOpacity
+                onPress={() => setShowSignInModal(false)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <MaterialIcons name="close" size={20} color={p.inkSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -1245,19 +1249,17 @@ export default function SignIn() {
               contentContainerStyle={{ paddingBottom: 12 }}
               showsVerticalScrollIndicator={false}
             >
-              <View style={{ alignItems: 'center', marginVertical: 12 }}>
-                <BiometricScanGraphic size={72} dark={isDark} />
+              <View style={styles.heroBiometricCircle}>
+                <MaterialIcons name="fingerprint" size={28} color={isDark ? '#FFFFFF' : '#000000'} />
               </View>
-              <Text style={styles.sheetDesc}>Authenticate with your biometric passkey.</Text>
+              <Text style={styles.sheetDesc}>Authenticate with your biometric passkey</Text>
 
               {/* AUTO DISCOVERY NOTICE WHEN LOCAL STORAGE IS EMPTY */}
               {savedWallets.length === 0 && (
                 <View style={styles.autoDiscoverNotice}>
-                  <MaterialIcons name="fingerprint" size={18} color={p.heroAccent} />
+                  <MaterialIcons name="fingerprint" size={16} color={p.inkMuted} style={{ marginTop: 2 }} />
                   <Text style={styles.autoDiscoverNoticeText}>
-                    Passkey on this device? Simply tap{' '}
-                    <Text style={{ fontWeight: '700', color: p.heroInk }}>Sign in with Biometrics</Text> below to
-                    automatically scan &amp; recover your wallet on-chain!
+                    Passkey on this device? Tap Sign in with biometrics to scan and recover your wallet on-chain.
                   </Text>
                 </View>
               )}
@@ -1307,16 +1309,16 @@ export default function SignIn() {
               >
                 <Text style={styles.customAddressToggleText}>
                   {showAddressInput
-                    ? 'Hide custom address / search'
+                    ? 'Hide custom address or search'
                     : deviceHasWallet === false
                       ? 'Wallet address required on this device'
                       : savedWallets.length > 0
-                        ? 'Or sign into another address / search'
+                        ? 'Or sign into another address or search'
                         : 'Specify custom wallet address (Optional)'}
                 </Text>
                 <MaterialIcons
                   name={showAddressInput ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                  size={18}
+                  size={16}
                   color={p.inkSecondary}
                 />
               </TouchableOpacity>
@@ -1342,6 +1344,7 @@ export default function SignIn() {
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity style={styles.pasteBadgeButton} onPress={handlePasteAddress}>
+                        <MaterialIcons name="content-paste" size={13} color="#4F6BFF" />
                         <Text style={styles.pasteBadgeText}>Paste</Text>
                       </TouchableOpacity>
                     )}
@@ -1355,18 +1358,23 @@ export default function SignIn() {
                       setShowGuardianLookup((prev) => !prev)
                     }}
                   >
-                    <MaterialIcons name="search" size={16} color={p.link} />
+                    <MaterialIcons name="search" size={15} color={p.inkSecondary} />
                     <Text style={styles.guardianSearchToggleText}>
-                      {showGuardianLookup ? 'Hide Guardian lookup' : 'Forgot address? Search on-chain by Guardian'}
+                      {showGuardianLookup ? 'Hide guardian lookup' : 'Forgot address? Search on-chain by Guardian'}
                     </Text>
+                    <MaterialIcons
+                      name={showGuardianLookup ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                      size={15}
+                      color={p.inkSecondary}
+                    />
                   </TouchableOpacity>
 
                   {showGuardianLookup && (
                     <View style={styles.guardianSearchBox}>
                       <Text style={styles.guardianSearchHelp}>
-                        Enter your Guardian's Solana address (e.g. your Phantom or friend's wallet) to find your smart wallet:
+                        Enter your guardian's Solana address, for example your Phantom or a friend's wallet, to find your smart wallet.
                       </Text>
-                      <View style={[styles.addressInputContainer, { marginTop: 6, marginBottom: 8 }]}>
+                      <View style={[styles.addressInputContainer, { marginTop: 10, marginBottom: 10, height: 46 }]}>
                         <TextInput
                           style={styles.addressInput}
                           value={guardianLookupInput}
@@ -1385,7 +1393,7 @@ export default function SignIn() {
                         {isSearchingGuardian ? (
                           <ActivityIndicator size="small" color="#FFFFFF" />
                         ) : (
-                          <Text style={styles.guardianSearchBtnText}>Find My Wallet On-Chain</Text>
+                          <Text style={styles.guardianSearchBtnText}>Find my wallet on-chain</Text>
                         )}
                       </TouchableOpacity>
                     </View>
@@ -1422,7 +1430,7 @@ export default function SignIn() {
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} />
-                    <Text style={styles.primaryDarkButtonText}>Sign in with Biometrics</Text>
+                    <Text style={styles.primaryDarkButtonText}>Sign in with biometrics</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -1474,7 +1482,7 @@ export default function SignIn() {
   )
 }
 
-const createStyles = (p: OnboardingPalette) =>
+const createStyles = (p: OnboardingPalette, isDark: boolean) =>
   StyleSheet.create({
     heroContainer: {
       flex: 1,
@@ -1590,26 +1598,55 @@ const createStyles = (p: OnboardingPalette) =>
     sheetBackdrop: { flex: 1, backgroundColor: p.sheetBackdrop, justifyContent: 'flex-end' },
     sheetCard: {
       backgroundColor: p.sheetBg,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      paddingHorizontal: 24,
-      paddingTop: 22,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
+      borderWidth: 1,
+      borderColor: p.border,
+      paddingHorizontal: 20,
+      paddingTop: 12,
       maxHeight: '92%',
     },
+    sheetHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: isDark ? '#2C2C2E' : '#D1D5DB',
+      alignSelf: 'center',
+      marginBottom: 14,
+    },
+    sheetHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    heroBiometricCircle: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+      borderWidth: 1,
+      borderColor: isDark ? '#27272A' : '#E2E8F0',
+      justifyContent: 'center',
+      alignItems: 'center',
+      alignSelf: 'center',
+      marginTop: 6,
+      marginBottom: 12,
+    },
     sheetTitle: { color: p.heroInk, fontSize: 19, fontWeight: '700' },
-    sheetDesc: { color: p.inkSecondary, fontSize: 15, marginBottom: 20, textAlign: 'center' },
+    sheetDesc: { color: p.inkSecondary, fontSize: 13.5, marginBottom: 16, textAlign: 'center' },
     sheetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15 },
     sheetRowText: { color: p.heroInk, fontSize: 16 },
     primaryDarkButton: {
       width: '100%',
       height: 52,
-      borderRadius: 26,
-      backgroundColor: p.actionBg,
+      borderRadius: 14,
+      backgroundColor: isDark ? '#FFFFFF' : '#000000',
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'row',
     },
-    primaryDarkButtonText: { color: p.onPrimary, fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
+    primaryDarkButtonText: { color: isDark ? '#000000' : '#FFFFFF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
     inputGroup: { marginBottom: 16 },
     inputLabel: { color: p.heroInk, fontSize: 14, fontWeight: '600', marginBottom: 8 },
     inputHint: { color: p.inkMuted, fontSize: 12, lineHeight: 17, marginTop: 8 },
@@ -1645,16 +1682,16 @@ const createStyles = (p: OnboardingPalette) =>
     addressInputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: p.surface,
+      backgroundColor: p.surfaceAlt,
       borderWidth: 1,
       borderColor: p.border,
-      borderRadius: 12,
+      borderRadius: 14,
       paddingHorizontal: 14,
-      paddingVertical: 10,
+      height: 48,
       marginTop: 4,
       marginBottom: 12,
     },
-    addressInput: { flex: 1, color: p.heroInk, fontSize: 13, padding: 0 },
+    addressInput: { flex: 1, color: p.heroInk, fontSize: 13.5, padding: 0 },
     // Pulled up into the input's own trailing margin, so the hint sits under the field
     // rather than opening a second, wider gap below it.
     addressHintRow: {
@@ -1666,8 +1703,8 @@ const createStyles = (p: OnboardingPalette) =>
       paddingHorizontal: 2,
     },
     addressHintText: { flex: 1, fontSize: 12, lineHeight: 16 },
-    pasteBadgeButton: { backgroundColor: p.linkSoftBg, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-    pasteBadgeText: { color: p.link, fontSize: 11, fontWeight: '600' },
+    pasteBadgeButton: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 4 },
+    pasteBadgeText: { color: '#4F6BFF', fontSize: 12, fontWeight: '700' },
     modeCard: {
       flex: 1,
       backgroundColor: p.surfaceAlt,
@@ -1738,15 +1775,15 @@ const createStyles = (p: OnboardingPalette) =>
       alignItems: 'flex-start',
       gap: 10,
       backgroundColor: p.surfaceAlt,
-      borderRadius: 12,
-      padding: 12,
+      borderRadius: 14,
+      padding: 14,
       borderWidth: 1,
       borderColor: p.border,
       marginBottom: 14,
     },
     autoDiscoverNoticeText: {
       flex: 1,
-      color: p.inkBody,
+      color: p.inkSecondary,
       fontSize: 12,
       lineHeight: 17,
     },
@@ -1791,38 +1828,42 @@ const createStyles = (p: OnboardingPalette) =>
     guardianSearchToggle: {
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: 6,
-      paddingVertical: 6,
-      marginBottom: 8,
+      paddingVertical: 8,
+      marginBottom: 6,
     },
     guardianSearchToggleText: {
-      color: p.link,
+      color: p.inkSecondary,
       fontSize: 12.5,
-      fontWeight: '600',
+      fontWeight: '500',
     },
     guardianSearchBox: {
       backgroundColor: p.surfaceAlt,
-      borderRadius: 12,
-      padding: 12,
+      borderRadius: 14,
+      padding: 14,
       borderWidth: 1,
       borderColor: p.border,
       marginBottom: 12,
     },
     guardianSearchHelp: {
       color: p.inkSecondary,
-      fontSize: 11.5,
-      lineHeight: 16,
+      fontSize: 12,
+      lineHeight: 17,
+      marginBottom: 2,
     },
     guardianSearchBtn: {
-      backgroundColor: p.actionBg,
-      borderRadius: 8,
-      paddingVertical: 9,
+      backgroundColor: isDark ? '#161619' : p.actionBg,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: p.border,
+      height: 46,
       alignItems: 'center',
       justifyContent: 'center',
     },
     guardianSearchBtnText: {
-      color: p.onPrimary,
-      fontSize: 12.5,
+      color: isDark ? '#FFFFFF' : p.onPrimary,
+      fontSize: 13.5,
       fontWeight: '600',
     },
     vaultSourceCard: {
