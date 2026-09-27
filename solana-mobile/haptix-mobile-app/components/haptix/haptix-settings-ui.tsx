@@ -74,7 +74,8 @@ export function HaptixSettingsHeader({
 }
 
 export interface HaptixSettingsRowProps {
-  icon: keyof typeof MaterialIcons.glyphMap
+  icon?: keyof typeof MaterialIcons.glyphMap
+  customLeading?: React.ReactNode
   title: string
   subtitle?: string
   /** Trailing slot: a value pill, chevron, or compact action. */
@@ -89,6 +90,7 @@ export interface HaptixSettingsRowProps {
 
 export function HaptixSettingsRow({
   icon,
+  customLeading,
   title,
   subtitle,
   trailing,
@@ -103,9 +105,13 @@ export function HaptixSettingsRow({
 
   const content = (
     <>
-      <View style={[styles.rowIcon, { backgroundColor: isDanger ? theme.roseBg : theme.accentLight }]}>
-        <MaterialIcons name={icon} size={18} color={isDanger ? theme.roseText : theme.textSecondary} />
-      </View>
+      {customLeading ? (
+        customLeading
+      ) : icon ? (
+        <View style={[styles.rowIcon, { backgroundColor: isDanger ? theme.roseBg : theme.accentLight }]}>
+          <MaterialIcons name={icon} size={18} color={isDanger ? theme.roseText : theme.textSecondary} />
+        </View>
+      ) : null}
       <View style={styles.rowText}>
         <Text style={[styles.rowTitle, { color: isDanger ? theme.roseText : theme.textPrimary }]} numberOfLines={1}>
           {title}

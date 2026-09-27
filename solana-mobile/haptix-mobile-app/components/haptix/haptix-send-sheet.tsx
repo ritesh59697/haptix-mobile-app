@@ -1066,21 +1066,23 @@ export function HaptixSendSheet({
               )}
 
               {/* Center Big Amount */}
-              <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center' }}>
+              <View style={{ alignItems: 'center', justifyContent: 'center', marginVertical: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                   <TextInput
                     style={styles.cleanSendBigInput}
                     value={sendAmountText}
                     onChangeText={setSendAmountText}
                     keyboardType="decimal-pad"
                     placeholder="0.00"
-                    placeholderTextColor="#5f5e5a"
-                    selectionColor="#6c8cff"
+                    placeholderTextColor={theme.textMuted}
+                    selectionColor={theme.accent}
                     autoFocus={false}
                   />
-                  <Text style={styles.cleanSendCurrencySuffix}>{selectedToken}</Text>
+                  <Text style={[styles.cleanSendCurrencySuffix, { color: theme.textSecondary }]}>
+                    {selectedToken}
+                  </Text>
                 </View>
-                <Text style={styles.cleanSendUsdText}>
+                <Text style={[styles.cleanSendUsdText, { color: theme.textMuted }]}>
                   ≈ ${(sendAmountNum * activeTokenPriceUsd).toFixed(2)} USD
                 </Text>
               </View>
@@ -1674,33 +1676,37 @@ const createSendSheetStyles = (theme: ThemeTokens) =>
       fontWeight: '400',
     },
     cleanSendBigInput: {
-      fontSize: 34,
-      fontWeight: '600',
+      fontSize: 38,
+      fontWeight: '700',
       color: theme.textPrimary,
       textAlign: 'center',
       minWidth: 60,
       padding: 0,
+      letterSpacing: -0.5,
     },
     cleanSendCurrencySuffix: {
-      fontSize: 20,
-      fontWeight: '500',
-      marginLeft: 6,
+      fontSize: 22,
+      fontWeight: '600',
+      color: theme.textSecondary,
+      marginLeft: 8,
     },
     cleanSendUsdText: {
       textAlign: 'center',
-      fontSize: 12.5,
+      fontSize: 13.5,
+      fontWeight: '500',
+      color: theme.textMuted,
       marginTop: 4,
       marginBottom: 14,
     },
     cleanPercentGrid: {
       flexDirection: 'row',
-      gap: 6,
-      marginBottom: 12,
+      gap: 8,
+      marginBottom: 6,
     },
     cleanPercentChip: {
       flex: 1,
       borderRadius: 10,
-      paddingVertical: 8,
+      paddingVertical: 9,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.isDark ? '#18181B' : '#FFFFFF',
@@ -1708,18 +1714,18 @@ const createSendSheetStyles = (theme: ThemeTokens) =>
     },
     cleanPercentChipActive: {
       borderColor: theme.accent,
-      backgroundColor: theme.isDark ? 'rgba(108, 140, 255, 0.12)' : 'rgba(108, 140, 255, 0.08)',
+      backgroundColor: theme.isDark ? 'rgba(108, 140, 255, 0.16)' : 'rgba(108, 140, 255, 0.10)',
     },
     cleanPercentChipInactive: {
       borderColor: theme.borderDefault,
     },
     cleanPercentChipText: {
-      fontSize: 12,
-      fontWeight: '500',
+      fontSize: 12.5,
+      fontWeight: '600',
     },
     cleanPercentChipTextActive: {
       color: theme.accent,
-      fontWeight: '600',
+      fontWeight: '700',
     },
     cleanPercentChipTextInactive: {
       color: theme.textSecondary,

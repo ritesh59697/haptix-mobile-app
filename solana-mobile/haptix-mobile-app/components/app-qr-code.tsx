@@ -22,6 +22,10 @@ export interface AppQrCodeProps {
   size?: number
   showCorners?: boolean
   showTapHint?: boolean
+  showTapIcon?: boolean
+  showCenterBadge?: boolean
+  tileBorderRadius?: number
+  borderless?: boolean
   onCopySuccess?: () => void
   style?: StyleProp<ViewStyle>
 }
@@ -31,6 +35,10 @@ export function AppQrCode({
   size = 176,
   showCorners = true,
   showTapHint = true,
+  showTapIcon = true,
+  showCenterBadge = true,
+  tileBorderRadius,
+  borderless = false,
   onCopySuccess,
   style,
 }: AppQrCodeProps) {
@@ -114,14 +122,16 @@ export function AppQrCode({
           accessibilityLabel="QR code. Tap to copy address to clipboard."
           style={[
             styles.cardContainer,
-            {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-            },
+            borderless
+              ? { padding: 0, borderWidth: 0, backgroundColor: 'transparent' }
+              : {
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                },
           ]}
         >
           {/* Target Scan Corner Brackets */}
-          {showCorners && (
+          {showCorners && !borderless && (
             <>
               <View
                 style={[
@@ -194,15 +204,18 @@ export function AppQrCode({
                 width: cardSize,
                 height: cardSize,
                 padding,
+                borderRadius: tileBorderRadius ?? radius.lg,
               },
             ]}
           >
             <QRCode value={value || 'HaptixAddress'} size={size} level="Q" />
 
             {/* Central Brand Badge */}
-            <View style={styles.centerBadge}>
-              <HaptixBrandMark size={14} />
-            </View>
+            {showCenterBadge && (
+              <View style={styles.centerBadge}>
+                <HaptixBrandMark size={14} />
+              </View>
+            )}
 
             {/* Floating Copied HUD Overlay */}
             {copied && (
@@ -211,6 +224,7 @@ export function AppQrCode({
                   styles.copiedOverlay,
                   {
                     opacity: hudOpacityAnim,
+                    borderRadius: tileBorderRadius ?? radius.lg,
                     transform: [{ scale: hudScaleAnim }],
                   },
                 ]}
@@ -228,7 +242,7 @@ export function AppQrCode({
       {/* Tap-to-copy hint */}
       {showTapHint && (
         <View style={styles.hintRow}>
-          <MaterialIcons name="touch-app" size={13} color={theme.textMuted} />
+          {showTapIcon && <MaterialIcons name="touch-app" size={13} color={theme.textMuted} />}
           <Text style={[styles.hintText, { color: theme.textMuted }]}>
             Tap QR code to copy address
           </Text>

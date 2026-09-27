@@ -4,9 +4,7 @@ import { PublicKey } from '@solana/web3.js'
 import * as Haptics from 'expo-haptics'
 import { AppDropdown } from '@/components/app-dropdown'
 import { useCluster } from '@/components/cluster/cluster-provider'
-import { ClusterUiVersion } from '@/components/cluster/cluster-ui-version'
-import { ClusterUiGenesisHash } from '@/components/cluster/cluster-ui-genesis-hash'
-import { HaptixSettingsDivider, HaptixSettingsRow } from '@/components/haptix/haptix-settings-ui'
+import { HaptixSettingsBadge, HaptixSettingsDivider, HaptixSettingsRow } from '@/components/haptix/haptix-settings-ui'
 import { ClusterNetwork } from '@/components/cluster/cluster-network'
 import { useAuth } from '@/components/auth/auth-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -55,15 +53,18 @@ export function SettingsUiCluster() {
 
   return (
     <>
-      <ClusterUiVersion selectedCluster={selectedCluster} />
-      <HaptixSettingsDivider />
-      <ClusterUiGenesisHash selectedCluster={selectedCluster} />
-      <HaptixSettingsDivider />
       <AppDropdown
         label="Cluster"
         items={clusters.map((c) => c.name)}
         selectedItem={selectedCluster.name}
         selectItem={(name) => setSelectedCluster(clusters.find((c) => c.name === name)!)}
+      />
+      <HaptixSettingsDivider />
+      <HaptixSettingsRow
+        icon="dns"
+        title="RPC Endpoint"
+        subtitle={selectedCluster.endpoint ? selectedCluster.endpoint.replace('https://', '') : 'Solana Devnet'}
+        trailing={<HaptixSettingsBadge label="Online" tone="success" />}
       />
 
       {isDevnet && (

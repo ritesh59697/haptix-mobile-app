@@ -102,7 +102,6 @@ import {
   HaptixTokenIcon,
 } from './haptix-icons'
 import { HaptixFloatingDock, DockTabId } from './haptix-floating-dock'
-import { HaptixIosTabs, IosTabItem } from './haptix-ios-tabs'
 import { HaptixPolicySheet, PolicyLinkButton, PolicyTopic } from './haptix-policy-sheet'
 import { HaptixAccountSwitcherSheet } from './haptix-account-switcher-sheet'
 import { HaptixSendSheet } from './haptix-send-sheet'
@@ -126,12 +125,7 @@ import {
   activityToneFor,
 } from '@/utils/haptix-activity-display'
 
-// Module scope, not inline: the segmented control is memoized, and a fresh array on every
-// render would have handed it a new prop and defeated that.
-const HOME_SEGMENT_TABS: IosTabItem<'assets' | 'markets'>[] = [
-  { id: 'assets', label: 'Assets' },
-  { id: 'markets', label: 'Watchlist' },
-]
+
 
 const ACTIVITY_FILTERS = [
   { id: 'all', label: 'All' },
@@ -207,6 +201,20 @@ export function HaptixWalletScreen() {
   const [copiedTxLink, setCopiedTxLink] = useState(false)
   const copyTxLinkTimeoutRef = useRef<any>(null)
 
+  const [receiveAddressCopied, setReceiveAddressCopied] = useState(false)
+  const receiveAddressCopyTimeoutRef = useRef<any>(null)
+
+  const handleCopyReceiveAddress = useCallback(() => {
+    if (!activeWallet?.address) return
+    Clipboard.setString(activeWallet.address)
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+    setReceiveAddressCopied(true)
+    if (receiveAddressCopyTimeoutRef.current) clearTimeout(receiveAddressCopyTimeoutRef.current)
+    receiveAddressCopyTimeoutRef.current = setTimeout(() => {
+      setReceiveAddressCopied(false)
+    }, 2000)
+  }, [activeWallet?.address])
+
   const handleCopyTransactionLink = useCallback((signature?: string) => {
     const sig = signature || selectedTransaction?.signature
     if (!sig) return
@@ -253,7 +261,6 @@ export function HaptixWalletScreen() {
   // Elevated Dock & Home View Controls
   const [dockTab, setDockTab] = useState<DockTabId>('home')
   const [isBalanceHidden, setIsBalanceHidden] = useState(false)
-  const [segmentedTab, setSegmentedTab] = useState<'assets' | 'markets'>('assets')
   const [hasCopiedAddress, setHasCopiedAddress] = useState(false)
 
   const handleCopyWalletAddress = async () => {
@@ -1447,223 +1454,164 @@ export function HaptixWalletScreen() {
         </View>
       </View>
 
-      {/* TABS: Assets · Watchlist (Pill Segmented Control) */}
-      <View style={styles.segmentedContainer}>
-        <HaptixIosTabs<'assets' | 'markets'>
-          tabs={HOME_SEGMENT_TABS}
-          activeTab={segmentedTab}
-          onChange={setSegmentedTab}
-        />
+      {/* ASSETS SECTION HEADER */}
+      <View style={[styles.homeSectionHeaderRow, { marginTop: 10, marginBottom: 8 }]}>
+        <Text style={[styles.homeSectionTitle, styles.textPrimary]}>Assets</Text>
       </View>
 
-      {/* TAB CONTENT: ASSETS */}
-      {segmentedTab === 'assets' && (
-        <View style={[styles.assetList, styles.card]}>
-          {/* Solana (SOL) */}
-          <TouchableOpacity
-            style={styles.assetRow}
-            activeOpacity={0.7}
-            onPress={() => {
-              Haptics.selectionAsync().catch(() => {})
-              const solMarket = market.tokens.find((t) => t.symbol === 'SOL') ?? {
-                symbol: 'SOL',
-                name: 'Solana',
-                price: `$${solPriceUsd.toFixed(2)}`,
-                priceUsd: solPriceUsd,
-                change: '+0.84%',
-                changePct: 0.84,
-                isPositive: true,
-              }
-              setSelectedDetailToken(solMarket)
-            }}
-          >
-            <View style={styles.assetLeft}>
-              <View
-                style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
-              >
-                <SolanaTokenLogo size={24} />
-              </View>
-              <View>
-                <Text style={[styles.assetPrimaryName, styles.textPrimary]}>Solana</Text>
-                <Text style={[styles.assetSecondaryTag, styles.textMuted]}>SOL</Text>
-              </View>
+      {/* ASSETS LIST */}
+      <View style={[styles.assetList, styles.card]}>
+        {/* Solana (SOL) */}
+        <TouchableOpacity
+          style={styles.assetRow}
+          activeOpacity={0.7}
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {})
+            const solMarket = market.tokens.find((t) => t.symbol === 'SOL') ?? {
+              symbol: 'SOL',
+              name: 'Solana',
+              price: `$${solPriceUsd.toFixed(2)}`,
+              priceUsd: solPriceUsd,
+              change: '+0.84%',
+              changePct: 0.84,
+              isPositive: true,
+            }
+            setSelectedDetailToken(solMarket)
+          }}
+        >
+          <View style={styles.assetLeft}>
+            <View
+              style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+            >
+              <SolanaTokenLogo size={24} />
             </View>
-            <View style={styles.assetRight}>
-              <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{balance.toFixed(4)} SOL</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
-                <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
-                  ≈ ${(balance * solPriceUsd).toFixed(2)}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: (solToken?.isPositive ?? true) ? theme.emeraldText : theme.roseText,
-                    marginLeft: 6,
-                    fontWeight: '500',
-                  }}
-                >
-                  {solToken?.change ?? '+0.84%'}
-                </Text>
-              </View>
+            <View>
+              <Text style={[styles.assetPrimaryName, styles.textPrimary]}>Solana</Text>
+              <Text style={[styles.assetSecondaryTag, styles.textMuted]}>SOL</Text>
             </View>
-          </TouchableOpacity>
-
-          <View style={[styles.assetDivider, styles.divider]} />
-
-          {/* Seeker (SKR) */}
-          <TouchableOpacity
-            style={styles.assetRow}
-            activeOpacity={0.7}
-            onPress={() => {
-              Haptics.selectionAsync().catch(() => {})
-              const skrMarket = market.tokens.find((t) => t.symbol === 'SKR') ?? {
-                symbol: 'SKR',
-                name: 'Seeker',
-                price: `$${skrPriceUsd.toFixed(2)}`,
-                priceUsd: skrPriceUsd,
-                change: '-0.20%',
-                changePct: -0.20,
-                isPositive: false,
-              }
-              setSelectedDetailToken(skrMarket)
-            }}
-          >
-            <View style={styles.assetLeft}>
-              <View
-                style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
-              >
-                <SeekerTokenLogo size={28} />
-              </View>
-              <View>
-                <Text style={[styles.assetPrimaryName, styles.textPrimary]}>Seeker</Text>
-                <Text style={[styles.assetSecondaryTag, styles.textMuted]}>SKR</Text>
-              </View>
-            </View>
-            <View style={styles.assetRight}>
-              <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{skrBalance.toFixed(0)} SKR</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
-                <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
-                  ≈ ${(skrBalance * skrPriceUsd).toFixed(2)}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: (skrToken?.isPositive ?? false) ? theme.emeraldText : theme.roseText,
-                    marginLeft: 6,
-                    fontWeight: '500',
-                  }}
-                >
-                  {skrToken?.change ?? '-0.20%'}
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          <View style={[styles.assetDivider, styles.divider]} />
-
-          {/* USD Coin (USDC) */}
-          <TouchableOpacity
-            style={styles.assetRow}
-            activeOpacity={0.7}
-            onPress={() => {
-              Haptics.selectionAsync().catch(() => {})
-              const usdcMarket = market.tokens.find((t) => t.symbol === 'USDC') ?? {
-                symbol: 'USDC',
-                name: 'USD Coin',
-                price: '$1.00',
-                priceUsd: 1.0,
-                change: '0.00%',
-                changePct: 0.0,
-                isPositive: true,
-              }
-              setSelectedDetailToken(usdcMarket)
-            }}
-          >
-            <View style={styles.assetLeft}>
-              <View
-                style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
-              >
-                <UsdcTokenLogo size={28} />
-              </View>
-              <View>
-                <Text style={[styles.assetPrimaryName, styles.textPrimary]}>USD Coin</Text>
-                <Text style={[styles.assetSecondaryTag, styles.textMuted]}>USDC</Text>
-              </View>
-            </View>
-            <View style={styles.assetRight}>
-              <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{usdcBalance.toFixed(2)} USDC</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
-                <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
-                  ≈ ${usdcBalance.toFixed(2)}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: theme.textMuted,
-                    marginLeft: 6,
-                    fontWeight: '500',
-                  }}
-                >
-                  {usdcToken?.change ?? '0.00%'}
-                </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* TAB CONTENT: WATCHLIST / MARKETS */}
-      {segmentedTab === 'markets' && (
-        <View style={[styles.assetList, styles.card]}>
-          {market.tokens.map((token, idx) => (
-            <React.Fragment key={token.symbol}>
-              {idx > 0 && <View style={[styles.assetDivider, styles.divider]} />}
-              <TouchableOpacity
-                style={styles.assetRow}
-                activeOpacity={0.7}
-                onPress={() => {
-                  Haptics.selectionAsync().catch(() => {})
-                  setSelectedDetailToken(token)
+          </View>
+          <View style={styles.assetRight}>
+            <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{balance.toFixed(4)} SOL</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
+              <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
+                ≈ ${(balance * solPriceUsd).toFixed(2)}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: (solToken?.isPositive ?? true) ? theme.emeraldText : theme.roseText,
+                  marginLeft: 6,
+                  fontWeight: '500',
                 }}
               >
-                <View style={styles.assetLeft}>
-                  <View
-                    style={[
-                      styles.assetLogoWrap,
-                      { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
-                    ]}
-                  >
-                    {token.symbol === 'SOL' ? (
-                      <SolanaTokenLogo size={24} />
-                    ) : token.symbol === 'SKR' ? (
-                      <SeekerTokenLogo size={28} />
-                    ) : token.symbol === 'USDC' ? (
-                      <UsdcTokenLogo size={28} />
-                    ) : (
-                      <HaptixTokenIcon symbol={token.symbol} size={22} />
-                    )}
-                  </View>
-                  <View>
-                    <Text style={[styles.assetPrimaryName, styles.textPrimary]}>{token.name}</Text>
-                    <Text style={[styles.assetSecondaryTag, styles.textMuted]}>{token.symbol}</Text>
-                  </View>
-                </View>
-                <View style={styles.assetRight}>
-                  <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{token.price}</Text>
-                  <Text
-                    style={[
-                      styles.assetFiatAmount,
-                      { color: token.isPositive ? theme.emeraldText : theme.roseText, fontWeight: '500' },
-                    ]}
-                  >
-                    {token.change}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </React.Fragment>
-          ))}
-        </View>
-      )}
+                {solToken?.change ?? '+0.84%'}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <View style={[styles.assetDivider, styles.divider]} />
+
+        {/* Seeker (SKR) */}
+        <TouchableOpacity
+          style={styles.assetRow}
+          activeOpacity={0.7}
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {})
+            const skrMarket = market.tokens.find((t) => t.symbol === 'SKR') ?? {
+              symbol: 'SKR',
+              name: 'Seeker',
+              price: `$${skrPriceUsd.toFixed(2)}`,
+              priceUsd: skrPriceUsd,
+              change: '-0.20%',
+              changePct: -0.20,
+              isPositive: false,
+            }
+            setSelectedDetailToken(skrMarket)
+          }}
+        >
+          <View style={styles.assetLeft}>
+            <View
+              style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+            >
+              <SeekerTokenLogo size={28} />
+            </View>
+            <View>
+              <Text style={[styles.assetPrimaryName, styles.textPrimary]}>Seeker</Text>
+              <Text style={[styles.assetSecondaryTag, styles.textMuted]}>SKR</Text>
+            </View>
+          </View>
+          <View style={styles.assetRight}>
+            <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{skrBalance.toFixed(0)} SKR</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
+              <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
+                ≈ ${(skrBalance * skrPriceUsd).toFixed(2)}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: (skrToken?.isPositive ?? false) ? theme.emeraldText : theme.roseText,
+                  marginLeft: 6,
+                  fontWeight: '500',
+                }}
+              >
+                {skrToken?.change ?? '-0.20%'}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <View style={[styles.assetDivider, styles.divider]} />
+
+        {/* USD Coin (USDC) */}
+        <TouchableOpacity
+          style={styles.assetRow}
+          activeOpacity={0.7}
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {})
+            const usdcMarket = market.tokens.find((t) => t.symbol === 'USDC') ?? {
+              symbol: 'USDC',
+              name: 'USD Coin',
+              price: '$1.00',
+              priceUsd: 1.0,
+              change: '0.00%',
+              changePct: 0.0,
+              isPositive: true,
+            }
+            setSelectedDetailToken(usdcMarket)
+          }}
+        >
+          <View style={styles.assetLeft}>
+            <View
+              style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+            >
+              <UsdcTokenLogo size={28} />
+            </View>
+            <View>
+              <Text style={[styles.assetPrimaryName, styles.textPrimary]}>USD Coin</Text>
+              <Text style={[styles.assetSecondaryTag, styles.textMuted]}>USDC</Text>
+            </View>
+          </View>
+          <View style={styles.assetRight}>
+            <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{usdcBalance.toFixed(2)} USDC</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
+              <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
+                ≈ ${usdcBalance.toFixed(2)}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: theme.textMuted,
+                  marginLeft: 6,
+                  fontWeight: '500',
+                }}
+              >
+                {usdcToken?.change ?? '0.00%'}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </View>
 
       {/* RECENT ACTIVITY SECTION */}
       <View style={styles.homeSectionHeaderRow}>
@@ -2515,80 +2463,84 @@ export function HaptixWalletScreen() {
       {/* ==================================================================== */}
       <Modal visible={showReceiveModal} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalSheet, styles.modalSheet, { paddingBottom: insets.bottom + 24 }]}>
+          <View style={[styles.modalSheet, { paddingBottom: insets.bottom + 24 }]}>
             <View style={[styles.modalDragHandle, { backgroundColor: theme.borderDefault }]} />
 
             <View style={styles.modalSheetHeader}>
-              <Text style={[styles.modalSheetTitle, styles.textPrimary]}>Receive Assets</Text>
-              <TouchableOpacity onPress={() => setShowReceiveModal(false)}>
+              <Text style={[styles.modalSheetTitle, styles.textPrimary]}>Receive assets</Text>
+              <TouchableOpacity
+                onPress={() => setShowReceiveModal(false)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <MaterialIcons name="close" size={22} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <Text style={[styles.receiveExplainerText, styles.textSecondary]}>
+            <Text style={styles.receiveExplainerText}>
               Scan this QR code, or share the address with the person paying you.
             </Text>
 
-            {/* Which network this address belongs to. The sheet said "on Solana" while the
-                header behind it can be on devnet or mainnet, and the two get paid
-                differently. */}
+            {/* Which network this address belongs to */}
             <View style={styles.receiveMetaRow}>
-              <View style={[styles.receiveNetworkPill, styles.input]}>
-                <View
-                  style={[
-                    styles.networkDotSmall,
-                    { backgroundColor: network === 'devnet' ? theme.accent : theme.emerald },
-                  ]}
-                />
-                <Text style={[styles.receiveNetworkPillText, styles.textSecondary]}>
-                  {network === 'devnet' ? 'Solana Devnet' : 'Solana Mainnet'}
+              <View style={styles.receiveNetworkPill}>
+                <View style={styles.receiveNetworkDot} />
+                <Text style={styles.receiveNetworkPillText}>
+                  {network === 'devnet' ? 'Solana devnet' : 'Solana mainnet'}
                 </Text>
               </View>
-              <Text style={[styles.receiveMetaText, styles.textMuted]}>
-                {activeWallet?.name ? activeWallet.name : 'Smart account'}
+              <Text style={styles.receiveMetaText}>
+                {activeWallet?.name ? activeWallet.name : 'My Haptix wallet'}
               </Text>
             </View>
 
             <View style={styles.qrContainer}>
-              <AppQrCode value={activeWallet?.address || 'HaptixSolanaAddress'} />
+              <AppQrCode
+                value={activeWallet?.address || 'HaptixSolanaAddress'}
+                size={180}
+                showCorners={false}
+                showCenterBadge={false}
+                showTapIcon={false}
+                borderless
+                tileBorderRadius={24}
+              />
             </View>
 
             <TouchableOpacity
-              style={[styles.addressDisplayBox, styles.input]}
-              onPress={() => {
-                if (!activeWallet?.address) return
-                Clipboard.setString(activeWallet.address)
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-                dialog.alert('Address Copied', activeWallet.address)
-              }}
+              style={styles.addressDisplayBox}
+              onPress={handleCopyReceiveAddress}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel="Copy smart wallet address"
+              accessibilityLabel="Copy wallet address"
             >
-              <Text style={[styles.addressDisplayText, styles.textPrimary]} numberOfLines={1} ellipsizeMode="middle">
+              <Text style={styles.addressDisplayText} numberOfLines={1} ellipsizeMode="middle">
                 {activeWallet?.address || ''}
               </Text>
-              <MaterialIcons name="content-copy" size={16} color={theme.accent} />
+              <MaterialIcons
+                name={receiveAddressCopied ? 'check' : 'content-copy'}
+                size={18}
+                color={receiveAddressCopied ? '#10B981' : theme.textMuted}
+              />
             </TouchableOpacity>
 
             {/* The one irreversible mistake an address screen can prevent. */}
             <View style={styles.receiveWarning}>
-              <MaterialIcons name="warning-amber" size={13} color={theme.amber} />
-              <Text style={[styles.receiveWarningText, styles.textSecondary]}>
-                Only send SOL or SPL tokens on {network === 'devnet' ? 'Devnet' : 'Mainnet'} here. Assets from any other
+              <MaterialIcons name="warning-amber" size={17} color={theme.amber} style={{ marginTop: 1 }} />
+              <Text style={styles.receiveWarningText}>
+                Only send SOL or SPL tokens on {network === 'devnet' ? 'devnet' : 'mainnet'} here. Assets from any other
                 chain cannot be recovered.
               </Text>
             </View>
 
-            <View style={{ width: '100%', gap: 10, marginTop: 14 }}>
-              <CopyActionButton
-                value={activeWallet?.address || ''}
-                label="Copy Smart Account Address"
-                copiedLabel="Address Copied to Clipboard!"
-                style={{ height: 46, borderRadius: 12 }}
-              />
-              <DepthOutlineButton title="Share Address" onPress={handleShareAddress} size="compact" />
-            </View>
+            <TouchableOpacity
+              style={styles.receiveShareBtn}
+              onPress={handleShareAddress}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Share address"
+            >
+              <MaterialIcons name="ios-share" size={18} color="#FFFFFF" />
+              <Text style={styles.receiveShareBtnText}>Share address</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -2913,7 +2865,7 @@ export function HaptixWalletScreen() {
                 router.push('/(tabs)/settings')
               }}
             >
-              <MaterialIcons name="settings" size={18} color={theme.textSecondary} />
+              <MaterialIcons name="settings" size={18} color={theme.textPrimary} />
               <Text style={[styles.overflowRowText, styles.textPrimary]}>Settings & Network</Text>
             </TouchableOpacity>
 
@@ -2943,18 +2895,7 @@ export function HaptixWalletScreen() {
               <Text style={[styles.overflowRowText, styles.textPrimary]}>Lock wallet (Safe Lock)</Text>
             </TouchableOpacity>
 
-            <View style={[styles.overflowDivider, styles.divider]} />
 
-            <TouchableOpacity
-              style={styles.overflowRow}
-              onPress={() => {
-                setShowOverflowMenu(false)
-                router.push('/(tabs)/settings')
-              }}
-            >
-              <MaterialIcons name="settings" size={18} color={theme.textPrimary} />
-              <Text style={[styles.overflowRowText, styles.textPrimary]}>Settings</Text>
-            </TouchableOpacity>
 
             <View style={[styles.overflowDivider, styles.divider]} />
 

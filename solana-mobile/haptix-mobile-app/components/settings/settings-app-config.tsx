@@ -2,22 +2,23 @@ import { StyleSheet, Text } from 'react-native'
 import { AppConfig } from '@/constants/app-config'
 import { AppExternalLink, AppExternalLinkProps } from '@/components/app-external-link'
 import { useAppTheme } from '@/components/theme/theme-context'
-import { HaptixSettingsDivider, HaptixSettingsRow } from '@/components/haptix/haptix-settings-ui'
+import { HaptixSettingsBadge, HaptixSettingsDivider, HaptixSettingsRow } from '@/components/haptix/haptix-settings-ui'
 import { radius, typeScale } from '@/theme/tokens'
 
 /**
  * App section body. Rows only — the settings screen owns the card and heading.
- *
- * The external link stays a real expo-router `Link` so the URI opens in the in-app
- * browser on native rather than bouncing the user out to the system browser, which
- * is what a raw `Linking.openURL` would do.
  */
 export function SettingsAppConfig() {
   const { theme } = useAppTheme()
 
   return (
     <>
-      <HaptixSettingsRow icon="apps" title={AppConfig.name} subtitle="Application name" />
+      <HaptixSettingsRow
+        icon="apps"
+        title={AppConfig.name}
+        subtitle="Version 1.0.0 • Solana Mobile Stack"
+        trailing={<HaptixSettingsBadge label="v1.0.0" tone="muted" />}
+      />
 
       <HaptixSettingsDivider />
 
@@ -28,6 +29,22 @@ export function SettingsAppConfig() {
         trailing={
           <AppExternalLink
             href={AppConfig.uri as AppExternalLinkProps['href']}
+            style={[styles.linkAction, { backgroundColor: theme.accentLight, borderColor: theme.borderSubtle }]}
+          >
+            <Text style={[styles.linkActionText, { color: theme.textPrimary }]}>Open</Text>
+          </AppExternalLink>
+        }
+      />
+
+      <HaptixSettingsDivider />
+
+      <HaptixSettingsRow
+        icon="code"
+        title="Source & Documentation"
+        subtitle="GitHub / Solana Mobile Hackathon"
+        trailing={
+          <AppExternalLink
+            href="https://github.com/ritesh59697/haptix-mobile-app"
             style={[styles.linkAction, { backgroundColor: theme.accentLight, borderColor: theme.borderSubtle }]}
           >
             <Text style={[styles.linkActionText, { color: theme.textPrimary }]}>Open</Text>
