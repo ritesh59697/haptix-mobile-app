@@ -1925,8 +1925,8 @@ export function HaptixWalletScreen() {
                         borderWidth: 1.5,
                       }
                     : {
-                        backgroundColor: isDark ? '#18181B' : '#F4F4F5',
-                        borderColor: 'transparent',
+                        backgroundColor: isDark ? '#0A0A0D' : '#F4F4F5',
+                        borderColor: isDark ? '#222226' : 'transparent',
                         borderWidth: 1,
                       },
                 ]}
@@ -1980,8 +1980,8 @@ export function HaptixWalletScreen() {
                         borderWidth: 1.5,
                       }
                     : {
-                        backgroundColor: isDark ? '#18181B' : '#F4F4F5',
-                        borderColor: 'transparent',
+                        backgroundColor: isDark ? '#0A0A0D' : '#F4F4F5',
+                        borderColor: isDark ? '#222226' : 'transparent',
                         borderWidth: 1,
                       },
                 ]}
@@ -2055,7 +2055,7 @@ export function HaptixWalletScreen() {
             styles.agentRecipientInput,
             styles.input,
             {
-              backgroundColor: isDark ? '#121214' : '#FFFFFF',
+              backgroundColor: isDark ? '#050507' : '#FFFFFF',
               borderColor: theme.borderDefault,
             },
           ]}

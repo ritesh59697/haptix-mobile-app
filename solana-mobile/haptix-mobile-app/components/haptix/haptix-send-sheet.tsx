@@ -928,7 +928,7 @@ export function HaptixSendSheet({
                   style={[
                     styles.assetSelectorTrigger,
                     {
-                      backgroundColor: theme.isDark ? '#18181B' : '#FFFFFF',
+                      backgroundColor: theme.isDark ? '#0A0A0C' : '#FFFFFF',
                       borderColor: showTokenMenu ? theme.accent : theme.borderDefault,
                     },
                   ]}
@@ -989,7 +989,7 @@ export function HaptixSendSheet({
                   style={[
                     styles.assetDropdownMenu,
                     {
-                      backgroundColor: theme.isDark ? '#18181B' : '#FFFFFF',
+                      backgroundColor: theme.isDark ? '#0A0A0C' : '#FFFFFF',
                       borderColor: theme.borderDefault,
                     },
                   ]}
@@ -1568,7 +1568,7 @@ const createSendSheetStyles = (theme: ThemeTokens) =>
       borderRadius: 14,
       padding: 14,
       marginBottom: 16,
-      backgroundColor: theme.isDark ? '#121214' : theme.bgElevated,
+      backgroundColor: theme.isDark ? '#000000' : theme.bgElevated,
     },
     cleanTokenHeaderRow: {
       flexDirection: 'row',
@@ -1709,7 +1709,7 @@ const createSendSheetStyles = (theme: ThemeTokens) =>
       paddingVertical: 9,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.isDark ? '#18181B' : '#FFFFFF',
+      backgroundColor: theme.isDark ? '#0A0A0C' : '#FFFFFF',
       borderWidth: 1,
     },
     cleanPercentChipActive: {
@@ -1760,7 +1760,7 @@ const createSendSheetStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: theme.isDark ? '#121214' : theme.bgElevated,
+      backgroundColor: theme.isDark ? '#050507' : theme.bgElevated,
     },
     cleanRecipientInput: {
       color: theme.textPrimary,
@@ -1785,7 +1785,7 @@ const createSendSheetStyles = (theme: ThemeTokens) =>
       paddingHorizontal: 16,
       paddingVertical: 12,
       marginBottom: 16,
-      backgroundColor: theme.isDark ? '#121214' : theme.bgElevated,
+      backgroundColor: theme.isDark ? '#000000' : theme.bgElevated,
     },
     cleanPreviewRow: {
       flexDirection: 'row',
