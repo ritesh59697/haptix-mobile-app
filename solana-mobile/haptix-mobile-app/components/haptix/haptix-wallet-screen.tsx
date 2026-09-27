@@ -1423,7 +1423,7 @@ export function HaptixWalletScreen() {
             activeOpacity={0.78}
           >
             <View style={styles.actionIconContainer}>
-              <MaterialIcons name="near-me" size={20} color={theme.textPrimary} />
+              <ActionSendIcon size={18} color={theme.textPrimary} />
             </View>
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Send</Text>
           </TouchableOpacity>
