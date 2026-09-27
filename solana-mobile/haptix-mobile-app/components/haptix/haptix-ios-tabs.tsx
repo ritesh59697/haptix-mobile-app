@@ -88,13 +88,12 @@ function HaptixIosTabsImpl<T extends string = string>({
     outputRange: tabs.map((_, i) => i * tabWidth),
   })
 
-  // Shared surface tokens instead of the hand-rolled iOS grey ramp. The old light track
-  // was rgba(255,255,255,0.72), which was invisible on the white app background.
-  const controlBg = theme.bgElevated
-  const controlBorder = theme.borderSubtle
-  const thumbBg = theme.accent
-  const activeColor = theme.accentForeground
-  const inactiveColor = theme.textSecondary
+  // Clean pill geometry: borderless track and solid high-contrast active pill capsule
+  const controlBg = isDark ? 'rgba(255, 255, 255, 0.08)' : '#F2F2F7'
+  const controlBorder = 'transparent'
+  const thumbBg = isDark ? '#FFFFFF' : '#000000'
+  const activeColor = isDark ? '#000000' : '#FFFFFF'
+  const inactiveColor = isDark ? '#8A8985' : '#8E8E93'
 
   return (
     <View
@@ -116,6 +115,7 @@ function HaptixIosTabsImpl<T extends string = string>({
             {
               width: tabWidth,
               backgroundColor: thumbBg,
+              borderWidth: 0,
               transform: [{ translateX }, { scale: scaleAnim }],
             },
             isDark ? styles.darkThumbShadow : styles.lightThumbShadow,
@@ -139,8 +139,19 @@ function HaptixIosTabsImpl<T extends string = string>({
               {tab.label}
             </Text>
             {tab.badge !== undefined && (
-              <View style={[styles.badge, { backgroundColor: isActive ? theme.accentForeground : theme.borderSubtle }]}>
-                <Text style={[styles.badgeText, { color: isActive ? theme.accent : theme.textSecondary }]}>
+              <View
+                style={[
+                  styles.badge,
+                  {
+                    backgroundColor: isActive
+                      ? isDark
+                        ? 'rgba(0, 0, 0, 0.15)'
+                        : 'rgba(255, 255, 255, 0.22)'
+                      : theme.borderSubtle,
+                  },
+                ]}
+              >
+                <Text style={[styles.badgeText, { color: isActive ? activeColor : theme.textSecondary }]}>
                   {tab.badge}
                 </Text>
               </View>
@@ -168,7 +179,7 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 4,
     borderRadius: radius.pill,
-    borderWidth: 1,
+    borderWidth: 0,
     overflow: 'hidden',
   },
   thumb: {

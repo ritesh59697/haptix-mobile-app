@@ -260,15 +260,15 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                       style={[
                         styles.accountAvatar,
                         {
-                          backgroundColor: isVault ? theme.amberBg : theme.emeraldBg,
-                          borderColor: isVault ? theme.amberBorder : theme.emeraldBorder,
+                          backgroundColor: '#201f1d',
+                          borderColor: '#2a2a28',
                         },
                       ]}
                     >
                       {isVault ? (
-                        <LucideShieldCheck size={18} color={theme.amberText} />
+                        <LucideShieldCheck size={18} color="#8a8985" />
                       ) : (
-                        <LucideSmartphone size={18} color={theme.emeraldText} />
+                        <LucideSmartphone size={18} color="#8a8985" />
                       )}
                     </View>
 
@@ -281,21 +281,16 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                         {wallet.name}
                       </Text>
 
-                      <View style={styles.metaRow}>
-                        <Text style={[styles.accountAddress, { color: theme.textMuted }]}>
-                          {ellipsify(wallet.address, 4)}
-                        </Text>
-                        <Text style={[styles.bulletDot, { color: theme.textMuted }]}>•</Text>
-                        <Text
-                          style={[
-                            styles.modeTag,
-                            { color: isVault ? theme.amberText : theme.textSecondary },
-                          ]}
-                        >
-                          {isVault ? 'Vault (2-of-2)' : 'Everyday'}
-                        </Text>
-                      </View>
+                    <View style={styles.metaRow}>
+                      <Text style={[styles.accountAddress, { color: theme.textMuted }]}>
+                        {ellipsify(wallet.address, 4)}
+                      </Text>
+                      <Text style={[styles.bulletDot, { color: theme.textMuted }]}>•</Text>
+                      <Text style={[styles.modeTag, { color: theme.textMuted }]}>
+                        {isVault ? 'Vault (2-of-2)' : 'Everyday'}
+                      </Text>
                     </View>
+                  </View>
 
                     {/* Right Column (Balance on top, Status / Chevron on bottom) */}
                     <View style={styles.accountRightCol}>

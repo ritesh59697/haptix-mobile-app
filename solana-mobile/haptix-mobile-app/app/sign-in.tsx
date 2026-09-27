@@ -20,7 +20,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Clipboard from '@/utils/clipboard'
 
 const ONBOARDING_BG = require('@/assets/images/onboarding-bg.png')
-import { Connection, LAMPORTS_PER_SOL, PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
+import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
+import { claimSeekerGenesisReward } from '@/utils/haptix-tokens'
 import { AppConfig } from '@/constants/app-config'
 import { saveWallet, getSavedWallet, createSmartWalletRecord, loadWallets, HaptixWalletAccount } from '@/utils/haptix-wallet-storage'
 import { hexToBytes } from '@noble/curves/abstract/utils'
@@ -371,13 +372,19 @@ export default function SignIn() {
               guardian: guardianPublicKey ?? undefined,
               recoveryTimelockSeconds: timelockParse.seconds ?? undefined,
             })
+            const dripIx = SystemProgram.transfer({
+              fromPubkey: payer.publicKey,
+              toPubkey: walletPda,
+              lamports: BigInt(Math.round(0.05 * LAMPORTS_PER_SOL)),
+            })
             const tx = new Transaction({
               feePayer: payer.publicKey,
               recentBlockhash: (await connection.getLatestBlockhash('confirmed')).blockhash,
-            }).add(initIx)
+            }).add(initIx, dripIx)
             await sendAndConfirmTransaction(connection, tx, [payer], { commitment: 'confirmed' })
           }
           newAccount.isInitializedOnChain = true
+          await claimSeekerGenesisReward(newAccount.address)
           await saveWallet(newAccount)
           await updateWallet(newAccount)
         } catch {}

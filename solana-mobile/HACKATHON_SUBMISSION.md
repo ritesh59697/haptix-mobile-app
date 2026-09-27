@@ -4,14 +4,16 @@
 ---
 
 ## 🚀 Executive Summary
-**Haptix** is a high-security, consumer-grade smart wallet designed specifically for **Solana Mobile (Saga / Chapter 2)**. 
+**Haptix** is a high-security, consumer-grade smart wallet designed specifically for **Solana Mobile (Seeker / Saga)**. 
 
-Traditional crypto wallets force users to manage seed phrases or endure annoying biometric popups for every trivial interaction. Haptix solves this with a **4-Layer Security Engine** backed by Solana's native **Secp256r1 (P-256) precompile** and **Solana Mobile Stack (SMS)**:
+Traditional crypto wallets force users to manage seed phrases, fund an empty account with SOL before doing anything, or endure annoying biometric popups for every trivial interaction. Haptix solves this with a **4-Layer Security Engine** backed by Solana's native **Secp256r1 (P-256) precompile**, **Solana Mobile Stack (SMS)**, and **Gasless Onboarding**:
 
-1. **Low-Risk Fast Lane**: Small transfers (e.g. ≤ 0.1 SOL) authorize with a single, frictionless Face ID / Touch ID hardware passkey.
-2. **2-of-2 Hardware Quorum**: High-value transfers or policy alterations mathematically require two distinct hardware passkeys (e.g. Phone Secure Enclave + Backup YubiKey).
-3. **Autonomous Agent Sessions**: AI trading agents execute swaps and micro-transactions within a pre-approved budget using scoped session keys—**zero biometric prompts required**.
-4. **Guardian Social Recovery & Panic Freeze**: Designated recovery guardians can initiate timelocked passkey recovery if hardware is lost, and immediately trigger an on-chain **Panic Freeze** in emergencies.
+1. **Zero-SOL Gasless Onboarding (Sponsored Paymaster)**: Users create an on-chain smart wallet without pre-funding any SOL. The embedded paymaster sponsors the account initialization and automatically drips a 0.05 SOL welcome balance + 100 SKR Genesis Reward.
+2. **Seeker SKR Token Integration ($10,000 Bonus Track)**: Native multi-asset support for Seeker's SKR token with a 100 SKR welcome allocation, real-time USD portfolio valuation, and risk-adaptive transfers (1-tap passkey for ≤ 50 SKR, 2-of-2 hardware quorum for > 50 SKR).
+3. **Low-Risk Fast Lane**: Small transfers (e.g. ≤ 0.1 SOL) authorize with a single, frictionless Face ID / Touch ID hardware passkey.
+4. **2-of-2 Hardware Quorum**: High-value transfers or policy alterations mathematically require two distinct hardware passkeys (e.g. Phone Secure Enclave + Backup YubiKey / Mac Touch ID).
+5. **Autonomous Agent Sessions**: AI trading agents execute swaps and micro-transactions within a pre-approved budget using scoped session keys—**zero biometric prompts required**.
+6. **Guardian Social Recovery & Panic Freeze**: Designated recovery guardians can initiate timelocked passkey recovery if hardware is lost, and immediately trigger an on-chain **Panic Freeze** in emergencies.
 
 ---
 
@@ -99,18 +101,24 @@ cd android && ./gradlew assembleRelease
 - App immediately identifies: `🟢 LOW RISK: 1-Tap Biometric Approval`.
 - Tap once with Fingerprint/Face ID. Transaction confirms on-chain in 400ms!
 
-### 1:15 - 2:00: High-Value Escalation (2-of-2 Hardware Quorum)
+### 1:15 - 1:45: Seeker (SKR) Token & Gasless Experience ($10,000 Bonus Track)
+- Demonstrate the 100 SKR Genesis Reward immediately visible upon wallet creation.
+- Switch the send sheet token selector from SOL to **SKR**.
+- Send 25 SKR: verified instantly with 1-tap passkey.
+- Send 75 SKR: automatically escalates to 2-of-2 Hardware Quorum because it exceeds the 50 SKR threshold!
+
+### 1:45 - 2:15: High-Value SOL Escalation (2-of-2 Hardware Quorum)
 - Change amount to 1.5 SOL (exceeding the 0.1 SOL threshold).
 - Watch the UI dynamically switch in real time to: `🟡 HIGH RISK: 2-of-2 Hardware Quorum Required`.
 - Tap Send: App prompts for Passkey #1 (biometrics) + Passkey #2 (backup hardware key). Show the mathematical quorum enforced by the smart contract.
 
-### 2:00 - 2:30: Autonomous AI Agent Execution
+### 2:15 - 2:40: Autonomous AI Agent Execution
 - Switch to the Agent tab.
 - Show an active trading agent session with a 0.25 SOL budget.
 - Tap "Execute Autonomous Trade".
 - The agent signs and transfers funds on-chain instantly—**zero biometric popups**!
 
-### 2:30 - 3:00: Emergency Freeze & Guardian Recovery
+### 2:40 - 3:00: Emergency Freeze & Guardian Recovery
 - Demonstrate the instant "Panic Freeze" button locking the wallet.
 - Show how the designated Guardian can initiate a 24-hour timelocked recovery if hardware is lost.
 - Wrap up with vision: Haptix brings frictionless consumer crypto to the Solana dApp Store.

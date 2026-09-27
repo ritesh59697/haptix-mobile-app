@@ -25,8 +25,10 @@ Traditional mobile wallets force users to manage 12-to-24 word seed phrases or e
 
 ### 🌟 Key Innovations
 
+- **Zero-SOL Gasless Onboarding (Sponsored Paymaster)**: Users create and initialize smart wallets on-chain with zero pre-funded SOL. The embedded paymaster sponsors creation rent and drips a welcome 0.05 SOL + 100 SKR Genesis Reward.
+- **Seeker (SKR) Token Native Integration ($10,000 Bonus Track)**: Full multi-asset support for the Solana Mobile Seeker ecosystem, including a 100 SKR genesis reward, real-time USD asset pricing, and risk-adaptive transfers (1-tap passkey for ≤ 50 SKR, 2-of-2 hardware quorum for > 50 SKR).
 - **1-Tap Biometric Hardware Passkey**: Fast, frictionless Face ID / Touch ID authentication without seed phrases.
-- **2-of-2 Hardware Quorum**: High-value transactions or security policy updates mathematically mandate two independent hardware signatures (e.g. Phone Secure Enclave + Backup YubiKey).
+- **2-of-2 Hardware Quorum**: High-value transactions or security policy updates mathematically mandate two independent hardware signatures (e.g. Phone Secure Enclave + Backup YubiKey / Mac Touch ID).
 - **Autonomous AI Agent Sessions**: Delegate scoped spending power to AI agents (e.g., automated DCA or arbitrage) with on-chain budget ceilings and time expiries—zero user interruption required.
 - **Instant Panic Freeze & Guardian Recovery**: Emergency circuit breaker allows guardians or users to freeze account outflows instantly in the event of compromised hardware.
 - **Rare-UI `StepPlayer` Onboarding**: Fluid 8-screen onboarding flow with auto-advancing slides, interactive play/pause, and pill progress indicators.

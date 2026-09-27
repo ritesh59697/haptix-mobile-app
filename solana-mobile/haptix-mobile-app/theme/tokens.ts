@@ -47,48 +47,39 @@ export interface ThemeTokens {
 export const darkTokens: ThemeTokens = {
   mode: 'dark',
   isDark: true,
-  bgApp: '#000000', // Pure OLED Pitch Black
-  bgCard: '#0D0D0D', // Minimalist Charcoal Card
-  bgElevated: '#141414', // Subtle Elevated Card
-  bgInput: '#0A0A0A',
-  borderSubtle: 'rgba(255, 255, 255, 0.07)',
-  borderDefault: 'rgba(255, 255, 255, 0.12)',
-  borderFocus: '#FFFFFF',
-  textPrimary: '#FFFFFF', // Crisp White
-  textSecondary: '#A1A1AA', // Refined Silver
-  textMuted: '#71717A', // Muted Gray
-  accent: '#FFFFFF', // Pure White Accent (Zero Neon)
-  accentLight: 'rgba(255, 255, 255, 0.08)',
-  accentGlow: 'rgba(255, 255, 255, 0.15)',
-  accentForeground: '#000000', // Crisp Black Text on White
-  // Text and icons that sit on a *filled* status tone. The tones are bright in
-  // dark mode and dark in light mode, so the readable ink inverts with the
-  // theme: white on #F59E0B measured 2.1:1, which made the panic-lock label
-  // disappear at exactly the moment the user was holding it down.
-  onTone: '#000000',
+  bgApp: '#0c0c0d', // Ultra-clean dark slate
+  bgCard: '#121214',
+  bgElevated: '#18181b',
+  bgInput: '#121214',
+  borderSubtle: '#201f1d',
+  borderDefault: '#2a2a28',
+  borderFocus: '#6c8cff',
+  textPrimary: '#f2f1ee', // Clean Warm White
+  textSecondary: '#8a8985', // Refined Muted Gray
+  textMuted: '#8a8985',
+  accent: '#6c8cff', // Single cohesive accent (#6c8cff)
+  accentLight: 'rgba(108, 140, 255, 0.12)',
+  accentGlow: 'rgba(108, 140, 255, 0.25)',
+  accentForeground: '#FFFFFF',
+  onTone: '#FFFFFF',
   amber: '#F59E0B',
-  // Every status tone uses the same tint strength (0.12) and hairline strength
-  // (0.30). The screen previously shipped pills at 0.08/0.10/0.12/0.15/0.18/0.20,
-  // which read as six unrelated systems rather than one.
   amberBg: 'rgba(245, 158, 11, 0.12)',
   amberText: '#FBBF24',
   amberBorder: 'rgba(245, 158, 11, 0.3)',
-  emerald: '#10B981',
-  emeraldBg: 'rgba(16, 185, 129, 0.12)',
-  emeraldText: '#34D399',
-  emeraldBorder: 'rgba(16, 185, 129, 0.3)',
+  emerald: '#5fbf7a',
+  emeraldBg: 'rgba(95, 191, 122, 0.12)',
+  emeraldText: '#5fbf7a',
+  emeraldBorder: 'rgba(95, 191, 122, 0.3)',
   rose: '#F43F5E',
   roseBg: 'rgba(244, 63, 94, 0.12)',
-  // rose-300 rather than rose-400: on pure black the darker shade only reached
-  // 7.5:1 against the tint, and this is the colour destructive copy is set in.
   roseText: '#FDA4AF',
   roseSurface: 'rgba(244, 63, 94, 0.2)',
   roseBorder: 'rgba(244, 63, 94, 0.3)',
-  info: '#60A5FA',
-  infoBg: 'rgba(96, 165, 250, 0.12)',
-  infoText: '#93C5FD',
-  infoBorder: 'rgba(96, 165, 250, 0.3)',
-  scrim: 'rgba(8, 8, 10, 0.94)',
+  info: '#6c8cff',
+  infoBg: 'rgba(108, 140, 255, 0.12)',
+  infoText: '#6c8cff',
+  infoBorder: 'rgba(108, 140, 255, 0.3)',
+  scrim: 'rgba(12, 12, 13, 0.94)',
   shadowColor: '#000000',
   cardShadow: {
     shadowColor: '#000000',

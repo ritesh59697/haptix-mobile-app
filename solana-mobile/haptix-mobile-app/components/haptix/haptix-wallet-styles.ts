@@ -100,15 +100,14 @@ const createStyles = (theme: ThemeTokens) =>
     accountSwitcherTrigger: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 3,
-      maxWidth: 140,
+      gap: 4,
       flexShrink: 1,
     },
     headerWalletName: {
       fontSize: typeScale.title,
       fontWeight: '700',
       letterSpacing: -0.2,
-      maxWidth: 120,
+      maxWidth: 220,
     },
     addressCopyChip: {
       ...TAG_SHAPE,
@@ -365,6 +364,221 @@ const createStyles = (theme: ThemeTokens) =>
       color: theme.roseText,
     },
 
+    /* CLEAN DESIGN SYSTEM (Agency-grade, minimal, single accent #6c8cff) */
+    cleanHeaderContainer: {
+      paddingHorizontal: 20,
+      paddingBottom: 2,
+    },
+    cleanHeaderTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 3,
+    },
+    cleanAccountTrigger: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    cleanAccountName: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: theme.textPrimary,
+    },
+    cleanHeaderSubtitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 16,
+    },
+    cleanAddressChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    cleanAddressText: {
+      fontSize: 12,
+      color: theme.textMuted,
+    },
+    cleanNetworkText: {
+      fontSize: 12,
+      color: theme.textMuted,
+      marginLeft: 4,
+    },
+
+    cleanBalanceSection: {
+      position: 'relative',
+      borderRadius: 16,
+      paddingHorizontal: 16,
+      paddingVertical: 18,
+      marginBottom: 18,
+      overflow: 'hidden',
+      backgroundColor: theme.isDark ? '#121214' : theme.bgElevated,
+      borderWidth: 0.5,
+      borderColor: theme.isDark ? '#26262a' : theme.borderDefault,
+    },
+    cleanBalanceLabelRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginBottom: 6,
+    },
+    cleanBalanceLabel: {
+      fontSize: 12,
+      color: '#8a8985',
+    },
+    cleanBalanceValue: {
+      fontSize: 38,
+      fontWeight: '500',
+      letterSpacing: -0.8,
+      color: theme.textPrimary,
+    },
+    cleanBalanceChange: {
+      fontSize: 12.5,
+      marginTop: 4,
+      color: '#5fbf7a',
+      fontWeight: '400',
+    },
+
+    cleanActionsGrid: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 24,
+    },
+    cleanPrimaryActionCard: {
+      flex: 1,
+      backgroundColor: '#6c8cff',
+      borderRadius: 12,
+      paddingVertical: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cleanPrimaryActionLabel: {
+      fontSize: 12,
+      marginTop: 6,
+      color: '#0c0c0d',
+      fontWeight: '500',
+    },
+    cleanActionCard: {
+      flex: 1,
+      borderWidth: 0.5,
+      borderColor: '#2a2a28',
+      borderRadius: 12,
+      paddingVertical: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'transparent',
+    },
+    cleanActionLabel: {
+      fontSize: 12,
+      marginTop: 6,
+      color: theme.textPrimary,
+      fontWeight: '400',
+    },
+
+    cleanTabsRow: {
+      flexDirection: 'row',
+      gap: 18,
+      borderBottomWidth: 0.5,
+      borderBottomColor: '#2a2a28',
+      marginBottom: 12,
+    },
+    cleanTabBtn: {
+      paddingBottom: 8,
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+    },
+    cleanTabBtnActive: {
+      borderBottomColor: theme.accent,
+    },
+    cleanTabText: {
+      fontSize: 13.5,
+      fontWeight: '400',
+      color: theme.textMuted,
+    },
+    cleanTabTextActive: {
+      color: theme.textPrimary,
+      fontWeight: '500',
+    },
+
+    cleanAssetRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 10,
+      borderBottomWidth: 0.5,
+      borderBottomColor: '#201f1d',
+    },
+    cleanAssetLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    cleanAssetLogoDisk: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: '#201f1d',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cleanAssetName: {
+      fontSize: 13.5,
+      fontWeight: '500',
+      color: theme.textPrimary,
+    },
+    cleanAssetTicker: {
+      fontSize: 11.5,
+      color: '#8a8985',
+      marginTop: 1,
+    },
+    cleanAssetRight: {
+      alignItems: 'flex-end',
+    },
+    cleanAssetAmount: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.textPrimary,
+    },
+    cleanAssetFiatRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      gap: 6,
+      marginTop: 1,
+    },
+    cleanAssetFiat: {
+      fontSize: 11.5,
+      color: '#8a8985',
+    },
+    cleanAssetChangePct: {
+      fontSize: 11.5,
+    },
+
+    cleanActivityHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: 20,
+      marginBottom: 10,
+    },
+    cleanActivityTitle: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: theme.textPrimary,
+    },
+    cleanActivitySeeAll: {
+      fontSize: 12,
+      color: theme.accent,
+      fontWeight: '500',
+    },
+    cleanActivityRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 8,
+      gap: 10,
+    },
+
     /* ASSETS LIST (CLEAN LIST WITHOUT CARD CLUTTER) */
     assetList: {
       borderRadius: radius.lg,
@@ -566,29 +780,27 @@ const createStyles = (theme: ThemeTokens) =>
       width: '100%',
     },
     agentRecipientInput: {
+      height: 48,
       borderWidth: 1,
       borderRadius: radius.md,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      marginTop: 12,
-      fontSize: typeScale.footnote,
+      paddingHorizontal: 14,
+      fontSize: 14,
     },
     agentRecipientHint: {
-      fontSize: typeScale.caption,
-      marginTop: 6,
+      fontSize: 13,
+      marginTop: 8,
+      marginBottom: 12,
     },
     agentBudgetChip: {
       flex: 1,
-      minHeight: 42,
+      height: 40,
       borderRadius: radius.md,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 4,
-      paddingVertical: 8,
       borderWidth: 1,
     },
     agentBudgetChipText: {
-      fontSize: 13,
+      fontSize: 14,
       fontWeight: '600',
       textAlign: 'center',
     },
@@ -616,6 +828,63 @@ const createStyles = (theme: ThemeTokens) =>
       fontSize: typeScale.footnote,
       fontWeight: '700',
     },
+    spendingLimitsLabel: {
+      fontSize: 13,
+      fontWeight: '500',
+      marginBottom: 8,
+      marginTop: 2,
+    },
+    spendingLimitsRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: 14,
+    },
+    spendingLimitCard: {
+      flex: 1,
+      padding: 16,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+    },
+    spendingLimitTitle: {
+      fontSize: 13,
+      fontWeight: '500',
+      marginBottom: 4,
+    },
+    spendingLimitAmount: {
+      fontSize: 18,
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    agentEmptyText: {
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    agentPrimaryPillBtn: {
+      width: '100%',
+      height: 48,
+      borderRadius: radius.pill,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    agentPrimaryPillBtnText: {
+      fontSize: 15,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    agentRunTradeBtn: {
+      width: '100%',
+      height: 48,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    agentRunTradeBtnText: {
+      fontSize: 15,
+      fontWeight: '600',
+      letterSpacing: -0.2,
+    },
     emergencyTag: {
       fontSize: typeScale.caption,
       fontWeight: '600',
@@ -642,9 +911,31 @@ const createStyles = (theme: ThemeTokens) =>
       textAlign: 'center',
     },
     activityList: {
+      borderRadius: radius.xl,
       borderWidth: 1,
-      borderRadius: radius.lg,
       paddingHorizontal: CARD_PADDING_X,
+    },
+    activityGroupsWrapper: {
+      gap: 6,
+    },
+    activityGroupSection: {
+      marginBottom: 16,
+    },
+    activityGroupHeader: {
+      fontSize: 13,
+      fontWeight: '600',
+      letterSpacing: -0.1,
+      marginBottom: 8,
+      marginLeft: 2,
+    },
+    activityGroupCard: {
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      paddingHorizontal: 16,
+    },
+    activityRowDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.borderDefault,
     },
     activityGroupLabel: {
       fontSize: typeScale.footnote,
@@ -657,24 +948,31 @@ const createStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 12,
+      paddingVertical: 13,
     },
     activityLeft: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
+      flex: 1,
+      marginRight: 10,
     },
     activityIconCircle: {
-      width: 34,
-      height: 34,
-      borderRadius: radius.pill,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
       borderWidth: 1,
       justifyContent: 'center',
       alignItems: 'center',
     },
     activityItemTitle: {
-      fontSize: typeScale.bodyLg,
-      fontWeight: '500',
+      fontSize: 14.5,
+      fontWeight: '600',
+      letterSpacing: -0.2,
+    },
+    activitySubtitle: {
+      fontSize: 12,
+      marginTop: 2,
     },
     activityItemDate: {
       color: theme.textMuted,
@@ -683,10 +981,27 @@ const createStyles = (theme: ThemeTokens) =>
     },
     activityRight: {
       alignItems: 'flex-end',
+      justifyContent: 'center',
     },
     activityAmount: {
-      fontSize: typeScale.bodyLg,
+      fontSize: 14.5,
       fontWeight: '600',
+      letterSpacing: -0.2,
+    },
+    activityTimeText: {
+      fontSize: 13.5,
+      fontWeight: '500',
+    },
+    activityStatusRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      marginTop: 2,
+      justifyContent: 'flex-end',
+    },
+    activityStatusText: {
+      fontSize: 11.5,
+      fontWeight: '500',
     },
     activityConfirmedLabel: {
       color: theme.textMuted,
@@ -1323,15 +1638,41 @@ const createStyles = (theme: ThemeTokens) =>
     // Activity Filters
     activityFilterRow: {
       flexDirection: 'row',
-      gap: space.sm,
-      marginBottom: space.md,
+      gap: 8,
+      marginBottom: 16,
+    },
+    activityFilterScroll: {
+      marginBottom: 16,
+      marginHorizontal: -20,
+    },
+    activityFilterContent: {
+      flexDirection: 'row',
+      gap: 8,
+      paddingHorizontal: 20,
     },
     activityFilterChip: {
-      ...CHIP_SHAPE,
+      borderRadius: 20,
+      paddingVertical: 7.5,
+      paddingHorizontal: 15,
       borderWidth: 1,
     },
+    activityFilterChipActive: {
+      backgroundColor: theme.isDark ? 'rgba(108, 140, 255, 0.14)' : 'rgba(108, 140, 255, 0.08)',
+      borderColor: theme.accent,
+    },
+    activityFilterChipInactive: {
+      backgroundColor: theme.isDark ? '#15171B' : '#F4F5F7',
+      borderColor: theme.borderDefault,
+    },
     activityFilterChipText: {
-      fontSize: typeScale.body,
+      fontSize: 13,
+    },
+    activityFilterChipTextActive: {
+      color: theme.accent,
+      fontWeight: '600',
+    },
+    activityFilterChipTextInactive: {
+      color: theme.textSecondary,
       fontWeight: '500',
     },
     activitySecurityBadge: {

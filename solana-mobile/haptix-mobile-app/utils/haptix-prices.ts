@@ -40,6 +40,7 @@ type TokenDescriptor = {
 
 const TOKEN_DESCRIPTORS: TokenDescriptor[] = [
   { symbol: 'SOL', name: 'Solana', coingeckoId: 'solana', fallbackPriceUsd: 150, fallbackChangePct: 4.82 },
+  { symbol: 'SKR', name: 'Seeker', coingeckoId: 'seeker', fallbackPriceUsd: 0.25, fallbackChangePct: 12.4 },
   { symbol: 'USDC', name: 'USD Coin', coingeckoId: 'usd-coin', fallbackPriceUsd: 1, fallbackChangePct: 0.01 },
   {
     symbol: 'JUP',

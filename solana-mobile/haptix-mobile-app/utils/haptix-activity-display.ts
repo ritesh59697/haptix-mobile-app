@@ -25,18 +25,17 @@ export const AGENT_TYPES: TransactionType[] = ['agent_trade', 'agent_session']
 export const MOVEMENT_TYPES: TransactionType[] = ['transfer', 'airdrop', 'swap']
 
 export function activityTitleFor(tx: TransactionRecord): string {
-  // "Emergency Freeze" and "Smart Wallet Unlocked" described the mechanism. A row in a
-  // history list is a thing that happened to the wallet, so it says what the wallet is
-  // now: locked, or unlocked. The lock icon already carries the rest.
-  if (tx.type === 'freeze') return 'Wallet Locked'
-  if (tx.type === 'unfreeze') return 'Wallet Unlocked'
-  if (tx.type === 'init') return 'On-Chain Setup'
-  if (tx.type === 'airdrop') return 'Devnet Faucet'
-  if (tx.type === 'agent_trade') return 'Agent Auto-Trade'
-  if (tx.type === 'agent_session') return 'Agent Session Granted'
-  if (tx.type === 'recovery') return 'Guardian Recovery'
-  if (tx.type === 'policy') return 'Policy Updated'
-  if (tx.type === 'swap') return 'Token Swap'
+  // A row in a history list is a thing that happened to the wallet,
+  // so it says what the wallet is now in clean sentence case.
+  if (tx.type === 'freeze') return 'Wallet locked'
+  if (tx.type === 'unfreeze') return 'Wallet unlocked'
+  if (tx.type === 'init') return 'On-chain setup'
+  if (tx.type === 'airdrop') return 'Devnet faucet'
+  if (tx.type === 'agent_trade') return 'Agent auto-trade'
+  if (tx.type === 'agent_session') return 'Agent session granted'
+  if (tx.type === 'recovery') return 'Guardian recovery'
+  if (tx.type === 'policy') return 'Policy updated'
+  if (tx.type === 'swap') return 'Token swap'
   return tx.direction === 'receive' ? 'Received SOL' : 'Transfer SOL'
 }
 
@@ -79,7 +78,7 @@ export function activityToneFor(tx: TransactionRecord, theme: ThemeTokens): Acti
 }
 
 export function activityAmountFor(tx: TransactionRecord): string {
-  if (tx.direction === 'none' || tx.amount <= 0) return '\u2014'
+  if (tx.direction === 'none' || tx.amount <= 0) return ''
   return `${tx.direction === 'receive' ? '+' : '-'}${tx.amount.toFixed(4)} ${tx.tokenSymbol}`
 }
 

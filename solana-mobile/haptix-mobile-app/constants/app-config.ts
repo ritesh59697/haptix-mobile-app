@@ -27,6 +27,12 @@ export class AppConfig {
       network: ClusterNetwork.Devnet,
     },
     {
+      id: 'solana:mainnet',
+      name: 'Mainnet',
+      endpoint: getMainnetRpcUrl(),
+      network: ClusterNetwork.Mainnet,
+    },
+    {
       id: 'solana:testnet',
       name: 'Testnet',
       endpoint: clusterApiUrl('testnet'),
