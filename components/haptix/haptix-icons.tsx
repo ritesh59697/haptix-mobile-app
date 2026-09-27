@@ -26,12 +26,11 @@ const SEEKER_LOGO_IMG = require('@/assets/images/seeker-logo.png')
 
 // Official Haptix Brand Mark (New Design)
 export function HaptixBrandMark({ size = 24, style }: IconProps) {
-  const numericHeight = typeof size === 'number' ? size : parseInt(String(size), 10) || 24
-  const width = Math.round(numericHeight * 1.5)
+  const numericSize = typeof size === 'number' ? size : parseInt(String(size), 10) || 24
   return (
     <Image
       source={HAPTIX_NEW_LOGO}
-      style={[{ width, height: numericHeight }, style]}
+      style={[{ width: numericSize, height: numericSize }, style]}
       resizeMode="contain"
     />
   )
