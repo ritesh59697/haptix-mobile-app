@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { View } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -12,7 +13,11 @@ import { HaptixSettingsBadge, HaptixSettingsDivider, HaptixSettingsRow } from '@
  * Account section body. Renders rows only — the card and the "Account" heading are
  * owned by the settings screen so every section shares one geometry.
  */
-export function SettingsUiAccount() {
+export interface SettingsUiAccountProps {
+  onOpenSwitcher?: () => void
+}
+
+export function SettingsUiAccount({ onOpenSwitcher }: SettingsUiAccountProps = {}) {
   const router = useRouter()
   const { activeWallet } = useAuth()
   const { theme } = useAppTheme()
@@ -47,14 +52,33 @@ export function SettingsUiAccount() {
   return (
     <>
       <HaptixSettingsRow
-        icon="account-balance-wallet"
+        customLeading={
+          <View
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: theme.accentLight,
+              borderColor: theme.borderDefault,
+              borderWidth: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MaterialIcons name="fingerprint" size={24} color={theme.accent} />
+          </View>
+        }
         title={activeWallet.name}
-        subtitle="Passkey smart wallet"
+        subtitle="Passkey smart wallet • Tap to switch"
+        onPress={onOpenSwitcher}
         trailing={
-          <HaptixSettingsBadge
-            label={activeWallet.isInitializedOnChain ? 'On-chain' : 'Not funded'}
-            tone={activeWallet.isInitializedOnChain ? 'success' : 'muted'}
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <HaptixSettingsBadge
+              label={activeWallet.isInitializedOnChain ? 'On-chain' : 'Devnet'}
+              tone={activeWallet.isInitializedOnChain ? 'success' : 'accent'}
+            />
+            {onOpenSwitcher ? <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} /> : null}
+          </View>
         }
       />
 
@@ -87,22 +111,6 @@ export function SettingsUiAccount() {
         }
       />
 
-      <HaptixSettingsDivider />
-
-      <HaptixSettingsRow
-        icon="speed"
-        title={`One-key limit ≤ ${activeWallet.spendThreshold} SOL`}
-        subtitle={
-          activeWallet.securityMode === 'vault'
-            ? 'Tap to adjust. High-value sends require your secondary device or hardware key.'
-            : 'Tap to adjust. Sends above this require both your primary and backup keys.'
-        }
-        onPress={() => {
-          Haptics.selectionAsync()
-          router.push('/(tabs)/settings/limits')
-        }}
-        trailing={<MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />}
-      />
     </>
   )
 }

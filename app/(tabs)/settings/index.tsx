@@ -1,40 +1,37 @@
-import { useMemo, useState } from 'react'
-import { Platform, ScrollView, StatusBar as RNStatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { useState } from 'react'
+import {
+  ActivityIndicator,
+  Linking,
+  Platform,
+  ScrollView,
+  StatusBar as RNStatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 import { useRouter } from 'expo-router'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
+import { PublicKey } from '@solana/web3.js'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { AppConfig } from '@/constants/app-config'
 import { useAuth } from '@/components/auth/auth-provider'
+import { ClusterNetwork } from '@/components/cluster/cluster-network'
 import { useCluster } from '@/components/cluster/cluster-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
-import { HaptixAlert } from '@/components/haptix/haptix-alert'
-import { HaptixIosTabs, IosTabItem } from '@/components/haptix/haptix-ios-tabs'
+import { HaptixAccountSwitcherSheet } from '@/components/haptix/haptix-account-switcher-sheet'
 import { HaptixPolicySheet, PolicyTopic } from '@/components/haptix/haptix-policy-sheet'
+import { HaptixTokenIcon } from '@/components/haptix/haptix-icons'
 import { useConfirmRemoveWallet } from '@/components/haptix/haptix-remove-wallet'
-import {
-  HaptixSettingsCard,
-  HaptixSettingsDivider,
-  HaptixSettingsHeader,
-  HaptixSettingsRow,
-} from '@/components/haptix/haptix-settings-ui'
-import { SettingsAppConfig } from '@/components/settings/settings-app-config'
-import { SettingsUiAccount } from '@/components/settings/settings-ui-account'
-import { SettingsUiCluster } from '@/components/settings/settings-ui-cluster'
-import { SettingsUiPasskeys } from '@/components/settings/settings-ui-passkeys'
-import { SettingsUiWallets } from '@/components/settings/settings-ui-wallets'
 import { deletePasskeys } from '@/utils/haptix-passkey'
+import { fundDevnetWallet } from '@/utils/haptix-funder'
+import { ellipsify } from '@/utils/ellipsify'
+import { setString as copyToClipboard } from '@/utils/clipboard'
 import { radius, typeScale } from '@/theme/tokens'
 
 type AppearanceMode = 'system' | 'light' | 'dark'
-
-const APPEARANCE_TABS: IosTabItem<AppearanceMode>[] = [
-  { id: 'system', label: 'System' },
-  { id: 'light', label: 'Light' },
-  { id: 'dark', label: 'Dark' },
-]
 
 const APPEARANCE_LABELS: Record<AppearanceMode, string> = {
   system: 'System',
@@ -43,42 +40,33 @@ const APPEARANCE_LABELS: Record<AppearanceMode, string> = {
 }
 
 /**
- * Settings
+ * Settings Screen — Rabby Wallet Architecture
  *
- * Rebuilt from the Expo template block so it uses the wallet screen's own card
- * geometry, row rhythm and heading treatment. Sections read top-down as: who this
- * wallet is, what it talks to, how it looks, what the app is, then the actions that
- * change device state — with the destructive one last.
+ * Implements Rabby's clean, high-density surface rhythm:
+ *  - Categorized groups with subtle section headers outside the cards.
+ *  - Clean line icons in cohesive accent blue with NO cheap colored boxes.
+ *  - Inline value tags + chevrons on the right edge.
+ *  - Full integration with Haptix Passkey Quorum and Solana Mobile Stack.
  */
 export default function TabSettingsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const dialog = useHaptixDialog()
-  const { theme, isDark, themePreference, setThemePreference } = useAppTheme()
-  const { activeWallet, isLocked, lockWallet, signOut, wallets } = useAuth()
-  const { selectedCluster } = useCluster()
-  const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
+  const { theme, themePreference, setThemePreference } = useAppTheme()
+  const { activeWallet, isLocked, lockWallet, signOut } = useAuth()
+  const { selectedCluster, clusters, setSelectedCluster, connection, getExplorerUrl } = useCluster()
   const confirmRemoveWallet = useConfirmRemoveWallet()
 
-  const s = useMemo(
-    () => ({
-      container: { backgroundColor: theme.bgApp },
-      header: { backgroundColor: theme.bgApp, borderBottomColor: theme.borderSubtle },
-      elevatedCard: { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
-      textPrimary: { color: theme.textPrimary },
-      textMuted: { color: theme.textMuted },
-    }),
-    [theme],
-  )
+  const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
+  const [isAccountSwitcherOpen, setIsAccountSwitcherOpen] = useState(false)
+  const [hasCopied, setHasCopied] = useState(false)
+  const [isRequestingFaucet, setIsRequestingFaucet] = useState(false)
 
-  // Same inset maths as the wallet screen's header, so the two screens' headers sit
-  // at the same height when you move between them.
+  const isDevnet = selectedCluster.network === ClusterNetwork.Devnet
+
   const statusBarHeight = RNStatusBar.currentHeight ?? insets.top ?? 0
   const headerPaddingTop = Math.max(insets.top, statusBarHeight) + (Platform.OS === 'android' ? 12 : 6)
 
-  // Settings is pushed onto the tab navigator rather than opened as a tab, so the
-  // dock is not on screen: the header owns the way back. `back()` is preferred so
-  // the wallet keeps its selected dock tab; the replace covers a cold deep link.
   const handleBack = () => {
     Haptics.selectionAsync()
     if (router.canGoBack()) {
@@ -88,10 +76,70 @@ export default function TabSettingsScreen() {
     }
   }
 
+  const handleCopyAddress = async () => {
+    if (!activeWallet?.address) return
+    await copyToClipboard(activeWallet.address)
+    setHasCopied(true)
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    setTimeout(() => setHasCopied(false), 1600)
+  }
+
+  const handleToggleTheme = () => {
+    Haptics.selectionAsync()
+    const cycle: Record<AppearanceMode, AppearanceMode> = {
+      system: 'dark',
+      dark: 'light',
+      light: 'system',
+    }
+    void setThemePreference(cycle[themePreference])
+  }
+
+  const handleSelectCluster = () => {
+    Haptics.selectionAsync()
+    dialog.alert(
+      'Solana Network',
+      'Select a cluster to connect to:',
+      clusters.map((c) => ({
+        text: c.name + (c.name === selectedCluster.name ? ' (Active)' : ''),
+        onPress: () => {
+          setSelectedCluster(c)
+          Haptics.selectionAsync()
+        },
+      })),
+    )
+  }
+
+  const handleRequestFaucet = async () => {
+    if (!activeWallet?.address) {
+      dialog.alert('No Wallet', 'Please connect or create a wallet first.')
+      return
+    }
+
+    try {
+      setIsRequestingFaucet(true)
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+
+      const walletPda = new PublicKey(activeWallet.address)
+      const sig = await fundDevnetWallet(connection, walletPda, 0.2)
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      dialog.alert(
+        'Airdrop Confirmed',
+        `Received +0.2 Devnet SOL for testing.\n\nSignature: ${sig.slice(0, 8)}...${sig.slice(-8)}`,
+      )
+    } catch (err) {
+      console.warn('Devnet airdrop failed:', err)
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      dialog.alert('Faucet Failed', 'Could not complete Devnet airdrop. Please try again shortly.')
+    } finally {
+      setIsRequestingFaucet(false)
+    }
+  }
+
   const handleLockWallet = () => {
     dialog.alert(
       'Lock Wallet',
-      'This device will require your passkey before it can sign anything again.',
+      'This device will require your biometric passkey before it can sign anything again.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -114,188 +162,287 @@ export default function TabSettingsScreen() {
     })
   }
 
-  const chevron = <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
-
   return (
-    <View style={[styles.container, s.container]}>
-      <View style={[styles.header, s.header, { paddingTop: headerPaddingTop }]}>
-        <View style={styles.pageTitleRow}>
-          <TouchableOpacity
-            style={[styles.backBtn, s.elevatedCard]}
-            onPress={handleBack}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel="Go back to wallet"
-          >
-            <MaterialIcons name="arrow-back" size={18} color={theme.textPrimary} />
-          </TouchableOpacity>
-          <View style={styles.pageTitleText}>
-            <Text style={[styles.pageTitle, s.textPrimary]}>Settings</Text>
-            <Text style={[styles.pageSubtitle, s.textMuted]}>Keys, network and this device.</Text>
-          </View>
-        </View>
+    <View style={[styles.container, { backgroundColor: theme.bgApp }]}>
+      {/* Rabby-style Header */}
+      <View style={[styles.header, { paddingTop: headerPaddingTop, borderBottomColor: theme.borderSubtle }]}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={handleBack}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back to wallet"
+        >
+          <MaterialIcons name="arrow-back" size={22} color={theme.textPrimary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Settings</Text>
+        <View style={styles.headerRightSpacer} />
       </View>
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 24) + 32 }]}
         showsVerticalScrollIndicator={false}
       >
-        <HaptixSettingsCard>
-          <HaptixSettingsHeader title="Account" description="The passkey wallet stored on this device." />
-          <SettingsUiAccount />
-        </HaptixSettingsCard>
+        {/* SECTION 1: Features (Rabby Style) */}
+        <View style={styles.sectionWrap}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Features</Text>
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+            {/* Manage Wallets */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                setIsAccountSwitcherOpen(true)
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="account-balance-wallet" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Manage Wallets</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]} numberOfLines={1}>
+                {activeWallet ? activeWallet.name : 'No wallet'}
+              </Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
 
-        {/* Only rendered once a device holds more than one wallet: a list of one repeats
-            the Account card above and adds nothing to scan. */}
-        {wallets.length > 1 ? (
-          <HaptixSettingsCard>
-            <HaptixSettingsHeader
-              title="Wallets"
-              badge={`${wallets.length}`}
-              description="Saved on this device. Switching re-points the passkey keys at the wallet you pick."
-            />
-            <SettingsUiWallets />
-          </HaptixSettingsCard>
-        ) : null}
+            <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
 
-        <HaptixSettingsCard>
-          <HaptixSettingsHeader
-            title="Passkeys & Security"
-            badge={activeWallet?.secondaryCredentialId ? '2 of 2 Bound' : '1 of 2 Bound'}
-            badgeTone={activeWallet?.secondaryCredentialId ? 'success' : 'danger'}
-            description="Hardware passkeys authorized to sign transactions for this smart wallet."
-          />
-          <SettingsUiPasskeys />
-        </HaptixSettingsCard>
+            {/* Wallet Address */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleCopyAddress}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="content-copy" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Wallet Address</Text>
+              <Text style={[styles.rowValue, { color: hasCopied ? theme.emeraldText : theme.textMuted }]}>
+                {hasCopied ? 'Copied!' : activeWallet ? ellipsify(activeWallet.address, 6) : '—'}
+              </Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-        <HaptixSettingsCard>
-          <HaptixSettingsHeader
-            title="Network"
-            badge={selectedCluster.name}
-            description="Balances, transactions and agent sessions are read from this cluster."
-          />
-          <SettingsUiCluster />
-        </HaptixSettingsCard>
+        {/* SECTION 2: Settings (Rabby Style) */}
+        <View style={styles.sectionWrap}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Settings</Text>
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+            {/* Platform Passkeys */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => setPolicyTopic('security')}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="fingerprint" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Platform Passkeys</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>
+                {activeWallet?.secondaryCredentialId ? '2-of-2 Quorum' : '1-Tap Fast'}
+              </Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
 
-        <HaptixSettingsCard>
-          <HaptixSettingsHeader
-            title="Recovery"
-            description="What happens if this device is lost, and who can start that rescue."
-          />
-          <HaptixSettingsRow
-            icon="supervisor-account"
-            title="Guardian & recovery"
-            subtitle="Change the guardian, or veto a recovery that is already in progress."
-            onPress={() => {
-              Haptics.selectionAsync()
-              router.push('/(tabs)/settings/recovery')
-            }}
-            trailing={chevron}
-          />
-        </HaptixSettingsCard>
+            <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
 
-        <HaptixSettingsCard>
-          <HaptixSettingsHeader
-            title="Spending Limits"
-            description="Control how much can be sent with one passkey before requiring your backup key."
-          />
-          <HaptixSettingsRow
-            icon="speed"
-            title={`One-key limit: ${activeWallet?.spendThreshold ?? 0.1} SOL`}
-            subtitle="Change threshold for instant 1-tap sends vs. vault quorum."
-            onPress={() => {
-              Haptics.selectionAsync()
-              router.push('/(tabs)/settings/limits')
-            }}
-            trailing={chevron}
-          />
-        </HaptixSettingsCard>
+            {/* Spending Limit */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                router.push('/(tabs)/settings/limits')
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="speed" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Spending Limit</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>
+                ≤ {activeWallet?.spendThreshold ?? 0.1} SOL
+              </Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
 
-        <HaptixSettingsCard>
-          <HaptixSettingsHeader
-            title="Appearance"
-            badge={APPEARANCE_LABELS[themePreference]}
-            description="Follow the system setting, or pin the app to one scheme."
-          />
-          <HaptixIosTabs<AppearanceMode>
-            tabs={APPEARANCE_TABS}
-            activeTab={themePreference}
-            onChange={(mode) => {
-              void setThemePreference(mode)
-            }}
-          />
-          <HaptixSettingsDivider />
-          <HaptixSettingsRow
-            icon="contrast"
-            title={`Currently ${isDark ? 'dark' : 'light'}`}
-            subtitle={
-              themePreference === 'system'
-                ? 'Resolved from your device appearance right now.'
-                : 'Pinned by your choice above, ignoring the device setting.'
-            }
-          />
-        </HaptixSettingsCard>
+            <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
 
-        <HaptixSettingsCard>
-          <HaptixSettingsHeader title="App" />
-          <SettingsAppConfig />
-        </HaptixSettingsCard>
+            {/* Guardian & Social Recovery */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                router.push('/(tabs)/settings/recovery')
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="supervisor-account" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Guardian & Recovery</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
 
-        {AppConfig.devMode && (
-          <HaptixSettingsCard>
-            <HaptixSettingsHeader
-              title="Developer"
-              badge="DEV"
-              badgeTone="danger"
-              description="Only present in builds compiled with dev mode enabled."
-            />
-            <HaptixAlert
-              status="warning"
-              title="Dev mode is on"
-              message="Devnet fee sponsorship and the treasury-funded faucet are live. Anything reachable from the bundle is recoverable, so never ship a build with EXPO_PUBLIC_HAPTIX_DEV_MODE=true."
-            />
-          </HaptixSettingsCard>
-        )}
+            <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
 
-        <HaptixSettingsCard>
-          <HaptixSettingsHeader
-            title="Security & Device"
-            badge="Careful"
-            badgeTone="danger"
-            description="These change how this device unlocks and signs for the wallet."
-          />
-          <HaptixSettingsRow
-            icon="lock-outline"
-            title="Lock wallet"
-            subtitle="Requires your passkey before the next signature."
-            onPress={handleLockWallet}
-            disabled={isLocked}
-            trailing={chevron}
-          />
-          <HaptixSettingsDivider />
-          <HaptixSettingsRow
-            icon="menu-book"
-            title="How security works"
-            subtitle="Limits, keys, and locking your wallet."
-            onPress={() => setPolicyTopic('security')}
-            trailing={chevron}
-          />
-          <HaptixSettingsDivider />
-          <HaptixSettingsRow
-            icon="delete-outline"
-            title="Remove from this device"
-            subtitle="Funds stay on Solana. Save your address — signing back in needs it."
-            tone="danger"
-            onPress={handleRemoveWallet}
-          />
-        </HaptixSettingsCard>
+            {/* Network Cluster */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleSelectCluster}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="hub" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Network Cluster</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>{selectedCluster.name}</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
+
+            {/* Theme Mode */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleToggleTheme}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="brightness-medium" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Theme Mode</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>
+                {APPEARANCE_LABELS[themePreference]}
+              </Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            {isDevnet && (
+              <>
+                <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
+
+                {/* Devnet Airdrop */}
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={handleRequestFaucet}
+                  activeOpacity={0.7}
+                  disabled={isRequestingFaucet}
+                >
+                  <MaterialIcons name="local-gas-station" size={20} color={theme.accent} />
+                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Devnet Airdrop</Text>
+                  {isRequestingFaucet ? (
+                    <ActivityIndicator size="small" color={theme.accent} />
+                  ) : (
+                    <Text style={[styles.rowValue, { color: theme.textMuted }]}>+0.2 SOL</Text>
+                  )}
+                  <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+                </TouchableOpacity>
+
+                <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
+
+                {/* Solana Explorer */}
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={() => {
+                    Haptics.selectionAsync()
+                    if (activeWallet?.address) {
+                      Linking.openURL(getExplorerUrl(`address/${activeWallet.address}`))
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="open-in-new" size={20} color={theme.accent} />
+                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Solana Explorer</Text>
+                  <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* SECTION 3: About Us (Rabby Style) */}
+        <View style={styles.sectionWrap}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>About Us</Text>
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+            {/* Current Version */}
+            <View style={styles.row}>
+              <MaterialIcons name="info-outline" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Current Version</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>1.0.0 (SMS)</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
+
+            {/* Follow Us / GitHub */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                Linking.openURL('https://github.com/ritesh59697/haptix-mobile-app')
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="code" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Source & Docs</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
+
+            {/* Security Architecture */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                setPolicyTopic('security')
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="menu-book" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Security Architecture</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* SECTION 4: Standalone Device Actions (Rabby Style) */}
+        <View style={styles.sectionWrap}>
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+            {/* Lock Wallet */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleLockWallet}
+              activeOpacity={0.7}
+              disabled={isLocked}
+            >
+              <MaterialIcons name="lock-outline" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Lock Wallet</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: theme.borderSubtle }]} />
+
+            {/* Remove Wallet from Device */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleRemoveWallet}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="delete-outline" size={20} color={theme.rose} />
+              <Text style={[styles.rowTitle, { color: theme.rose }]}>Remove Wallet from Device</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.rose} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Rabby-style Bottom Centered Watermark */}
+        <View style={styles.watermarkWrap}>
+          <HaptixTokenIcon symbol="HAPTIX" size={17} />
+          <Text style={[styles.watermarkText, { color: theme.textMuted }]}>
+            Haptix Smart Wallet
+          </Text>
+        </View>
       </ScrollView>
 
       <HaptixPolicySheet
         topic={policyTopic}
         threshold={activeWallet?.spendThreshold ?? 0.1}
         onClose={() => setPolicyTopic(null)}
+      />
+
+      <HaptixAccountSwitcherSheet
+        visible={isAccountSwitcherOpen}
+        onClose={() => setIsAccountSwitcherOpen(false)}
       />
     </View>
   )
@@ -306,38 +453,79 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
     borderBottomWidth: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  pageTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
   },
   backBtn: {
     width: 36,
     height: 36,
-    borderRadius: radius.md,
-    borderWidth: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
-  pageTitleText: {
-    flex: 1,
-  },
-  pageTitle: {
-    fontSize: typeScale.display,
+  headerTitle: {
+    fontSize: 17,
     fontWeight: '700',
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
-  pageSubtitle: {
-    fontSize: typeScale.body,
-    lineHeight: 18,
-    marginTop: 2,
+  headerRightSpacer: {
+    width: 36,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    gap: 18,
+  },
+  sectionWrap: {
+    gap: 7,
+  },
+  sectionLabel: {
+    fontSize: 13.5,
+    fontWeight: '600',
+    marginLeft: 6,
+    letterSpacing: -0.1,
+  },
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    gap: 13,
+  },
+  rowTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+    letterSpacing: -0.2,
+  },
+  rowValue: {
+    fontSize: 13.5,
+    marginRight: 2,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 49,
+  },
+  watermarkWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    opacity: 0.5,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  watermarkText: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
 })
