@@ -1392,15 +1392,15 @@ export function HaptixWalletScreen() {
           ) : (
             <>
               <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>${totalUsdBalance.toFixed(2)}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
                 <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>
                   {balance.toFixed(4)} SOL
                 </Text>
                 <Text
                   style={{
-                    fontSize: 12.5,
+                    fontSize: 14,
                     color: isPositivePortfolio ? theme.emeraldText : theme.roseText,
-                    fontWeight: '500',
+                    fontWeight: '600',
                   }}
                 >
                   {isPositivePortfolio ? '+' : ''}${formattedDollarChange} ({isPositivePortfolio ? '+' : ''}${formattedPctChange}%) today
@@ -1410,7 +1410,7 @@ export function HaptixWalletScreen() {
           )}
         </View>
 
-        {/* ACTION BUTTONS (Send · Swap · Receive · Faucet) */}
+        {/* ACTION BUTTONS (Send · Swap · Receive) */}
         <View style={styles.heroActionsRow}>
           {/* Send */}
           <TouchableOpacity
@@ -1435,7 +1435,7 @@ export function HaptixWalletScreen() {
             }}
             activeOpacity={0.78}
           >
-            <MaterialIcons name="swap-horiz" size={17} color={theme.textPrimary} />
+            <MaterialIcons name="swap-horiz" size={18} color={theme.textPrimary} />
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Swap</Text>
           </TouchableOpacity>
 
@@ -1455,7 +1455,7 @@ export function HaptixWalletScreen() {
       </View>
 
       {/* ASSETS SECTION HEADER */}
-      <View style={[styles.homeSectionHeaderRow, { marginTop: 10, marginBottom: 8 }]}>
+      <View style={styles.homeSectionHeaderRow}>
         <Text style={[styles.homeSectionTitle, styles.textPrimary]}>Assets</Text>
       </View>
 
@@ -1483,7 +1483,7 @@ export function HaptixWalletScreen() {
             <View
               style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
             >
-              <SolanaTokenLogo size={24} />
+              <SolanaTokenLogo size={26} />
             </View>
             <View>
               <Text style={[styles.assetPrimaryName, styles.textPrimary]}>Solana</Text>
@@ -1498,13 +1498,13 @@ export function HaptixWalletScreen() {
               </Text>
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   color: (solToken?.isPositive ?? true) ? theme.emeraldText : theme.roseText,
                   marginLeft: 6,
-                  fontWeight: '500',
+                  fontWeight: '600',
                 }}
               >
-                {solToken?.change ?? '+0.84%'}
+                {solToken?.change ?? '+0.65%'}
               </Text>
             </View>
           </View>
@@ -1523,8 +1523,8 @@ export function HaptixWalletScreen() {
               name: 'Seeker',
               price: `$${skrPriceUsd.toFixed(2)}`,
               priceUsd: skrPriceUsd,
-              change: '-0.20%',
-              changePct: -0.20,
+              change: '-5.10%',
+              changePct: -5.10,
               isPositive: false,
             }
             setSelectedDetailToken(skrMarket)
@@ -1534,7 +1534,7 @@ export function HaptixWalletScreen() {
             <View
               style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
             >
-              <SeekerTokenLogo size={28} />
+              <SeekerTokenLogo size={32} />
             </View>
             <View>
               <Text style={[styles.assetPrimaryName, styles.textPrimary]}>Seeker</Text>
@@ -1549,13 +1549,13 @@ export function HaptixWalletScreen() {
               </Text>
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   color: (skrToken?.isPositive ?? false) ? theme.emeraldText : theme.roseText,
                   marginLeft: 6,
-                  fontWeight: '500',
+                  fontWeight: '600',
                 }}
               >
-                {skrToken?.change ?? '-0.20%'}
+                {skrToken?.change ?? '-5.10%'}
               </Text>
             </View>
           </View>
@@ -1574,7 +1574,7 @@ export function HaptixWalletScreen() {
               name: 'USD Coin',
               price: '$1.00',
               priceUsd: 1.0,
-              change: '0.00%',
+              change: '+0.00%',
               changePct: 0.0,
               isPositive: true,
             }
@@ -1585,7 +1585,7 @@ export function HaptixWalletScreen() {
             <View
               style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
             >
-              <UsdcTokenLogo size={28} />
+              <UsdcTokenLogo size={32} />
             </View>
             <View>
               <Text style={[styles.assetPrimaryName, styles.textPrimary]}>USD Coin</Text>
@@ -1600,13 +1600,13 @@ export function HaptixWalletScreen() {
               </Text>
               <Text
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   color: theme.textMuted,
                   marginLeft: 6,
-                  fontWeight: '500',
+                  fontWeight: '600',
                 }}
               >
-                {usdcToken?.change ?? '0.00%'}
+                {usdcToken?.change ?? '+0.00%'}
               </Text>
             </View>
           </View>
@@ -1626,18 +1626,29 @@ export function HaptixWalletScreen() {
 
       <View style={[styles.activityList, styles.card]}>
         {transactions.length === 0 ? (
-          <View style={styles.activityRow}>
+          <TouchableOpacity
+            style={styles.activityRow}
+            activeOpacity={0.7}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            }}
+          >
             <View style={styles.activityLeft}>
-              <View style={[styles.activityIconCircle, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
-                <LucideShieldCheck size={18} color={theme.textPrimary} />
+              <View
+                style={[
+                  styles.activityIconCircle,
+                  { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
+                ]}
+              >
+                <MaterialIcons name="call-made" size={18} color={theme.textPrimary} />
               </View>
               <View>
-                <Text style={[styles.activityItemTitle, styles.textPrimary]}>On-Chain Setup</Text>
-                <Text style={styles.activityItemDate}>2:17 PM</Text>
+                <Text style={[styles.activityItemTitle, styles.textPrimary]}>Sent SOL</Text>
+                <Text style={styles.activityItemDate}>2:20 PM</Text>
               </View>
             </View>
             <Text style={[styles.activityAmount, styles.textMuted]}>—</Text>
-          </View>
+          </TouchableOpacity>
         ) : (
           transactions.slice(0, 3).map((tx, idx) => {
             const received = tx.direction === 'receive'
@@ -1653,12 +1664,17 @@ export function HaptixWalletScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.activityLeft}>
-                    <View style={[styles.activityIconCircle, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
+                    <View
+                      style={[
+                        styles.activityIconCircle,
+                        { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
+                      ]}
+                    >
                       {tx.type === 'unfreeze' ? (
-                        <LucideShieldCheck size={18} color={theme.textPrimary} />
+                        <MaterialIcons name="security" size={18} color={theme.textPrimary} />
                       ) : (
                         <MaterialIcons
-                          name={received ? 'south-west' : 'north-east'}
+                          name={received ? 'call-received' : 'call-made'}
                           size={18}
                           color={received ? theme.emeraldText : theme.textPrimary}
                         />
@@ -2307,7 +2323,7 @@ export function HaptixWalletScreen() {
             accessibilityLabel={`Switch account, currently ${activeWallet?.name || 'My Haptix Wallet'}`}
           >
             <View style={[styles.avatarCircle, styles.elevatedCard]}>
-              <HaptixBrandMark size={20} />
+              <HaptixBrandMark size={22} />
             </View>
           </TouchableOpacity>
 
@@ -2325,17 +2341,17 @@ export function HaptixWalletScreen() {
               <Text style={[styles.headerWalletName, styles.textPrimary]} numberOfLines={1}>
                 {activeWallet?.name || 'My Haptix Wallet'}
               </Text>
-              <MaterialIcons name="keyboard-arrow-down" size={17} color={theme.textSecondary} />
+              <MaterialIcons name="keyboard-arrow-down" size={18} color={theme.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.addressCopyChip, styles.card]}
+              style={[styles.addressCopyChip, styles.elevatedCard]}
               onPress={handleCopyWalletAddress}
               activeOpacity={0.7}
             >
               <Text style={[styles.addressCopyText, styles.textMuted]}>
                 {hasCopiedAddress ? 'Copied!' : ellipsify(activeWallet?.address || '', 4)}
               </Text>
-              <CopyChipIcon size={11} color={hasCopiedAddress ? theme.accentForeground : theme.textMuted} />
+              <CopyChipIcon size={11} color={hasCopiedAddress ? theme.emeraldText : theme.textMuted} />
             </TouchableOpacity>
           </View>
         </View>

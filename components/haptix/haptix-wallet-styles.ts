@@ -63,11 +63,9 @@ const createStyles = (theme: ThemeTokens) =>
     /* 1. ELEVATED CONSUMER HEADER */
     header: {
       backgroundColor: theme.bgApp,
-      borderBottomColor: theme.borderSubtle,
-      borderBottomWidth: 1,
-      // Matches scrollContent so the brand chip lines up with the card edges below.
-      paddingHorizontal: 20,
-      paddingBottom: 12,
+      borderBottomWidth: 0,
+      paddingHorizontal: 16,
+      paddingBottom: 8,
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
@@ -75,7 +73,7 @@ const createStyles = (theme: ThemeTokens) =>
     headerLeftGroup: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: 12,
       flexShrink: 1,
     },
     avatarButton: {
@@ -83,9 +81,9 @@ const createStyles = (theme: ThemeTokens) =>
       alignItems: 'center',
     },
     avatarCircle: {
-      width: 36,
-      height: 36,
-      borderRadius: radius.pill,
+      width: 42,
+      height: 42,
+      borderRadius: 21,
       borderWidth: 1,
       justifyContent: 'center',
       alignItems: 'center',
@@ -104,28 +102,30 @@ const createStyles = (theme: ThemeTokens) =>
       flexShrink: 1,
     },
     headerWalletName: {
-      fontSize: typeScale.title,
+      fontSize: 17,
       fontWeight: '700',
-      letterSpacing: -0.2,
+      letterSpacing: -0.3,
       maxWidth: 220,
     },
     addressCopyChip: {
-      ...TAG_SHAPE,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: space.xs,
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 10,
       borderWidth: 1,
-      marginTop: space.xxs,
+      marginTop: 3,
       alignSelf: 'flex-start',
     },
     addressCopyText: {
-      fontSize: typeScale.caption,
-      fontWeight: '500',
+      fontSize: 12,
+      fontWeight: '600',
     },
     headerRight: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      gap: 8,
     },
     networkPill: {
       flexDirection: 'row',
@@ -189,7 +189,7 @@ const createStyles = (theme: ThemeTokens) =>
       flex: 1,
     },
     scrollContent: {
-      paddingHorizontal: 20,
+      paddingHorizontal: 16,
       paddingTop: 8,
     },
     dashboardContainer: {
@@ -236,23 +236,26 @@ const createStyles = (theme: ThemeTokens) =>
 
     /* HERO BALANCE CARD */
     heroCard: {
-      borderRadius: radius.xl,
+      borderRadius: 22,
       borderWidth: 1,
-      padding: CARD_PADDING_X,
-      marginBottom: 14,
+      paddingHorizontal: 18,
+      paddingVertical: 18,
+      marginBottom: 16,
     },
     heroBalanceLabelRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      marginBottom: 10,
+      gap: 6,
+      marginBottom: 8,
     },
     heroBalanceLabel: {
-      fontSize: typeScale.body,
+      fontSize: 14,
       fontWeight: '500',
     },
     eyeToggleButton: {
-      padding: 4,
+      padding: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     heroBalanceContent: {
       marginBottom: 16,
@@ -272,32 +275,31 @@ const createStyles = (theme: ThemeTokens) =>
       borderRadius: radius.sm,
     },
     heroPrimaryBalance: {
-      fontSize: typeScale.hero,
+      fontSize: 34,
       fontWeight: '700',
-      letterSpacing: -0.6,
+      letterSpacing: -0.8,
     },
     heroSecondaryBalance: {
-      fontSize: typeScale.bodyLg,
+      fontSize: 14,
       fontWeight: '500',
-      marginTop: 3,
     },
     heroActionsRow: {
       flexDirection: 'row',
-      gap: 8,
-      marginTop: 2,
+      gap: 10,
+      marginTop: 4,
     },
     heroActionBtn: {
       flex: 1,
       height: 44,
-      borderRadius: radius.md,
+      borderRadius: 14,
       borderWidth: 1,
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: 6,
+      gap: 7,
     },
     heroActionBtnText: {
-      fontSize: typeScale.body,
+      fontSize: 15,
       fontWeight: '600',
       letterSpacing: -0.1,
       flexShrink: 1,
@@ -331,23 +333,20 @@ const createStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      // The title stays on the card edge (like the segmented control above it) while the
-      // "See all" action is pulled in to the card's inner content column, so it lines up
-      // with the right-aligned amounts in the list below instead of the card's border.
-      paddingRight: CARD_PADDING_X,
-      marginTop: 22,
+      paddingHorizontal: 2,
+      marginTop: 16,
       marginBottom: 10,
     },
 
     homeSectionTitle: {
-      fontSize: typeScale.title,
+      fontSize: 18,
       fontWeight: '700',
-      letterSpacing: -0.2,
+      letterSpacing: -0.3,
     },
 
     homeSectionLink: {
-      fontSize: typeScale.body,
-      fontWeight: '600',
+      fontSize: 14,
+      fontWeight: '500',
     },
 
     /* TREND BADGE */
@@ -581,9 +580,10 @@ const createStyles = (theme: ThemeTokens) =>
 
     /* ASSETS LIST (CLEAN LIST WITHOUT CARD CLUTTER) */
     assetList: {
-      borderRadius: radius.lg,
+      borderRadius: 22,
       borderWidth: 1,
-      paddingHorizontal: CARD_PADDING_X,
+      paddingHorizontal: 16,
+      overflow: 'hidden',
     },
     assetRow: {
       flexDirection: 'row',
@@ -597,31 +597,34 @@ const createStyles = (theme: ThemeTokens) =>
       gap: 12,
     },
     assetLogoWrap: {
-      width: 38,
-      height: 38,
-      borderRadius: radius.pill,
+      width: 42,
+      height: 42,
+      borderRadius: 21,
       borderWidth: 1,
       justifyContent: 'center',
       alignItems: 'center',
     },
     assetPrimaryName: {
-      fontSize: typeScale.title,
-      fontWeight: '600',
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: -0.2,
     },
     assetSecondaryTag: {
-      fontSize: typeScale.footnote,
+      fontSize: 13,
+      fontWeight: '500',
       marginTop: 2,
     },
     assetRight: {
       alignItems: 'flex-end',
     },
     assetCryptoAmount: {
-      fontSize: typeScale.title,
-      fontWeight: '600',
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: -0.2,
     },
     assetFiatAmount: {
-      fontSize: typeScale.footnote,
-      marginTop: 2,
+      fontSize: 13,
+      fontWeight: '500',
     },
     assetDivider: {
       height: 1,
@@ -911,9 +914,10 @@ const createStyles = (theme: ThemeTokens) =>
       textAlign: 'center',
     },
     activityList: {
-      borderRadius: radius.xl,
+      borderRadius: 22,
       borderWidth: 1,
-      paddingHorizontal: CARD_PADDING_X,
+      paddingHorizontal: 16,
+      overflow: 'hidden',
     },
     activityGroupsWrapper: {
       gap: 6,
@@ -948,7 +952,7 @@ const createStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 13,
+      paddingVertical: 14,
     },
     activityLeft: {
       flexDirection: 'row',
@@ -958,16 +962,16 @@ const createStyles = (theme: ThemeTokens) =>
       marginRight: 10,
     },
     activityIconCircle: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
+      width: 42,
+      height: 42,
+      borderRadius: 21,
       borderWidth: 1,
       justifyContent: 'center',
       alignItems: 'center',
     },
     activityItemTitle: {
-      fontSize: 14.5,
-      fontWeight: '600',
+      fontSize: 15,
+      fontWeight: '700',
       letterSpacing: -0.2,
     },
     activitySubtitle: {
@@ -976,7 +980,8 @@ const createStyles = (theme: ThemeTokens) =>
     },
     activityItemDate: {
       color: theme.textMuted,
-      fontSize: typeScale.footnote,
+      fontSize: 13,
+      fontWeight: '500',
       marginTop: 2,
     },
     activityRight: {
@@ -984,7 +989,7 @@ const createStyles = (theme: ThemeTokens) =>
       justifyContent: 'center',
     },
     activityAmount: {
-      fontSize: 14.5,
+      fontSize: 15,
       fontWeight: '600',
       letterSpacing: -0.2,
     },
