@@ -53,24 +53,13 @@ interface ActivityRowProps {
 export const ActivityRow = memo(function ActivityRow({ tx, variant, onSelect }: ActivityRowProps) {
   const { theme } = useAppTheme()
   const styles = useWalletStyles()
-  const tone = activityToneFor(tx, theme)
   const failed = tx.status === 'failed'
   const received = tx.direction === 'receive'
-
-  const amount = (
-    <Text
-      style={[
-        styles.activityAmount,
-        failed
-          ? { color: theme.roseText, fontWeight: '700' }
-          : received
-            ? { color: theme.emeraldText, fontWeight: '700' }
-            : styles.textPrimary,
-      ]}
-    >
-      {failed ? 'Failed' : activityAmountFor(tx)}
-    </Text>
-  )
+  const hasAmount = tx.amount > 0 && tx.direction !== 'none'
+  const amountStr = failed ? 'Failed' : activityAmountFor(tx)
+  const timeStr = new Date(tx.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase()
+  const tone = activityToneFor(tx, theme)
+  const iconName = activityIconFor(tx)
 
   return (
     <TouchableOpacity
@@ -80,57 +69,55 @@ export const ActivityRow = memo(function ActivityRow({ tx, variant, onSelect }: 
         onSelect(tx)
       }}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`${activityTitleFor(tx)}, ${hasAmount ? amountStr : timeStr}`}
     >
       <View style={styles.activityLeft}>
         <View style={[styles.activityIconCircle, { backgroundColor: tone.background, borderColor: tone.border }]}>
-          <MaterialIcons name={activityIconFor(tx)} size={18} color={tone.color} />
+          <MaterialIcons
+            name={iconName}
+            size={18}
+            color={tone.color}
+          />
         </View>
-        <View style={variant === 'detail' ? { flexShrink: 1 } : undefined}>
-          <Text style={[styles.activityItemTitle, styles.textPrimary]}>{activityTitleFor(tx)}</Text>
-          {variant === 'compact' ? (
-            <Text style={[styles.activityItemDate, styles.textMuted]}>
-              {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Text>
-          ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-              <Text style={[styles.activityItemDate, styles.textMuted]}>
-                {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-              <Text style={styles.textMuted}>·</Text>
-              <Text
-                style={[
-                  styles.activitySecurityBadge,
-                  { color: AGENT_TYPES.includes(tx.type) ? theme.accent : theme.textMuted },
-                ]}
-                numberOfLines={1}
-              >
-                {activitySecurityLabelFor(tx)}
-              </Text>
-            </View>
-          )}
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <Text style={[styles.activityItemTitle, styles.textPrimary]} numberOfLines={1}>
+            {activityTitleFor(tx)}
+          </Text>
+          <Text style={[styles.activitySubtitle, styles.textSecondary]} numberOfLines={1}>
+            {activitySecurityLabelFor(tx)}
+          </Text>
         </View>
       </View>
 
-      {/* The compact row places the amount straight into the row, as it always has; only
-          the detail row wraps it, so the two lists keep the exact trees they had before
-          they were folded into one component. */}
-      {variant === 'compact' ? (
-        amount
-      ) : (
-        <View style={styles.activityRight}>
-          {amount}
-          <View style={styles.confirmedBadgeRow}>
-            <MaterialIcons
-              name={failed ? 'error-outline' : 'check'}
-              size={11}
-              color={failed ? theme.roseText : theme.textMuted}
-            />
-            <Text style={[styles.confirmedBadgeText, { color: failed ? theme.roseText : theme.textMuted }]}>
-              {failed ? 'Failed' : tx.status === 'finalized' ? 'Finalized' : 'Confirmed'}
-            </Text>
-          </View>
+      <View style={styles.activityRight}>
+        {hasAmount ? (
+          <Text
+            style={[
+              styles.activityAmount,
+              failed
+                ? { color: theme.roseText, fontWeight: '700' }
+                : received
+                  ? { color: '#5fbf7a' }
+                  : styles.textPrimary,
+            ]}
+          >
+            {amountStr}
+          </Text>
+        ) : (
+          <Text style={[styles.activityTimeText, styles.textPrimary]}>{timeStr}</Text>
+        )}
+        <View style={styles.activityStatusRow}>
+          <MaterialIcons
+            name={failed ? 'error-outline' : 'check'}
+            size={12}
+            color={failed ? theme.roseText : theme.textMuted}
+          />
+          <Text style={[styles.activityStatusText, { color: failed ? theme.roseText : theme.textMuted }]}>
+            {failed ? 'Failed' : 'Confirmed'}
+          </Text>
         </View>
-      )}
+      </View>
     </TouchableOpacity>
   )
 })
@@ -171,15 +158,15 @@ export const AgentSessionRow = memo(function AgentSessionRow({
         style={[
           styles.agentCompactIcon,
           {
-            backgroundColor: isExpired ? theme.roseBg : theme.bgElevated,
-            borderColor: isExpired ? theme.roseBorder : theme.borderDefault,
+            backgroundColor: isExpired ? 'rgba(229, 72, 77, 0.1)' : '#201f1d',
+            borderColor: isExpired ? 'rgba(229, 72, 77, 0.3)' : '#2a2a28',
           },
         ]}
       >
         <MaterialIcons
           name={isExpired ? 'timer-off' : 'vpn-key'}
           size={18}
-          color={isExpired ? theme.rose : theme.emerald}
+          color={isExpired ? theme.roseText : '#8a8985'}
         />
       </View>
       <View style={{ flex: 1, paddingRight: 4 }}>
@@ -194,44 +181,23 @@ export const AgentSessionRow = memo(function AgentSessionRow({
           <MaterialIcons name="content-copy" size={12} color={theme.textMuted} />
         </TouchableOpacity>
 
-        {/* Live Status & Countdown Badge */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 5,
-            backgroundColor: isExpired ? theme.roseBg : theme.emeraldBg,
-            borderColor: isExpired ? theme.roseBorder : theme.emeraldBorder,
-            borderWidth: 1,
-            paddingHorizontal: 7,
-            paddingVertical: 2,
-            borderRadius: 6,
-            alignSelf: 'flex-start',
-            marginTop: 4,
-            marginBottom: 4,
-          }}
-        >
-          <View
-            style={{
-              width: 5,
-              height: 5,
-              borderRadius: 3,
-              backgroundColor: isExpired ? theme.rose : theme.emerald,
-            }}
-          />
+        {/* Live Status & Countdown without colored pill */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2, marginBottom: 2 }}>
           {isExpired ? (
-            <Text style={{ fontSize: 11, color: theme.roseText, fontWeight: '600' }}>Expired</Text>
+            <Text style={{ fontSize: 11.5, color: theme.roseText }}>Expired</Text>
           ) : (
             <HaptixCountdown
               until={Number(session.validUntil)}
               suffix=" left"
-              style={{ fontSize: 11, color: theme.emeraldText, fontWeight: '600' }}
+              style={{ fontSize: 11.5, color: '#8a8985' }}
             />
           )}
         </View>
 
         <Text style={[styles.agentCompactSub, styles.textMuted]}>
-          {remainingAllowance.toFixed(4)} SOL delegated ·{' '}
+          {remainingAllowance.toFixed(4)} SOL delegated
+        </Text>
+        <Text style={[styles.agentCompactSub, styles.textMuted]}>
           {session.allowedProgram.equals(SystemProgram.programId)
             ? 'SOL transfers'
             : `Program ${ellipsify(session.allowedProgram.toBase58(), 4)}`}

@@ -543,16 +543,16 @@ export function HaptixSwapSheet({
             <View style={[styles.routeBox, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
               <View style={styles.routeRow}>
                 <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Route</Text>
-                <Text style={[styles.routeValue, { color: theme.textPrimary }]}>Jupiter Direct · Devnet</Text>
+                <Text style={[styles.routeValue, { color: theme.textPrimary }]}>Jupiter Direct ({network})</Text>
               </View>
               <View style={styles.routeRow}>
-                <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Price Impact</Text>
+                <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Price impact</Text>
                 <Text style={[styles.routeValue, { color: theme.emerald }]}>&lt; 0.01%</Text>
               </View>
               <View style={styles.routeRow}>
-                <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Security Quorum</Text>
+                <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Security quorum</Text>
                 <Text style={[styles.routeValue, { color: theme.accent }]}>
-                  {isQuorumRequired ? '2-Passkey Quorum' : '1-Tap Passkey'}
+                  {isQuorumRequired ? 'Both passkeys' : 'One passkey'}
                 </Text>
               </View>
             </View>
@@ -562,9 +562,9 @@ export function HaptixSwapSheet({
               <PrismDepthButton
                 title={
                   payAmountNum <= 0
-                    ? 'Enter an Amount'
+                    ? 'Enter an amount'
                     : isSwapping
-                    ? 'Swapping…'
+                    ? 'Swapping'
                     : `Swap ${paySymbol} for ${receiveSymbol}`
                 }
                 size="large"

@@ -518,8 +518,8 @@ export default function RecoverySettingsScreen() {
             icon="lock-clock"
             title={
               recoveryWindow.secondsLeft > 0
-                ? `Recovery in flight · ${formatRemainingTime(recoveryWindow.secondsLeft)} left`
-                : 'Recovery in flight · timelock elapsed'
+                ? `Recovery in flight (${formatRemainingTime(recoveryWindow.secondsLeft)} left)`
+                : 'Recovery in flight (timelock elapsed)'
             }
             message={
               recoveryWindow.secondsLeft > 0

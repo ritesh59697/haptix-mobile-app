@@ -55,13 +55,13 @@ function record(overrides: Partial<TransactionRecord> = {}): TransactionRecord {
 console.log('\nActivity display rules\n')
 
 // --- Titles ---------------------------------------------------------------------------
-assert(activityTitleFor(record({ type: 'freeze' })) === 'Wallet Locked', 'a freeze reads as the wallet being locked')
-assert(activityTitleFor(record({ type: 'agent_trade' })) === 'Agent Auto-Trade', 'an agent trade names the agent')
+assert(activityTitleFor(record({ type: 'freeze' })) === 'Wallet locked', 'a freeze reads as the wallet being locked in sentence case')
+assert(activityTitleFor(record({ type: 'agent_trade' })) === 'Agent auto-trade', 'an agent trade names the agent in sentence case')
 assert(
   activityTitleFor(record({ type: 'transfer', direction: 'receive' })) === 'Received SOL',
-  'an inflow is "Received"',
+  'an inflow is "Received SOL"',
 )
-assert(activityTitleFor(record({ type: 'transfer', direction: 'send' })) === 'Transfer SOL', 'an outflow is "Transfer"')
+assert(activityTitleFor(record({ type: 'transfer', direction: 'send' })) === 'Transfer SOL', 'an outflow is "Transfer SOL"')
 
 // --- Amounts --------------------------------------------------------------------------
 assert(
@@ -73,12 +73,12 @@ assert(
   'an outflow is signed negative',
 )
 assert(
-  activityAmountFor(record({ direction: 'none', amount: 0 })) === '\u2014',
-  'a transaction that moved nothing shows a dash, not "0.0000"',
+  activityAmountFor(record({ direction: 'none', amount: 0 })) === '',
+  'a transaction that moved nothing shows empty string (omitted), not a placeholder',
 )
 assert(
-  activityAmountFor(record({ direction: 'send', amount: 0, type: 'agent_session' })) === '\u2014',
-  'a zero-value agent session shows a dash too',
+  activityAmountFor(record({ direction: 'send', amount: 0, type: 'agent_session' })) === '',
+  'a zero-value agent session shows empty string too',
 )
 
 // --- Icons ----------------------------------------------------------------------------

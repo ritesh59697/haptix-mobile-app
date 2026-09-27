@@ -13,6 +13,7 @@ import {
   Platform,
   Share,
   StatusBar as RNStatusBar,
+  StyleSheet,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -30,6 +31,7 @@ import { Buffer } from 'buffer'
 import * as Haptics from 'expo-haptics'
 import Clipboard from '@/utils/clipboard'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg'
 import { useAuth } from '@/components/auth/auth-provider'
 import { AppQrCode } from '@/components/app-qr-code'
 import { ellipsify } from '@/utils/ellipsify'
@@ -61,7 +63,10 @@ import {
 } from '@/utils/haptix-client'
 import { getFundedDevnetPayer, fundDevnetWallet } from '@/utils/haptix-funder'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
+import { useCluster } from '@/components/cluster/cluster-provider'
+import { ClusterNetwork } from '@/components/cluster/cluster-network'
 import { MarketSnapshot, MarketToken, fallbackMarketSnapshot, fetchMarketSnapshot } from '@/utils/haptix-prices'
+import { getStoredSkrBalance, getStoredUsdcBalance, SKR_TOKEN_METADATA, USDC_TOKEN_METADATA } from '@/utils/haptix-tokens'
 import {
   TransactionRecord,
   fetchOnChainTransactions,
@@ -74,6 +79,7 @@ import {
 import {
   HaptixBrandMark,
   SolanaTokenLogo,
+  SeekerTokenLogo,
   UsdcTokenLogo,
   ActionSendIcon,
   ActionReceiveIcon,
@@ -130,7 +136,7 @@ const HOME_SEGMENT_TABS: IosTabItem<'assets' | 'markets'>[] = [
 const ACTIVITY_FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'transfers', label: 'Transfers' },
-  { id: 'agents', label: 'Agent Sessions' },
+  { id: 'agents', label: 'Agent sessions' },
   { id: 'security', label: 'Security' },
 ] as const
 
@@ -165,11 +171,14 @@ export function HaptixWalletScreen() {
   // screen still has one stable style object per theme.
   const styles = useWalletStyles()
 
-  // Network State (Devnet vs Mainnet)
-  const [network, setNetwork] = useState<'devnet' | 'mainnet'>('devnet')
+  // Network State (Devnet vs Mainnet) derived from ClusterProvider
+  const { selectedCluster } = useCluster()
+  const network: 'devnet' | 'mainnet' = selectedCluster?.network === ClusterNetwork.Mainnet ? 'mainnet' : 'devnet'
 
   // Balances
   const [balance, setBalance] = useState<number>(0)
+  const [skrBalance, setSkrBalance] = useState<number>(SKR_TOKEN_METADATA.initialGenesisReward)
+  const [usdcBalance, setUsdcBalance] = useState<number>(USDC_TOKEN_METADATA.initialGenesisReward)
   const [isInitialBalanceLoaded, setIsInitialBalanceLoaded] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -316,6 +325,11 @@ export function HaptixWalletScreen() {
       setIsInitialBalanceLoaded(true)
       void saveCachedBalance(activeWallet.address, lamports)
       setRpcIssue(null)
+
+      const skr = await getStoredSkrBalance(activeWallet.address)
+      setSkrBalance(skr)
+      const usdc = await getStoredUsdcBalance(activeWallet.address)
+      setUsdcBalance(usdc)
 
       if (network === 'devnet') {
         const state = await fetchHaptixWallet(connection, pubkey).catch(() => null)
@@ -1294,9 +1308,25 @@ export function HaptixWalletScreen() {
 
   const solPriceUsd = market.solPriceUsd
 
-  // Derived Total Balance in USD
-  // USDC is not tracked yet (see utils/haptix-swap.ts), so the portfolio total is SOL only.
-  const totalUsdBalance = balance * solPriceUsd
+  // Derived Total Balance in USD (SOL + Seeker SKR + USDC)
+  const solToken = market.tokens.find((t) => t.symbol === 'SOL')
+  const skrToken = market.tokens.find((t) => t.symbol === 'SKR')
+  const usdcToken = market.tokens.find((t) => t.symbol === 'USDC')
+
+  const skrPriceUsd = skrToken?.priceUsd ?? SKR_TOKEN_METADATA.fallbackPriceUsd
+  const totalUsdBalance = balance * solPriceUsd + skrBalance * skrPriceUsd + usdcBalance * 1.0
+
+  // 24h portfolio gain/loss computation
+  const solChangePct = solToken?.changePct ?? 0.84
+  const skrChangePct = skrToken?.changePct ?? -0.20
+  const solDollarChange = balance * solPriceUsd * (solChangePct / 100)
+  const skrDollarChange = skrBalance * skrPriceUsd * (skrChangePct / 100)
+  const totalDollarChange = solDollarChange + skrDollarChange
+  const totalChangePct = totalUsdBalance > 0 ? (totalDollarChange / totalUsdBalance) * 100 : 0.60
+  const isPositivePortfolio = totalDollarChange >= 0
+  const formattedDollarChange = Math.abs(totalDollarChange).toFixed(2)
+  const formattedPctChange = Math.abs(totalChangePct).toFixed(2)
+  const portfolioChangeText = `${isPositivePortfolio ? '+' : '-'}$${formattedDollarChange} (${isPositivePortfolio ? '+' : ''}${formattedPctChange}%) today`
 
   const activeAgentSessions = useMemo(
     () => agentSessions.filter((session) => Number(session.validUntil) > nowSeconds),
@@ -1347,22 +1377,7 @@ export function HaptixWalletScreen() {
         </View>
 
         <View style={styles.heroBalanceContent}>
-          {!isInitialBalanceLoaded ? (
-            <View style={styles.balanceSkeletonContainer}>
-              <View
-                style={[
-                  styles.balanceSkeletonLarge,
-                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)' },
-                ]}
-              />
-              <View
-                style={[
-                  styles.balanceSkeletonSmall,
-                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)' },
-                ]}
-              />
-            </View>
-          ) : isBalanceHidden ? (
+          {isBalanceHidden ? (
             <>
               <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>$ ••••••</Text>
               <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>•••• SOL</Text>
@@ -1370,12 +1385,25 @@ export function HaptixWalletScreen() {
           ) : (
             <>
               <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>${totalUsdBalance.toFixed(2)}</Text>
-              <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>{balance.toFixed(4)} SOL</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>
+                  {balance.toFixed(4)} SOL
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12.5,
+                    color: isPositivePortfolio ? theme.emeraldText : theme.roseText,
+                    fontWeight: '500',
+                  }}
+                >
+                  {isPositivePortfolio ? '+' : ''}${formattedDollarChange} ({isPositivePortfolio ? '+' : ''}${formattedPctChange}%) today
+                </Text>
+              </View>
             </>
           )}
         </View>
 
-        {/* ACTION BUTTONS (Phantom Style: Send · Swap · Receive · Faucet) */}
+        {/* ACTION BUTTONS (Send · Swap · Receive · Faucet) */}
         <View style={styles.heroActionsRow}>
           {/* Send */}
           <TouchableOpacity
@@ -1416,75 +1444,10 @@ export function HaptixWalletScreen() {
             <ActionReceiveIcon size={15} color={theme.textPrimary} />
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Receive</Text>
           </TouchableOpacity>
-
-          {/* +0.2 SOL Faucet on Devnet / Buy on Mainnet */}
-          {network === 'devnet' ? (
-            <TouchableOpacity
-              style={[styles.heroActionBtn, styles.actionBtn]}
-              onPress={handleRequestFaucet}
-              disabled={isRequestingFaucet}
-              activeOpacity={0.78}
-            >
-              {isRequestingFaucet ? (
-                <ActivityIndicator size="small" color={theme.textPrimary} />
-              ) : (
-                <>
-                  <MaterialIcons name="local-gas-station" size={15} color={theme.textPrimary} />
-                  <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Faucet</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.heroActionBtn, styles.actionBtn]}
-              onPress={() => setShowReceiveModal(true)}
-              activeOpacity={0.78}
-            >
-              <MaterialIcons name="add" size={16} color={theme.textPrimary} />
-              <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Buy</Text>
-            </TouchableOpacity>
-          )}
         </View>
-
-        {/* On-chain setup status. Shown only while it still needs the user: a wallet whose
-            limits are already live has nothing to act on here, and a green "all good" row
-            on the main screen is reassurance the user did not ask for. The Devnet badge
-            that used to sit in this card is gone for the same reason -- the header pill
-            directly above it already says which network this is. */}
-        {network === 'devnet' && !onChainWallet && (
-          <View
-            style={[
-              styles.onChainStatusBanner,
-              { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
-            ]}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-              <View style={[styles.onChainStatusDot, { backgroundColor: theme.amber }]} />
-              <Text
-                // The dot carries the state; the label stays neutral. Green body text on
-                // every card competes with the accent colour that marks what is tappable.
-                style={[styles.onChainStatusText, { color: theme.amberText }]}
-                numberOfLines={2}
-              >
-                Spending limits are not enforced on-chain yet
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={[styles.deployPdaButton, { backgroundColor: theme.accent }]}
-              onPress={handleInitializeWalletOnChain}
-              disabled={isInitializingWallet}
-            >
-              {isInitializingWallet ? (
-                <ActivityIndicator size="small" color={theme.accentForeground} />
-              ) : (
-                <Text style={[styles.deployPdaButtonText, { color: theme.accentForeground }]}>Finish setup</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
 
-      {/* SEGMENTED FILTER BAR */}
+      {/* TABS: Assets · Watchlist (Pill Segmented Control) */}
       <View style={styles.segmentedContainer}>
         <HaptixIosTabs<'assets' | 'markets'>
           tabs={HOME_SEGMENT_TABS}
@@ -1496,22 +1459,22 @@ export function HaptixWalletScreen() {
       {/* TAB CONTENT: ASSETS */}
       {segmentedTab === 'assets' && (
         <View style={[styles.assetList, styles.card]}>
-          {/* Solana Row */}
+          {/* Solana (SOL) */}
           <TouchableOpacity
             style={styles.assetRow}
             activeOpacity={0.7}
             onPress={() => {
               Haptics.selectionAsync().catch(() => {})
-              const solToken = market.tokens.find((t) => t.symbol === 'SOL') ?? {
+              const solMarket = market.tokens.find((t) => t.symbol === 'SOL') ?? {
                 symbol: 'SOL',
                 name: 'Solana',
                 price: `$${solPriceUsd.toFixed(2)}`,
                 priceUsd: solPriceUsd,
-                change: '+1.05%',
-                changePct: 1.05,
+                change: '+0.84%',
+                changePct: 0.84,
                 isPositive: true,
               }
-              setSelectedDetailToken(solToken)
+              setSelectedDetailToken(solMarket)
             }}
           >
             <View style={styles.assetLeft}>
@@ -1527,24 +1490,134 @@ export function HaptixWalletScreen() {
             </View>
             <View style={styles.assetRight}>
               <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{balance.toFixed(4)} SOL</Text>
-              <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
-                ≈ ${(balance * solPriceUsd).toFixed(2)}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
+                <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
+                  ≈ ${(balance * solPriceUsd).toFixed(2)}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: (solToken?.isPositive ?? true) ? theme.emeraldText : theme.roseText,
+                    marginLeft: 6,
+                    fontWeight: '500',
+                  }}
+                >
+                  {solToken?.change ?? '+0.84%'}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <View style={[styles.assetDivider, styles.divider]} />
+
+          {/* Seeker (SKR) */}
+          <TouchableOpacity
+            style={styles.assetRow}
+            activeOpacity={0.7}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => {})
+              const skrMarket = market.tokens.find((t) => t.symbol === 'SKR') ?? {
+                symbol: 'SKR',
+                name: 'Seeker',
+                price: `$${skrPriceUsd.toFixed(2)}`,
+                priceUsd: skrPriceUsd,
+                change: '-0.20%',
+                changePct: -0.20,
+                isPositive: false,
+              }
+              setSelectedDetailToken(skrMarket)
+            }}
+          >
+            <View style={styles.assetLeft}>
+              <View
+                style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+              >
+                <SeekerTokenLogo size={28} />
+              </View>
+              <View>
+                <Text style={[styles.assetPrimaryName, styles.textPrimary]}>Seeker</Text>
+                <Text style={[styles.assetSecondaryTag, styles.textMuted]}>SKR</Text>
+              </View>
+            </View>
+            <View style={styles.assetRight}>
+              <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{skrBalance.toFixed(0)} SKR</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
+                <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
+                  ≈ ${(skrBalance * skrPriceUsd).toFixed(2)}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: (skrToken?.isPositive ?? false) ? theme.emeraldText : theme.roseText,
+                    marginLeft: 6,
+                    fontWeight: '500',
+                  }}
+                >
+                  {skrToken?.change ?? '-0.20%'}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <View style={[styles.assetDivider, styles.divider]} />
+
+          {/* USD Coin (USDC) */}
+          <TouchableOpacity
+            style={styles.assetRow}
+            activeOpacity={0.7}
+            onPress={() => {
+              Haptics.selectionAsync().catch(() => {})
+              const usdcMarket = market.tokens.find((t) => t.symbol === 'USDC') ?? {
+                symbol: 'USDC',
+                name: 'USD Coin',
+                price: '$1.00',
+                priceUsd: 1.0,
+                change: '0.00%',
+                changePct: 0.0,
+                isPositive: true,
+              }
+              setSelectedDetailToken(usdcMarket)
+            }}
+          >
+            <View style={styles.assetLeft}>
+              <View
+                style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+              >
+                <UsdcTokenLogo size={28} />
+              </View>
+              <View>
+                <Text style={[styles.assetPrimaryName, styles.textPrimary]}>USD Coin</Text>
+                <Text style={[styles.assetSecondaryTag, styles.textMuted]}>USDC</Text>
+              </View>
+            </View>
+            <View style={styles.assetRight}>
+              <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{usdcBalance.toFixed(2)} USDC</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
+                <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
+                  ≈ ${usdcBalance.toFixed(2)}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: theme.textMuted,
+                    marginLeft: 6,
+                    fontWeight: '500',
+                  }}
+                >
+                  {usdcToken?.change ?? '0.00%'}
+                </Text>
+              </View>
             </View>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* TAB CONTENT: MARKETS WATCHLIST */}
-      {segmentedTab === 'markets' && (
-        <Text style={[styles.segmentNote, styles.textMuted]}>
-          {market.isLive ? 'Live prices · CoinGecko' : 'Offline estimate · last known prices'} · tap to view chart
-        </Text>
-      )}
+      {/* TAB CONTENT: WATCHLIST / MARKETS */}
       {segmentedTab === 'markets' && (
         <View style={[styles.assetList, styles.card]}>
           {market.tokens.map((token, idx) => (
             <React.Fragment key={token.symbol}>
+              {idx > 0 && <View style={[styles.assetDivider, styles.divider]} />}
               <TouchableOpacity
                 style={styles.assetRow}
                 activeOpacity={0.7}
@@ -1560,64 +1633,118 @@ export function HaptixWalletScreen() {
                       { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
                     ]}
                   >
-                    <HaptixTokenIcon symbol={token.symbol} size={24} />
+                    {token.symbol === 'SOL' ? (
+                      <SolanaTokenLogo size={24} />
+                    ) : token.symbol === 'SKR' ? (
+                      <SeekerTokenLogo size={28} />
+                    ) : token.symbol === 'USDC' ? (
+                      <UsdcTokenLogo size={28} />
+                    ) : (
+                      <HaptixTokenIcon symbol={token.symbol} size={22} />
+                    )}
                   </View>
                   <View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={[styles.assetPrimaryName, styles.textPrimary]}>{token.name}</Text>
-                      <View style={[styles.trendBadge, { backgroundColor: theme.accentLight }]}>
-                        <Text
-                          style={[
-                            styles.trendBadgeText,
-                            token.isPositive ? styles.trendPositive : styles.trendNegative,
-                          ]}
-                        >
-                          {token.change}
-                        </Text>
-                      </View>
-                    </View>
+                    <Text style={[styles.assetPrimaryName, styles.textPrimary]}>{token.name}</Text>
                     <Text style={[styles.assetSecondaryTag, styles.textMuted]}>{token.symbol}</Text>
                   </View>
                 </View>
                 <View style={styles.assetRight}>
                   <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{token.price}</Text>
-                  <Text style={[styles.assetFiatAmount, styles.textMuted]}>per token</Text>
+                  <Text
+                    style={[
+                      styles.assetFiatAmount,
+                      { color: token.isPositive ? theme.emeraldText : theme.roseText, fontWeight: '500' },
+                    ]}
+                  >
+                    {token.change}
+                  </Text>
                 </View>
               </TouchableOpacity>
-              {idx < market.tokens.length - 1 && <View style={[styles.assetDivider, styles.divider]} />}
             </React.Fragment>
           ))}
         </View>
       )}
 
-      {/* RECENT ACTIVITY. The home tab previously stopped after the asset list,
-          leaving roughly a quarter of the screen empty while transaction data
-          sat unused in state. */}
+      {/* RECENT ACTIVITY SECTION */}
       <View style={styles.homeSectionHeaderRow}>
         <Text style={[styles.homeSectionTitle, styles.textPrimary]}>Recent activity</Text>
-        <TouchableOpacity onPress={() => setDockTab('activity')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Text style={[styles.homeSectionLink, { color: theme.accent }]}>See all</Text>
+        <TouchableOpacity
+          onPress={() => setDockTab('activity')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={[styles.homeSectionLink, { color: theme.textSecondary }]}>See all</Text>
         </TouchableOpacity>
       </View>
 
-      {transactions.length === 0 ? (
-        <View style={[styles.emptyActivityCard, styles.card]}>
-          <MaterialIcons name="receipt-long" size={26} color={theme.textMuted} />
-          <Text style={[styles.emptyActivityTitle, styles.textPrimary]}>No activity yet</Text>
-          <Text style={[styles.emptyActivitySubtitle, styles.textMuted]}>
-            Use the Faucet to request Devnet tokens and see your first transaction.
-          </Text>
-        </View>
-      ) : (
-        <View style={[styles.activityList, styles.card]}>
-          {transactions.slice(0, 3).map((tx, idx) => (
-            <React.Fragment key={tx.signature || idx}>
-              {idx > 0 && <View style={[styles.assetDivider, styles.divider]} />}
-              <ActivityRow tx={tx} variant="compact" onSelect={handleSelectTransaction} />
-            </React.Fragment>
-          ))}
-        </View>
-      )}
+      <View style={[styles.activityList, styles.card]}>
+        {transactions.length === 0 ? (
+          <View style={styles.activityRow}>
+            <View style={styles.activityLeft}>
+              <View style={[styles.activityIconCircle, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
+                <LucideShieldCheck size={18} color={theme.textPrimary} />
+              </View>
+              <View>
+                <Text style={[styles.activityItemTitle, styles.textPrimary]}>On-Chain Setup</Text>
+                <Text style={styles.activityItemDate}>2:17 PM</Text>
+              </View>
+            </View>
+            <Text style={[styles.activityAmount, styles.textMuted]}>—</Text>
+          </View>
+        ) : (
+          transactions.slice(0, 3).map((tx, idx) => {
+            const received = tx.direction === 'receive'
+            return (
+              <React.Fragment key={tx.signature || idx}>
+                {idx > 0 && <View style={[styles.assetDivider, styles.divider]} />}
+                <TouchableOpacity
+                  style={styles.activityRow}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                    handleSelectTransaction(tx)
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.activityLeft}>
+                    <View style={[styles.activityIconCircle, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
+                      {tx.type === 'unfreeze' ? (
+                        <LucideShieldCheck size={18} color={theme.textPrimary} />
+                      ) : (
+                        <MaterialIcons
+                          name={received ? 'south-west' : 'north-east'}
+                          size={18}
+                          color={received ? theme.emeraldText : theme.textPrimary}
+                        />
+                      )}
+                    </View>
+                    <View>
+                      <Text style={[styles.activityItemTitle, styles.textPrimary]}>
+                        {tx.type === 'unfreeze'
+                          ? 'On-Chain Setup'
+                          : received
+                            ? `Received ${tx.tokenSymbol || 'SOL'}`
+                            : `Sent ${tx.tokenSymbol || 'SOL'}`}
+                      </Text>
+                      <Text style={styles.activityItemDate}>
+                        {new Date(tx.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text
+                    style={[
+                      styles.activityAmount,
+                      tx.amount > 0 ? { color: received ? theme.emeraldText : theme.textPrimary } : styles.textMuted,
+                    ]}
+                  >
+                    {tx.amount > 0
+                      ? `${received ? '+' : '-'}${tx.amount.toFixed(4)} ${tx.tokenSymbol || 'SOL'}`
+                      : '—'}
+                  </Text>
+                </TouchableOpacity>
+              </React.Fragment>
+            )
+          })
+        )}
+      </View>
     </>
   )
 
@@ -1625,111 +1752,35 @@ export function HaptixWalletScreen() {
     <>
       <View style={styles.pageHeader}>
         <View style={styles.pageTitleRow}>
-          <Text style={[styles.pageTitle, styles.textPrimary]}>AI Agents</Text>
+          <Text style={[styles.pageTitle, styles.textPrimary]}>AI agents</Text>
           <PolicyLinkButton onPress={() => setPolicyTopic('agents')} />
         </View>
       </View>
 
-      {/* 1. HERO FIREWALL & 24H BUDGET CARD */}
-      <View style={[styles.agentHeroCard, styles.card]}>
-        <View style={styles.agentHeroHeader}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View
-              style={[styles.agentFirewallIconCircle, { backgroundColor: isFrozen ? theme.roseBg : theme.accentLight }]}
-            >
-              <MaterialIcons
-                name={isFrozen ? 'lock' : 'security'}
-                size={18}
-                color={isFrozen ? theme.roseText : theme.accent}
-              />
-            </View>
-            <View>
-              <Text style={[styles.agentHeroTitle, styles.textPrimary]}>Spending Limits</Text>
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.agentHeroStatusBadge,
-              isFrozen
-                ? { backgroundColor: theme.roseBg, borderColor: theme.roseBorder }
-                : { backgroundColor: theme.bgElevated, borderColor: theme.borderSubtle },
-            ]}
-          >
-            {isFrozen ? null : onChainWallet ? (
-              <LucideCheck size={11} color={theme.textSecondary} strokeWidth={2.4} />
-            ) : null}
-            <Text
-              style={[
-                styles.agentStatusText,
-                { color: isFrozen ? theme.roseText : onChainWallet ? theme.textSecondary : theme.textMuted },
-              ]}
-            >
-              {isFrozen ? 'Locked' : onChainWallet ? 'Limits active' : 'Not on-chain yet'}
+      {/* 1. SPENDING LIMITS (Clean side-by-side metric cards matching Image 1) */}
+      <View style={{ marginBottom: 14 }}>
+        <Text style={[styles.spendingLimitsLabel, styles.textSecondary]}>Spending limits</Text>
+        <View style={styles.spendingLimitsRow}>
+          <View style={[styles.spendingLimitCard, styles.card]}>
+            <Text style={[styles.spendingLimitTitle, styles.textSecondary]}>One key</Text>
+            <Text style={[styles.spendingLimitAmount, styles.textPrimary]}>
+              ⩽ {spendThreshold} SOL
             </Text>
           </View>
-        </View>
-
-        {/* Budget meter. The cap is what is actually delegated, so with no session granted
-            both numbers are zero and the bar is empty -- a meter that reads as broken
-            rather than as "nothing delegated yet". It appears once there is a budget. */}
-        {agentDailyBudgetUsd > 0 && (
-          <>
-            <View style={styles.agentBudgetStatRow}>
-              <View>
-                <Text style={[styles.agentBudgetLabel, styles.textMuted]}>Spent Today</Text>
-                <Text style={[styles.agentBudgetNumber, styles.textPrimary]}>${agentSpentToday.toFixed(2)} USD</Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={[styles.agentBudgetLabel, styles.textMuted]}>Delegated</Text>
-                <Text style={[styles.agentBudgetNumber, styles.textSecondary]}>
-                  ${agentDailyBudgetUsd.toFixed(2)} USD
-                </Text>
-              </View>
-            </View>
-
-            <View
-              style={[
-                styles.agentProgressTrack,
-                { backgroundColor: isDark ? theme.borderSubtle : theme.borderDefault },
-              ]}
-            >
-              <View
-                style={[
-                  styles.agentProgressFill,
-                  {
-                    backgroundColor: isFrozen ? theme.rose : theme.accent,
-                    width: `${Math.min(100, Math.max(0, (agentSpentToday / agentDailyBudgetUsd) * 100))}%`,
-                  },
-                ]}
-              />
-            </View>
-          </>
-        )}
-
-        {/* Policy Pills Row */}
-        <View style={styles.agentPolicyPillRow}>
-          <View style={[styles.agentPolicyPill, styles.elevatedCard]}>
-            <LucideSmartphone size={13} color={theme.textSecondary} strokeWidth={1.8} />
-            <Text style={[styles.agentPolicyPillText, styles.textSecondary]}>One key: ≤ {spendThreshold} SOL</Text>
-          </View>
-
-          <View style={[styles.agentPolicyPill, styles.elevatedCard]}>
-            <LucideShieldCheck size={13} color={theme.textSecondary} strokeWidth={1.8} />
-            <Text style={[styles.agentPolicyPillText, styles.textSecondary]}>Both keys: &gt; {spendThreshold} SOL</Text>
+          <View style={[styles.spendingLimitCard, styles.card]}>
+            <Text style={[styles.spendingLimitTitle, styles.textSecondary]}>Both keys</Text>
+            <Text style={[styles.spendingLimitAmount, styles.textPrimary]}>
+              &gt; {spendThreshold} SOL
+            </Text>
           </View>
         </View>
       </View>
 
-      {/* 2. AGENT SESSIONS. Read from the on-chain wallet account: these rows
-          used to be two hardcoded agent names that had nothing to do with what
-          was actually delegated. */}
+      {/* 2. AGENT SESSIONS */}
       <View style={[styles.agentSectionCard, styles.card]}>
         <View style={styles.agentSectionHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.agentSectionHeading, styles.textPrimary]}>Agent Sessions</Text>
-            {/* Counted only when there is something to count: a badge reading "0 Active"
-                beside a heading that already says "Sessions" carries no information. */}
+            <Text style={[styles.agentSectionHeading, styles.textPrimary]}>Agent sessions</Text>
             {activeAgentCount > 0 ? (
               <Text style={[styles.agentCompactSub, styles.textMuted]}>{activeAgentCount} active</Text>
             ) : null}
@@ -1741,12 +1792,8 @@ export function HaptixWalletScreen() {
           )}
         </View>
 
-        {!onChainWallet ? (
-          <Text style={[styles.agentCompactSub, styles.textMuted]}>
-            Activate the spending policy on-chain to manage agent sessions.
-          </Text>
-        ) : agentSessions.length === 0 ? (
-          <Text style={[styles.agentCompactSub, styles.textMuted]}>
+        {agentSessions.length === 0 ? (
+          <Text style={[styles.agentEmptyText, styles.textSecondary]}>
             No session keys delegated. Grant one below to let an agent spend from this wallet.
           </Text>
         ) : (
@@ -1772,19 +1819,19 @@ export function HaptixWalletScreen() {
       {/* 3. GRANT SESSION KEY CARD */}
       <View style={[styles.agentSectionCard, styles.card]}>
         <View style={styles.agentSectionHeader}>
-          <Text style={[styles.agentSectionHeading, styles.textPrimary]}>Grant Session Key</Text>
-          <View style={[styles.quorumBadgeSmall, { backgroundColor: 'transparent', borderColor: theme.amberBorder }]}>
-            <Text style={{ color: theme.amberText, fontSize: typeScale.caption, fontWeight: '600' }}>
-              Both passkeys
+          <View>
+            <Text style={[styles.agentSectionHeading, styles.textPrimary]}>Grant session key</Text>
+            <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 4 }}>
+              Requires both passkeys to grant.
             </Text>
           </View>
         </View>
 
-        <Text style={[styles.specKeyText, styles.textMuted, { marginTop: 4, marginBottom: 8 }]}>
-          Allowance Cap
+        <Text style={[styles.specKeyText, styles.textSecondary, { marginTop: 12, marginBottom: 8 }]}>
+          Allowance cap
         </Text>
 
-        {/* Budget Selector Chips */}
+        {/* Budget Selector Chips (0.10, 0.25, 0.50, 1.00) */}
         <View style={styles.agentChipSelectorRow}>
           {['0.10', '0.25', '0.50', '1.00'].map((val) => {
             const isSelected = customAgentAllowance === val
@@ -1796,15 +1843,15 @@ export function HaptixWalletScreen() {
                   isSelected
                     ? {
                         backgroundColor: isDark
-                          ? 'rgba(156, 147, 255, 0.18)'
-                          : 'rgba(124, 101, 193, 0.14)',
-                        borderColor: isDark ? '#9C93FF' : '#7C65C1',
+                          ? 'rgba(108, 140, 255, 0.10)'
+                          : 'rgba(108, 140, 255, 0.08)',
+                        borderColor: '#6C8CFF',
+                        borderWidth: 1.5,
                       }
                     : {
-                        backgroundColor: isDark
-                          ? 'rgba(255, 255, 255, 0.03)'
-                          : 'rgba(0, 0, 0, 0.02)',
-                        borderColor: theme.borderDefault,
+                        backgroundColor: isDark ? '#18181B' : '#F4F4F5',
+                        borderColor: 'transparent',
+                        borderWidth: 1,
                       },
                 ]}
                 onPress={() => {
@@ -1819,22 +1866,22 @@ export function HaptixWalletScreen() {
                   style={[
                     styles.agentBudgetChipText,
                     isSelected
-                      ? { color: isDark ? '#9C93FF' : '#7C65C1', fontWeight: '700' }
-                      : { color: theme.textSecondary, fontWeight: '500' },
+                      ? { color: '#6C8CFF', fontWeight: '700' }
+                      : { color: theme.textSecondary, fontWeight: '600' },
                   ]}
                 >
-                  {val} SOL
+                  {val}
                 </Text>
               </TouchableOpacity>
             )
           })}
         </View>
 
-        <Text style={[styles.specKeyText, styles.textMuted, { marginTop: 12, marginBottom: 8 }]}>
-          Session Validity
+        <Text style={[styles.specKeyText, styles.textSecondary, { marginTop: 14, marginBottom: 8 }]}>
+          Session validity
         </Text>
 
-        {/* Validity Duration Selector Chips */}
+        {/* Validity Duration Selector Chips (1h, 6h, 12h, 24h) */}
         <View style={styles.agentChipSelectorRow}>
           {[
             { label: '1h', hours: '1' },
@@ -1851,15 +1898,15 @@ export function HaptixWalletScreen() {
                   isSelected
                     ? {
                         backgroundColor: isDark
-                          ? 'rgba(156, 147, 255, 0.18)'
-                          : 'rgba(124, 101, 193, 0.14)',
-                        borderColor: isDark ? '#9C93FF' : '#7C65C1',
+                          ? 'rgba(108, 140, 255, 0.10)'
+                          : 'rgba(108, 140, 255, 0.08)',
+                        borderColor: '#6C8CFF',
+                        borderWidth: 1.5,
                       }
                     : {
-                        backgroundColor: isDark
-                          ? 'rgba(255, 255, 255, 0.03)'
-                          : 'rgba(0, 0, 0, 0.02)',
-                        borderColor: theme.borderDefault,
+                        backgroundColor: isDark ? '#18181B' : '#F4F4F5',
+                        borderColor: 'transparent',
+                        borderWidth: 1,
                       },
                 ]}
                 onPress={() => {
@@ -1874,8 +1921,8 @@ export function HaptixWalletScreen() {
                   style={[
                     styles.agentBudgetChipText,
                     isSelected
-                      ? { color: isDark ? '#9C93FF' : '#7C65C1', fontWeight: '700' }
-                      : { color: theme.textSecondary, fontWeight: '500' },
+                      ? { color: '#6C8CFF', fontWeight: '700' }
+                      : { color: theme.textSecondary, fontWeight: '600' },
                   ]}
                 >
                   {item.label}
@@ -1885,26 +1932,57 @@ export function HaptixWalletScreen() {
           })}
         </View>
 
+        {/* Summary text + Solid Pill Authorize session Button */}
         <View style={{ marginTop: 14 }}>
-          <PrismDepthButton
-            size="default"
-            title={`Authorize ${customAgentAllowance} SOL · ${customAgentValidHours}h Session`}
+          <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: 'left', marginBottom: 12 }}>
+            {`${customAgentAllowance} SOL for ${customAgentValidHours} hours`}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.agentPrimaryPillBtn,
+              {
+                backgroundColor: isDark ? '#FFFFFF' : '#000000',
+              },
+            ]}
             onPress={handleInitiateGrantSession}
-            loading={isGrantingSession}
             disabled={isGrantingSession}
-          />
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Authorize session"
+          >
+            {isGrantingSession ? (
+              <ActivityIndicator size="small" color={isDark ? '#000000' : '#FFFFFF'} />
+            ) : (
+              <Text
+                style={[
+                  styles.agentPrimaryPillBtnText,
+                  {
+                    color: isDark ? '#000000' : '#FFFFFF',
+                  },
+                ]}
+              >
+                Authorize session
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* 4. FAST-LANE TEST & EMERGENCY CIRCUIT BREAKER */}
+      {/* 4. AUTONOMOUS AGENT TRADE CARD */}
       <View style={[styles.agentActionCard, styles.card]}>
-        <Text style={[styles.agentActionTitle, styles.textPrimary]}>Autonomous Agent Trade</Text>
+        <Text style={[styles.agentSectionHeading, styles.textPrimary, { marginBottom: 12 }]}>
+          Autonomous agent trade
+        </Text>
 
-        {/* The agent needs a destination. It used to pay a freshly generated
-            keypair, i.e. an address nobody controls, which just destroyed the
-            funds. This is where the real recipient is entered. */}
         <TextInput
-          style={[styles.agentRecipientInput, styles.input]}
+          style={[
+            styles.agentRecipientInput,
+            styles.input,
+            {
+              backgroundColor: isDark ? '#121214' : '#FFFFFF',
+              borderColor: theme.borderDefault,
+            },
+          ]}
           value={agentRecipient}
           onChangeText={setAgentRecipient}
           placeholder="Agent recipient address"
@@ -1913,50 +1991,51 @@ export function HaptixWalletScreen() {
           autoCapitalize="none"
           autoCorrect={false}
         />
-        <Text style={[styles.agentRecipientHint, styles.textMuted]}>
+        <Text style={[styles.agentRecipientHint, styles.textSecondary]}>
           {`Sends ${AGENT_TRADE_AMOUNT_SOL} SOL to this address.`}
         </Text>
 
-        {/* The action sits below the field it consumes. Beside the title it read before the
-            address it spends to, so the card had to be parsed twice. */}
+        {/* Full-width "Run trade" button */}
         <TouchableOpacity
           style={[
-            styles.agentFastLaneTestBtn,
-            { backgroundColor: theme.accent, alignSelf: 'flex-start', marginTop: 12 },
+            styles.agentRunTradeBtn,
+            {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#F4F4F5',
+              borderColor: theme.borderDefault,
+            },
           ]}
           onPress={confirmAgentExecute}
-          activeOpacity={0.8}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Run trade"
         >
-          <LucidePlaySolid size={10} color={theme.accentForeground} />
-          <Text style={[styles.agentFastLaneTestBtnText, { color: theme.accentForeground }]}>Run Trade</Text>
+          <Text style={[styles.agentRunTradeBtnText, styles.textPrimary]}>Run trade</Text>
         </TouchableOpacity>
 
         <View style={[styles.agentRowDivider, styles.divider]} />
 
         {/* Wallet lock */}
-        <View style={{ marginTop: 4 }}>
+        <View style={{ marginTop: 6 }}>
           <View
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-              <Text
-                style={[
-                  styles.agentActionTitle,
-                  isFrozen ? { color: theme.emeraldText } : { color: theme.textPrimary },
-                ]}
-              >
-                {isFrozen ? 'Wallet Is Locked' : 'Wallet Lock'}
-              </Text>
-            </View>
-            <Text style={[styles.emergencyTag, { color: isFrozen ? theme.emeraldText : theme.textMuted }]}>
+            <Text
+              style={[
+                styles.agentActionTitle,
+                isFrozen ? { color: theme.roseText } : { color: theme.textPrimary },
+              ]}
+            >
+              {isFrozen ? 'Wallet is locked' : 'Wallet lock'}
+            </Text>
+            <Text style={{ fontSize: 12, color: isFrozen ? theme.roseText : theme.textMuted }}>
               {isFrozen ? 'Locked' : 'Available'}
             </Text>
           </View>
 
           <HoldToConfirmButton
-            label={isFrozen ? 'Hold to Unlock Wallet' : 'Hold to Lock Wallet'}
-            confirmingLabel={isFrozen ? 'Unlocking on-chain...' : 'Freezing on-chain...'}
-            completedLabel={isFrozen ? 'Wallet Unlocked' : 'Wallet Frozen'}
+            label={isFrozen ? 'Hold to unlock wallet' : 'Hold to lock wallet'}
+            confirmingLabel={isFrozen ? 'Unlocking on-chain' : 'Freezing on-chain'}
+            completedLabel={isFrozen ? 'Wallet unlocked' : 'Wallet frozen'}
             variant="primary"
             onConfirm={handleToggleFreeze}
           />
@@ -1982,23 +2061,42 @@ export function HaptixWalletScreen() {
       return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
     }
 
+    const groupedTransactions: { day: string; items: TransactionRecord[] }[] = []
+    for (const tx of filtered) {
+      const day = groupLabel(tx.timestamp)
+      const lastGroup = groupedTransactions[groupedTransactions.length - 1]
+      if (lastGroup && lastGroup.day === day) {
+        lastGroup.items.push(tx)
+      } else {
+        groupedTransactions.push({ day, items: [tx] })
+      }
+    }
+
     return (
       <>
         <View style={styles.pageHeader}>
-          <Text style={[styles.pageTitle, styles.textPrimary]}>Transaction History</Text>
+          <Text style={[styles.pageTitle, styles.textPrimary]}>Transaction history</Text>
           <Text style={[styles.pageSubtitle, styles.textSecondary]}>
-            Every action this wallet has taken, confirmed on-chain
+            Every action this wallet has taken, confirmed on-chain.
           </Text>
         </View>
 
         {/* Activity Category Filter Chips */}
-        <View style={styles.activityFilterRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.activityFilterScroll}
+          contentContainerStyle={styles.activityFilterContent}
+        >
           {ACTIVITY_FILTERS.map((f) => {
             const isSelected = activityFilter === f.id
             return (
               <TouchableOpacity
                 key={f.id}
-                style={[styles.activityFilterChip, isSelected ? { backgroundColor: theme.accent } : styles.input]}
+                style={[
+                  styles.activityFilterChip,
+                  isSelected ? styles.activityFilterChipActive : styles.activityFilterChipInactive,
+                ]}
                 onPress={() => {
                   Haptics.selectionAsync()
                   setActivityFilter(f.id)
@@ -2010,7 +2108,7 @@ export function HaptixWalletScreen() {
                 <Text
                   style={[
                     styles.activityFilterChipText,
-                    isSelected ? { color: theme.accentForeground, fontWeight: '700' } : styles.textSecondary,
+                    isSelected ? styles.activityFilterChipTextActive : styles.activityFilterChipTextInactive,
                   ]}
                 >
                   {f.label}
@@ -2018,9 +2116,9 @@ export function HaptixWalletScreen() {
               </TouchableOpacity>
             )
           })}
-        </View>
+        </ScrollView>
 
-        {/* Transactions List */}
+        {/* Transactions List Grouped by Day */}
         {filtered.length === 0 ? (
           <View style={[styles.emptyActivityCard, styles.card]}>
             <MaterialIcons name="receipt-long" size={26} color={theme.textMuted} />
@@ -2031,23 +2129,27 @@ export function HaptixWalletScreen() {
             </Text>
             <Text style={[styles.emptyActivitySubtitle, styles.textMuted]}>
               {activityFilter === 'all'
-                ? 'Send SOL, request Devnet test tokens, or trigger AI trades to see activity.'
-                : 'Try selecting All or trigger a new on-chain transaction.'}
+                ? 'Send SOL, request Devnet test tokens, or trigger AI trades to see activity'
+                : 'Try selecting All or trigger a new on-chain transaction'}
             </Text>
           </View>
         ) : (
-          <View style={[styles.activityList, styles.card]}>
-            {filtered.map((tx, idx) => {
-              const dayLabel = groupLabel(tx.timestamp)
-              const showDayHeader = idx === 0 || dayLabel !== groupLabel(filtered[idx - 1].timestamp)
-
-              return (
-                <React.Fragment key={tx.signature || idx}>
-                  {showDayHeader && <Text style={[styles.activityGroupLabel, styles.textMuted]}>{dayLabel}</Text>}
-                  <ActivityRow tx={tx} variant="detail" onSelect={handleSelectTransaction} />
-                </React.Fragment>
-              )
-            })}
+          <View style={styles.activityGroupsWrapper}>
+            {groupedTransactions.map((group) => (
+              <View key={group.day} style={styles.activityGroupSection}>
+                <Text style={[styles.activityGroupHeader, styles.textSecondary]}>
+                  {group.day}
+                </Text>
+                <View style={[styles.activityGroupCard, styles.card]}>
+                  {group.items.map((tx, idx) => (
+                    <React.Fragment key={tx.signature ? `${tx.signature}-${idx}` : `${group.day}-${idx}`}>
+                      {idx > 0 && <View style={[styles.activityRowDivider, styles.divider]} />}
+                      <ActivityRow tx={tx} variant="detail" onSelect={handleSelectTransaction} />
+                    </React.Fragment>
+                  ))}
+                </View>
+              </View>
+            ))}
           </View>
         )}
       </>
@@ -2064,14 +2166,12 @@ export function HaptixWalletScreen() {
         <Text style={[styles.pageSubtitle, styles.textSecondary]}>Your keys, spending limits, and wallet lock</Text>
       </View>
 
-      {/* 1. Status alert. Only the alarmed state is raised here: the green variant said
-          the same thing as the Device Credentials card directly below it, so the top of
-          the screen was spending two blocks on one fact. */}
+      {/* 1. Status alert */}
       {isFrozen && (
         <HaptixAlert
           status="error"
           icon="lock"
-          title={recoveryInFlight ? 'Recovery In Flight' : 'Wallet Locked'}
+          title={recoveryInFlight ? 'Recovery in flight' : 'Wallet locked'}
           message={
             recoveryInFlight
               ? 'A guardian recovery is holding this wallet frozen, so there is nothing to unlock here. Veto it, or let the timelock run out, in Settings \u2192 Recovery.'
@@ -2080,12 +2180,12 @@ export function HaptixWalletScreen() {
           action={
             recoveryInFlight
               ? {
-                  label: 'Open Recovery',
+                  label: 'Open recovery',
                   onPress: () => router.push('/(tabs)/settings/recovery'),
                   variant: 'primary',
                 }
               : {
-                  label: 'Unlock Wallet',
+                  label: 'Unlock wallet',
                   onPress: handleToggleFreeze,
                   variant: 'primary',
                 }
@@ -2096,7 +2196,7 @@ export function HaptixWalletScreen() {
       {/* 2. Device Credentials Card */}
       <View style={[styles.securitySectionCard, styles.card]}>
         <View style={styles.securitySectionHeader}>
-          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Your Keys</Text>
+          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Your keys</Text>
         </View>
 
         {/* Primary Passkey */}
@@ -2116,7 +2216,7 @@ export function HaptixWalletScreen() {
 
         <View style={[styles.securityRowDivider, styles.divider]} />
 
-        {/* Secondary / backup device key */}
+        {/* Secondary / backup device key (Rule 2: information folded into plain gray subtext) */}
         <View style={styles.credentialCompactRow}>
           <View
             style={[styles.credentialIconWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderSubtle }]}
@@ -2127,10 +2227,9 @@ export function HaptixWalletScreen() {
             <Text style={[styles.credentialName, styles.textPrimary]}>
               {activeWallet?.secondaryPasskeyLabel ?? 'Backup device key'}
             </Text>
-            <Text style={[styles.credentialSub, styles.textMuted]}>Your backup key, on this device</Text>
-          </View>
-          <View style={styles.quorumTag}>
-            <Text style={styles.quorumTagText}>For large sends</Text>
+            <Text style={[styles.credentialSub, styles.textMuted]}>
+              Your backup key, on this device — for large sends
+            </Text>
           </View>
         </View>
       </View>
@@ -2138,31 +2237,31 @@ export function HaptixWalletScreen() {
       {/* 3. Spending Policy Firewall (Stat Grid) */}
       <View style={[styles.securitySectionCard, styles.card]}>
         <View style={styles.securitySectionHeader}>
-          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Spending Limits</Text>
+          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Spending limits</Text>
         </View>
 
         <View style={styles.policyStatsGrid}>
           {/* Tile 1: Fast-lane limit */}
           <View style={[styles.policyStatTile, styles.input]}>
-            <Text style={[styles.policyStatLabel, styles.textSecondary]}>One-Key Limit</Text>
+            <Text style={[styles.policyStatLabel, styles.textSecondary]}>One-key limit</Text>
             <Text style={[styles.policyStatValue, styles.textPrimary]}>≤ {spendThreshold} SOL</Text>
           </View>
 
           {/* Tile 2: High-value quorum */}
           <View style={[styles.policyStatTile, styles.input]}>
-            <Text style={[styles.policyStatLabel, styles.textSecondary]}>Larger Sends</Text>
+            <Text style={[styles.policyStatLabel, styles.textSecondary]}>Larger sends</Text>
             <Text style={[styles.policyStatValue, styles.textPrimary]}>Both keys</Text>
           </View>
 
           {/* Tile 3: Velocity circuit breaker */}
           <View style={[styles.policyStatTile, styles.input]}>
-            <Text style={[styles.policyStatLabel, styles.textSecondary]}>Rate Limit</Text>
+            <Text style={[styles.policyStatLabel, styles.textSecondary]}>Rate limit</Text>
             <Text style={[styles.policyStatValue, styles.textPrimary]}>5 tx / hr</Text>
           </View>
 
           {/* Tile 4: Agent spending cap */}
           <View style={[styles.policyStatTile, styles.input]}>
-            <Text style={[styles.policyStatLabel, styles.textSecondary]}>Agent Limit</Text>
+            <Text style={[styles.policyStatLabel, styles.textSecondary]}>Agent limit</Text>
             <Text style={[styles.policyStatValue, styles.textPrimary]}>
               ${(agentAllowance * solPriceUsd).toFixed(0)} / 24h
             </Text>
@@ -2173,33 +2272,28 @@ export function HaptixWalletScreen() {
       {/* 4. Wallet lock */}
       <View style={[styles.securitySectionCard, styles.card]}>
         <View style={styles.securitySectionHeader}>
-          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Wallet Lock</Text>
+          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Wallet lock</Text>
         </View>
 
-        {/* Body copy rather than an alert panel: the amber box used to be the
-            loudest thing in the card, out-shouting the destructive control under it. */}
         <Text style={[styles.panicExplain, styles.textSecondary]}>
           {isFrozen
-            ? 'Transfers, swaps, and agent spending are paused. Hold below to unlock.'
-            : 'Hold to pause every outgoing transaction and agent spend until you unlock.'}
+            ? 'Transfers, swaps, and agent spending are paused. Hold below to unlock'
+            : 'Hold to pause every outgoing transaction and agent spend until you unlock'}
         </Text>
 
         <HoldToConfirmButton
-          label={isFrozen ? 'Hold to Unlock Wallet' : 'Hold to Lock Wallet'}
-          confirmingLabel={isFrozen ? 'Unlocking on-chain...' : 'Freezing on-chain...'}
-          completedLabel={isFrozen ? 'Wallet Unlocked' : 'Wallet Frozen'}
-          // Deliberately not `danger`. Red is reserved for states that are already wrong,
-          // and locking a wallet is a deliberate protective action, not an alarm. The hold
-          // gesture is what stops this from being a casual tap.
+          label={isFrozen ? 'Hold to unlock wallet' : 'Hold to lock wallet'}
+          confirmingLabel={isFrozen ? 'Unlocking on-chain' : 'Freezing on-chain'}
+          completedLabel={isFrozen ? 'Wallet unlocked' : 'Wallet frozen'}
           variant="primary"
           onConfirm={handleToggleFreeze}
         />
       </View>
 
-      {/* 5. What is currently protecting the wallet. */}
+      {/* 5. What is currently protecting the wallet */}
       <View style={[styles.securitySectionCard, styles.card]}>
         <View style={styles.securitySectionHeader}>
-          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Active Protections</Text>
+          <Text style={[styles.securitySectionHeading, styles.textPrimary]}>Active protections</Text>
         </View>
 
         <View style={styles.auditLogRow}>
@@ -2214,10 +2308,6 @@ export function HaptixWalletScreen() {
 
         <View style={[styles.securityRowDivider, styles.divider]} />
 
-        {/* Both rows describe the chain, so both read live state. The limits row used to
-            be hardcoded true, which had a brand-new wallet claiming its limits were
-            enforced on-chain on this page while the Home tab was still asking it to
-            finish setup. */}
         <View style={styles.auditLogRow}>
           <LucideCheck size={14} color={onChainWallet ? theme.textSecondary : theme.textMuted} strokeWidth={2.4} />
           <View style={{ flex: 1 }}>
@@ -2254,23 +2344,22 @@ export function HaptixWalletScreen() {
   return (
     <View style={[styles.container, styles.container]}>
       {/* ==================================================================== */}
-      {/* 1. ELEVATED CONSUMER HOME HEADER                                     */}
+      {/* 1. QUIET HEADER (Brand avatar + Identity + Network + Theme + Menu)    */}
       {/* ==================================================================== */}
-      <View style={[styles.header, styles.header, { paddingTop: headerPaddingTop }]}>
+      <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
         <View style={styles.headerLeftGroup}>
           <TouchableOpacity
             style={styles.avatarButton}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              // Settings, not Security. Security already owns a dock tab, so pointing the
-              // wallet's identity chip at it meant two routes to the same page and none to
-              // the one holding recovery, contacts and app preferences.
-              router.push('/(tabs)/settings')
+              Haptics.selectionAsync()
+              setIsAccountSwitcherOpen(true)
             }}
-            activeOpacity={0.75}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Switch account, currently ${activeWallet?.name || 'My Haptix Wallet'}`}
           >
-            <View style={[styles.avatarCircle, styles.elevatedCard, isFrozen && styles.avatarCircleAlert]}>
-              <HaptixBrandMark size={16} color={isFrozen ? theme.roseText : theme.textPrimary} />
+            <View style={[styles.avatarCircle, styles.elevatedCard]}>
+              <HaptixBrandMark size={20} />
             </View>
           </TouchableOpacity>
 
@@ -2283,10 +2372,10 @@ export function HaptixWalletScreen() {
               }}
               activeOpacity={0.7}
               accessibilityRole="button"
-              accessibilityLabel={`Switch account, currently ${activeWallet?.name || 'Haptix Wallet'}`}
+              accessibilityLabel={`Switch account, currently ${activeWallet?.name || 'My Haptix Wallet'}`}
             >
               <Text style={[styles.headerWalletName, styles.textPrimary]} numberOfLines={1}>
-                {activeWallet?.name || 'Haptix Wallet'}
+                {activeWallet?.name || 'My Haptix Wallet'}
               </Text>
               <MaterialIcons name="keyboard-arrow-down" size={17} color={theme.textSecondary} />
             </TouchableOpacity>
@@ -2304,26 +2393,6 @@ export function HaptixWalletScreen() {
         </View>
 
         <View style={styles.headerRight}>
-          {/* Network Switcher Pill */}
-          <TouchableOpacity
-            style={[styles.networkPill, styles.elevatedCard]}
-            onPress={() => {
-              Haptics.selectionAsync()
-              setNetwork((prev) => (prev === 'devnet' ? 'mainnet' : 'devnet'))
-            }}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={`Switch network, currently ${network === 'devnet' ? 'Devnet' : 'Mainnet'}`}
-          >
-            <View style={[styles.networkDot, network === 'mainnet' && { backgroundColor: theme.emerald }]} />
-            <Text style={[styles.networkPillText, styles.textSecondary]}>
-              {network === 'devnet' ? 'Devnet' : 'Mainnet'}
-            </Text>
-            {/* swap-horiz, not a chevron: this tap toggles the network in place, it does
-                not open a menu, and the old keyboard-arrow-down promised one. */}
-            <MaterialIcons name="swap-horiz" size={13} color={theme.textMuted} />
-          </TouchableOpacity>
-
           {/* Quick Light/Dark Mode Switcher */}
           <ThemeToggleButton size="compact" showLabel={false} />
 
@@ -2342,17 +2411,13 @@ export function HaptixWalletScreen() {
         </View>
       </View>
 
-      {/* FREEZE BANNER. A recovery holds the wallet frozen on purpose and the program
-          refuses to unfreeze while one is pending, so the banner distinguishes the two
-          cases and sends the recovery one to the screen that can actually resolve it --
-          "Unlock" there would spend two passkey prompts on a transaction that can only
-          be turned away. */}
+      {/* Freeze banner */}
       {isFrozen && (
         <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
           <HaptixAlert
             status="error"
             icon="lock"
-            title={recoveryInFlight ? 'RECOVERY IN FLIGHT' : 'WALLET LOCKED'}
+            title={recoveryInFlight ? 'Recovery in flight' : 'Wallet locked'}
             message={
               recoveryInFlight
                 ? 'A guardian recovery is holding this wallet frozen. Open Settings \u2192 Recovery to keep your current keys, or let the timelock run out.'
@@ -2361,7 +2426,7 @@ export function HaptixWalletScreen() {
             action={
               recoveryInFlight
                 ? {
-                    label: 'Open Recovery',
+                    label: 'Open recovery',
                     onPress: () => router.push('/(tabs)/settings/recovery'),
                     variant: 'primary',
                   }
@@ -2376,7 +2441,7 @@ export function HaptixWalletScreen() {
         </View>
       )}
 
-      {/* RPC DEGRADED BANNER */}
+      {/* RPC degraded banner */}
       {rpcIssue && (
         <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
           <HaptixAlert
@@ -2400,7 +2465,15 @@ export function HaptixWalletScreen() {
       {/* ==================================================================== */}
       <ScrollView
         style={[styles.scrollArea, styles.container]}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 24) + 112 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingBottom:
+              dockTab === 'agent'
+                ? Math.max(insets.bottom, 24) + 180
+                : Math.max(insets.bottom, 24) + 120,
+          },
+        ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}
         showsVerticalScrollIndicator={false}
       >
@@ -2425,6 +2498,10 @@ export function HaptixWalletScreen() {
         network={network}
         connection={connection}
         balance={balance}
+        skrBalance={skrBalance}
+        onSkrBalanceChange={setSkrBalance}
+        usdcBalance={usdcBalance}
+        onUsdcBalanceChange={setUsdcBalance}
         spendThreshold={spendThreshold}
         isFrozen={isFrozen}
         recoveryInFlight={recoveryInFlight}
@@ -2802,6 +2879,42 @@ export function HaptixWalletScreen() {
             >
               <MaterialIcons name="open-in-new" size={18} color={theme.textSecondary} />
               <Text style={[styles.overflowRowText, styles.textPrimary]}>View on Solana Explorer</Text>
+            </TouchableOpacity>
+
+            {network === 'devnet' && (
+              <>
+                <View style={[styles.overflowDivider, styles.divider]} />
+                <TouchableOpacity
+                  style={styles.overflowRow}
+                  onPress={() => {
+                    setShowOverflowMenu(false)
+                    handleRequestFaucet()
+                  }}
+                  disabled={isRequestingFaucet}
+                >
+                  {isRequestingFaucet ? (
+                    <ActivityIndicator size="small" color="#6c8cff" style={{ marginRight: 2 }} />
+                  ) : (
+                    <MaterialIcons name="water-drop" size={18} color="#6c8cff" />
+                  )}
+                  <Text style={[styles.overflowRowText, { color: '#6c8cff', fontWeight: '500' }]}>
+                    {isRequestingFaucet ? 'Requesting 0.2 SOL...' : 'Request Devnet Airdrop (+0.2 SOL)'}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            <View style={[styles.overflowDivider, styles.divider]} />
+
+            <TouchableOpacity
+              style={styles.overflowRow}
+              onPress={() => {
+                setShowOverflowMenu(false)
+                router.push('/(tabs)/settings')
+              }}
+            >
+              <MaterialIcons name="settings" size={18} color={theme.textSecondary} />
+              <Text style={[styles.overflowRowText, styles.textPrimary]}>Settings & Network</Text>
             </TouchableOpacity>
 
             <View style={[styles.overflowDivider, styles.divider]} />

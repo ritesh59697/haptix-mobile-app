@@ -25,6 +25,7 @@ export interface HaptixBiometricPromptSheetProps {
   title?: string
   subtitle?: string
   amountSol?: number
+  tokenSymbol?: string
   solPriceUsd?: number
   recipientAddress?: string
   recipientLabel?: string | null
@@ -45,6 +46,7 @@ export function HaptixBiometricPromptSheet({
   title,
   subtitle,
   amountSol,
+  tokenSymbol = 'SOL',
   solPriceUsd = 145,
   recipientAddress,
   recipientLabel,
@@ -134,7 +136,9 @@ export function HaptixBiometricPromptSheet({
   // Clean, focused values
   const heroAmount =
     actionType === 'transfer' && amountSol !== undefined
-      ? `${amountSol.toFixed(4)} SOL`
+      ? tokenSymbol === 'SKR'
+        ? `${amountSol.toFixed(2)} SKR`
+        : `${amountSol.toFixed(4)} SOL`
       : actionType === 'agent_session'
       ? `${(agentAllowanceSol || 0.25).toFixed(2)} SOL`
       : 'Security Action'
@@ -143,10 +147,10 @@ export function HaptixBiometricPromptSheet({
     actionType === 'transfer'
       ? recipientAddress
         ? `Transfer to ${recipientLabel || ellipsify(recipientAddress, 4)}`
-        : 'Confirm Transfer'
+        : 'Confirm transfer'
       : actionType === 'agent_session'
-      ? `AI Agent Session · ${agentValidHours || 24}h`
-      : title || 'Authorize Action'
+      ? `AI agent session (${agentValidHours || 24}h)`
+      : title || 'Authorize action'
 
   const sheetContent = (
     <View style={asModal ? styles.backdrop : styles.overlayBackdrop}>
@@ -197,13 +201,11 @@ export function HaptixBiometricPromptSheet({
           <Text style={[styles.heroTitle, { color: theme.textSecondary }]}>{heroTitle}</Text>
         </View>
 
-        {/* Single Subtle Pill */}
+        {/* Single Subtle Subtext */}
         <View style={styles.pillRow}>
-          <View style={[styles.subtlePill, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
-            <Text style={[styles.subtlePillText, { color: theme.textMuted }]}>
-              {isQuorumRequired ? '2-Passkey Quorum · Solana Devnet' : 'Hardware Passkey · Solana Devnet'}
-            </Text>
-          </View>
+          <Text style={[{ color: theme.textMuted, fontSize: 12 }]}>
+            {isQuorumRequired ? 'Both passkeys · Solana devnet' : 'Hardware passkey · Solana devnet'}
+          </Text>
         </View>
 
         {/* Dynamic 1-Line Status Helper */}

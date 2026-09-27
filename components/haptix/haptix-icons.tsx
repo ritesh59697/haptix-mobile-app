@@ -22,6 +22,7 @@ export interface IconProps {
 
 const HAPTIX_NEW_LOGO = require('@/assets/images/haptix-new-logo.png')
 const HAPTIX_LOGO_TEXT = require('@/assets/images/logotext.png')
+const SEEKER_LOGO_IMG = require('@/assets/images/seeker-logo.png')
 
 // Official Haptix Brand Mark (New Design)
 export function HaptixBrandMark({ size = 24, style }: IconProps) {
@@ -120,6 +121,17 @@ export function SolanaTokenLogo({ size = 26 }: { size?: number }) {
   )
 }
 
+// Official Solana Seeker (SKR) Logo (Solana Mobile Seeker Official Mark)
+export function SeekerTokenLogo({ size = 26, style }: { size?: number; style?: StyleProp<ImageStyle> }) {
+  return (
+    <Image
+      source={SEEKER_LOGO_IMG}
+      style={[{ width: size, height: size, borderRadius: size / 2 }, style]}
+      resizeMode="cover"
+    />
+  )
+}
+
 // Official Jupiter Vector Logo
 export function JupiterTokenLogo({ size = 26 }: { size?: number }) {
   return (
@@ -185,6 +197,7 @@ export function HaptixTokenIcon({ symbol, size = 26 }: { symbol: string; size?: 
   const sym = (symbol || '').toUpperCase()
   if (sym === 'SOL') return <SolanaTokenLogo size={size} />
   if (sym === 'USDC') return <UsdcTokenLogo size={size} />
+  if (sym === 'SKR' || sym === 'SEEKER') return <SeekerTokenLogo size={size} />
   if (sym === 'JUP') return <JupiterTokenLogo size={size} />
   if (sym === 'RAY') return <RaydiumTokenLogo size={size} />
   if (sym === 'BONK') return <BonkTokenLogo size={size} />
