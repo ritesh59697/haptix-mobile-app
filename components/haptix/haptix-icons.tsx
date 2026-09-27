@@ -520,8 +520,9 @@ export const DockMarketsIcon = ActivityBold
 export const DockSwapIcon = Refresh2Bold
 
 export const ActionSendIcon = Send2Bold
-export const ActionReceiveIcon = CardReceiveBold
-export const ActionSwapIcon = Refresh2Bold
+export const ActionReceiveIcon = HeroReceiveIcon
+export const ActionSwapIcon = HeroSwapIcon
+export const ActionFaucetIcon = HeroFaucetIcon
 export const ActionFreezeIcon = Lock1Bold
 export const ActionAgentsIcon = CpuChipBold
 
@@ -750,4 +751,87 @@ export function LucideFingerprint({ size = 18, color = '#FFFFFF', strokeWidth = 
     </Svg>
   )
 }
+
+/**
+ * HeroSwapIcon
+ * Minimalist precision horizontal counter-arrows matching mockup
+ */
+export function HeroSwapIcon({ size = 18, color = '#FFFFFF', strokeWidth = 2.1 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M5 8h14M15 4.5L19 8l-4 3.5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M19 16H5M9 12.5L5 16l4 3.5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+/**
+ * HeroReceiveIcon
+ * Diagonal inward receiving arrow (45 deg) matching mockup
+ */
+export function HeroReceiveIcon({ size = 18, color = '#FFFFFF', strokeWidth = 2.2 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M18 6L6 18M6 11.5V18h6.5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+/**
+ * HeroFaucetIcon
+ * Sleek modern vector fuel dispenser matching mockup
+ */
+export function HeroFaucetIcon({ size = 18, color = '#FFFFFF', strokeWidth = 2 }: StrokeIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 21.5h11"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M13.5 21.5V5a2 2 0 0 0-2-2h-5a2 2 0 0 0-2 2v16.5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M6.5 8h5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M13.5 13h1.8a2 2 0 0 1 2 2v1.5a1.8 1.8 0 0 0 1.8 1.8 1.8 1.8 0 0 0 1.8-1.8V9.2a2 2 0 0 0-.6-1.4L18.5 6"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
 
