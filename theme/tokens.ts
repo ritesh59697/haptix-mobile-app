@@ -47,17 +47,17 @@ export interface ThemeTokens {
 export const darkTokens: ThemeTokens = {
   mode: 'dark',
   isDark: true,
-  bgApp: '#0c0c0d', // Ultra-clean dark slate
-  bgCard: '#121214',
-  bgElevated: '#18181b',
-  bgInput: '#121214',
-  borderSubtle: '#201f1d',
-  borderDefault: '#2a2a28',
-  borderFocus: '#6c8cff',
-  textPrimary: '#f2f1ee', // Clean Warm White
-  textSecondary: '#8a8985', // Refined Muted Gray
-  textMuted: '#8a8985',
-  accent: '#6c8cff', // Single cohesive accent (#6c8cff)
+  bgApp: '#000000', // Pitch Black OLED (like ViperX)
+  bgCard: '#000000', // Pitch Black Cards (like ViperX)
+  bgElevated: '#0A0A0C', // Ultra-deep subtle elevation for chips/controls
+  bgInput: '#050507', // Sleek pitch black input field
+  borderSubtle: '#141416', // Subtle separator line
+  borderDefault: '#222226', // Razor-sharp 1px border (like ViperX #1c1c1e / #222226)
+  borderFocus: '#6C8CFF',
+  textPrimary: '#FFFFFF', // Crisp pure white
+  textSecondary: '#8E8E93', // Clean Apple/ViperX muted gray
+  textMuted: '#636366',
+  accent: '#6C8CFF', // Cohesive royal blue / purple accent
   accentLight: 'rgba(108, 140, 255, 0.12)',
   accentGlow: 'rgba(108, 140, 255, 0.25)',
   accentForeground: '#FFFFFF',
@@ -66,20 +66,20 @@ export const darkTokens: ThemeTokens = {
   amberBg: 'rgba(245, 158, 11, 0.12)',
   amberText: '#FBBF24',
   amberBorder: 'rgba(245, 158, 11, 0.3)',
-  emerald: '#5fbf7a',
-  emeraldBg: 'rgba(95, 191, 122, 0.12)',
-  emeraldText: '#5fbf7a',
-  emeraldBorder: 'rgba(95, 191, 122, 0.3)',
+  emerald: '#00C076', // High-energy crypto green (like ViperX +3.42%)
+  emeraldBg: 'rgba(0, 192, 118, 0.12)',
+  emeraldText: '#00C076',
+  emeraldBorder: 'rgba(0, 192, 118, 0.3)',
   rose: '#F43F5E',
   roseBg: 'rgba(244, 63, 94, 0.12)',
   roseText: '#FDA4AF',
   roseSurface: 'rgba(244, 63, 94, 0.2)',
   roseBorder: 'rgba(244, 63, 94, 0.3)',
-  info: '#6c8cff',
+  info: '#6C8CFF',
   infoBg: 'rgba(108, 140, 255, 0.12)',
-  infoText: '#6c8cff',
+  infoText: '#6C8CFF',
   infoBorder: 'rgba(108, 140, 255, 0.3)',
-  scrim: 'rgba(12, 12, 13, 0.94)',
+  scrim: 'rgba(0, 0, 0, 0.94)',
   shadowColor: '#000000',
   cardShadow: {
     shadowColor: '#000000',

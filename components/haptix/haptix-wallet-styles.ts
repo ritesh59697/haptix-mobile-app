@@ -457,9 +457,9 @@ const createStyles = (theme: ThemeTokens) =>
       paddingVertical: 18,
       marginBottom: 18,
       overflow: 'hidden',
-      backgroundColor: theme.isDark ? '#121214' : theme.bgElevated,
+      backgroundColor: theme.isDark ? '#000000' : theme.bgElevated,
       borderWidth: 0.5,
-      borderColor: theme.isDark ? '#26262a' : theme.borderDefault,
+      borderColor: theme.isDark ? '#222226' : theme.borderDefault,
     },
     cleanBalanceLabelRow: {
       flexDirection: 'row',
