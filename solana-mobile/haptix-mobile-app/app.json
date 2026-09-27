@@ -15,7 +15,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0b0f17"
+        "backgroundColor": "#000000"
       },
       "package": "io.haptix.wallet"
     },
