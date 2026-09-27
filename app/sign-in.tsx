@@ -14,12 +14,15 @@ import {
   Modal,
   Pressable,
   ImageBackground,
+  Image,
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Clipboard from '@/utils/clipboard'
 
 const ONBOARDING_BG = require('@/assets/images/onboarding-bg.png')
+const FINGERPRINT_HERO_WHITE = require('@/assets/images/fingerprint-hero-white.png')
+const FINGERPRINT_HERO_DARK = require('@/assets/images/fingerprint-hero.png')
 import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { claimSeekerGenesisReward } from '@/utils/haptix-tokens'
 import { AppConfig } from '@/constants/app-config'
@@ -1250,7 +1253,11 @@ export default function SignIn() {
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.heroBiometricCircle}>
-                <MaterialIcons name="fingerprint" size={28} color={isDark ? '#FFFFFF' : '#000000'} />
+                <Image
+                  source={isDark ? FINGERPRINT_HERO_WHITE : FINGERPRINT_HERO_DARK}
+                  style={styles.heroBiometricIcon}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={styles.sheetDesc}>Authenticate with your biometric passkey</Text>
 
@@ -1621,17 +1628,21 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       marginBottom: 12,
     },
     heroBiometricCircle: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: isDark ? '#18181B' : '#F1F5F9',
+      width: 104,
+      height: 104,
+      borderRadius: 52,
+      backgroundColor: isDark ? '#141418' : '#F4F5F7',
       borderWidth: 1,
-      borderColor: isDark ? '#27272A' : '#E2E8F0',
+      borderColor: isDark ? '#26262C' : '#E2E4E9',
       justifyContent: 'center',
       alignItems: 'center',
       alignSelf: 'center',
-      marginTop: 6,
-      marginBottom: 12,
+      marginTop: 10,
+      marginBottom: 16,
+    },
+    heroBiometricIcon: {
+      width: 76,
+      height: 76,
     },
     sheetTitle: { color: p.heroInk, fontSize: 19, fontWeight: '700' },
     sheetDesc: { color: p.inkSecondary, fontSize: 13.5, marginBottom: 16, textAlign: 'center' },
