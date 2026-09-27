@@ -83,6 +83,8 @@ import {
   UsdcTokenLogo,
   ActionSendIcon,
   ActionReceiveIcon,
+  ActionSwapIcon,
+  ActionFaucetIcon,
   DockHomeIcon,
   DockMarketsIcon,
   DockSwapIcon,
@@ -1439,7 +1441,7 @@ export function HaptixWalletScreen() {
             activeOpacity={0.78}
           >
             <View style={styles.actionIconContainer}>
-              <MaterialIcons name="swap-horiz" size={22} color={theme.textPrimary} />
+              <ActionSwapIcon size={18} color={theme.textPrimary} />
             </View>
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Swap</Text>
           </TouchableOpacity>
@@ -1454,7 +1456,7 @@ export function HaptixWalletScreen() {
             activeOpacity={0.78}
           >
             <View style={styles.actionIconContainer}>
-              <MaterialIcons name="south-west" size={20} color={theme.textPrimary} />
+              <ActionReceiveIcon size={18} color={theme.textPrimary} />
             </View>
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Receive</Text>
           </TouchableOpacity>
@@ -1473,7 +1475,7 @@ export function HaptixWalletScreen() {
               {isRequestingFaucet ? (
                 <ActivityIndicator size="small" color={theme.accent} />
               ) : (
-                <MaterialIcons name="local-gas-station" size={20} color={theme.textPrimary} />
+                <ActionFaucetIcon size={18} color={theme.textPrimary} />
               )}
             </View>
             <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>
