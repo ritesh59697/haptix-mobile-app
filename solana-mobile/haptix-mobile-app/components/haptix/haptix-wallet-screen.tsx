@@ -1741,16 +1741,12 @@ export function HaptixWalletScreen() {
 
   const renderAgentsPage = () => (
     <>
-      <View style={styles.pageHeader}>
-        <View style={styles.pageTitleRow}>
-          <Text style={[styles.pageTitle, styles.textPrimary]}>AI agents</Text>
-          <PolicyLinkButton onPress={() => setPolicyTopic('agents')} />
-        </View>
-      </View>
-
       {/* 1. SPENDING LIMITS (Clean side-by-side metric cards matching Image 1) */}
       <View style={{ marginBottom: 14 }}>
-        <Text style={[styles.spendingLimitsLabel, styles.textSecondary]}>Spending limits</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <Text style={[styles.spendingLimitsLabel, styles.textSecondary, { marginBottom: 0 }]}>Spending limits</Text>
+          <PolicyLinkButton onPress={() => setPolicyTopic('agents')} />
+        </View>
         <View style={styles.spendingLimitsRow}>
           <View style={[styles.spendingLimitCard, styles.card]}>
             <Text style={[styles.spendingLimitTitle, styles.textSecondary]}>One key</Text>
@@ -2065,11 +2061,8 @@ export function HaptixWalletScreen() {
 
     return (
       <>
-        <View style={styles.pageHeader}>
-          <Text style={[styles.pageTitle, styles.textPrimary]}>Transaction history</Text>
-          <Text style={[styles.pageSubtitle, styles.textSecondary]}>
-            Every action this wallet has taken, confirmed on-chain.
-          </Text>
+        <View style={{ marginBottom: 12 }}>
+          <Text style={[styles.sectionTitle, styles.textPrimary]}>Transaction history</Text>
         </View>
 
         {/* Activity Category Filter Chips */}
@@ -2149,12 +2142,9 @@ export function HaptixWalletScreen() {
 
   const renderSecurityPage = () => (
     <>
-      <View style={styles.pageHeader}>
-        <View style={styles.pageTitleRow}>
-          <Text style={[styles.pageTitle, styles.textPrimary]}>Security</Text>
-          <PolicyLinkButton onPress={() => setPolicyTopic('security')} />
-        </View>
-        <Text style={[styles.pageSubtitle, styles.textSecondary]}>Your keys, spending limits, and wallet lock</Text>
+      <View style={{ marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={[styles.sectionTitle, styles.textPrimary]}>Security</Text>
+        <PolicyLinkButton onPress={() => setPolicyTopic('security')} />
       </View>
 
       {/* 1. Status alert */}
