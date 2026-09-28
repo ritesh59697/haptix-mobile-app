@@ -6,7 +6,7 @@ import { useAppTheme } from '@/components/theme/theme-context'
 import { radius, typeScale } from '@/theme/tokens'
 
 export type HaptixDialogStatus = 'neutral' | 'success' | 'warning' | 'error'
-export type HaptixDialogButtonStyle = 'default' | 'cancel' | 'destructive'
+export type HaptixDialogButtonStyle = 'default' | 'cancel' | 'destructive' | 'secondary'
 
 export interface HaptixDialogButton {
   text: string
@@ -133,6 +133,8 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
       accentButton: { backgroundColor: theme.accent, borderColor: theme.accent },
       accentButtonText: { color: theme.accentForeground },
       cancelButtonText: { color: theme.textMuted },
+      secondaryButton: { backgroundColor: theme.bgApp, borderColor: theme.borderSubtle },
+      secondaryButtonText: { color: theme.textPrimary },
       destructiveButton: { backgroundColor: theme.roseBg, borderColor: theme.rose },
       destructiveButtonText: { color: theme.roseText },
     }),
@@ -207,6 +209,7 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
                         layout.button,
                         isButtonRow && layout.buttonFlex,
                         variant === 'default' && colors.accentButton,
+                        variant === 'secondary' && colors.secondaryButton,
                         variant === 'destructive' && colors.destructiveButton,
                         variant === 'cancel' && layout.buttonGhost,
                       ]}
@@ -219,6 +222,7 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
                         style={[
                           layout.buttonText,
                           variant === 'default' && colors.accentButtonText,
+                          variant === 'secondary' && colors.secondaryButtonText,
                           variant === 'destructive' && colors.destructiveButtonText,
                           variant === 'cancel' && colors.cancelButtonText,
                         ]}
