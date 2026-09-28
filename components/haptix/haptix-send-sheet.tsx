@@ -928,7 +928,7 @@ export function HaptixSendSheet({
                   style={[
                     styles.assetSelectorTrigger,
                     {
-                      backgroundColor: theme.isDark ? '#0A0A0C' : '#FFFFFF',
+                      backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
                       borderColor: showTokenMenu ? theme.accent : theme.borderDefault,
                     },
                   ]}
@@ -989,7 +989,7 @@ export function HaptixSendSheet({
                   style={[
                     styles.assetDropdownMenu,
                     {
-                      backgroundColor: theme.isDark ? '#0A0A0C' : '#FFFFFF',
+                      backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
                       borderColor: theme.borderDefault,
                     },
                   ]}
@@ -1709,7 +1709,7 @@ const createSendSheetStyles = (theme: ThemeTokens) =>
       paddingVertical: 9,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: theme.isDark ? '#0A0A0C' : '#FFFFFF',
+      backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
       borderWidth: 1,
     },
     cleanPercentChipActive: {
@@ -1760,7 +1760,7 @@ const createSendSheetStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: theme.isDark ? '#050507' : theme.bgElevated,
+      backgroundColor: theme.isDark ? '#000000' : theme.bgElevated,
     },
     cleanRecipientInput: {
       color: theme.textPrimary,

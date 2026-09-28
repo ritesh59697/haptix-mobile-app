@@ -49,8 +49,8 @@ export const darkTokens: ThemeTokens = {
   isDark: true,
   bgApp: '#000000', // Pitch Black OLED (like ViperX)
   bgCard: '#000000', // Pitch Black Cards (like ViperX)
-  bgElevated: '#0A0A0C', // Ultra-deep subtle elevation for chips/controls
-  bgInput: '#050507', // Sleek pitch black input field
+  bgElevated: '#000000', // Ultra-deep subtle elevation for chips/controls
+  bgInput: '#000000', // Sleek pitch black input field
   borderSubtle: '#141416', // Subtle separator line
   borderDefault: '#222226', // Razor-sharp 1px border (like ViperX #1c1c1e / #222226)
   borderFocus: '#6C8CFF',

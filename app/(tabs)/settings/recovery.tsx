@@ -17,6 +17,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { Buffer } from 'buffer'
+import Clipboard from '@/utils/clipboard'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { useCluster } from '@/components/cluster/cluster-provider'
@@ -536,12 +537,11 @@ export default function RecoverySettingsScreen() {
             <View
               style={[
                 styles.tag,
-                onChainWallet
-                  ? { backgroundColor: theme.emeraldBg, borderColor: theme.emeraldBorder }
-                  : { backgroundColor: theme.amberBg, borderColor: theme.amberBorder },
+                { backgroundColor: 'transparent', borderColor: 'transparent', paddingHorizontal: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }
               ]}
             >
-              <Text style={[styles.tagText, { color: onChainWallet ? theme.emeraldText : theme.amberText }]}>
+              <MaterialIcons name={onChainWallet ? 'check' : 'warning-amber'} size={14} color={onChainWallet ? theme.emeraldText : theme.amberText} />
+              <Text style={[styles.tagText, { color: onChainWallet ? theme.emeraldText : theme.amberText, fontWeight: '400' }]}>
                 {onChainWallet ? 'Active' : 'Not on-chain yet'}
               </Text>
             </View>
@@ -549,11 +549,11 @@ export default function RecoverySettingsScreen() {
 
           <View style={styles.detailRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>1 Guardian</Text>
+              <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>1 guardian</Text>
               <Text style={[styles.detailDesc, { color: theme.textMuted }]}>Cannot spend funds</Text>
             </View>
             <View style={{ flex: 1, alignItems: 'flex-end' }}>
-              <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>{timelockLabel} Timelock</Text>
+              <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>{timelockLabel.toLowerCase()} timelock</Text>
               <Text style={[styles.detailDesc, { color: theme.textMuted }]}>Both passkeys can cancel it</Text>
             </View>
           </View>
@@ -561,12 +561,28 @@ export default function RecoverySettingsScreen() {
           {/* The program stores exactly one guardian and gives it no spending authority,
               so show who it actually is rather than a capability badge. */}
           <View style={[styles.guardianRow, { backgroundColor: theme.bgInput, borderColor: theme.borderDefault }]}>
-            <Text style={[styles.guardianLabel, { color: theme.textMuted }]}>GUARDIAN</Text>
-            <Text style={[styles.guardianValue, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="middle">
-              {onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'Set on first on-chain activation'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.guardianLabel, { color: theme.textMuted }]}>Guardian</Text>
+                <Text style={[styles.guardianValue, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="middle">
+                  {onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'Set on first on-chain activation'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  if (onChainWallet) {
+                    Clipboard.setString(onChainWallet.guardian.toBase58())
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                  }
+                }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={{ justifyContent: 'center', paddingLeft: 8 }}
+              >
+                <MaterialIcons name="content-copy" size={16} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
             <Text style={[styles.guardianNote, { color: theme.textMuted }]}>
-              Can start a recovery and nothing else — it cannot move funds.
+              Can start a recovery and nothing else, it cannot move funds.
             </Text>
           </View>
 
@@ -600,16 +616,16 @@ export default function RecoverySettingsScreen() {
                     ]}
                   >
                     <TextInput
-                      style={[styles.guardianInput, { color: theme.textPrimary }]}
+                      style={[styles.guardianInput, { color: theme.textPrimary, flex: 1 }]}
                       value={guardianDraft}
                       onChangeText={setGuardianDraft}
-                      placeholder="Paste the new guardian's Solana address"
+                      placeholder="Paste the new guardian's address"
                       placeholderTextColor={theme.textMuted}
                       autoCapitalize="none"
                       autoCorrect={false}
                       editable={!guardianBusy}
                     />
-                    {guardianDraft.length > 0 && (
+                    {guardianDraft.length > 0 ? (
                       <TouchableOpacity
                         onPress={() => setGuardianDraft('')}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -617,6 +633,18 @@ export default function RecoverySettingsScreen() {
                         accessibilityLabel="Clear guardian address"
                       >
                         <MaterialIcons name="cancel" size={18} color={theme.textMuted} />
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={async () => {
+                          const text = await Clipboard.getString()
+                          if (text) setGuardianDraft(text)
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                      >
+                        <MaterialIcons name="content-paste" size={14} color={theme.accent} />
+                        <Text style={{ fontSize: 13, fontWeight: '600', color: theme.accent }}>Paste</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -631,13 +659,13 @@ export default function RecoverySettingsScreen() {
                     ]}
                   >
                     {guardianDraft.trim().length === 0
-                      ? 'A link or a message containing an address is read the same way a bare address is. Needs both passkeys.'
+                      ? 'A pasted link or message is read the same way a bare address is. Requires both passkeys.'
                       : (guardianDraftParse.error ??
                         `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
                   </Text>
 
                   <DepthOutlineButton
-                    title={guardianBusy ? 'Changing…' : 'Update Guardian'}
+                    title={guardianBusy ? 'Changing…' : 'Update guardian'}
                     size="compact"
                     disabled={guardianBusy || !guardianDraftParse.address}
                     onPress={handleSetGuardian}
@@ -652,7 +680,7 @@ export default function RecoverySettingsScreen() {
             no owner would ever be able to ask it to. */}
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
           <View style={styles.cardHeader}>
-            <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Recovery</Text>
+            <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Recovery flow</Text>
           </View>
 
           <Text style={[styles.bodyText, { color: theme.textSecondary }]}>
@@ -661,7 +689,7 @@ export default function RecoverySettingsScreen() {
               : recoveryWindow
                 ? 'A recovery is in flight. Veto it with both passkeys to keep your current keys, or execute it once the timelock has passed.'
                 : guardianSigner
-                  ? 'This build holds the guardian key, so it can start and veto a recovery — that is what makes the flow testable end to end.'
+                  ? 'Your guardian can start a recovery from their own wallet if you lose this device. You can veto it here at any point during the timelock.'
                   : 'Recovery is started by the guardian from their own device. This build cannot sign as it.'}
           </Text>
 
@@ -703,19 +731,21 @@ export default function RecoverySettingsScreen() {
           ) : onChainWallet && guardianSigner ? (
             <View style={styles.actionColumn}>
               <DepthOutlineButton
-                title={recoveryBusy === 'initiate' ? 'Starting…' : 'Start Recovery (Guardian)'}
+                title={recoveryBusy === 'initiate' ? 'Starting…' : 'Start recovery (guardian)'}
                 size="compact"
                 disabled={recoveryBusy !== null}
                 onPress={handleStartRecovery}
               />
             </View>
           ) : null}
-        </View>
 
-        <Text style={[styles.footnote, { color: theme.textMuted }]}>
-          A recovery never moves the wallet: the address stays the same, so anything sent to it during the window is
-          still yours afterwards.
-        </Text>
+          <View style={{ marginTop: 20 }}>
+            <Text style={[styles.footnote, { color: theme.textMuted, paddingHorizontal: 0 }]}>
+              A recovery never moves the wallet: the address stays the same, so anything sent to it during the window is
+              still yours afterwards.
+            </Text>
+          </View>
+        </View>
       </ScrollView>
 
       {/* Recovery Policy Sheet */}

@@ -19,10 +19,6 @@ import {
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Clipboard from '@/utils/clipboard'
-
-const ONBOARDING_BG = require('@/assets/images/onboarding-bg.png')
-const FINGERPRINT_HERO_WHITE = require('@/assets/images/fingerprint-hero-white.png')
-const FINGERPRINT_HERO_DARK = require('@/assets/images/fingerprint-hero.png')
 import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { claimSeekerGenesisReward } from '@/utils/haptix-tokens'
 import { AppConfig } from '@/constants/app-config'
@@ -55,6 +51,10 @@ import {
 import { HaptixAppLoader } from '@/components/haptix/haptix-app-loader'
 import { HaptixRecoveryFlowSheet } from '@/components/haptix/haptix-recovery-flow-sheet'
 import { StatusBar } from 'expo-status-bar'
+
+const ONBOARDING_BG = require('@/assets/images/onboarding-bg.png')
+const FINGERPRINT_HERO_WHITE = require('@/assets/images/fingerprint-hero-white.png')
+const FINGERPRINT_HERO_DARK = require('@/assets/images/fingerprint-hero.png')
 
 interface OnboardingPalette {
   heroBg: string
@@ -885,7 +885,7 @@ export default function SignIn() {
             <View
               style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}
             >
-              <Text style={styles.sheetTitle}>Create Wallet</Text>
+              <Text style={styles.sheetTitle}>Create wallet</Text>
               <TouchableOpacity onPress={() => setShowCreateModal(false)}>
                 <MaterialIcons name="close" size={24} color={p.heroInk} />
               </TouchableOpacity>
@@ -898,10 +898,10 @@ export default function SignIn() {
                   contentContainerStyle={{ paddingBottom: 8 }}
                   showsVerticalScrollIndicator={false}
                 >
-                  <Text style={styles.sheetDesc}>Choose your security model and customize passkey names.</Text>
+                  <Text style={[styles.sheetDesc, { textAlign: 'left' }]}>Choose your security model and customize passkey names.</Text>
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Security Architecture</Text>
+                    <Text style={styles.inputLabel}>Security architecture</Text>
                     <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
                       <TouchableOpacity
                         onPress={() => {
@@ -952,9 +952,9 @@ export default function SignIn() {
                             securityMode === 'vault' && styles.modeCardTitleActive,
                           ]}
                         >
-                          Vault Mode
+                          Vault mode
                         </Text>
-                        <Text style={styles.modeCardDesc}>Key 2 on Laptop / OneKey</Text>
+                        <Text style={styles.modeCardDesc}>Key 2 on laptop or OneKey</Text>
                       </TouchableOpacity>
                     </View>
 
@@ -963,11 +963,11 @@ export default function SignIn() {
                         <View style={styles.vaultExplainer}>
                           <MaterialIcons name="info-outline" size={16} color={p.heroInk} />
                           <Text style={styles.vaultExplainerText}>
-                            <Text style={{ fontWeight: '700' }}>Vault Mode</Text>: Daily spends use fingerprint on this phone. Sends above your limit will require your Mac Touch ID.
+                            <Text style={{ fontWeight: '700' }}>Vault mode</Text>: daily spends use fingerprint on this phone. Sends above your limit will require your Mac Touch ID.
                           </Text>
                         </View>
 
-                        <Text style={[styles.inputLabel, { marginTop: 14, marginBottom: 6 }]}>Vault Key Device</Text>
+                        <Text style={[styles.inputLabel, { marginTop: 14, marginBottom: 6 }]}>Vault key device</Text>
                         <View style={{ flexDirection: 'row', gap: 8 }}>
                           <TouchableOpacity
                             onPress={() => {
@@ -1017,19 +1017,19 @@ export default function SignIn() {
                                 vaultKeySource === 'hardware' && styles.vaultSourceTitleActive,
                               ]}
                             >
-                              USB / NFC Key
+                              USB / NFC key
                             </Text>
                           </TouchableOpacity>
                         </View>
 
                         {vaultKeySource === 'mac' && (
                           <View style={styles.macVaultBox}>
-                            <Text style={styles.macVaultStep}>1. Open on your Mac browser:</Text>
+                            <Text style={styles.macVaultStep}>1. Open on your Mac browser</Text>
                             <View style={styles.macVaultUrlWrap}>
                               <Text style={styles.macVaultUrlText}>http://localhost:8081/vault.html</Text>
                             </View>
                             <Text style={styles.macVaultStep}>
-                              2. Tap "Enroll with Touch ID" on your Mac, then paste the public key below:
+                              2. Tap "Enroll with Touch ID" on your Mac, then paste the public key below
                             </Text>
                             <View style={[styles.addressInputContainer, { marginTop: 6, marginBottom: 4 }]}>
                               <TextInput
@@ -1052,7 +1052,8 @@ export default function SignIn() {
                                   }
                                 }}
                               >
-                                <Text style={styles.pasteBadgeText}>Paste</Text>
+                                <MaterialIcons name="content-paste" size={14} color="#6C8CFF" style={{ marginRight: 2 }} />
+                                <Text style={[styles.pasteBadgeText, { color: '#6C8CFF' }]}>Paste</Text>
                               </TouchableOpacity>
                             </View>
                           </View>
@@ -1062,7 +1063,7 @@ export default function SignIn() {
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Wallet Name</Text>
+                    <Text style={styles.inputLabel}>Wallet name</Text>
                     <TextInput
                       style={styles.textInputField}
                       value={walletName}
@@ -1085,7 +1086,7 @@ export default function SignIn() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <MaterialIcons name="tune" size={18} color={p.heroInk} />
                       <Text style={styles.advancedOptionsToggleText}>
-                        {showAdvancedOptions ? 'Hide Advanced Settings' : 'Advanced Settings (Key Names, Guardian)'}
+                        {showAdvancedOptions ? 'Hide advanced settings' : 'Advanced settings (key names, guardian)'}
                       </Text>
                     </View>
                     <MaterialIcons
@@ -1098,31 +1099,31 @@ export default function SignIn() {
                   {showAdvancedOptions && (
                     <>
                       <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Passkey 1 Name (Primary)</Text>
+                        <Text style={styles.inputLabel}>Passkey 1 name, primary</Text>
                         <TextInput
                           style={styles.textInputField}
                           value={primaryKeyName}
                           onChangeText={setPrimaryKeyName}
-                          placeholder="e.g., Primary Passkey"
+                          placeholder="e.g., Primary passkey"
                           placeholderTextColor={p.inkMuted}
                           autoCorrect={false}
                         />
                       </View>
 
                       <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Passkey 2 Name (Backup)</Text>
+                        <Text style={styles.inputLabel}>Passkey 2 name, backup</Text>
                         <TextInput
                           style={styles.textInputField}
                           value={secondaryKeyName}
                           onChangeText={setSecondaryKeyName}
-                          placeholder="e.g., Backup Key"
+                          placeholder="e.g., Backup key"
                           placeholderTextColor={p.inkMuted}
                           autoCorrect={false}
                         />
                       </View>
 
                       <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Recovery Guardian (optional)</Text>
+                        <Text style={styles.inputLabel}>Recovery guardian, optional</Text>
                         <TextInput
                           style={[
                             styles.textInputField,
@@ -1142,34 +1143,9 @@ export default function SignIn() {
                                 `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
                                 'timelock means you can still veto it. It can never move funds.'
                               : guardianParse.error
-                            : 'Leave blank to use the dev guardian bundled with this build - the only key it can sign a recovery with.'}
+                            : 'Optional. Add a trusted contact who can help you recover this wallet if you lose access. You can also add this later.'}
                         </Text>
                       </View>
-
-                      {/* Dev-only: a 24h veto window cannot be waited out while testing, and the
-                          execute leg is the half of recovery that rotates the keys. Hidden
-                          outside dev mode so it cannot quietly weaken a real wallet. */}
-                      {AppConfig.devMode && (
-                        <View style={styles.inputGroup}>
-                          <Text style={styles.inputLabel}>Recovery Timelock (dev only)</Text>
-                          <TextInput
-                            style={[styles.textInputField, timelockParse.error ? styles.textInputFieldInvalid : null]}
-                            value={timelockInput}
-                            onChangeText={setTimelockInput}
-                            placeholder="Blank for 24h, or e.g. 3s"
-                            placeholderTextColor={p.inkMuted}
-                            autoCorrect={false}
-                            autoCapitalize="none"
-                          />
-                          <Text style={[styles.inputHint, timelockParse.error && styles.inputHintError]}>
-                            {timelockParse.error
-                              ? timelockParse.error
-                              : timelockParse.seconds !== null
-                                ? `The owner gets ${describeTimelock(timelockParse.seconds)} to veto a recovery before it can be executed.`
-                                : 'How long the owner has to veto a recovery. Shorten it to test the execute leg.'}
-                          </Text>
-                        </View>
-                      )}
                     </>
                   )}
                 </ScrollView>
@@ -1177,7 +1153,7 @@ export default function SignIn() {
                 {/* PINNED ACTION BUTTON - Always visible without scrolling */}
                 <View style={{ paddingTop: 12 }}>
                   <TouchableOpacity
-                    style={[styles.primaryDarkButton, isCreating && { opacity: 0.6 }]}
+                    style={[styles.primaryDarkButton, securityMode === 'vault' && { backgroundColor: '#6C8CFF' }, isCreating && { opacity: 0.6 }]}
                     onPress={handleExecutePasskeyCreation}
                     disabled={isCreating}
                     activeOpacity={0.85}
@@ -1188,7 +1164,7 @@ export default function SignIn() {
                       <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} style={{ marginRight: 8 }} />
                     )}
                     <Text style={styles.primaryDarkButtonText}>
-                      {securityMode === 'vault' ? 'Start Vault Setup' : 'Start Setup'}
+                      {securityMode === 'vault' ? 'Start Vault setup' : 'Start setup'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1727,7 +1703,7 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       alignItems: 'center',
     },
     modeCardActive: {
-      borderColor: p.actionBg,
+      borderColor: '#6C8CFF',
       backgroundColor: p.surface,
     },
     modeCardTitle: {
@@ -1737,7 +1713,7 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       marginTop: 6,
     },
     modeCardTitleActive: {
-      color: p.heroInk,
+      color: '#6C8CFF',
       fontWeight: '700',
     },
     modeCardDesc: {
@@ -1891,7 +1867,7 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       paddingHorizontal: 8,
     },
     vaultSourceCardActive: {
-      borderColor: p.actionBg,
+      borderColor: '#6C8CFF',
       backgroundColor: p.surface,
     },
     vaultSourceTitle: {
@@ -1900,7 +1876,7 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       color: p.inkMuted,
     },
     vaultSourceTitleActive: {
-      color: p.heroInk,
+      color: '#6C8CFF',
       fontWeight: '700',
     },
     macVaultBox: {

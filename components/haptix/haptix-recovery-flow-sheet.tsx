@@ -64,8 +64,8 @@ interface HaptixRecoveryFlowSheetProps {
 type GuardianSigningTab = 'devnet' | 'web'
 
 const GUARDIAN_TABS: IosTabItem<GuardianSigningTab>[] = [
-  { id: 'devnet', label: 'In-App Devnet (1-Tap)' },
-  { id: 'web', label: 'Guardian Web Portal & Link' },
+  { id: 'devnet', label: 'In-app devnet (1-tap)' },
+  { id: 'web', label: 'Guardian web portal and link' },
 ]
 
 export function HaptixRecoveryFlowSheet({
@@ -550,7 +550,7 @@ export function HaptixRecoveryFlowSheet({
           style={[
             styles.sheetCard,
             {
-              backgroundColor: isDark ? '#0A0A0D' : theme.bgCard,
+              backgroundColor: isDark ? '#000000' : theme.bgCard,
               borderColor: isDark ? '#222226' : theme.borderDefault,
               borderWidth: 1,
               paddingBottom: Math.max(insets.bottom, 24),
@@ -568,7 +568,7 @@ export function HaptixRecoveryFlowSheet({
                 style={[
                   styles.headerIconWrap,
                   {
-                    backgroundColor: isDark ? '#161619' : theme.accentLight,
+                    backgroundColor: isDark ? '#000000' : theme.accentLight,
                     borderWidth: 1,
                     borderColor: isDark ? '#26262A' : theme.borderSubtle,
                   },
@@ -590,7 +590,7 @@ export function HaptixRecoveryFlowSheet({
 
             {/* EDUCATIONAL GUIDE (SHOWN WHEN NO WALLET INSPECTED) */}
             {!onChainWallet && (
-              <View style={[styles.guideCard, { backgroundColor: isDark ? '#0D0D10' : theme.bgElevated, borderColor: isDark ? '#222226' : theme.borderDefault }]}>
+              <View style={[styles.guideCard, { backgroundColor: isDark ? '#000000' : theme.bgElevated, borderColor: isDark ? '#222226' : theme.borderDefault }]}>
                 <View style={styles.guideHeader}>
                   <MaterialIcons name="info-outline" size={18} color={isDark ? '#FFFFFF' : theme.textPrimary} />
                   <Text style={[styles.guideTitle, { color: isDark ? '#FFFFFF' : theme.textPrimary }]}>
@@ -652,7 +652,7 @@ export function HaptixRecoveryFlowSheet({
                 </View>
 
                 {/* Where to find address hint */}
-                <View style={[styles.hintBox, { backgroundColor: isDark ? '#050507' : theme.bgCard, borderColor: isDark ? '#1F1F23' : theme.borderSubtle }]}>
+                <View style={[styles.hintBox, { backgroundColor: isDark ? '#000000' : theme.bgCard, borderColor: isDark ? '#1F1F23' : theme.borderSubtle }]}>
                   <Text style={[styles.hintText, { color: isDark ? '#71717A' : theme.textMuted }]}>
                     Can't find your address? Look up past transaction receipts from an exchange, Solana Explorer, or ask your guardian.
                   </Text>
@@ -663,13 +663,13 @@ export function HaptixRecoveryFlowSheet({
             {/* STEP 1: TARGET WALLET INPUT */}
             <View style={styles.sectionBlock}>
               <Text style={[styles.inputLabel, { color: isDark ? '#A1A1AA' : theme.textSecondary }]}>
-                {onChainWallet ? 'Target smart wallet address' : '1. Enter lost wallet address (PDA)'}
+                {onChainWallet ? 'Target smart wallet address' : '1. Target smart wallet address'}
               </Text>
               <View
                 style={[
                   styles.inputFieldContainer,
                   {
-                    backgroundColor: isDark ? '#050507' : theme.bgElevated,
+                    backgroundColor: isDark ? '#000000' : theme.bgElevated,
                     borderColor: isDark ? '#222226' : theme.borderDefault,
                   },
                 ]}
@@ -702,7 +702,7 @@ export function HaptixRecoveryFlowSheet({
               <TouchableOpacity
                 style={[
                   styles.inspectButtonFull,
-                  { backgroundColor: isDark ? '#FFFFFF' : '#000000' },
+                  { backgroundColor: 'transparent', borderColor: isDark ? '#222226' : theme.borderDefault, borderWidth: 1 },
                   isInspecting && { opacity: 0.7 },
                 ]}
                 onPress={() => void handleInspectWallet()}
@@ -710,9 +710,9 @@ export function HaptixRecoveryFlowSheet({
                 activeOpacity={0.8}
               >
                 {isInspecting ? (
-                  <SpinLoader size="sm" color={isDark ? '#000000' : '#FFFFFF'} strokeWidth={2.4} />
+                  <SpinLoader size="sm" color={isDark ? '#FFFFFF' : '#000000'} strokeWidth={2.4} />
                 ) : (
-                  <Text style={[styles.inspectButtonFullText, { color: isDark ? '#000000' : '#FFFFFF' }]}>Inspect</Text>
+                  <Text style={[styles.inspectButtonFullText, { color: isDark ? '#FFFFFF' : '#000000' }]}>Inspect</Text>
                 )}
               </TouchableOpacity>
 
@@ -735,24 +735,24 @@ export function HaptixRecoveryFlowSheet({
               {showDemoWallets && (
                 <View style={styles.quickTestRow}>
                   <TouchableOpacity
-                    style={[styles.quickChip, { backgroundColor: isDark ? '#111114' : theme.bgElevated, borderColor: isDark ? '#222226' : theme.borderDefault }]}
+                    style={[styles.quickChip, { backgroundColor: 'transparent', borderWidth: 1, borderColor: isDark ? '#222226' : theme.borderDefault }]}
                     onPress={() => {
                       Haptics.selectionAsync().catch(() => {})
                       setWalletInput('GQyNg1h6tqn1PNjYxYyeyAQ4qYZ7kqQrJBrWyp99J9Lj')
                       void handleInspectWallet('GQyNg1h6tqn1PNjYxYyeyAQ4qYZ7kqQrJBrWyp99J9Lj')
                     }}
                   >
-                    <Text style={[styles.quickChipText, { color: isDark ? '#A1A1AA' : theme.textSecondary }]}>Load Test (GQyNg...)</Text>
+                    <Text style={[styles.quickChipText, { color: isDark ? '#A1A1AA' : theme.textSecondary }]}>Load test (GQyNg...)</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.quickChip, { backgroundColor: isDark ? '#111114' : theme.bgElevated, borderColor: isDark ? '#222226' : theme.borderDefault }]}
+                    style={[styles.quickChip, { backgroundColor: 'transparent', borderWidth: 1, borderColor: isDark ? '#222226' : theme.borderDefault }]}
                     onPress={() => {
                       Haptics.selectionAsync().catch(() => {})
                       setWalletInput('HziZimWjrC3TZCSPA8EzqJCCnsk7hUxu8QVpxCjs3kNb')
                       void handleInspectWallet('HziZimWjrC3TZCSPA8EzqJCCnsk7hUxu8QVpxCjs3kNb')
                     }}
                   >
-                    <Text style={[styles.quickChipText, { color: isDark ? '#A1A1AA' : theme.textSecondary }]}>Load Test (HziZi...)</Text>
+                    <Text style={[styles.quickChipText, { color: isDark ? '#A1A1AA' : theme.textSecondary }]}>Load test (HziZi...)</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -760,12 +760,17 @@ export function HaptixRecoveryFlowSheet({
 
             {/* STEP 2: ON-CHAIN STATUS DIAGNOSTIC */}
             {onChainWallet && (
-              <View style={[styles.diagnosticCard, { backgroundColor: isDark ? '#0D0D10' : theme.bgElevated, borderColor: isDark ? '#222226' : theme.borderDefault }]}>
+              <View style={[styles.diagnosticCard, { backgroundColor: isDark ? '#000000' : theme.bgElevated, borderColor: isDark ? '#222226' : theme.borderDefault }]}>
                 <View style={styles.diagnosticRow}>
-                  <Text style={[styles.diagLabel, { color: theme.textMuted }]}>Smart Wallet</Text>
-                  <Text style={[styles.diagValue, styles.mono, { color: theme.textPrimary }]}>
-                    {ellipsify(onChainWallet.pda.toBase58(), 6)}
-                  </Text>
+                  <Text style={[styles.diagLabel, { color: theme.textMuted }]}>Smart wallet</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.diagValue, styles.mono, { color: theme.textPrimary }]}>
+                      {ellipsify(onChainWallet.pda.toBase58(), 6)}
+                    </Text>
+                    <TouchableOpacity onPress={() => Clipboard.setString(onChainWallet.pda.toBase58())}>
+                      <MaterialIcons name="content-copy" size={14} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <View style={styles.diagnosticRow}>
                   <Text style={[styles.diagLabel, { color: theme.textMuted }]}>Balance</Text>
@@ -775,37 +780,45 @@ export function HaptixRecoveryFlowSheet({
                 </View>
                 <View style={styles.diagnosticRow}>
                   <Text style={[styles.diagLabel, { color: theme.textMuted }]}>Guardian</Text>
-                  <Text style={[styles.diagValue, styles.mono, { color: theme.textPrimary }]}>
-                    {ellipsify(onChainWallet.guardian.toBase58(), 6)}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={[styles.diagValue, styles.mono, { color: theme.textPrimary }]}>
+                      {ellipsify(onChainWallet.guardian.toBase58(), 6)}
+                    </Text>
+                    <TouchableOpacity onPress={() => Clipboard.setString(onChainWallet.guardian.toBase58())}>
+                      <MaterialIcons name="content-copy" size={14} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <View style={styles.diagnosticRow}>
-                  <Text style={[styles.diagLabel, { color: theme.textMuted }]}>Dispute Timelock</Text>
+                  <Text style={[styles.diagLabel, { color: theme.textMuted }]}>Dispute timelock</Text>
                   <Text style={[styles.diagValue, { color: theme.textPrimary }]}>
                     {describeTimelock(onChainWallet.recoveryTimelock)}
                   </Text>
                 </View>
                 <View style={[styles.diagnosticRow, { borderBottomWidth: 0, paddingBottom: 0 }]}>
                   <Text style={[styles.diagLabel, { color: theme.textMuted }]}>Status</Text>
-                  <Text
-                    style={[
-                      styles.diagValue,
-                      {
-                        color:
-                          recoveryWindow?.isElapsed
-                            ? theme.emerald
-                            : onChainWallet.recoveryInitiatedAt > 0n
-                              ? theme.amber
-                              : theme.emerald,
-                      },
-                    ]}
-                  >
-                    {recoveryWindow?.isElapsed
-                      ? 'Ready to Finalize'
-                      : onChainWallet.recoveryInitiatedAt > 0n
-                        ? 'Recovery In Flight (Frozen)'
-                        : 'Active · Normal'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <MaterialIcons name="check" size={14} color={theme.emerald} />
+                    <Text
+                      style={[
+                        styles.diagValue,
+                        {
+                          color:
+                            recoveryWindow?.isElapsed
+                              ? theme.emerald
+                              : onChainWallet.recoveryInitiatedAt > 0n
+                                ? theme.amber
+                                : theme.emerald,
+                        },
+                      ]}
+                    >
+                      {recoveryWindow?.isElapsed
+                        ? 'Ready to finalize'
+                        : onChainWallet.recoveryInitiatedAt > 0n
+                          ? 'Recovery in flight (frozen)'
+                          : 'Active, normal'}
+                    </Text>
+                  </View>
                 </View>
               </View>
             )}
@@ -870,47 +883,80 @@ export function HaptixRecoveryFlowSheet({
             {/* STEP 4: GUARDIAN AUTHORIZATION (IF NOT IN FLIGHT) */}
             {onChainWallet && onChainWallet.recoveryInitiatedAt === 0n && (
               <View style={styles.sectionBlock}>
-                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>2. Authorize Recovery as Guardian</Text>
+                <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>2. Authorize recovery as guardian</Text>
                 
                 {/* Clear Explanation of Who Signs */}
-                <View style={[styles.noticeBox, { backgroundColor: isDark ? '#111114' : theme.accentLight, borderColor: isDark ? '#222226' : theme.borderSubtle }]}>
+                <View style={[styles.noticeBox, { backgroundColor: 'transparent', borderColor: isDark ? '#222226' : theme.borderSubtle, borderWidth: 1 }]}>
                   <MaterialIcons name="shield" size={16} color={isDark ? '#FFFFFF' : theme.textPrimary} />
                   <Text style={[styles.noticeText, { color: isDark ? '#A1A1AA' : theme.textSecondary }]}>
-                    Why does the Guardian sign? Because your phone is lost! The Guardian signs on Solana to initiate the rescue without needing your lost phone's passkeys.
+                    Why does the guardian sign? Because your phone is lost. The guardian signs on Solana to initiate the rescue without needing your lost phone's passkeys.
                   </Text>
                 </View>
 
                 {/* Method Selector with HaptixIosTabs */}
                 <View style={styles.methodSelectorWrap}>
                   <Text style={[styles.methodSelectorLabel, { color: isDark ? '#A1A1AA' : theme.textSecondary }]}>
-                    Guardian Signing Method:
+                    Guardian signing method
                   </Text>
-                  <HaptixIosTabs
-                    tabs={GUARDIAN_TABS}
-                    activeTab={signingTab}
-                    onChange={(tab) => setSigningTab(tab as GuardianSigningTab)}
-                  />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.methodBtn,
+                        { borderColor: signingTab === 'devnet' ? '#6C8CFF' : (isDark ? '#222226' : theme.borderDefault) }
+                      ]}
+                      onPress={() => {
+                        Haptics.selectionAsync()
+                        setSigningTab('devnet')
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.methodBtnText,
+                        { color: signingTab === 'devnet' ? '#6C8CFF' : (isDark ? '#71717A' : theme.textMuted) }
+                      ]}>
+                        In-app devnet (1-tap)
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.methodBtn,
+                        { borderColor: signingTab === 'web' ? '#6C8CFF' : (isDark ? '#222226' : theme.borderDefault) }
+                      ]}
+                      onPress={() => {
+                        Haptics.selectionAsync()
+                        setSigningTab('web')
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[
+                        styles.methodBtnText,
+                        { color: signingTab === 'web' ? '#6C8CFF' : (isDark ? '#71717A' : theme.textMuted) }
+                      ]}>
+                        Guardian web portal and link
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
 
                 {/* Tab 1: In-App Devnet Guardian */}
                 {signingTab === 'devnet' && (
-                  <View style={[styles.tabContent, { backgroundColor: isDark ? '#0D0D10' : theme.bgElevated, borderColor: isDark ? '#222226' : theme.borderDefault }]}>
+                  <View style={[styles.tabContent, { backgroundColor: isDark ? '#000000' : theme.bgElevated, borderColor: isDark ? '#222226' : theme.borderDefault }]}>
                     <Text style={[styles.tabDesc, { color: isDark ? '#A1A1AA' : theme.textSecondary }]}>
                       In Devnet mode, a pre-configured Guardian keypair will broadcast the freeze transaction on Solana.
                     </Text>
 
                     {/* Pre-action Warning Banner */}
-                    <View style={[styles.freezeWarningCard, { backgroundColor: theme.amberBg, borderColor: theme.amberBorder }]}>
+                    <View style={[styles.freezeWarningCard, { backgroundColor: 'transparent', borderColor: theme.amberBorder, borderWidth: 1 }]}>
                       <MaterialIcons name="warning" size={16} color={theme.amber} />
                       <Text style={[styles.freezeWarningText, { color: theme.amberText }]}>
-                        Action will immediately FREEZE the lost phone on Solana. A {describeTimelock(onChainWallet.recoveryTimelock)} dispute timelock will begin.
+                        This will immediately freeze the lost phone on Solana. A {describeTimelock(onChainWallet.recoveryTimelock)} dispute timelock will begin.
                       </Text>
                     </View>
 
                     <TouchableOpacity
                       style={[
                         styles.primaryActionBtn,
-                        { backgroundColor: isDark ? '#FFFFFF' : theme.accent },
+                        { backgroundColor: '#6C8CFF' }, // Sleek blue/purple accent
                         actionBusy && { opacity: 0.7 },
                       ]}
                       onPress={handleInitiateDevnet}
@@ -918,12 +964,12 @@ export function HaptixRecoveryFlowSheet({
                       activeOpacity={0.85}
                     >
                       {actionBusy === 'initiate' ? (
-                        <SpinLoader size="sm" color={isDark ? '#000000' : theme.accentForeground} strokeWidth={2.4} />
+                        <SpinLoader size="sm" color="#000000" strokeWidth={2.4} />
                       ) : (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                          <MaterialIcons name="lock" size={18} color={isDark ? '#000000' : theme.accentForeground} />
-                          <Text style={[styles.primaryActionBtnText, { color: isDark ? '#000000' : theme.accentForeground }]}>
-                            Initiate Recovery &amp; Freeze Lost Phone
+                          <MaterialIcons name="lock" size={18} color="#000000" />
+                          <Text style={[styles.primaryActionBtnText, { color: '#000000' }]}>
+                            Initiate recovery and freeze lost phone
                           </Text>
                         </View>
                       )}
@@ -933,7 +979,7 @@ export function HaptixRecoveryFlowSheet({
 
                 {/* Tab 2: Guardian Web Portal & Link */}
                 {signingTab === 'web' && (
-                  <View style={[styles.tabContent, { backgroundColor: isDark ? '#0D0D10' : theme.bgElevated, borderColor: isDark ? '#222226' : theme.borderDefault }]}>
+                  <View style={[styles.tabContent, { backgroundColor: isDark ? '#000000' : theme.bgElevated, borderColor: isDark ? '#222226' : theme.borderDefault }]}>
                     <Text style={[styles.tabDesc, { color: isDark ? '#A1A1AA' : theme.textSecondary }]}>
                       Share this secure recovery link or QR code with your Guardian. They can authorize from any laptop, Mac, or phone browser with 1-click — no terminal or command line required:
                     </Text>
@@ -949,7 +995,7 @@ export function HaptixRecoveryFlowSheet({
                     </View>
 
                     {/* Web Link Display Card */}
-                    <View style={[styles.webLinkCard, { backgroundColor: isDark ? '#050507' : theme.bgCard, borderColor: isDark ? '#222226' : theme.borderDefault }]}>
+                    <View style={[styles.webLinkCard, { backgroundColor: isDark ? '#000000' : theme.bgCard, borderColor: isDark ? '#222226' : theme.borderDefault }]}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                           <MaterialIcons name="link" size={14} color={theme.accent} />
@@ -1117,6 +1163,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     maxHeight: '94%',
+    flex: 1,
   },
   sheetHandle: {
     width: 36,
@@ -1403,6 +1450,21 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     textAlign: 'center',
     marginTop: 6,
+  },
+  methodBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 8,
+  },
+  methodBtnText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   tabContent: {
     borderRadius: 14,
