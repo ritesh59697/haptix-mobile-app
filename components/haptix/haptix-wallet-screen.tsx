@@ -1365,7 +1365,7 @@ export function HaptixWalletScreen() {
   const renderWalletHome = () => (
     <>
       {/* HERO BALANCE CARD */}
-      <View style={[styles.heroCard, styles.card]}>
+      <View style={[styles.heroCard]}>
         <View style={styles.heroBalanceLabelRow}>
           <Text style={[styles.heroBalanceLabel, styles.textSecondary]}>Total balance</Text>
           <TouchableOpacity
@@ -1531,7 +1531,7 @@ export function HaptixWalletScreen() {
       </View>
 
       {homeSubTab === 'watchlist' ? (
-        <View style={[styles.assetList, styles.card]}>
+        <View style={[styles.assetList]}>
           {market.tokens.filter((t) => t.symbol !== 'SOL').slice(0, 3).map((token, idx) => (
             <React.Fragment key={token.symbol}>
               {idx > 0 && <View style={[styles.assetDivider, styles.divider]} />}
@@ -1573,7 +1573,7 @@ export function HaptixWalletScreen() {
         </View>
       ) : (
         /* ASSETS LIST */
-        <View style={[styles.assetList, styles.card]}>
+        <View style={[styles.assetList]}>
         {/* Solana (SOL) */}
         <TouchableOpacity
           style={styles.assetRow}

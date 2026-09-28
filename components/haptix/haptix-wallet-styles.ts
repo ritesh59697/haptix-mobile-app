@@ -244,11 +244,18 @@ const createStyles = (theme: ThemeTokens) =>
 
     /* HERO BALANCE CARD */
     heroCard: {
-      borderRadius: 22,
-      borderWidth: 1,
-      paddingHorizontal: 18,
-      paddingVertical: 18,
-      marginBottom: 16,
+      borderRadius: 32,
+      paddingHorizontal: 24,
+      paddingVertical: 26,
+      marginBottom: 20,
+      backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: theme.isDark ? 0.3 : 0.05,
+      shadowRadius: 24,
+      elevation: 8,
+      borderWidth: theme.isDark ? 1 : 0,
+      borderColor: theme.isDark ? 'rgba(255,255,255,0.06)' : 'transparent',
     },
     heroBalanceLabelRow: {
       flexDirection: 'row',
@@ -283,9 +290,9 @@ const createStyles = (theme: ThemeTokens) =>
       borderRadius: radius.sm,
     },
     heroPrimaryBalance: {
-      fontSize: 34,
-      fontWeight: '700',
-      letterSpacing: -0.8,
+      fontSize: 48,
+      fontWeight: '800',
+      letterSpacing: -1.6,
     },
     heroSecondaryBalance: {
       fontSize: 14,
@@ -293,21 +300,19 @@ const createStyles = (theme: ThemeTokens) =>
     },
     heroActionsRow: {
       flexDirection: 'row',
-      gap: 10,
-      marginTop: 18,
+      gap: 12,
+      marginTop: 24,
     },
     heroActionBtn: {
       flex: 1,
-      height: 72,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: theme.borderDefault,
-      backgroundColor: theme.bgCard,
+      height: 78,
+      borderRadius: 18,
+      backgroundColor: theme.isDark ? '#161619' : '#F5F5F7',
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: 6,
-      paddingVertical: 8,
+      gap: 8,
+      paddingVertical: 10,
     },
     actionIconContainer: {
       height: 24,
@@ -315,18 +320,19 @@ const createStyles = (theme: ThemeTokens) =>
       alignItems: 'center',
     },
     heroActionBtnText: {
-      fontSize: 12,
-      fontWeight: '600',
-      letterSpacing: -0.1,
+      fontSize: 13,
+      fontWeight: '700',
+      letterSpacing: 0.1,
+      color: theme.isDark ? '#FFFFFF' : '#000000',
     },
     /* HOME TAB SEGMENTED PILL (Assets · Watchlist) */
     homeTabContainer: {
       flexDirection: 'row',
-      backgroundColor: theme.isDark ? '#1C1C1E' : '#ECECEE',
+      backgroundColor: theme.isDark ? '#0C0C0E' : '#F2F2F4',
       borderRadius: radius.pill,
       padding: 4,
-      marginTop: 2,
-      marginBottom: 16,
+      marginTop: 8,
+      marginBottom: 20,
       height: 48,
     },
     homeTabPill: {
@@ -625,16 +631,14 @@ const createStyles = (theme: ThemeTokens) =>
 
     /* ASSETS LIST (CLEAN LIST WITHOUT CARD CLUTTER) */
     assetList: {
-      borderRadius: 22,
-      borderWidth: 1,
-      paddingHorizontal: 16,
-      overflow: 'hidden',
+      paddingHorizontal: 12,
+      paddingBottom: 24,
     },
     assetRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 14,
+      paddingVertical: 16,
     },
     assetLeft: {
       flexDirection: 'row',
@@ -642,15 +646,15 @@ const createStyles = (theme: ThemeTokens) =>
       gap: 12,
     },
     assetLogoWrap: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-      borderWidth: 1,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.isDark ? '#161619' : '#F5F5F7',
       justifyContent: 'center',
       alignItems: 'center',
     },
     assetPrimaryName: {
-      fontSize: 16,
+      fontSize: 17,
       fontWeight: '700',
       letterSpacing: -0.2,
     },
