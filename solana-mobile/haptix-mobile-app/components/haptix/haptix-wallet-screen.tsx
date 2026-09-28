@@ -1418,12 +1418,13 @@ export function HaptixWalletScreen() {
 
         {/* SPARKLINE CHART */}
         {!isBalanceHidden && (
-          <HaptixBalanceSparkline
-            width={screenWidth - 32}
-            height={80}
-            isPositive={isPositivePortfolio}
-            isDark={isDark}
-          />
+          <View style={{ marginTop: 16, marginHorizontal: -24 }}>
+            <HaptixBalanceSparkline
+              width={screenWidth - 32}
+              height={56}
+              isPositive={isPositivePortfolio}
+            />
+          </View>
         )}
 
       </View>
