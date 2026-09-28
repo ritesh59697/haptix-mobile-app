@@ -1367,7 +1367,7 @@ export function HaptixWalletScreen() {
       {/* HERO BALANCE CARD */}
       <View style={[styles.heroCard]}>
         <View style={styles.heroBalanceLabelRow}>
-          <Text style={[styles.heroBalanceLabel, { color: 'rgba(255, 255, 255, 0.7)' }]}>Total balance</Text>
+          <Text style={[styles.heroBalanceLabel, { color: theme.textSecondary }]}>Total balance</Text>
           <TouchableOpacity
             style={styles.eyeToggleButton}
             onPress={() => {
@@ -1379,9 +1379,9 @@ export function HaptixWalletScreen() {
             accessibilityLabel={isBalanceHidden ? 'Show balance' : 'Hide balance'}
           >
             {isBalanceHidden ? (
-              <EyeHideIcon size={16} color="rgba(255,255,255,0.5)" />
+              <EyeHideIcon size={16} color={theme.textMuted} />
             ) : (
-              <EyeShowIcon size={16} color="rgba(255,255,255,0.5)" />
+              <EyeShowIcon size={16} color={theme.textMuted} />
             )}
           </TouchableOpacity>
         </View>
@@ -1389,14 +1389,14 @@ export function HaptixWalletScreen() {
         <View style={styles.heroBalanceContent}>
           {isBalanceHidden ? (
             <>
-              <Text style={[styles.heroPrimaryBalance, { color: '#FFFFFF' }]}>$ ••••••</Text>
-              <Text style={[styles.heroSecondaryBalance, { color: 'rgba(255, 255, 255, 0.7)' }]}>•••• SOL</Text>
+              <Text style={[styles.heroPrimaryBalance, { color: theme.textPrimary }]}>$ ••••••</Text>
+              <Text style={[styles.heroSecondaryBalance, { color: theme.textSecondary }]}>•••• SOL</Text>
             </>
           ) : (
             <>
-              <Text style={[styles.heroPrimaryBalance, { color: '#FFFFFF' }]}>${totalUsdBalance.toFixed(2)}</Text>
+              <Text style={[styles.heroPrimaryBalance, { color: theme.textPrimary }]}>${totalUsdBalance.toFixed(2)}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                <Text style={[styles.heroSecondaryBalance, { color: 'rgba(255, 255, 255, 0.7)' }]}>
+                <Text style={[styles.heroSecondaryBalance, { color: theme.textSecondary }]}>
                   {balance.toFixed(4)} SOL
                 </Text>
                 <Text
