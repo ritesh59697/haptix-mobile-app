@@ -150,17 +150,20 @@ export const HaptixFloatingDock = memo(function HaptixFloatingDock({
   return (
     <View style={[styles.dockOuterWrapper, { bottom: bottomOffset }]} pointerEvents="box-none">
       {/* Fade band: dissolves scrolled content into the dock instead of bleeding through it */}
-      <LinearGradient
-        pointerEvents="none"
-        colors={['transparent', theme.bgApp, theme.bgApp, 'transparent']}
-        locations={DOCK_FADE_STOPS}
-        style={styles.dockFade}
-      />
+      {!isGlass && (
+        <LinearGradient
+          pointerEvents="none"
+          colors={['transparent', theme.bgApp, theme.bgApp, 'transparent']}
+          locations={DOCK_FADE_STOPS}
+          style={styles.dockFade}
+        />
+      )}
       {/* Outer shadow container (prevents Android/iOS shadow clipping from overflow:hidden) */}
       <View style={[styles.dockShadowContainer, { width: dockWidth }, isDark ? styles.darkShadow : styles.lightShadow]}>
         <BlurView
           intensity={isGlass ? (isDark ? 85 : 100) : (isDark ? 36 : 60)}
-          tint={isDark ? 'dark' : 'light'}
+          tint={isGlass ? 'default' : (isDark ? 'dark' : 'light')}
+          experimentalBlurMethod="dimezisBlurView"
           style={[
             styles.dockControl,
             {
