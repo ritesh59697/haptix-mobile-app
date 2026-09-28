@@ -8,11 +8,12 @@ import {
   ScrollView,
   Platform,
   Dimensions,
+  PanResponder,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
-import Svg, { Path, Defs, LinearGradient, Stop, Circle } from 'react-native-svg'
+import Svg, { Path, Defs, LinearGradient, Stop, Circle, Line } from 'react-native-svg'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { radius, typeScale, ThemeTokens } from '@/theme/tokens'
 import { MarketToken } from '@/utils/haptix-prices'
@@ -77,7 +78,7 @@ function buildSvgPaths(points: number[], width: number, height: number) {
     const x = (index / (points.length - 1)) * width
     const norm = (p - min) / range
     const y = height - paddingY - norm * (height - paddingY * 2)
-    return { x, y }
+    return { x, y, value: p }
   })
 
   // Build smooth cubic bezier curve
@@ -92,7 +93,7 @@ function buildSvgPaths(points: number[], width: number, height: number) {
   const last = coords[coords.length - 1]
   const areaPath = `${linePath} L ${width} ${height} L 0 ${height} Z`
 
-  return { linePath, areaPath, lastX: last.x, lastY: last.y }
+  return { linePath, areaPath, lastX: last.x, lastY: last.y, coords }
 }
 
 export function HaptixTokenDetailSheet({
@@ -110,6 +111,7 @@ export function HaptixTokenDetailSheet({
   const styles = createStyles(theme, isDark)
 
   const [timeframe, setTimeframe] = useState<ChartTimeframe>('1D')
+  const [activePointIndex, setActivePointIndex] = useState<number | null>(null)
 
   const chartWidth = Math.min(Dimensions.get('window').width - 48, 380)
   const chartHeight = 150
@@ -136,9 +138,83 @@ export function HaptixTokenDetailSheet({
     )
   }, [activeToken.priceUsd, activeToken.changePct, timeframe, isPositive, solPriceUsd])
 
-  const { linePath, areaPath, lastX, lastY } = useMemo(() => {
+  const { linePath, areaPath, lastX, lastY, coords } = useMemo(() => {
     return buildSvgPaths(points, chartWidth, chartHeight)
   }, [points, chartWidth, chartHeight])
+
+  const panResponder = useMemo(() => {
+    let lastHapticIndex = -1
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        const x = evt.nativeEvent.locationX
+        let closestIdx = 0
+        let minDiff = Infinity
+        coords.forEach((c, i) => {
+          const diff = Math.abs(c.x - x)
+          if (diff < minDiff) {
+            minDiff = diff
+            closestIdx = i
+          }
+        })
+        setActivePointIndex(closestIdx)
+        lastHapticIndex = closestIdx
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+      },
+      onPanResponderMove: (evt) => {
+        const x = evt.nativeEvent.locationX
+        let closestIdx = 0
+        let minDiff = Infinity
+        coords.forEach((c, i) => {
+          const diff = Math.abs(c.x - x)
+          if (diff < minDiff) {
+            minDiff = diff
+            closestIdx = i
+          }
+        })
+        setActivePointIndex(closestIdx)
+        if (closestIdx !== lastHapticIndex) {
+          lastHapticIndex = closestIdx
+          Haptics.selectionAsync().catch(() => {})
+        }
+      },
+      onPanResponderRelease: () => {
+        setActivePointIndex(null)
+      },
+      onPanResponderTerminate: () => {
+        setActivePointIndex(null)
+      },
+    })
+  }, [coords])
+
+  const getTooltipDate = (index: number) => {
+    const d = new Date()
+    const offset = coords.length - 1 - index
+    if (timeframe === '1H') d.setMinutes(d.getMinutes() - offset * 2.5)
+    else if (timeframe === '1D') d.setHours(d.getHours() - offset * 1)
+    else if (timeframe === '1W') d.setHours(d.getHours() - offset * 7)
+    else if (timeframe === '1M') d.setDate(d.getDate() - offset * 1.25)
+    else d.setDate(d.getDate() - offset * 15)
+    
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const month = months[d.getMonth()]
+    const date = d.getDate()
+    const year = d.getFullYear()
+    let hours = d.getHours()
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+    hours = hours % 12 || 12
+    const mins = d.getMinutes().toString().padStart(2, '0')
+    
+    if (timeframe === '1H' || timeframe === '1D') return `${month} ${date}, ${hours}:${mins} ${ampm}`
+    if (timeframe === '1W') return `${month} ${date}, ${hours} ${ampm}`
+    if (timeframe === '1M') return `${month} ${date}`
+    return `${month} ${year}`
+  }
+
+  const displayPrice = activePointIndex !== null 
+    ? `$${(coords[activePointIndex]?.value || 0).toFixed(activeToken.priceUsd < 1 ? 4 : 2)}`
+    : activeToken.price
 
   // Holdings
   const isSol = activeToken.symbol.toUpperCase() === 'SOL'
@@ -175,10 +251,14 @@ export function HaptixTokenDetailSheet({
             </View>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false} 
+            contentContainerStyle={styles.scrollContent}
+            scrollEnabled={activePointIndex === null}
+          >
             {/* Hero Price & 24h Change */}
             <View style={styles.heroPriceSection}>
-              <Text style={[styles.heroPrice, { color: theme.textPrimary }]}>{activeToken.price}</Text>
+              <Text style={[styles.heroPrice, { color: theme.textPrimary }]}>{displayPrice}</Text>
               <View style={styles.trendRow}>
                 <View
                   style={[
@@ -201,7 +281,24 @@ export function HaptixTokenDetailSheet({
             </View>
 
             {/* Sparkline Chart */}
-            <View style={styles.chartContainer}>
+            <View style={styles.chartContainer} {...panResponder.panHandlers}>
+              {activePointIndex !== null && (
+                <View
+                  style={[
+                    styles.scrubTooltip,
+                    {
+                      backgroundColor: theme.bgElevated,
+                      borderColor: theme.borderDefault,
+                      left: Math.max(0, Math.min(coords[activePointIndex].x - 45, chartWidth - 90)),
+                    },
+                  ]}
+                  pointerEvents="none"
+                >
+                  <Text style={[styles.scrubTooltipText, { color: theme.textSecondary }]}>
+                    {getTooltipDate(activePointIndex)}
+                  </Text>
+                </View>
+              )}
               <Svg width={chartWidth} height={chartHeight}>
                 <Defs>
                   <LinearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
@@ -214,9 +311,37 @@ export function HaptixTokenDetailSheet({
                 <Path d={areaPath} fill="url(#chartGradient)" />
                 {/* Line */}
                 <Path d={linePath} fill="none" stroke={trendColor} strokeWidth={2.4} strokeLinecap="round" />
-                {/* Glowing Pulse Dot at end */}
-                <Circle cx={lastX} cy={lastY} r={4.5} fill={trendColor} />
-                <Circle cx={lastX} cy={lastY} r={8} fill={trendColor} opacity={0.25} />
+                
+                {/* Scrubbing crosshair & dot */}
+                {activePointIndex !== null && (
+                  <>
+                    <Line
+                      x1={coords[activePointIndex].x}
+                      y1={0}
+                      x2={coords[activePointIndex].x}
+                      y2={chartHeight}
+                      stroke={theme.borderDefault}
+                      strokeWidth={1}
+                      strokeDasharray="4 4"
+                    />
+                    <Circle
+                      cx={coords[activePointIndex].x}
+                      cy={coords[activePointIndex].y}
+                      r={5}
+                      fill={theme.bgApp}
+                      stroke={trendColor}
+                      strokeWidth={2.5}
+                    />
+                  </>
+                )}
+
+                {/* Glowing Pulse Dot at end (hide if scrubbing) */}
+                {activePointIndex === null && (
+                  <>
+                    <Circle cx={lastX} cy={lastY} r={4.5} fill={trendColor} />
+                    <Circle cx={lastX} cy={lastY} r={8} fill={trendColor} opacity={0.25} />
+                  </>
+                )}
               </Svg>
             </View>
 
@@ -446,6 +571,20 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
       marginVertical: 4,
+      position: 'relative',
+    },
+    scrubTooltip: {
+      position: 'absolute',
+      top: -10,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      zIndex: 10,
+    },
+    scrubTooltipText: {
+      fontSize: typeScale.micro,
+      fontWeight: '600',
     },
     timeframeRow: {
       flexDirection: 'row',
