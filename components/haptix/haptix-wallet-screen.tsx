@@ -239,7 +239,7 @@ export function HaptixWalletScreen() {
     setShowTxDetailModal(true)
   }, [])
   const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
-  const [homeSubTab, setHomeSubTab] = useState<'assets' | 'watchlist'>('assets')
+
 
   // Agent Policy Customization Inputs
   const [isGrantingSession, setIsGrantingSession] = useState(false)
@@ -1485,93 +1485,7 @@ export function HaptixWalletScreen() {
         </View>
       </View>
 
-      {/* SEGMENTED TAB SWITCHER (Assets · Watchlist) */}
-      <View style={styles.homeTabContainer}>
-        <TouchableOpacity
-          style={[
-            styles.homeTabPill,
-            homeSubTab === 'assets' && styles.homeTabPillActive,
-          ]}
-          onPress={() => {
-            Haptics.selectionAsync()
-            setHomeSubTab('assets')
-          }}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.homeTabPillText,
-              homeSubTab === 'assets' ? styles.homeTabPillTextActive : styles.homeTabPillTextInactive,
-            ]}
-          >
-            Assets
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.homeTabPill,
-            homeSubTab === 'watchlist' && styles.homeTabPillActive,
-          ]}
-          onPress={() => {
-            Haptics.selectionAsync()
-            setHomeSubTab('watchlist')
-          }}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.homeTabPillText,
-              homeSubTab === 'watchlist' ? styles.homeTabPillTextActive : styles.homeTabPillTextInactive,
-            ]}
-          >
-            Watchlist
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {homeSubTab === 'watchlist' ? (
-        <View style={[styles.assetList]}>
-          {market.tokens.filter((t) => t.symbol !== 'SOL').slice(0, 3).map((token, idx) => (
-            <React.Fragment key={token.symbol}>
-              {idx > 0 && <View style={[styles.assetDivider, styles.divider]} />}
-              <TouchableOpacity
-                style={styles.assetRow}
-                activeOpacity={0.7}
-                onPress={() => {
-                  Haptics.selectionAsync().catch(() => {})
-                  setSelectedDetailToken(token)
-                }}
-              >
-                <View style={styles.assetLeft}>
-                  <View
-                    style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
-                  >
-                    <Text style={{ fontWeight: '700', fontSize: 13, color: theme.textPrimary }}>{token.symbol[0]}</Text>
-                  </View>
-                  <View>
-                    <Text style={[styles.assetPrimaryName, styles.textPrimary]}>{token.name}</Text>
-                    <Text style={[styles.assetSecondaryTag, styles.textMuted]}>{token.symbol}</Text>
-                  </View>
-                </View>
-                <View style={styles.assetRight}>
-                  <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{token.price}</Text>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: token.isPositive ? theme.emeraldText : theme.roseText,
-                      fontWeight: '600',
-                      marginTop: 2,
-                    }}
-                  >
-                    {token.change}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </React.Fragment>
-          ))}
-        </View>
-      ) : (
+      {/* ASSETS LIST */}
         /* ASSETS LIST */
         <View style={[styles.assetList]}>
         {/* Solana (SOL) */}
@@ -1725,7 +1639,6 @@ export function HaptixWalletScreen() {
           </View>
         </TouchableOpacity>
         </View>
-      )}
 
       {/* RECENT ACTIVITY SECTION */}
       <View style={styles.homeSectionHeaderRow}>
