@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
+  Image,
   View,
   Text,
   TouchableOpacity,
@@ -16,6 +17,9 @@ import {
   StyleSheet,
   useWindowDimensions,
 } from 'react-native'
+
+const HERO_BG_DARK = require('@/assets/background/dark.png')
+const HERO_BG_WHITE = require('@/assets/background/white.png')
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
@@ -1368,7 +1372,12 @@ export function HaptixWalletScreen() {
   const renderWalletHome = () => (
     <>
       {/* HERO BALANCE CARD */}
-      <View style={[styles.heroCard]}>
+      <View style={styles.heroCard}>
+        <Image
+          source={isDark ? HERO_BG_DARK : HERO_BG_WHITE}
+          style={StyleSheet.absoluteFillObject}
+          resizeMode="cover"
+        />
         <View style={styles.heroBalanceLabelRow}>
           <Text style={[styles.heroBalanceLabel, { color: theme.textSecondary }]}>Total balance</Text>
           <TouchableOpacity
