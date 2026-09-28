@@ -5,6 +5,7 @@
  * Shows seed/fallback data immediately, then replaces with live
  * CoinGecko data once fetched.
  * Green line/fill when positive, red when negative.
+ * Works correctly in both dark and light mode.
  */
 import React, { useEffect, useState, useCallback } from 'react'
 import { View } from 'react-native'
@@ -14,10 +15,7 @@ import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg'
 type SparklineData = number[]
 
 // ─── Realistic SOL fallback prices (used while fetching / on error) ───────────
-// Approximate 7-day SOL prices – gives chart a real shape from the start.
-const FALLBACK_SOL_PRICES: SparklineData = [
-  148, 152, 145, 158, 162, 155, 160,
-]
+const FALLBACK_SOL_PRICES: SparklineData = [148, 152, 145, 158, 162, 155, 160]
 
 // ─── CoinGecko fetch ─────────────────────────────────────────────────────────
 const COINGECKO_CHART_URL =
@@ -37,7 +35,6 @@ async function fetchSolSparkline(): Promise<SparklineData> {
 
 // ─── SVG path builders ────────────────────────────────────────────────────────
 
-/** Catmull-Rom → cubic bezier smooth path through all points */
 function buildSmoothPath(pts: { x: number; y: number }[]): string {
   if (pts.length < 2) return ''
   let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`
@@ -55,7 +52,6 @@ function buildSmoothPath(pts: { x: number; y: number }[]): string {
   return d
 }
 
-/** Closed path for the gradient fill area below the line */
 function buildAreaPath(pts: { x: number; y: number }[], H: number): string {
   const line = buildSmoothPath(pts)
   if (!line) return ''
@@ -64,7 +60,6 @@ function buildAreaPath(pts: { x: number; y: number }[], H: number): string {
   return `${line} L ${last.x.toFixed(2)} ${H} L ${first.x.toFixed(2)} ${H} Z`
 }
 
-// ─── Normalise price array → SVG points ──────────────────────────────────────
 function pricesToPoints(
   prices: SparklineData,
   W: number,
@@ -86,10 +81,10 @@ interface Props {
   width: number
   height?: number
   isPositive: boolean
+  isDark: boolean
 }
 
-export function HaptixBalanceSparkline({ width, height = 72, isPositive }: Props) {
-  // Start with fallback so chart is always visible immediately
+export function HaptixBalanceSparkline({ width, height = 80, isPositive, isDark }: Props) {
   const [prices, setPrices] = useState<SparklineData>(FALLBACK_SOL_PRICES)
 
   const load = useCallback(async () => {
@@ -97,7 +92,7 @@ export function HaptixBalanceSparkline({ width, height = 72, isPositive }: Props
       const live = await fetchSolSparkline()
       setPrices(live)
     } catch {
-      // Keep fallback silently
+      // keep fallback silently
     }
   }, [])
 
@@ -106,9 +101,15 @@ export function HaptixBalanceSparkline({ width, height = 72, isPositive }: Props
   }, [load])
 
   // ── Colours ──────────────────────────────────────────────────────────────
-  const lineColor = isPositive ? '#34D399' : '#F87171'
-  const gradTop   = isPositive ? 'rgba(52,211,153,0.25)' : 'rgba(248,113,113,0.25)'
-  const gradBot   = 'rgba(0,0,0,0)'
+  // Line: vivid green/red
+  const lineColor = isPositive ? '#22C55E' : '#EF4444'
+
+  // Gradient fill: in dark mode use 20% opacity color → transparent
+  // In light mode use a lighter 12% opacity so it doesn't look heavy
+  const fillOpacity = isDark ? 0.22 : 0.12
+  const [r, g, b] = isPositive ? [34, 197, 94] : [239, 68, 68]
+  const gradTop = `rgba(${r},${g},${b},${fillOpacity})`
+  const gradBot = `rgba(${r},${g},${b},0)`
 
   // ── Build SVG paths ───────────────────────────────────────────────────────
   const W = width
@@ -118,7 +119,7 @@ export function HaptixBalanceSparkline({ width, height = 72, isPositive }: Props
   const areaPath = buildAreaPath(pts, H)
 
   return (
-    <View style={{ width: W, height: H, overflow: 'hidden' }}>
+    <View style={{ width: W, height: H, overflow: 'hidden', marginTop: 12 }}>
       <Svg width={W} height={H}>
         <Defs>
           <LinearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
@@ -132,7 +133,7 @@ export function HaptixBalanceSparkline({ width, height = 72, isPositive }: Props
         <Path
           d={linePath}
           stroke={lineColor}
-          strokeWidth={2.5}
+          strokeWidth={2}
           fill="none"
           strokeLinecap="round"
           strokeLinejoin="round"
