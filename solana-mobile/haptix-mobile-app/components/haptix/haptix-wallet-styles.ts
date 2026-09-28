@@ -244,6 +244,7 @@ const createStyles = (theme: ThemeTokens) =>
 
     /* HERO BALANCE CARD */
     heroCard: {
+      position: 'relative',
       paddingHorizontal: 24,
       paddingTop: 20,
       paddingBottom: 0,
@@ -251,6 +252,7 @@ const createStyles = (theme: ThemeTokens) =>
       borderRadius: 32,
       borderWidth: 1,
       borderColor: theme.borderDefault,
+      backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
       overflow: 'hidden',
     },
     heroBalanceLabelRow: {
