@@ -2337,7 +2337,7 @@ export function HaptixWalletScreen() {
       {/* 1. QUIET HEADER (Brand avatar + Identity + Network + Theme + Menu)    */}
       {/* ==================================================================== */}
       <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
-        <View style={[styles.headerLeftGroup, dockTab !== 'home' && { opacity: 0 }]} pointerEvents={dockTab === 'home' ? 'auto' : 'none'}>
+        <View style={styles.headerLeftGroup}>
           <TouchableOpacity
             style={styles.accountSwitcherTrigger}
             onPress={() => {
