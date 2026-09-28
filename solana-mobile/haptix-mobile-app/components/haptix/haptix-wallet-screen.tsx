@@ -1366,11 +1366,15 @@ export function HaptixWalletScreen() {
   const renderWalletHome = () => (
     <>
       {/* HERO BALANCE CARD WITH TEXTURE */}
+      {/* HERO BALANCE CARD WITH TEXTURE */}
       <ImageBackground
         source={require('../../assets/background/bg-dark.jpg')}
-        style={[styles.heroCard, { backgroundColor: 'transparent', overflow: 'hidden' }]}
-        imageStyle={{ borderRadius: 32 }}
+        style={[styles.heroCard, { backgroundColor: 'transparent', overflow: 'hidden', minHeight: 180, justifyContent: 'center' }]}
+        imageStyle={{ borderRadius: 24 }}
       >
+        {/* Dark overlay for contrast */}
+        <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.3)' }} />
+        
         <View style={styles.heroBalanceLabelRow}>
           <Text style={[styles.heroBalanceLabel, { color: 'rgba(255,255,255,0.7)' }]}>Total balance</Text>
           <TouchableOpacity
@@ -1394,20 +1398,20 @@ export function HaptixWalletScreen() {
         <View style={styles.heroBalanceContent}>
           {isBalanceHidden ? (
             <>
-              <Text style={[styles.heroPrimaryBalance, { color: '#FFFFFF' }]}>$ ••••••</Text>
+              <Text style={[styles.heroPrimaryBalance, { color: '#FFFFFF', marginBottom: 8 }]}>$ ••••••</Text>
               <Text style={[styles.heroSecondaryBalance, { color: 'rgba(255,255,255,0.7)' }]}>•••• SOL</Text>
             </>
           ) : (
             <>
-              <Text style={[styles.heroPrimaryBalance, { color: '#FFFFFF' }]}>${totalUsdBalance.toFixed(2)}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              <Text style={[styles.heroPrimaryBalance, { color: '#FFFFFF', marginBottom: 8 }]}>${totalUsdBalance.toFixed(2)}</Text>
+              <View style={{ flexDirection: 'column', gap: 4 }}>
                 <Text style={[styles.heroSecondaryBalance, { color: 'rgba(255,255,255,0.7)' }]}>
                   {balance.toFixed(4)} SOL
                 </Text>
                 <Text
                   style={{
                     fontSize: 14,
-                    color: isPositivePortfolio ? '#34C759' : '#FF3B30', // Forced readable colors on dark bg
+                    color: isPositivePortfolio ? '#32D74B' : '#FF453A', // Vibrant colors for dark overlay
                     fontWeight: '600',
                   }}
                 >
