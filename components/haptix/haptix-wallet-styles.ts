@@ -307,7 +307,7 @@ const createStyles = (theme: ThemeTokens) =>
       flex: 1,
       height: 78,
       borderRadius: 18,
-      backgroundColor: theme.isDark ? '#161619' : '#F5F5F7',
+      backgroundColor: theme.isDark ? '#1C1C1E' : '#F5F5F7',
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
@@ -649,7 +649,7 @@ const createStyles = (theme: ThemeTokens) =>
       width: 44,
       height: 44,
       borderRadius: 22,
-      backgroundColor: theme.isDark ? '#161619' : '#F5F5F7',
+      backgroundColor: theme.isDark ? '#1C1C1E' : '#F5F5F7',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -963,10 +963,8 @@ const createStyles = (theme: ThemeTokens) =>
       textAlign: 'center',
     },
     activityList: {
-      borderRadius: 22,
-      borderWidth: 1,
-      paddingHorizontal: 16,
-      overflow: 'hidden',
+      paddingHorizontal: 12,
+      paddingBottom: 24,
     },
     activityGroupsWrapper: {
       gap: 6,
@@ -1938,7 +1936,12 @@ const createStyles = (theme: ThemeTokens) =>
      These used to live in a second style object built inline in JSX because a
      module-level StyleSheet could not see the palette. Now that the sheet is
      built from the theme, one mechanism covers both. */
-    card: { backgroundColor: theme.bgCard, borderColor: theme.borderDefault },
+    card: { 
+      backgroundColor: theme.isDark ? '#0C0C0E' : theme.bgCard, 
+      borderWidth: theme.isDark ? 0 : 1, 
+      borderColor: theme.isDark ? 'transparent' : theme.borderDefault,
+      borderRadius: 24,
+    },
     elevatedCard: { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
     textPrimary: { color: theme.textPrimary },
     textSecondary: { color: theme.textSecondary },
