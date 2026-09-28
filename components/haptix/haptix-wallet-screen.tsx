@@ -2337,7 +2337,7 @@ export function HaptixWalletScreen() {
       {/* 1. QUIET HEADER (Brand avatar + Identity + Network + Theme + Menu)    */}
       {/* ==================================================================== */}
       <View style={[styles.header, { paddingTop: headerPaddingTop }]}>
-        <View style={styles.headerLeftGroup}>
+        <View style={[styles.headerLeftGroup, dockTab !== 'home' && { opacity: 0 }]} pointerEvents={dockTab === 'home' ? 'auto' : 'none'}>
           <TouchableOpacity
             style={styles.accountSwitcherTrigger}
             onPress={() => {
@@ -2448,13 +2448,11 @@ export function HaptixWalletScreen() {
       {/* ==================================================================== */}
       <ScrollView
         style={[styles.scrollArea, styles.container]}
+        overScrollMode="never"
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingBottom:
-              dockTab === 'agent'
-                ? Math.max(insets.bottom, 24) + 180
-                : Math.max(insets.bottom, 24) + 120,
+            paddingBottom: Math.max(insets.bottom, 24) + 180,
           },
         ]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.accent} />}

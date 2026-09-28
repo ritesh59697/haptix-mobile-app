@@ -132,8 +132,8 @@ export const HaptixFloatingDock = memo(function HaptixFloatingDock({
   // Near-opaque: at 0.82 alpha, scrolled list text used to ghost straight through the dock.
   const controlBg = theme.scrim
   const controlBorder = theme.borderDefault
-  const thumbBg = theme.accent
-  const activeTextColor = theme.accentForeground
+  const thumbBg = isDark ? '#FFFFFF' : theme.accent
+  const activeTextColor = isDark ? '#000000' : theme.accentForeground
   // Was #9CA3AF / #6B7280, a second grey ramp that did not match the segmented control
   // (#8E8E93) or the app's own tokens.
   const inactiveTextColor = theme.textSecondary
