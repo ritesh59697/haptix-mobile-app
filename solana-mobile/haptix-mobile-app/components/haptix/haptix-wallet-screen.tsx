@@ -1368,7 +1368,7 @@ export function HaptixWalletScreen() {
       {/* HERO BALANCE CARD WITH TEXTURE */}
       {/* HERO BALANCE CARD WITH TEXTURE */}
       <ImageBackground
-        source={require('../../assets/background/bg-dark.jpg')}
+        source={require('../../assets/background/d333a8b41a886ac9c5aadb45ea627fd6.jpg')}
         style={[styles.heroCard, { backgroundColor: 'transparent', overflow: 'hidden', minHeight: 180, justifyContent: 'center' }]}
         imageStyle={{ borderRadius: 24 }}
       >
