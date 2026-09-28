@@ -18,8 +18,8 @@ import {
   useWindowDimensions,
 } from 'react-native'
 
-const HERO_BG_DARK = require('@/assets/background/dark.png')
-const HERO_BG_WHITE = require('@/assets/background/white.png')
+const HERO_BG_DARK = require('@/assets/background/compressed dark.png')
+const HERO_BG_WHITE = require('@/assets/background/compressed light.png')
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
