@@ -314,7 +314,7 @@ const createStyles = (theme: ThemeTokens) =>
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: theme.isDark ? '#1C1C1E' : '#F5F5F7',
+      backgroundColor: theme.isDark ? '#000000' : '#EAEAEA',
       justifyContent: 'center',
       alignItems: 'center',
     },
