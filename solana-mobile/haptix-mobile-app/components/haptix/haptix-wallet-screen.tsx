@@ -1651,7 +1651,7 @@ export function HaptixWalletScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={[styles.activityList, styles.card]}>
+      <View style={[styles.activityList]}>
         {transactions.length === 0 ? (
           <TouchableOpacity
             style={styles.activityRow}
