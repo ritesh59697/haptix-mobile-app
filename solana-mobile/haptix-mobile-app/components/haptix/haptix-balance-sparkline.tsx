@@ -151,7 +151,10 @@ export function HaptixBalanceSparkline({
           </LinearGradient>
         </Defs>
 
-        {/* 1. Razor-sharp clean 2px line (no opaque area fill to keep background artwork visible) */}
+        {/* 1. Subtle translucent gradient fill */}
+        <Path d={areaPath} fill={`url(#${gradId})`} />
+
+        {/* 2. Razor-sharp clean 2px line */}
         <Path
           d={linePath}
           stroke={lineColor}
