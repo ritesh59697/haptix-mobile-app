@@ -1336,7 +1336,7 @@ export function HaptixWalletScreen() {
   const isPositivePortfolio = totalDollarChange >= 0
   const formattedDollarChange = Math.abs(totalDollarChange).toFixed(2)
   const formattedPctChange = Math.abs(totalChangePct).toFixed(2)
-  const portfolioChangeText = `${isPositivePortfolio ? '+' : '-'}$${formattedDollarChange} (${isPositivePortfolio ? '+' : ''}${formattedPctChange}%) today`
+  const portfolioChangeText = `${isPositivePortfolio ? '+' : '-'}$${formattedDollarChange} (${isPositivePortfolio ? '+' : '-'}${formattedPctChange}%) today`
 
   const activeAgentSessions = useMemo(
     () => agentSessions.filter((session) => Number(session.validUntil) > nowSeconds),
@@ -1406,7 +1406,7 @@ export function HaptixWalletScreen() {
                     fontWeight: '600',
                   }}
                 >
-                  {isPositivePortfolio ? '+' : ''}${formattedDollarChange} ({isPositivePortfolio ? '+' : ''}${formattedPctChange}%) today
+                  {isPositivePortfolio ? '+' : '-'}${formattedDollarChange} ({isPositivePortfolio ? '+' : '-'}${formattedPctChange}%) today
                 </Text>
               </View>
             </>
