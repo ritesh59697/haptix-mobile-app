@@ -315,6 +315,8 @@ const createStyles = (theme: ThemeTokens) =>
       height: 56,
       borderRadius: 28,
       backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
+      borderWidth: theme.isDark ? 1 : 0,
+      borderColor: theme.isDark ? '#2C2C2E' : 'transparent',
       shadowColor: '#000000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: theme.isDark ? 0 : 0.08,
