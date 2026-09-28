@@ -1,43 +1,58 @@
 /**
- * HaptixBalanceSparkline — OKX / MetaMask style
+ * HaptixBalanceSparkline
  *
- * Premium chart with:
- *  - Neon glow effect (double-painted line: soft bloom + sharp top layer)
- *  - Subtle gradient fill underneath
- *  - Hourly CoinGecko data (168 pts vs 7 daily) for a smoother curve
- *  - Green when positive, hot-pink/red when negative
+ * Professional financial sparkline chart matching OKX / Bitget style:
+ *  - Organic, gentle bezier price curve (no jagged saw-tooth spikes)
+ *  - Direction-aware trend (green upward for gain, rose downward for loss)
+ *  - Ultra-subtle translucent gradient fill using stopOpacity for Android compatibility
+ *  - Live price pulse dot at the right edge
+ *  - Compact height that complements the balance without overwhelming the card
  */
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { View } from 'react-native'
-import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg'
+import Svg, { Path, Defs, LinearGradient, Stop, Circle } from 'react-native-svg'
 
 type SparklineData = number[]
 
-// ─── Realistic 24-point SOL fallback (used instantly while API loads) ─────────
-const FALLBACK_SOL_PRICES: SparklineData = [
-  152, 156, 153, 149, 155, 161, 158, 164, 160, 157,
-  163, 168, 165, 162, 159, 166, 170, 167, 163, 158,
-  161, 155, 158, 160,
+// Smooth realistic 24-point market trend curves (gentle organic swings)
+const FALLBACK_POSITIVE_PRICES: SparklineData = [
+  152.0, 152.4, 152.1, 153.0, 153.6, 153.2, 154.1, 154.8,
+  154.3, 155.5, 155.1, 156.2, 156.8, 156.4, 157.6, 158.2,
+  157.8, 158.9, 159.5, 159.1, 160.2, 160.9, 161.4, 162.0,
 ]
 
-// ─── CoinGecko — hourly data for past 7 days ──────────────────────────────────
-// Omitting interval lets CG decide; for days<=90 it returns hourly (~168 pts)
+const FALLBACK_NEGATIVE_PRICES: SparklineData = [
+  162.0, 161.5, 161.8, 160.9, 160.2, 160.6, 159.5, 158.9,
+  159.3, 158.2, 157.6, 158.0, 156.9, 156.2, 156.7, 155.4,
+  154.8, 155.2, 154.1, 153.4, 153.8, 152.6, 151.8, 151.2,
+]
+
 const COINGECKO_URL =
   'https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=7'
+
+// Downsample array to `target` points with basic stride
+function downsample(data: number[], target = 28): number[] {
+  if (data.length <= target) return data
+  const step = (data.length - 1) / (target - 1)
+  const result: number[] = []
+  for (let i = 0; i < target; i++) {
+    const idx = Math.min(Math.round(i * step), data.length - 1)
+    result.push(data[idx])
+  }
+  return result
+}
 
 async function fetchHourlySolPrices(): Promise<SparklineData> {
   const res = await fetch(COINGECKO_URL, {
     headers: { Accept: 'application/json' },
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(6000),
   })
   if (!res.ok) throw new Error(`CoinGecko ${res.status}`)
   const json = await res.json()
-  const prices = (json.prices as [number, number][]).map(([, p]) => p)
-  if (prices.length < 4) throw new Error('Insufficient data')
-  return prices
+  const rawPrices = (json.prices as [number, number][]).map(([, p]) => p)
+  if (rawPrices.length < 4) throw new Error('Insufficient data')
+  return downsample(rawPrices, 28)
 }
-
-// ─── SVG path helpers ──────────────────────────────────────────────────────────
 
 function buildSmoothPath(pts: { x: number; y: number }[]): string {
   if (pts.length < 2) return ''
@@ -58,7 +73,7 @@ function buildSmoothPath(pts: { x: number; y: number }[]): string {
 
 function buildAreaPath(pts: { x: number; y: number }[], H: number): string {
   const line = buildSmoothPath(pts)
-  if (!line) return ''
+  if (!line || pts.length === 0) return ''
   const first = pts[0]
   const last = pts[pts.length - 1]
   return `${line} L ${last.x.toFixed(1)} ${H} L ${first.x.toFixed(1)} ${H} Z`
@@ -68,8 +83,8 @@ function pricesToPoints(
   prices: SparklineData,
   W: number,
   H: number,
-  padX = 0,
-  padY = 6,
+  padX = 4,
+  padY = 12,
 ): { x: number; y: number }[] {
   const min = Math.min(...prices)
   const max = Math.max(...prices)
@@ -80,8 +95,6 @@ function pricesToPoints(
   }))
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 interface Props {
   width: number
   height?: number
@@ -91,74 +104,84 @@ interface Props {
 
 export function HaptixBalanceSparkline({
   width,
-  height = 100,
+  height = 64,
   isPositive,
   isDark,
 }: Props) {
-  const [prices, setPrices] = useState<SparklineData>(FALLBACK_SOL_PRICES)
+  const initialData = isPositive ? FALLBACK_POSITIVE_PRICES : FALLBACK_NEGATIVE_PRICES
+  const [prices, setPrices] = useState<SparklineData>(initialData)
+
+  // Update fallback when trend flips
+  useEffect(() => {
+    setPrices(isPositive ? FALLBACK_POSITIVE_PRICES : FALLBACK_NEGATIVE_PRICES)
+  }, [isPositive])
 
   const load = useCallback(async () => {
     try {
       const live = await fetchHourlySolPrices()
       setPrices(live)
     } catch {
-      // keep fallback
+      // Keep direction-aware fallback
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
-  // ── Colours ──────────────────────────────────────────────────────────────
-  // Line colours — green (up) / hot pink-red (down) like OKX
-  const lineColor   = isPositive ? '#00D4AA' : '#FF3B6B'
-  // Glow layer — same hue, wider stroke, low opacity → bloom effect
-  const glowColor   = isPositive ? 'rgba(0,212,170,0.35)' : 'rgba(255,59,107,0.35)'
-  // Gradient fill alpha
-  const fillTopAlpha = isDark ? 0.18 : 0.10
-  const fillBotAlpha = 0
-  const [r, g, b]   = isPositive ? [0, 212, 170] : [255, 59, 107]
-  const gradTop     = `rgba(${r},${g},${b},${fillTopAlpha})`
-  const gradBot     = `rgba(${r},${g},${b},${fillBotAlpha})`
+  // Clean crypto colors: emerald for gains, modern rose for losses
+  const lineColor = isPositive ? '#10B981' : '#F43F5E'
+  const gradId = `balanceSparkGrad_${isPositive ? 'pos' : 'neg'}_${isDark ? 'dark' : 'light'}`
 
-  // ── Paths ────────────────────────────────────────────────────────────────
   const W = width
   const H = height
-  const pts      = pricesToPoints(prices, W, H)
-  const linePath = buildSmoothPath(pts)
-  const areaPath = buildAreaPath(pts, H)
+  const pts = useMemo(() => pricesToPoints(prices, W, H), [prices, W, H])
+  const linePath = useMemo(() => buildSmoothPath(pts), [pts])
+  const areaPath = useMemo(() => buildAreaPath(pts, H), [pts, H])
+  const lastPt = pts.length > 0 ? pts[pts.length - 1] : null
 
   return (
     <View style={{ width: W, height: H, overflow: 'hidden' }}>
       <Svg width={W} height={H}>
         <Defs>
-          <LinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={gradTop} />
-            <Stop offset="1" stopColor={gradBot} />
+          <LinearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor={lineColor} stopOpacity={isDark ? 0.16 : 0.08} />
+            <Stop offset="75%" stopColor={lineColor} stopOpacity={0.02} />
+            <Stop offset="100%" stopColor={lineColor} stopOpacity={0} />
           </LinearGradient>
         </Defs>
 
-        {/* ── 1. Subtle gradient fill ── */}
-        <Path d={areaPath} fill="url(#areaGrad)" />
+        {/* 1. Ultra-subtle translucent gradient fill */}
+        <Path d={areaPath} fill={`url(#${gradId})`} />
 
-        {/* ── 2. Glow bloom layer (wide + translucent) ── */}
-        <Path
-          d={linePath}
-          stroke={glowColor}
-          strokeWidth={10}
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* ── 3. Sharp line on top ── */}
+        {/* 2. Razor-sharp clean 2px line */}
         <Path
           d={linePath}
           stroke={lineColor}
-          strokeWidth={2.5}
+          strokeWidth={2}
           fill="none"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+
+        {/* 3. Live current price pulse dot at end */}
+        {lastPt && (
+          <>
+            <Circle
+              cx={lastPt.x}
+              cy={lastPt.y}
+              r={5}
+              fill={lineColor}
+              fillOpacity={0.25}
+            />
+            <Circle
+              cx={lastPt.x}
+              cy={lastPt.y}
+              r={2.5}
+              fill={lineColor}
+            />
+          </>
+        )}
       </Svg>
     </View>
   )
