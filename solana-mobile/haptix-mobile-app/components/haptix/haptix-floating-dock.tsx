@@ -133,13 +133,22 @@ export const HaptixFloatingDock = memo(function HaptixFloatingDock({
   // Theme-aware colors matching .cc-ios-tabs specification
   // Liquid Glass mode lowers opacity and increases blur for a realistic glass effect
   const controlBg = isGlass
-    ? (isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.5)')
+    ? (isDark ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.25)')
     : theme.scrim
   const controlBorder = isGlass
-    ? (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)')
+    ? (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.5)')
     : theme.borderDefault
-  const thumbBg = isDark ? '#FFFFFF' : theme.accent
-  const activeTextColor = isDark ? '#000000' : theme.accentForeground
+
+  // In Glass mode, the thumb itself should also be slightly transparent 
+  // so the glass effect shines all the way through the active tab!
+  const thumbBg = isGlass
+    ? (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)')
+    : (isDark ? '#FFFFFF' : theme.accent)
+  
+  const activeTextColor = isGlass
+    ? (isDark ? '#FFFFFF' : '#000000')
+    : (isDark ? '#000000' : theme.accentForeground)
+
   // Was #9CA3AF / #6B7280, a second grey ramp that did not match the segmented control
   // (#8E8E93) or the app's own tokens.
   const inactiveTextColor = theme.textSecondary
@@ -159,10 +168,14 @@ export const HaptixFloatingDock = memo(function HaptixFloatingDock({
         />
       )}
       {/* Outer shadow container (prevents Android/iOS shadow clipping from overflow:hidden) */}
-      <View style={[styles.dockShadowContainer, { width: dockWidth }, isDark ? styles.darkShadow : styles.lightShadow]}>
+      <View style={[
+        styles.dockShadowContainer, 
+        { width: dockWidth }, 
+        isGlass ? (isDark ? styles.glassDarkShadow : styles.glassLightShadow) : (isDark ? styles.darkShadow : styles.lightShadow)
+      ]}>
         <BlurView
-          intensity={isGlass ? (isDark ? 85 : 100) : (isDark ? 36 : 60)}
-          tint={isGlass ? 'default' : (isDark ? 'dark' : 'light')}
+          intensity={isGlass ? 100 : (isDark ? 36 : 60)}
+          tint={isGlass ? (isDark ? 'dark' : 'light') : (isDark ? 'dark' : 'light')}
           experimentalBlurMethod="dimezisBlurView"
           style={[
             styles.dockControl,
@@ -255,6 +268,20 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  glassLightShadow: {
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(15, 23, 42, 1)',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.15,
+        shadowRadius: 24,
+      },
+      android: {
+        elevation: 20,
+        shadowColor: '#000000',
+      },
+    }),
+  },
   darkShadow: {
     ...Platform.select({
       ios: {
@@ -265,6 +292,19 @@ const styles = StyleSheet.create({
       },
       android: {
         elevation: 12,
+      },
+    }),
+  },
+  glassDarkShadow: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.6,
+        shadowRadius: 32,
+      },
+      android: {
+        elevation: 24,
       },
     }),
   },
