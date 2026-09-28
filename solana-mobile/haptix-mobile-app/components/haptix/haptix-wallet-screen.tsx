@@ -14,7 +14,6 @@ import {
   Share,
   StatusBar as RNStatusBar,
   StyleSheet,
-  ImageBackground,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -210,7 +209,7 @@ export function HaptixWalletScreen() {
   const handleCopyReceiveAddress = useCallback(() => {
     if (!activeWallet?.address) return
     Clipboard.setString(activeWallet.address)
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { })
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
     setReceiveAddressCopied(true)
     if (receiveAddressCopyTimeoutRef.current) clearTimeout(receiveAddressCopyTimeoutRef.current)
     receiveAddressCopyTimeoutRef.current = setTimeout(() => {
@@ -224,7 +223,7 @@ export function HaptixWalletScreen() {
     const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
     const url = `https://solscan.io/tx/${sig}${clusterParam}`
     Clipboard.setString(url)
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { })
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
     setCopiedTxLink(true)
     if (copyTxLinkTimeoutRef.current) clearTimeout(copyTxLinkTimeoutRef.current)
     copyTxLinkTimeoutRef.current = setTimeout(() => {
@@ -535,12 +534,12 @@ export function HaptixWalletScreen() {
         const secondaryWarning = sameSecondary
           ? ''
           : '\n\nHeads up: the second key stored on-chain is not the one on this device. ' +
-          'Sends above your one-key limit, and unlocking, will fail until this wallet is re-created here.'
+            'Sends above your one-key limit, and unlocking, will fail until this wallet is re-created here.'
 
         dialog.alert(
           'Smart Account Already On-Chain',
           'This wallet was initialized on Devnet earlier, so your spending limits are already enforced ' +
-          `by the on-chain program.${secondaryWarning}`,
+            `by the on-chain program.${secondaryWarning}`,
           [
             {
               text: 'View on Explorer',
@@ -554,7 +553,7 @@ export function HaptixWalletScreen() {
         if (!sameSecondary) {
           console.warn(
             `[Haptix] On-chain secondary passkey for ${walletPda.toBase58()} differs from this device's. ` +
-            'Actions above your one-key limit will fail until the wallet is re-created from this device.',
+              'Actions above your one-key limit will fail until the wallet is re-created from this device.',
           )
         }
         return
@@ -790,7 +789,7 @@ export function HaptixWalletScreen() {
               onPress: () => {
                 const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
                 Clipboard.setString(`https://solscan.io/tx/${sig}${clusterParam}`)
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { })
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
               },
             },
             {
@@ -826,7 +825,7 @@ export function HaptixWalletScreen() {
       // No share sheet on this platform/browser -- copying achieves the same thing.
       console.warn('[Haptix] Share sheet unavailable, copied instead', err)
       await Clipboard.setString(address)
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => { })
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
     }
   }
 
@@ -1178,7 +1177,8 @@ export function HaptixWalletScreen() {
         if (!guardianSigner) {
           dialog.alert(
             'Guardian Not On This Device',
-            `Locking this wallet is signed by its guardian (${onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'not set'
+            `Locking this wallet is signed by its guardian (${
+              onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'not set'
             }), and this build does not hold that key. Ask the guardian to freeze it, or recover the wallet.`,
           )
           return
@@ -1364,18 +1364,10 @@ export function HaptixWalletScreen() {
 
   const renderWalletHome = () => (
     <>
-      {/* HERO BALANCE CARD WITH TEXTURE */}
-      {/* HERO BALANCE CARD WITH TEXTURE */}
-      <ImageBackground
-        source={require('../../assets/background/394010336ff37e7dcc05e66d43ab4428.jpg')}
-        style={[styles.heroCard, { backgroundColor: 'transparent', overflow: 'hidden', minHeight: 180, justifyContent: 'center' }]}
-        imageStyle={{ borderRadius: 24 }}
-      >
-        {/* Dark overlay for contrast */}
-        <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.3)' }} />
-
+      {/* HERO BALANCE CARD */}
+      <View style={[styles.heroCard]}>
         <View style={styles.heroBalanceLabelRow}>
-          <Text style={[styles.heroBalanceLabel, { color: 'rgba(255,255,255,0.7)' }]}>Total balance</Text>
+          <Text style={[styles.heroBalanceLabel, styles.textSecondary]}>Total balance</Text>
           <TouchableOpacity
             style={styles.eyeToggleButton}
             onPress={() => {
@@ -1387,9 +1379,9 @@ export function HaptixWalletScreen() {
             accessibilityLabel={isBalanceHidden ? 'Show balance' : 'Hide balance'}
           >
             {isBalanceHidden ? (
-              <EyeHideIcon size={16} color="rgba(255,255,255,0.7)" />
+              <EyeHideIcon size={16} color={theme.textMuted} />
             ) : (
-              <EyeShowIcon size={16} color="rgba(255,255,255,0.7)" />
+              <EyeShowIcon size={16} color={theme.textMuted} />
             )}
           </TouchableOpacity>
         </View>
@@ -1397,20 +1389,20 @@ export function HaptixWalletScreen() {
         <View style={styles.heroBalanceContent}>
           {isBalanceHidden ? (
             <>
-              <Text style={[styles.heroPrimaryBalance, { color: '#FFFFFF', marginBottom: 8 }]}>$ ••••••</Text>
-              <Text style={[styles.heroSecondaryBalance, { color: 'rgba(255,255,255,0.7)' }]}>•••• SOL</Text>
+              <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>$ ••••••</Text>
+              <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>•••• SOL</Text>
             </>
           ) : (
             <>
-              <Text style={[styles.heroPrimaryBalance, { color: '#FFFFFF', marginBottom: 8 }]}>${totalUsdBalance.toFixed(2)}</Text>
-              <View style={{ flexDirection: 'column', gap: 4 }}>
-                <Text style={[styles.heroSecondaryBalance, { color: 'rgba(255,255,255,0.7)' }]}>
+              <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>${totalUsdBalance.toFixed(2)}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>
                   {balance.toFixed(4)} SOL
                 </Text>
                 <Text
                   style={{
                     fontSize: 14,
-                    color: isPositivePortfolio ? '#32D74B' : '#FF453A', // Vibrant colors for dark overlay
+                    color: isPositivePortfolio ? theme.emeraldText : theme.roseText,
                     fontWeight: '600',
                   }}
                 >
@@ -1420,77 +1412,77 @@ export function HaptixWalletScreen() {
             </>
           )}
         </View>
-      </ImageBackground>
 
-      {/* ACTION BUTTONS (Fund · Swap · Stake · Send) */}
-      <View style={styles.heroActionsRow}>
-        {/* Send */}
-        <TouchableOpacity
-          style={styles.heroActionBtn}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            setShowSendModal(true)
-          }}
-          activeOpacity={0.78}
-        >
-          <View style={styles.actionIconContainer}>
-            <ActionSendIcon size={18} color={theme.textPrimary} />
-          </View>
-          <Text style={styles.heroActionBtnText}>Send</Text>
-        </TouchableOpacity>
+        {/* ACTION BUTTONS (Send · Swap · Receive · Faucet) */}
+        <View style={styles.heroActionsRow}>
+          {/* Send */}
+          <TouchableOpacity
+            style={[styles.heroActionBtn, styles.actionBtn]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+              setShowSendModal(true)
+            }}
+            activeOpacity={0.78}
+          >
+            <View style={styles.actionIconContainer}>
+              <ActionSendIcon size={18} color={theme.textPrimary} />
+            </View>
+            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Send</Text>
+          </TouchableOpacity>
 
-        {/* Swap */}
-        <TouchableOpacity
-          style={styles.heroActionBtn}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-            setSwapInitialToken('SOL')
-            setShowSwapModal(true)
-          }}
-          activeOpacity={0.78}
-        >
-          <View style={styles.actionIconContainer}>
-            <ActionSwapIcon size={18} color={theme.textPrimary} />
-          </View>
-          <Text style={styles.heroActionBtnText}>Swap</Text>
-        </TouchableOpacity>
+          {/* Swap */}
+          <TouchableOpacity
+            style={[styles.heroActionBtn, styles.actionBtn]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+              setSwapInitialToken('SOL')
+              setShowSwapModal(true)
+            }}
+            activeOpacity={0.78}
+          >
+            <View style={styles.actionIconContainer}>
+              <ActionSwapIcon size={18} color={theme.textPrimary} />
+            </View>
+            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Swap</Text>
+          </TouchableOpacity>
 
-        {/* Receive */}
-        <TouchableOpacity
-          style={styles.heroActionBtn}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            setShowReceiveModal(true)
-          }}
-          activeOpacity={0.78}
-        >
-          <View style={styles.actionIconContainer}>
-            <ActionReceiveIcon size={18} color={theme.textPrimary} />
-          </View>
-          <Text style={styles.heroActionBtnText}>Receive</Text>
-        </TouchableOpacity>
+          {/* Receive */}
+          <TouchableOpacity
+            style={[styles.heroActionBtn, styles.actionBtn]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+              setShowReceiveModal(true)
+            }}
+            activeOpacity={0.78}
+          >
+            <View style={styles.actionIconContainer}>
+              <ActionReceiveIcon size={18} color={theme.textPrimary} />
+            </View>
+            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Receive</Text>
+          </TouchableOpacity>
 
-        {/* Faucet */}
-        <TouchableOpacity
-          style={styles.heroActionBtn}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-            handleRequestFaucet()
-          }}
-          disabled={isRequestingFaucet}
-          activeOpacity={0.78}
-        >
-          <View style={styles.actionIconContainer}>
-            {isRequestingFaucet ? (
-              <ActivityIndicator size="small" color={theme.accent} />
-            ) : (
-              <ActionFaucetIcon size={18} color={theme.textPrimary} />
-            )}
-          </View>
-          <Text style={styles.heroActionBtnText}>
-            {isRequestingFaucet ? '...' : 'Faucet'}
-          </Text>
-        </TouchableOpacity>
+          {/* Faucet */}
+          <TouchableOpacity
+            style={[styles.heroActionBtn, styles.actionBtn]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+              handleRequestFaucet()
+            }}
+            disabled={isRequestingFaucet}
+            activeOpacity={0.78}
+          >
+            <View style={styles.actionIconContainer}>
+              {isRequestingFaucet ? (
+                <ActivityIndicator size="small" color={theme.accent} />
+              ) : (
+                <ActionFaucetIcon size={18} color={theme.textPrimary} />
+              )}
+            </View>
+            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>
+              {isRequestingFaucet ? '...' : 'Faucet'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* ASSETS LIST */}
@@ -1500,7 +1492,7 @@ export function HaptixWalletScreen() {
           style={styles.assetRow}
           activeOpacity={0.7}
           onPress={() => {
-            Haptics.selectionAsync().catch(() => { })
+            Haptics.selectionAsync().catch(() => {})
             const solMarket = market.tokens.find((t) => t.symbol === 'SOL') ?? {
               symbol: 'SOL',
               name: 'Solana',
@@ -1551,7 +1543,7 @@ export function HaptixWalletScreen() {
           style={styles.assetRow}
           activeOpacity={0.7}
           onPress={() => {
-            Haptics.selectionAsync().catch(() => { })
+            Haptics.selectionAsync().catch(() => {})
             const skrMarket = market.tokens.find((t) => t.symbol === 'SKR') ?? {
               symbol: 'SKR',
               name: 'Seeker',
@@ -1602,7 +1594,7 @@ export function HaptixWalletScreen() {
           style={styles.assetRow}
           activeOpacity={0.7}
           onPress={() => {
-            Haptics.selectionAsync().catch(() => { })
+            Haptics.selectionAsync().catch(() => {})
             const usdcMarket = market.tokens.find((t) => t.symbol === 'USDC') ?? {
               symbol: 'USDC',
               name: 'USD Coin',
@@ -1645,7 +1637,7 @@ export function HaptixWalletScreen() {
             </View>
           </View>
         </TouchableOpacity>
-      </View>
+        </View>
 
       {/* RECENT ACTIVITY SECTION */}
       <View style={styles.homeSectionHeaderRow}>
@@ -1840,17 +1832,17 @@ export function HaptixWalletScreen() {
                   styles.agentBudgetChip,
                   isSelected
                     ? {
-                      backgroundColor: isDark
-                        ? 'rgba(108, 140, 255, 0.10)'
-                        : 'rgba(108, 140, 255, 0.08)',
-                      borderColor: '#6C8CFF',
-                      borderWidth: 1.5,
-                    }
+                        backgroundColor: isDark
+                          ? 'rgba(108, 140, 255, 0.10)'
+                          : 'rgba(108, 140, 255, 0.08)',
+                        borderColor: '#6C8CFF',
+                        borderWidth: 1.5,
+                      }
                     : {
-                      backgroundColor: isDark ? '#000000' : '#F4F4F5',
-                      borderColor: isDark ? '#222226' : 'transparent',
-                      borderWidth: 1,
-                    },
+                        backgroundColor: isDark ? '#000000' : '#F4F4F5',
+                        borderColor: isDark ? '#222226' : 'transparent',
+                        borderWidth: 1,
+                      },
                 ]}
                 onPress={() => {
                   Haptics.selectionAsync()
@@ -1895,17 +1887,17 @@ export function HaptixWalletScreen() {
                   styles.agentBudgetChip,
                   isSelected
                     ? {
-                      backgroundColor: isDark
-                        ? 'rgba(108, 140, 255, 0.10)'
-                        : 'rgba(108, 140, 255, 0.08)',
-                      borderColor: '#6C8CFF',
-                      borderWidth: 1.5,
-                    }
+                        backgroundColor: isDark
+                          ? 'rgba(108, 140, 255, 0.10)'
+                          : 'rgba(108, 140, 255, 0.08)',
+                        borderColor: '#6C8CFF',
+                        borderWidth: 1.5,
+                      }
                     : {
-                      backgroundColor: isDark ? '#000000' : '#F4F4F5',
-                      borderColor: isDark ? '#222226' : 'transparent',
-                      borderWidth: 1,
-                    },
+                        backgroundColor: isDark ? '#000000' : '#F4F4F5',
+                        borderColor: isDark ? '#222226' : 'transparent',
+                        borderWidth: 1,
+                      },
                 ]}
                 onPress={() => {
                   Haptics.selectionAsync()
@@ -2178,15 +2170,15 @@ export function HaptixWalletScreen() {
           action={
             recoveryInFlight
               ? {
-                label: 'Open recovery',
-                onPress: () => router.push('/(tabs)/settings/recovery'),
-                variant: 'primary',
-              }
+                  label: 'Open recovery',
+                  onPress: () => router.push('/(tabs)/settings/recovery'),
+                  variant: 'primary',
+                }
               : {
-                label: 'Unlock wallet',
-                onPress: handleToggleFreeze,
-                variant: 'primary',
-              }
+                  label: 'Unlock wallet',
+                  onPress: handleToggleFreeze,
+                  variant: 'primary',
+                }
           }
         />
       )}
@@ -2417,15 +2409,15 @@ export function HaptixWalletScreen() {
             action={
               recoveryInFlight
                 ? {
-                  label: 'Open recovery',
-                  onPress: () => router.push('/(tabs)/settings/recovery'),
-                  variant: 'primary',
-                }
+                    label: 'Open recovery',
+                    onPress: () => router.push('/(tabs)/settings/recovery'),
+                    variant: 'primary',
+                  }
                 : {
-                  label: 'Unlock',
-                  onPress: handleToggleFreeze,
-                  variant: 'primary',
-                }
+                    label: 'Unlock',
+                    onPress: handleToggleFreeze,
+                    variant: 'primary',
+                  }
             }
             style={{ marginBottom: 0 }}
           />
@@ -2764,19 +2756,19 @@ export function HaptixWalletScreen() {
                       styles.explorerButton,
                       copiedTxLink
                         ? {
-                          backgroundColor: isDark
-                            ? 'rgba(52, 211, 153, 0.16)'
-                            : 'rgba(16, 185, 129, 0.12)',
-                          borderColor: theme.emeraldBorder,
-                          borderWidth: 1,
-                        }
+                            backgroundColor: isDark
+                              ? 'rgba(52, 211, 153, 0.16)'
+                              : 'rgba(16, 185, 129, 0.12)',
+                            borderColor: theme.emeraldBorder,
+                            borderWidth: 1,
+                          }
                         : {
-                          backgroundColor: isDark
-                            ? 'rgba(156, 147, 255, 0.18)'
-                            : 'rgba(124, 101, 193, 0.14)',
-                          borderColor: isDark ? '#9C93FF' : '#7C65C1',
-                          borderWidth: 1,
-                        },
+                            backgroundColor: isDark
+                              ? 'rgba(156, 147, 255, 0.18)'
+                              : 'rgba(124, 101, 193, 0.14)',
+                            borderColor: isDark ? '#9C93FF' : '#7C65C1',
+                            borderWidth: 1,
+                          },
                     ]}
                     onPress={() => handleCopyTransactionLink(selectedTransaction.signature)}
                     activeOpacity={0.8}
@@ -2868,7 +2860,8 @@ export function HaptixWalletScreen() {
               onPress={() => {
                 setShowOverflowMenu(false)
                 Linking.openURL(
-                  `https://explorer.solana.com/address/${activeWallet?.address}?cluster=${network === 'devnet' ? 'devnet' : 'mainnet-beta'
+                  `https://explorer.solana.com/address/${activeWallet?.address}?cluster=${
+                    network === 'devnet' ? 'devnet' : 'mainnet-beta'
                   }`,
                 )
               }}
