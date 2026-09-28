@@ -263,7 +263,7 @@ export default function TabSettingsScreen() {
   }
 
   const screenBg = isDark ? '#000000' : theme.bgApp
-  const cardBg = isDark ? '#0C0C0E' : theme.bgCard
+  const cardBg = isDark ? '#000000' : theme.bgCard
   const cardBorder = isDark ? '#1C1C20' : theme.borderDefault
   const dividerColor = isDark ? '#18181C' : theme.borderSubtle
   const headerBorderColor = isDark ? '#18181C' : theme.borderSubtle

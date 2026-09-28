@@ -1927,7 +1927,7 @@ export function HaptixWalletScreen() {
                         borderWidth: 1.5,
                       }
                     : {
-                        backgroundColor: isDark ? '#0A0A0D' : '#F4F4F5',
+                        backgroundColor: isDark ? '#000000' : '#F4F4F5',
                         borderColor: isDark ? '#222226' : 'transparent',
                         borderWidth: 1,
                       },
@@ -1982,7 +1982,7 @@ export function HaptixWalletScreen() {
                         borderWidth: 1.5,
                       }
                     : {
-                        backgroundColor: isDark ? '#0A0A0D' : '#F4F4F5',
+                        backgroundColor: isDark ? '#000000' : '#F4F4F5',
                         borderColor: isDark ? '#222226' : 'transparent',
                         borderWidth: 1,
                       },
@@ -2057,7 +2057,7 @@ export function HaptixWalletScreen() {
             styles.agentRecipientInput,
             styles.input,
             {
-              backgroundColor: isDark ? '#050507' : '#FFFFFF',
+              backgroundColor: isDark ? '#000000' : '#FFFFFF',
               borderColor: theme.borderDefault,
             },
           ]}
@@ -2706,11 +2706,15 @@ export function HaptixWalletScreen() {
                           />
                         </View>
 
-                        <Text style={[styles.txDetailAmountText, styles.textPrimary]}>
-                          {isValue
-                            ? `${selectedTransaction.direction === 'receive' ? '+' : '-'}${selectedTransaction.amount.toFixed(4)} ${selectedTransaction.tokenSymbol}`
-                            : 'No funds moved'}
-                        </Text>
+                        {isValue ? (
+                          <Text style={[styles.txDetailAmountText, styles.textPrimary]}>
+                            {`${selectedTransaction.direction === 'receive' ? '+' : '-'}${selectedTransaction.amount.toFixed(4)} ${selectedTransaction.tokenSymbol}`}
+                          </Text>
+                        ) : (
+                          <Text style={[styles.txDetailNoValueText, styles.textSecondary]}>
+                            No funds moved
+                          </Text>
+                        )}
 
                         {isValue && selectedTransaction.tokenSymbol === 'SOL' && (
                           <Text style={[styles.txDetailFiatText, styles.textMuted]}>

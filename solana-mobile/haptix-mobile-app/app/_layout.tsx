@@ -1,7 +1,7 @@
 import '../polyfill'
 import { PortalHost } from '@rn-primitives/portal'
 import { useFonts } from 'expo-font'
-import { Stack } from 'expo-router'
+import { Stack , useSegments, useRouter } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import 'react-native-reanimated'
 import { AppErrorBoundary } from '@/components/app-error-boundary'
@@ -12,7 +12,6 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
 import { useTrackLocations } from '@/hooks/use-track-locations'
 import { AppSplashController } from '@/components/app-splash-controller'
 import { useAuth } from '@/components/auth/auth-provider'
-import { useSegments, useRouter } from 'expo-router'
 
 SplashScreen.preventAutoHideAsync()
 

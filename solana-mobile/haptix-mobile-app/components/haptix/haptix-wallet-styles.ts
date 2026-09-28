@@ -1853,6 +1853,11 @@ const createStyles = (theme: ThemeTokens) =>
       letterSpacing: -0.5,
       marginBottom: 4,
     },
+    txDetailNoValueText: {
+      fontSize: typeScale.title,
+      fontWeight: '600',
+      marginBottom: 12,
+    },
     txDetailFiatText: {
       fontSize: typeScale.body,
       marginBottom: 10,
