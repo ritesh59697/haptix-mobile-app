@@ -1365,7 +1365,7 @@ export function HaptixWalletScreen() {
   const renderWalletHome = () => (
     <>
       {/* HERO BALANCE CARD */}
-      <View style={[styles.heroCard]}>
+      <View style={[styles.heroCard, theme.isDark && { backgroundColor: '#000000' }]}>
         <View style={styles.heroBalanceLabelRow}>
           <Text style={[styles.heroBalanceLabel, styles.textSecondary]}>Total balance</Text>
           <TouchableOpacity
@@ -1413,76 +1413,77 @@ export function HaptixWalletScreen() {
           )}
         </View>
 
-        {/* ACTION BUTTONS (Send · Swap · Receive · Faucet) */}
-        <View style={styles.heroActionsRow}>
-          {/* Send */}
-          <TouchableOpacity
-            style={[styles.heroActionBtn, styles.actionBtn]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setShowSendModal(true)
-            }}
-            activeOpacity={0.78}
-          >
-            <View style={styles.actionIconContainer}>
-              <ActionSendIcon size={18} color={theme.textPrimary} />
-            </View>
-            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Send</Text>
-          </TouchableOpacity>
+      </View>
 
-          {/* Swap */}
-          <TouchableOpacity
-            style={[styles.heroActionBtn, styles.actionBtn]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-              setSwapInitialToken('SOL')
-              setShowSwapModal(true)
-            }}
-            activeOpacity={0.78}
-          >
-            <View style={styles.actionIconContainer}>
-              <ActionSwapIcon size={18} color={theme.textPrimary} />
-            </View>
-            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Swap</Text>
-          </TouchableOpacity>
+      {/* ACTION BUTTONS (Send · Swap · Receive · Faucet) */}
+      <View style={styles.heroActionsRow}>
+        {/* Send */}
+        <TouchableOpacity
+          style={styles.heroActionBtn}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            setShowSendModal(true)
+          }}
+          activeOpacity={0.78}
+        >
+          <View style={styles.actionIconContainer}>
+            <ActionSendIcon size={18} color={theme.textPrimary} />
+          </View>
+          <Text style={styles.heroActionBtnText}>Send</Text>
+        </TouchableOpacity>
 
-          {/* Receive */}
-          <TouchableOpacity
-            style={[styles.heroActionBtn, styles.actionBtn]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              setShowReceiveModal(true)
-            }}
-            activeOpacity={0.78}
-          >
-            <View style={styles.actionIconContainer}>
-              <ActionReceiveIcon size={18} color={theme.textPrimary} />
-            </View>
-            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Receive</Text>
-          </TouchableOpacity>
+        {/* Swap */}
+        <TouchableOpacity
+          style={styles.heroActionBtn}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+            setSwapInitialToken('SOL')
+            setShowSwapModal(true)
+          }}
+          activeOpacity={0.78}
+        >
+          <View style={styles.actionIconContainer}>
+            <ActionSwapIcon size={18} color={theme.textPrimary} />
+          </View>
+          <Text style={styles.heroActionBtnText}>Swap</Text>
+        </TouchableOpacity>
 
-          {/* Faucet */}
-          <TouchableOpacity
-            style={[styles.heroActionBtn, styles.actionBtn]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-              handleRequestFaucet()
-            }}
-            disabled={isRequestingFaucet}
-            activeOpacity={0.78}
-          >
-            <View style={styles.actionIconContainer}>
-              {isRequestingFaucet ? (
-                <ActivityIndicator size="small" color={theme.accent} />
-              ) : (
-                <ActionFaucetIcon size={18} color={theme.textPrimary} />
-              )}
-            </View>
-            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>
-              {isRequestingFaucet ? '...' : 'Faucet'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Receive */}
+        <TouchableOpacity
+          style={styles.heroActionBtn}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            setShowReceiveModal(true)
+          }}
+          activeOpacity={0.78}
+        >
+          <View style={styles.actionIconContainer}>
+            <ActionReceiveIcon size={18} color={theme.textPrimary} />
+          </View>
+          <Text style={styles.heroActionBtnText}>Receive</Text>
+        </TouchableOpacity>
+
+        {/* Faucet */}
+        <TouchableOpacity
+          style={styles.heroActionBtn}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+            handleRequestFaucet()
+          }}
+          disabled={isRequestingFaucet}
+          activeOpacity={0.78}
+        >
+          <View style={styles.actionIconContainer}>
+            {isRequestingFaucet ? (
+              <ActivityIndicator size="small" color={theme.accent} />
+            ) : (
+              <ActionFaucetIcon size={18} color={theme.textPrimary} />
+            )}
+          </View>
+          <Text style={styles.heroActionBtnText}>
+            {isRequestingFaucet ? '...' : 'Faucet'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* ASSETS LIST */}
