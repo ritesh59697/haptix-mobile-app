@@ -745,6 +745,7 @@ export function HaptixSendSheet({
           [
             {
               text: 'Copy Link',
+              style: 'secondary',
               onPress: () => {
                 const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
                 Clipboard.setString(`https://solscan.io/tx/${sig}${clusterParam}`)
@@ -753,6 +754,7 @@ export function HaptixSendSheet({
             },
             {
               text: 'View on Solscan',
+              style: 'secondary',
               onPress: () => {
                 const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
                 Linking.openURL(`https://solscan.io/tx/${sig}${clusterParam}`)
@@ -760,6 +762,7 @@ export function HaptixSendSheet({
             },
             { text: 'Done', style: 'cancel' },
           ],
+          { status: 'success' }
         )
       }, 1100)
     } catch (err: any) {
