@@ -1937,10 +1937,10 @@ const createStyles = (theme: ThemeTokens) =>
      module-level StyleSheet could not see the palette. Now that the sheet is
      built from the theme, one mechanism covers both. */
     card: { 
-      backgroundColor: theme.isDark ? '#0C0C0E' : theme.bgCard, 
-      borderWidth: theme.isDark ? 0 : 1, 
-      borderColor: theme.isDark ? 'transparent' : theme.borderDefault,
-      borderRadius: 24,
+      backgroundColor: theme.bgCard, 
+      borderWidth: 1, 
+      borderColor: theme.borderDefault,
+      borderRadius: radius.xl,
     },
     elevatedCard: { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
     textPrimary: { color: theme.textPrimary },
