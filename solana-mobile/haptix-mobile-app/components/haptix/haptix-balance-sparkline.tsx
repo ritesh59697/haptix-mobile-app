@@ -1,20 +1,25 @@
 /**
  * HaptixBalanceSparkline
  *
- * Fetches the last 7 days of SOL price from CoinGecko and renders
- * a smooth SVG area sparkline inside the balance card.
- * Green when SOL is up, red when down.
+ * Renders a 7-day SOL price sparkline inside the balance card.
+ * Shows seed/fallback data immediately, then replaces with live
+ * CoinGecko data once fetched.
+ * Green line/fill when positive, red when negative.
  */
 import React, { useEffect, useState, useCallback } from 'react'
-import { View, StyleSheet } from 'react-native'
+import { View } from 'react-native'
 import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
+type SparklineData = number[]
 
-type SparklineData = number[]   // array of USD prices, oldest first
+// ─── Realistic SOL fallback prices (used while fetching / on error) ───────────
+// Approximate 7-day SOL prices – gives chart a real shape from the start.
+const FALLBACK_SOL_PRICES: SparklineData = [
+  148, 152, 145, 158, 162, 155, 160,
+]
 
-// ─── CoinGecko helper ────────────────────────────────────────────────────────
-
+// ─── CoinGecko fetch ─────────────────────────────────────────────────────────
 const COINGECKO_CHART_URL =
   'https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=7&interval=daily'
 
@@ -23,80 +28,76 @@ async function fetchSolSparkline(): Promise<SparklineData> {
     headers: { Accept: 'application/json' },
     signal: AbortSignal.timeout(8000),
   })
-  if (!res.ok) throw new Error(`CoinGecko ${res.status}`)
+  if (!res.ok) throw new Error(`CoinGecko HTTP ${res.status}`)
   const json = await res.json()
-  // json.prices → [[timestamp, price], ...]
-  return (json.prices as [number, number][]).map(([, price]) => price)
+  const prices = (json.prices as [number, number][]).map(([, p]) => p)
+  if (prices.length < 2) throw new Error('Too few data points')
+  return prices
 }
 
-// ─── SVG path builder ────────────────────────────────────────────────────────
+// ─── SVG path builders ────────────────────────────────────────────────────────
 
-/**
- * Builds a smooth cubic-bezier path string from an array of (x, y) points.
- * Uses the "catmull-rom to cubic bezier" conversion so the line curves
- * through every data point naturally.
- */
-function buildSmoothPath(points: { x: number; y: number }[]): string {
-  if (points.length < 2) return ''
-  let d = `M ${points[0].x} ${points[0].y}`
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[Math.max(i - 1, 0)]
-    const p1 = points[i]
-    const p2 = points[i + 1]
-    const p3 = points[Math.min(i + 2, points.length - 1)]
+/** Catmull-Rom → cubic bezier smooth path through all points */
+function buildSmoothPath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return ''
+  let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(i - 1, 0)]
+    const p1 = pts[i]
+    const p2 = pts[i + 1]
+    const p3 = pts[Math.min(i + 2, pts.length - 1)]
     const cp1x = p1.x + (p2.x - p0.x) / 6
     const cp1y = p1.y + (p2.y - p0.y) / 6
     const cp2x = p2.x - (p3.x - p1.x) / 6
     const cp2y = p2.y - (p3.y - p1.y) / 6
-    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`
+    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
   }
   return d
 }
 
-/**
- * Builds a closed area path (line + vertical drops to bottom edge) for the gradient fill.
- */
-function buildAreaPath(
-  points: { x: number; y: number }[],
-  height: number,
-): string {
-  const linePath = buildSmoothPath(points)
-  if (!linePath) return ''
-  const last = points[points.length - 1]
-  const first = points[0]
-  return `${linePath} L ${last.x} ${height} L ${first.x} ${height} Z`
+/** Closed path for the gradient fill area below the line */
+function buildAreaPath(pts: { x: number; y: number }[], H: number): string {
+  const line = buildSmoothPath(pts)
+  if (!line) return ''
+  const first = pts[0]
+  const last = pts[pts.length - 1]
+  return `${line} L ${last.x.toFixed(2)} ${H} L ${first.x.toFixed(2)} ${H} Z`
+}
+
+// ─── Normalise price array → SVG points ──────────────────────────────────────
+function pricesToPoints(
+  prices: SparklineData,
+  W: number,
+  H: number,
+  pad = 3,
+): { x: number; y: number }[] {
+  const min = Math.min(...prices)
+  const max = Math.max(...prices)
+  const range = max - min || 1
+  return prices.map((p, i) => ({
+    x: pad + (i / (prices.length - 1)) * (W - pad * 2),
+    y: H - pad - ((p - min) / range) * (H - pad * 2),
+  }))
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface Props {
-  /** Chart width in dp */
   width: number
-  /** Chart height in dp */
   height?: number
-  /** Whether SOL is currently positive (controls color) */
   isPositive: boolean
-  /** Pre-seeded price array to show while fetching */
-  seedPrices?: SparklineData
 }
 
-export function HaptixBalanceSparkline({
-  width,
-  height = 72,
-  isPositive,
-  seedPrices,
-}: Props) {
-  const [prices, setPrices] = useState<SparklineData>(seedPrices ?? [])
-  const [loading, setLoading] = useState(true)
+export function HaptixBalanceSparkline({ width, height = 72, isPositive }: Props) {
+  // Start with fallback so chart is always visible immediately
+  const [prices, setPrices] = useState<SparklineData>(FALLBACK_SOL_PRICES)
 
   const load = useCallback(async () => {
     try {
-      const data = await fetchSolSparkline()
-      if (data.length >= 2) setPrices(data)
+      const live = await fetchSolSparkline()
+      setPrices(live)
     } catch {
-      // keep seed / empty — fail silently
-    } finally {
-      setLoading(false)
+      // Keep fallback silently
     }
   }, [])
 
@@ -105,45 +106,28 @@ export function HaptixBalanceSparkline({
   }, [load])
 
   // ── Colours ──────────────────────────────────────────────────────────────
-  const lineColor  = isPositive ? '#34D399' : '#F87171'   // emerald / rose
-  const fillStart  = isPositive ? 'rgba(52,211,153,0.30)' : 'rgba(248,113,113,0.30)'
-  const fillEnd    = 'rgba(0,0,0,0)'
+  const lineColor = isPositive ? '#34D399' : '#F87171'
+  const gradTop   = isPositive ? 'rgba(52,211,153,0.25)' : 'rgba(248,113,113,0.25)'
+  const gradBot   = 'rgba(0,0,0,0)'
 
-  // ── Nothing to render yet ────────────────────────────────────────────────
-  if (loading || prices.length < 2) {
-    return <View style={{ width, height }} />
-  }
-
-  // ── Normalise data to SVG coordinate space ────────────────────────────────
-  const pad = 2
+  // ── Build SVG paths ───────────────────────────────────────────────────────
   const W = width
   const H = height
-  const min = Math.min(...prices)
-  const max = Math.max(...prices)
-  const range = max - min || 1
-
-  const pts = prices.map((p, i) => ({
-    x: pad + (i / (prices.length - 1)) * (W - pad * 2),
-    // flip Y: high price → top of chart (small y)
-    y: H - pad - ((p - min) / range) * (H - pad * 2),
-  }))
-
+  const pts = pricesToPoints(prices, W, H)
   const linePath = buildSmoothPath(pts)
   const areaPath = buildAreaPath(pts, H)
 
   return (
-    <View style={[styles.container, { width, height }]}>
+    <View style={{ width: W, height: H, overflow: 'hidden' }}>
       <Svg width={W} height={H}>
         <Defs>
           <LinearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={fillStart} />
-            <Stop offset="1" stopColor={fillEnd} />
+            <Stop offset="0" stopColor={gradTop} />
+            <Stop offset="1" stopColor={gradBot} />
           </LinearGradient>
         </Defs>
-
         {/* gradient fill */}
         <Path d={areaPath} fill="url(#sparkGrad)" />
-
         {/* line */}
         <Path
           d={linePath}
@@ -157,9 +141,3 @@ export function HaptixBalanceSparkline({
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    overflow: 'hidden',
-  },
-})
