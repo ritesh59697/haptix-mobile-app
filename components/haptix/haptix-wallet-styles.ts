@@ -244,11 +244,11 @@ const createStyles = (theme: ThemeTokens) =>
 
     /* HERO BALANCE CARD */
     heroCard: {
-      borderRadius: 32,
+      borderRadius: 24,
       paddingHorizontal: 24,
-      paddingVertical: 26,
+      paddingVertical: 24,
       marginBottom: 20,
-      backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
+      backgroundColor: 'transparent',
       shadowColor: '#000000',
       shadowOffset: { width: 0, height: 12 },
       shadowOpacity: theme.isDark ? 0.3 : 0.05,
@@ -300,17 +300,14 @@ const createStyles = (theme: ThemeTokens) =>
     },
     heroActionsRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      justifyContent: 'space-evenly',
       marginTop: 20,
-      marginBottom: 8,
-      paddingHorizontal: 8,
+      marginBottom: 12,
     },
     heroActionBtn: {
-      flex: 1,
-      flexDirection: 'column',
-      justifyContent: 'center',
       alignItems: 'center',
       gap: 10,
+      width: 72,
     },
     actionIconContainer: {
       width: 56,
