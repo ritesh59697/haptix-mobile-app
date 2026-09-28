@@ -18,8 +18,8 @@ import {
   useWindowDimensions,
 } from 'react-native'
 
-const HERO_BG_DARK = require('@/assets/background/compressed dark.png')
-const HERO_BG_WHITE = require('@/assets/background/compressed light.png')
+const HERO_BG_DARK = require('@/assets/background/card-bg-dark.png')
+const HERO_BG_WHITE = require('@/assets/background/card-bg-light.png')
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
@@ -1377,60 +1377,64 @@ export function HaptixWalletScreen() {
           source={isDark ? HERO_BG_DARK : HERO_BG_WHITE}
           style={StyleSheet.absoluteFillObject}
           resizeMode="cover"
+          fadeDuration={0}
         />
-        <View style={styles.heroBalanceLabelRow}>
-          <Text style={[styles.heroBalanceLabel, { color: theme.textSecondary }]}>Total balance</Text>
-          <TouchableOpacity
-            style={styles.eyeToggleButton}
-            onPress={() => {
-              Haptics.selectionAsync()
-              setIsBalanceHidden((prev) => !prev)
-            }}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityRole="button"
-            accessibilityLabel={isBalanceHidden ? 'Show balance' : 'Hide balance'}
-          >
-            {isBalanceHidden ? (
-              <EyeHideIcon size={16} color={theme.textMuted} />
-            ) : (
-              <EyeShowIcon size={16} color={theme.textMuted} />
-            )}
-          </TouchableOpacity>
-        </View>
 
-        <View style={styles.heroBalanceContent}>
-          {isBalanceHidden ? (
-            <>
-              <Text style={[styles.heroPrimaryBalance, { color: theme.textPrimary }]}>$ ••••••</Text>
-              <Text style={[styles.heroSecondaryBalance, { color: theme.textSecondary }]}>•••• SOL</Text>
-            </>
-          ) : (
-            <>
-              <Text style={[styles.heroPrimaryBalance, { color: theme.textPrimary }]}>${totalUsdBalance.toFixed(2)}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                <Text style={[styles.heroSecondaryBalance, { color: theme.textSecondary }]}>
-                  {balance.toFixed(4)} SOL
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: isPositivePortfolio ? theme.emeraldText : theme.roseText,
-                    fontWeight: '600',
-                  }}
-                >
-                  {isPositivePortfolio ? '+' : '-'}${formattedDollarChange} ({isPositivePortfolio ? '+' : '-'}${formattedPctChange}%) today
-                </Text>
-              </View>
-            </>
-          )}
+        <View>
+          <View style={styles.heroBalanceLabelRow}>
+            <Text style={[styles.heroBalanceLabel, { color: theme.textSecondary }]}>Total balance</Text>
+            <TouchableOpacity
+              style={styles.eyeToggleButton}
+              onPress={() => {
+                Haptics.selectionAsync()
+                setIsBalanceHidden((prev) => !prev)
+              }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel={isBalanceHidden ? 'Show balance' : 'Hide balance'}
+            >
+              {isBalanceHidden ? (
+                <EyeHideIcon size={16} color={theme.textMuted} />
+              ) : (
+                <EyeShowIcon size={16} color={theme.textMuted} />
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.heroBalanceContent}>
+            {isBalanceHidden ? (
+              <>
+                <Text style={[styles.heroPrimaryBalance, { color: theme.textPrimary }]}>$ ••••••</Text>
+                <Text style={[styles.heroSecondaryBalance, { color: theme.textSecondary }]}>•••• SOL</Text>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.heroPrimaryBalance, { color: theme.textPrimary }]}>${totalUsdBalance.toFixed(2)}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <Text style={[styles.heroSecondaryBalance, { color: theme.textSecondary }]}>
+                    {balance.toFixed(4)} SOL
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: isPositivePortfolio ? theme.emeraldText : theme.roseText,
+                      fontWeight: '600',
+                    }}
+                  >
+                    {isPositivePortfolio ? '+' : '-'}${formattedDollarChange} ({isPositivePortfolio ? '+' : '-'}${formattedPctChange}%) today
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
         </View>
 
         {/* SPARKLINE CHART */}
         {!isBalanceHidden && (
-          <View style={{ marginTop: 8, marginHorizontal: -24 }}>
+          <View style={{ marginHorizontal: -24 }}>
             <HaptixBalanceSparkline
               width={screenWidth - 32}
-              height={64}
+              height={52}
               isPositive={isPositivePortfolio}
               isDark={isDark}
             />
