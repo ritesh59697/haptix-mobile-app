@@ -245,8 +245,11 @@ const createStyles = (theme: ThemeTokens) =>
     /* HERO BALANCE CARD */
     heroCard: {
       position: 'relative',
+      aspectRatio: 1585 / 992,
+      minHeight: 215,
+      justifyContent: 'space-between',
       paddingHorizontal: 24,
-      paddingTop: 20,
+      paddingTop: 22,
       paddingBottom: 0,
       marginBottom: 20,
       borderRadius: 32,
