@@ -67,7 +67,7 @@ function generatePricePoints(
  * Build SVG smooth bezier path and gradient area path from points
  */
 function buildSvgPaths(points: number[], width: number, height: number) {
-  if (points.length < 2) return { linePath: '', areaPath: '', lastX: 0, lastY: 0 }
+  if (points.length < 2) return { linePath: '', areaPath: '', lastX: 0, lastY: 0, coords: [] }
 
   const min = Math.min(...points)
   const max = Math.max(...points)
