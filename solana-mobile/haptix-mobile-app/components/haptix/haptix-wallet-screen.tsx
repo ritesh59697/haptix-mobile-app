@@ -14,6 +14,7 @@ import {
   Share,
   StatusBar as RNStatusBar,
   StyleSheet,
+  ImageBackground,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -1364,8 +1365,12 @@ export function HaptixWalletScreen() {
 
   const renderWalletHome = () => (
     <>
-      {/* HERO BALANCE CARD */}
-      <View style={[styles.heroCard]}>
+      {/* HERO BALANCE CARD WITH TEXTURE */}
+      <ImageBackground
+        source={require('../../assets/background/bg-fortune.jpg')}
+        style={[styles.heroCard]}
+        imageStyle={{ borderRadius: 32, opacity: 0.8 }}
+      >
         <View style={styles.heroBalanceLabelRow}>
           <Text style={[styles.heroBalanceLabel, styles.textSecondary]}>Total balance</Text>
           <TouchableOpacity
@@ -1412,12 +1417,13 @@ export function HaptixWalletScreen() {
             </>
           )}
         </View>
+      </ImageBackground>
 
-        {/* ACTION BUTTONS (Send · Swap · Receive · Faucet) */}
+      {/* ACTION BUTTONS (Fund · Swap · Stake · Send) */}
         <View style={styles.heroActionsRow}>
           {/* Send */}
           <TouchableOpacity
-            style={[styles.heroActionBtn, styles.actionBtn]}
+            style={styles.heroActionBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
               setShowSendModal(true)
@@ -1427,12 +1433,12 @@ export function HaptixWalletScreen() {
             <View style={styles.actionIconContainer}>
               <ActionSendIcon size={18} color={theme.textPrimary} />
             </View>
-            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Send</Text>
+            <Text style={styles.heroActionBtnText}>Send</Text>
           </TouchableOpacity>
 
           {/* Swap */}
           <TouchableOpacity
-            style={[styles.heroActionBtn, styles.actionBtn]}
+            style={styles.heroActionBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
               setSwapInitialToken('SOL')
@@ -1443,12 +1449,12 @@ export function HaptixWalletScreen() {
             <View style={styles.actionIconContainer}>
               <ActionSwapIcon size={18} color={theme.textPrimary} />
             </View>
-            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Swap</Text>
+            <Text style={styles.heroActionBtnText}>Swap</Text>
           </TouchableOpacity>
 
           {/* Receive */}
           <TouchableOpacity
-            style={[styles.heroActionBtn, styles.actionBtn]}
+            style={styles.heroActionBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
               setShowReceiveModal(true)
@@ -1458,12 +1464,12 @@ export function HaptixWalletScreen() {
             <View style={styles.actionIconContainer}>
               <ActionReceiveIcon size={18} color={theme.textPrimary} />
             </View>
-            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>Receive</Text>
+            <Text style={styles.heroActionBtnText}>Receive</Text>
           </TouchableOpacity>
 
           {/* Faucet */}
           <TouchableOpacity
-            style={[styles.heroActionBtn, styles.actionBtn]}
+            style={styles.heroActionBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
               handleRequestFaucet()
@@ -1478,12 +1484,11 @@ export function HaptixWalletScreen() {
                 <ActionFaucetIcon size={18} color={theme.textPrimary} />
               )}
             </View>
-            <Text style={[styles.heroActionBtnText, styles.actionBtnText]}>
+            <Text style={styles.heroActionBtnText}>
               {isRequestingFaucet ? '...' : 'Faucet'}
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
 
       {/* ASSETS LIST */}
       <View style={[styles.assetList]}>
