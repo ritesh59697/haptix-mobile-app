@@ -54,7 +54,7 @@ export default function TabSettingsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const dialog = useHaptixDialog()
-  const { theme, isDark, themePreference, setThemePreference } = useAppTheme()
+  const { theme, isDark, themePreference, setThemePreference, appearanceStyle, setAppearanceStyle } = useAppTheme()
   const { activeWallet, isLocked, lockWallet, signOut, updateWallet } = useAuth()
   const { selectedCluster, clusters, setSelectedCluster, connection, getExplorerUrl } = useCluster()
   const confirmRemoveWallet = useConfirmRemoveWallet()
@@ -96,6 +96,11 @@ export default function TabSettingsScreen() {
       light: 'system',
     }
     void setThemePreference(cycle[themePreference])
+  }
+
+  const handleToggleAppearanceStyle = () => {
+    Haptics.selectionAsync()
+    void setAppearanceStyle(appearanceStyle === 'default' ? 'glassmorphic' : 'default')
   }
 
   const handleSelectCluster = () => {
@@ -463,9 +468,25 @@ export default function TabSettingsScreen() {
               activeOpacity={0.7}
             >
               <MaterialIcons name="brightness-medium" size={20} color={theme.accent} />
-              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Theme Mode</Text>
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Color Theme</Text>
               <Text style={[styles.rowValue, { color: theme.textMuted }]}>
                 {APPEARANCE_LABELS[themePreference]}
+              </Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+
+            {/* Design Language */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleToggleAppearanceStyle}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="auto-awesome" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Liquid Glass (Beta)</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>
+                {appearanceStyle === 'glassmorphic' ? 'On' : 'Off'}
               </Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
