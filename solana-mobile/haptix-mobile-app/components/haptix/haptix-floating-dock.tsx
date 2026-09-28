@@ -73,8 +73,10 @@ export const HaptixFloatingDock = memo(function HaptixFloatingDock({
   onSelectTab,
 }: HaptixFloatingDockProps) {
   const insets = useSafeAreaInsets()
-  const { theme, isDark } = useAppTheme()
+  const { theme, isDark, appearanceStyle } = useAppTheme()
   const { width: windowWidth } = useWindowDimensions()
+
+  const isGlass = appearanceStyle === 'glassmorphic'
 
   // Calculate pixel-perfect compressed dock width (300-320px)
   const dockWidth = Math.min(Math.max(windowWidth * 0.86, 280), 320)
@@ -129,9 +131,13 @@ export const HaptixFloatingDock = memo(function HaptixFloatingDock({
   })
 
   // Theme-aware colors matching .cc-ios-tabs specification
-  // Near-opaque: at 0.82 alpha, scrolled list text used to ghost straight through the dock.
-  const controlBg = theme.scrim
-  const controlBorder = theme.borderDefault
+  // Liquid Glass mode lowers opacity and increases blur for a realistic glass effect
+  const controlBg = isGlass
+    ? (isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.5)')
+    : theme.scrim
+  const controlBorder = isGlass
+    ? (isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)')
+    : theme.borderDefault
   const thumbBg = isDark ? '#FFFFFF' : theme.accent
   const activeTextColor = isDark ? '#000000' : theme.accentForeground
   // Was #9CA3AF / #6B7280, a second grey ramp that did not match the segmented control
@@ -153,7 +159,7 @@ export const HaptixFloatingDock = memo(function HaptixFloatingDock({
       {/* Outer shadow container (prevents Android/iOS shadow clipping from overflow:hidden) */}
       <View style={[styles.dockShadowContainer, { width: dockWidth }, isDark ? styles.darkShadow : styles.lightShadow]}>
         <BlurView
-          intensity={isDark ? 36 : 60}
+          intensity={isGlass ? (isDark ? 85 : 100) : (isDark ? 36 : 60)}
           tint={isDark ? 'dark' : 'light'}
           style={[
             styles.dockControl,

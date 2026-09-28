@@ -4,36 +4,51 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { ThemeTokens, darkTokens, lightTokens } from '@/theme/tokens'
 
 type ThemeMode = 'system' | 'light' | 'dark'
+export type AppearanceStyle = 'default' | 'glassmorphic'
 
 interface ThemeContextValue {
   theme: ThemeTokens
   colorScheme: 'light' | 'dark'
   isDark: boolean
   themePreference: ThemeMode
+  appearanceStyle: AppearanceStyle
   setThemePreference: (pref: ThemeMode) => Promise<void>
+  setAppearanceStyle: (style: AppearanceStyle) => Promise<void>
   toggleTheme: () => Promise<void>
 }
 
 const STORAGE_KEY = '@haptix_theme_preference'
+const APPEARANCE_STORAGE_KEY = '@haptix_appearance_style'
 
 const ThemeContext = createContext<ThemeContextValue>({
   theme: lightTokens,
   colorScheme: 'light',
   isDark: false,
   themePreference: 'light',
+  appearanceStyle: 'default',
   setThemePreference: async () => {},
+  setAppearanceStyle: async () => {},
   toggleTheme: async () => {},
 })
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const deviceColorScheme = useDeviceColorScheme()
   const [themePreference, setThemePreferenceState] = useState<ThemeMode>('light')
+  const [appearanceStyle, setAppearanceStyleState] = useState<AppearanceStyle>('default')
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((saved) => {
         if (saved === 'system' || saved === 'light' || saved === 'dark') {
           setThemePreferenceState(saved)
+        }
+      })
+      .catch(() => {})
+
+    AsyncStorage.getItem(APPEARANCE_STORAGE_KEY)
+      .then((saved) => {
+        if (saved === 'default' || saved === 'glassmorphic') {
+          setAppearanceStyleState(saved)
         }
       })
       .catch(() => {})
@@ -48,6 +63,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemePreferenceState(pref)
     try {
       await AsyncStorage.setItem(STORAGE_KEY, pref)
+    } catch {
+      // ignore
+    }
+  }, [])
+
+  const setAppearanceStyle = useCallback(async (style: AppearanceStyle) => {
+    setAppearanceStyleState(style)
+    try {
+      await AsyncStorage.setItem(APPEARANCE_STORAGE_KEY, style)
     } catch {
       // ignore
     }
@@ -70,10 +94,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       colorScheme: activeColorScheme,
       isDark: activeColorScheme === 'dark',
       themePreference,
+      appearanceStyle,
       setThemePreference,
+      setAppearanceStyle,
       toggleTheme,
     }),
-    [theme, activeColorScheme, themePreference, setThemePreference, toggleTheme],
+    [theme, activeColorScheme, themePreference, appearanceStyle, setThemePreference, setAppearanceStyle, toggleTheme],
   )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
