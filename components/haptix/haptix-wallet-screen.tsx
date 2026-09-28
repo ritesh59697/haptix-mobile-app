@@ -14,6 +14,7 @@ import {
   Share,
   StatusBar as RNStatusBar,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -32,6 +33,7 @@ import * as Haptics from 'expo-haptics'
 import Clipboard from '@/utils/clipboard'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg'
+import { HaptixBalanceSparkline } from './haptix-balance-sparkline'
 import { useAuth } from '@/components/auth/auth-provider'
 import { AppQrCode } from '@/components/app-qr-code'
 import { ellipsify } from '@/utils/ellipsify'
@@ -158,6 +160,7 @@ const AGENT_TRADE_AMOUNT_LAMPORTS = 20_000_000n
 export function HaptixWalletScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { width: screenWidth } = useWindowDimensions()
   const { activeWallet, isLocked, lockWallet, unlockWallet, signOut } = useAuth()
   const { theme, isDark } = useAppTheme()
   const dialog = useHaptixDialog()
@@ -1412,6 +1415,15 @@ export function HaptixWalletScreen() {
             </>
           )}
         </View>
+
+        {/* SPARKLINE CHART */}
+        {!isBalanceHidden && (
+          <HaptixBalanceSparkline
+            width={screenWidth - 48}
+            height={72}
+            isPositive={isPositivePortfolio}
+          />
+        )}
 
       </View>
 
