@@ -1421,8 +1421,9 @@ export function HaptixWalletScreen() {
           <View style={{ marginTop: 16, marginHorizontal: -24 }}>
             <HaptixBalanceSparkline
               width={screenWidth - 32}
-              height={56}
+              height={96}
               isPositive={isPositivePortfolio}
+              isDark={isDark}
             />
           </View>
         )}
