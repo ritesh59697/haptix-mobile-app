@@ -1,23 +1,19 @@
 /**
  * HaptixBalanceSparkline
  *
- * Renders a 7-day SOL price sparkline inside the balance card.
- * Shows seed/fallback data immediately, then replaces with live
- * CoinGecko data once fetched.
- * Green line/fill when positive, red when negative.
- * Works correctly in both dark and light mode.
+ * Clean line-only sparkline — no fill, no gradient area.
+ * Matches OKX / Bitget style: just a smooth colored line.
+ * Green when positive, red when negative.
  */
 import React, { useEffect, useState, useCallback } from 'react'
 import { View } from 'react-native'
-import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg'
+import Svg, { Path } from 'react-native-svg'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 type SparklineData = number[]
 
-// ─── Realistic SOL fallback prices (used while fetching / on error) ───────────
+// Realistic 7-day SOL shape used while live data loads
 const FALLBACK_SOL_PRICES: SparklineData = [148, 152, 145, 158, 162, 155, 160]
 
-// ─── CoinGecko fetch ─────────────────────────────────────────────────────────
 const COINGECKO_CHART_URL =
   'https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=7&interval=daily'
 
@@ -29,11 +25,9 @@ async function fetchSolSparkline(): Promise<SparklineData> {
   if (!res.ok) throw new Error(`CoinGecko HTTP ${res.status}`)
   const json = await res.json()
   const prices = (json.prices as [number, number][]).map(([, p]) => p)
-  if (prices.length < 2) throw new Error('Too few data points')
+  if (prices.length < 2) throw new Error('Too few points')
   return prices
 }
-
-// ─── SVG path builders ────────────────────────────────────────────────────────
 
 function buildSmoothPath(pts: { x: number; y: number }[]): string {
   if (pts.length < 2) return ''
@@ -52,39 +46,28 @@ function buildSmoothPath(pts: { x: number; y: number }[]): string {
   return d
 }
 
-function buildAreaPath(pts: { x: number; y: number }[], H: number): string {
-  const line = buildSmoothPath(pts)
-  if (!line) return ''
-  const first = pts[0]
-  const last = pts[pts.length - 1]
-  return `${line} L ${last.x.toFixed(2)} ${H} L ${first.x.toFixed(2)} ${H} Z`
-}
-
 function pricesToPoints(
   prices: SparklineData,
   W: number,
   H: number,
-  pad = 3,
 ): { x: number; y: number }[] {
+  const pad = 4
   const min = Math.min(...prices)
   const max = Math.max(...prices)
   const range = max - min || 1
   return prices.map((p, i) => ({
     x: pad + (i / (prices.length - 1)) * (W - pad * 2),
-    y: H - pad - ((p - min) / range) * (H - pad * 2),
+    y: pad + (1 - (p - min) / range) * (H - pad * 2),
   }))
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 interface Props {
   width: number
   height?: number
   isPositive: boolean
-  isDark: boolean
 }
 
-export function HaptixBalanceSparkline({ width, height = 80, isPositive, isDark }: Props) {
+export function HaptixBalanceSparkline({ width, height = 56, isPositive }: Props) {
   const [prices, setPrices] = useState<SparklineData>(FALLBACK_SOL_PRICES)
 
   const load = useCallback(async () => {
@@ -92,44 +75,19 @@ export function HaptixBalanceSparkline({ width, height = 80, isPositive, isDark 
       const live = await fetchSolSparkline()
       setPrices(live)
     } catch {
-      // keep fallback silently
+      // keep fallback
     }
   }, [])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  useEffect(() => { load() }, [load])
 
-  // ── Colours ──────────────────────────────────────────────────────────────
-  // Line: vivid green/red
   const lineColor = isPositive ? '#22C55E' : '#EF4444'
-
-  // Gradient fill: in dark mode use 20% opacity color → transparent
-  // In light mode use a lighter 12% opacity so it doesn't look heavy
-  const fillOpacity = isDark ? 0.22 : 0.12
-  const [r, g, b] = isPositive ? [34, 197, 94] : [239, 68, 68]
-  const gradTop = `rgba(${r},${g},${b},${fillOpacity})`
-  const gradBot = `rgba(${r},${g},${b},0)`
-
-  // ── Build SVG paths ───────────────────────────────────────────────────────
-  const W = width
-  const H = height
-  const pts = pricesToPoints(prices, W, H)
+  const pts = pricesToPoints(prices, width, height)
   const linePath = buildSmoothPath(pts)
-  const areaPath = buildAreaPath(pts, H)
 
   return (
-    <View style={{ width: W, height: H, overflow: 'hidden', marginTop: 12 }}>
-      <Svg width={W} height={H}>
-        <Defs>
-          <LinearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={gradTop} />
-            <Stop offset="1" stopColor={gradBot} />
-          </LinearGradient>
-        </Defs>
-        {/* gradient fill */}
-        <Path d={areaPath} fill="url(#sparkGrad)" />
-        {/* line */}
+    <View style={{ width, height, overflow: 'hidden' }}>
+      <Svg width={width} height={height}>
         <Path
           d={linePath}
           stroke={lineColor}
