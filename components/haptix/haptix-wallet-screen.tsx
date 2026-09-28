@@ -1367,12 +1367,12 @@ export function HaptixWalletScreen() {
     <>
       {/* HERO BALANCE CARD WITH TEXTURE */}
       <ImageBackground
-        source={require('../../assets/background/bg-fortune.jpg')}
-        style={[styles.heroCard]}
-        imageStyle={{ borderRadius: 32, opacity: 0.8 }}
+        source={require('../../assets/background/bg-dark.jpg')}
+        style={[styles.heroCard, { backgroundColor: 'transparent', overflow: 'hidden' }]}
+        imageStyle={{ borderRadius: 32 }}
       >
         <View style={styles.heroBalanceLabelRow}>
-          <Text style={[styles.heroBalanceLabel, styles.textSecondary]}>Total balance</Text>
+          <Text style={[styles.heroBalanceLabel, { color: 'rgba(255,255,255,0.7)' }]}>Total balance</Text>
           <TouchableOpacity
             style={styles.eyeToggleButton}
             onPress={() => {
@@ -1384,9 +1384,9 @@ export function HaptixWalletScreen() {
             accessibilityLabel={isBalanceHidden ? 'Show balance' : 'Hide balance'}
           >
             {isBalanceHidden ? (
-              <EyeHideIcon size={16} color={theme.textMuted} />
+              <EyeHideIcon size={16} color="rgba(255,255,255,0.7)" />
             ) : (
-              <EyeShowIcon size={16} color={theme.textMuted} />
+              <EyeShowIcon size={16} color="rgba(255,255,255,0.7)" />
             )}
           </TouchableOpacity>
         </View>
@@ -1394,20 +1394,20 @@ export function HaptixWalletScreen() {
         <View style={styles.heroBalanceContent}>
           {isBalanceHidden ? (
             <>
-              <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>$ ••••••</Text>
-              <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>•••• SOL</Text>
+              <Text style={[styles.heroPrimaryBalance, { color: '#FFFFFF' }]}>$ ••••••</Text>
+              <Text style={[styles.heroSecondaryBalance, { color: 'rgba(255,255,255,0.7)' }]}>•••• SOL</Text>
             </>
           ) : (
             <>
-              <Text style={[styles.heroPrimaryBalance, styles.textPrimary]}>${totalUsdBalance.toFixed(2)}</Text>
+              <Text style={[styles.heroPrimaryBalance, { color: '#FFFFFF' }]}>${totalUsdBalance.toFixed(2)}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                <Text style={[styles.heroSecondaryBalance, styles.textSecondary]}>
+                <Text style={[styles.heroSecondaryBalance, { color: 'rgba(255,255,255,0.7)' }]}>
                   {balance.toFixed(4)} SOL
                 </Text>
                 <Text
                   style={{
                     fontSize: 14,
-                    color: isPositivePortfolio ? theme.emeraldText : theme.roseText,
+                    color: isPositivePortfolio ? '#34C759' : '#FF3B30', // Forced readable colors on dark bg
                     fontWeight: '600',
                   }}
                 >
