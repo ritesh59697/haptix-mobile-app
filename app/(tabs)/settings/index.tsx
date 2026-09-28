@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import {
   ActivityIndicator,
+  Image,
   Linking,
   Platform,
   ScrollView,
@@ -598,7 +599,10 @@ export default function TabSettingsScreen() {
 
         {/* Rabby-style Bottom Centered Watermark */}
         <View style={styles.watermarkWrap}>
-          <HaptixTokenIcon symbol="HAPTIX" size={17} />
+          <Image 
+            source={require('@/assets/images/haptix-new-logo.png')} 
+            style={{ width: 17, height: 17, resizeMode: 'contain' }}
+          />
           <Text style={[styles.watermarkText, { color: theme.textMuted }]}>
             Haptix Smart Wallet
           </Text>

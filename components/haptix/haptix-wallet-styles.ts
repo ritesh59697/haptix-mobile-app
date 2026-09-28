@@ -245,8 +245,11 @@ const createStyles = (theme: ThemeTokens) =>
     /* HERO BALANCE CARD */
     heroCard: {
       paddingHorizontal: 24,
-      paddingVertical: 12,
+      paddingVertical: 20,
       marginBottom: 20,
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor: theme.borderDefault,
     },
     heroBalanceLabelRow: {
       flexDirection: 'row',
