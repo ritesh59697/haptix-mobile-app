@@ -1486,8 +1486,7 @@ export function HaptixWalletScreen() {
       </View>
 
       {/* ASSETS LIST */}
-        /* ASSETS LIST */
-        <View style={[styles.assetList]}>
+      <View style={[styles.assetList]}>
         {/* Solana (SOL) */}
         <TouchableOpacity
           style={styles.assetRow}
