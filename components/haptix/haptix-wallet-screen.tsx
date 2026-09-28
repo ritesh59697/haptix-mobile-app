@@ -2077,7 +2077,7 @@ export function HaptixWalletScreen() {
     return (
       <>
         <View style={{ marginBottom: 12 }}>
-          <Text style={[styles.sectionTitle, styles.textPrimary]}>Transaction history</Text>
+          <Text style={[styles.homeSectionTitle, styles.textPrimary]}>Transaction history</Text>
         </View>
 
         {/* Activity Category Filter Chips */}
@@ -2158,7 +2158,7 @@ export function HaptixWalletScreen() {
   const renderSecurityPage = () => (
     <>
       <View style={{ marginBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={[styles.sectionTitle, styles.textPrimary]}>Security</Text>
+        <Text style={[styles.homeSectionTitle, styles.textPrimary]}>Security</Text>
         <PolicyLinkButton onPress={() => setPolicyTopic('security')} />
       </View>
 

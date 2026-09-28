@@ -778,17 +778,14 @@ export function HeroSwapIcon({ size = 18, color = '#FFFFFF', strokeWidth = 2.1 }
 
 /**
  * HeroReceiveIcon
- * Diagonal inward receiving arrow (45 deg) matching mockup
+ * Solid bold downward arrow matching the pill button design
  */
-export function HeroReceiveIcon({ size = 18, color = '#FFFFFF', strokeWidth = 2.2 }: StrokeIconProps) {
+export function HeroReceiveIcon({ size = 18, color = '#FFFFFF' }: StrokeIconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M18 6L6 18M6 11.5V18h6.5"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M10 3.5C10 2.67 10.67 2 11.5 2h1c.83 0 1.5.67 1.5 1.5v7.7h3.8c.89 0 1.34 1.08.71 1.71l-5.8 5.8a1 1 0 0 1-1.42 0l-5.8-5.8c-.63-.63-.18-1.71.71-1.71H10v-7.7z"
+        fill={color}
       />
     </Svg>
   )
