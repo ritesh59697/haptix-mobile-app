@@ -85,7 +85,7 @@ export const ActivityRow = memo(function ActivityRow({ tx, variant, onSelect }: 
             {activityTitleFor(tx)}
           </Text>
           <Text style={[styles.activitySubtitle, styles.textSecondary]} numberOfLines={1}>
-            {activitySecurityLabelFor(tx)}
+            {timeStr} · {activitySecurityLabelFor(tx)}
           </Text>
         </View>
       </View>
@@ -105,7 +105,7 @@ export const ActivityRow = memo(function ActivityRow({ tx, variant, onSelect }: 
             {amountStr}
           </Text>
         ) : (
-          <Text style={[styles.activityTimeText, styles.textPrimary]}>{timeStr}</Text>
+          <Text style={[styles.activityAmount, styles.textMuted]}>—</Text>
         )}
         <View style={styles.activityStatusRow}>
           <MaterialIcons
@@ -158,15 +158,19 @@ export const AgentSessionRow = memo(function AgentSessionRow({
         style={[
           styles.agentCompactIcon,
           {
-            backgroundColor: isExpired ? 'rgba(229, 72, 77, 0.1)' : '#201f1d',
-            borderColor: isExpired ? 'rgba(229, 72, 77, 0.3)' : '#2a2a28',
+            backgroundColor: isExpired
+              ? (isDark ? 'rgba(244, 63, 94, 0.12)' : 'rgba(225, 29, 72, 0.08)')
+              : (isDark ? '#1C1C1E' : '#EFEFF0'),
+            borderColor: isExpired
+              ? (isDark ? 'rgba(244, 63, 94, 0.3)' : 'rgba(225, 29, 72, 0.2)')
+              : (isDark ? '#28282B' : '#E5E5EA'),
           },
         ]}
       >
         <MaterialIcons
           name={isExpired ? 'timer-off' : 'vpn-key'}
           size={18}
-          color={isExpired ? theme.roseText : '#8a8985'}
+          color={isExpired ? theme.roseText : (isDark ? '#FFFFFF' : '#000000')}
         />
       </View>
       <View style={{ flex: 1, paddingRight: 4 }}>

@@ -247,7 +247,7 @@ const createStyles = (theme: ThemeTokens) =>
       paddingHorizontal: 24,
       paddingTop: 20,
       paddingBottom: 0,
-      marginBottom: 20,
+      marginBottom: 16,
       borderRadius: 32,
       borderWidth: 1,
       borderColor: theme.borderDefault,
@@ -297,33 +297,30 @@ const createStyles = (theme: ThemeTokens) =>
     heroActionsRow: {
       flexDirection: 'row',
       justifyContent: 'space-evenly',
-      marginTop: 24,
+      marginTop: 8,
+      marginBottom: 24,
     },
     heroActionBtn: {
       flex: 1,
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: 10,
+      gap: 8,
     },
     actionIconContainer: {
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
-      borderWidth: theme.isDark ? 1 : 0,
-      borderColor: theme.isDark ? '#2C2C2E' : 'transparent',
-      shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: theme.isDark ? 0 : 0.08,
-      shadowRadius: 12,
-      elevation: 4,
+      backgroundColor: theme.isDark ? '#1C1C1E' : '#EAEAEC',
+      borderWidth: 0,
+      shadowOpacity: 0,
+      elevation: 0,
       justifyContent: 'center',
       alignItems: 'center',
     },
     heroActionBtnText: {
       fontSize: 13,
-      fontWeight: '700',
+      fontWeight: '600',
       letterSpacing: 0.1,
       color: theme.isDark ? '#FFFFFF' : '#000000',
     },
@@ -386,7 +383,7 @@ const createStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 2,
+      paddingHorizontal: 12,
       marginTop: 16,
       marginBottom: 10,
     },
@@ -679,6 +676,7 @@ const createStyles = (theme: ThemeTokens) =>
     },
     assetDivider: {
       height: 1,
+      marginLeft: 56,
     },
 
     /* AI AGENTS STYLES */
@@ -771,8 +769,8 @@ const createStyles = (theme: ThemeTokens) =>
     },
     agentSectionCard: {
       borderWidth: 1,
-      borderRadius: radius.lg,
-      padding: 16,
+      borderRadius: 24,
+      padding: 18,
       marginBottom: 14,
     },
     agentSectionHeader: {
@@ -793,8 +791,8 @@ const createStyles = (theme: ThemeTokens) =>
       paddingVertical: 4,
     },
     agentCompactIcon: {
-      width: 36,
-      height: 36,
+      width: 38,
+      height: 38,
       borderRadius: radius.md,
       borderWidth: 1,
       justifyContent: 'center',
@@ -834,10 +832,10 @@ const createStyles = (theme: ThemeTokens) =>
       width: '100%',
     },
     agentRecipientInput: {
-      height: 48,
+      height: 50,
       borderWidth: 1,
-      borderRadius: radius.md,
-      paddingHorizontal: 14,
+      borderRadius: 14,
+      paddingHorizontal: 16,
       fontSize: 14,
     },
     agentRecipientHint: {
@@ -847,11 +845,10 @@ const createStyles = (theme: ThemeTokens) =>
     },
     agentBudgetChip: {
       flex: 1,
-      height: 40,
-      borderRadius: radius.md,
+      height: 42,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
     },
     agentBudgetChipText: {
       fontSize: 14,
@@ -860,8 +857,8 @@ const createStyles = (theme: ThemeTokens) =>
     },
     agentActionCard: {
       borderWidth: 1,
-      borderRadius: radius.lg,
-      padding: 16,
+      borderRadius: 24,
+      padding: 18,
       marginBottom: 14,
     },
     agentActionTitle: {
@@ -896,7 +893,7 @@ const createStyles = (theme: ThemeTokens) =>
     spendingLimitCard: {
       flex: 1,
       padding: 16,
-      borderRadius: radius.lg,
+      borderRadius: 20,
       borderWidth: 1,
     },
     spendingLimitTitle: {
@@ -928,11 +925,10 @@ const createStyles = (theme: ThemeTokens) =>
     agentRunTradeBtn: {
       width: '100%',
       height: 48,
-      borderRadius: radius.md,
-      borderWidth: 1,
+      borderRadius: radius.pill,
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: 4,
+      marginTop: 6,
     },
     agentRunTradeBtnText: {
       fontSize: 15,
@@ -979,16 +975,17 @@ const createStyles = (theme: ThemeTokens) =>
       fontWeight: '600',
       letterSpacing: -0.1,
       marginBottom: 8,
-      marginLeft: 2,
+      marginLeft: 4,
     },
     activityGroupCard: {
-      borderRadius: radius.lg,
+      borderRadius: 24,
       borderWidth: 1,
       paddingHorizontal: 16,
     },
     activityRowDivider: {
       height: StyleSheet.hairlineWidth,
       backgroundColor: theme.borderDefault,
+      marginLeft: 54,
     },
     activityGroupLabel: {
       fontSize: typeScale.footnote,
@@ -1014,7 +1011,7 @@ const createStyles = (theme: ThemeTokens) =>
       width: 42,
       height: 42,
       borderRadius: 21,
-      borderWidth: 1,
+      borderWidth: 0,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -1119,8 +1116,8 @@ const createStyles = (theme: ThemeTokens) =>
     /* SECURITY SECTION REFRESH */
     securitySectionCard: {
       borderWidth: 1,
-      borderRadius: radius.lg,
-      padding: 16,
+      borderRadius: 24,
+      padding: 18,
       marginBottom: 14,
     },
     securitySectionHeader: {
@@ -1141,10 +1138,10 @@ const createStyles = (theme: ThemeTokens) =>
       paddingVertical: 4,
     },
     credentialIconWrap: {
-      width: 36,
-      height: 36,
-      borderRadius: radius.md,
-      borderWidth: 1,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 0,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -1159,6 +1156,7 @@ const createStyles = (theme: ThemeTokens) =>
     securityRowDivider: {
       height: 1,
       marginVertical: 10,
+      marginLeft: 52,
     },
     policyStatsGrid: {
       flexDirection: 'row',
@@ -1168,9 +1166,10 @@ const createStyles = (theme: ThemeTokens) =>
     policyStatTile: {
       width: '48%',
       flexGrow: 1,
-      borderWidth: 1,
-      borderRadius: radius.md,
-      padding: 12,
+      borderWidth: 0,
+      borderRadius: 16,
+      padding: 14,
+      backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
     },
     policyStatLabel: {
       fontSize: typeScale.caption,
@@ -1413,9 +1412,16 @@ const createStyles = (theme: ThemeTokens) =>
     },
     auditLogRow: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 8,
+      alignItems: 'center',
+      gap: 12,
       paddingVertical: 6,
+    },
+    auditLogCheckBadge: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     auditLogText: {
       color: theme.textSecondary,
@@ -1737,18 +1743,18 @@ const createStyles = (theme: ThemeTokens) =>
       paddingHorizontal: 20,
     },
     activityFilterChip: {
-      borderRadius: 20,
-      paddingVertical: 7.5,
-      paddingHorizontal: 15,
-      borderWidth: 1,
+      borderRadius: radius.pill,
+      paddingVertical: 7,
+      paddingHorizontal: 16,
     },
     activityFilterChipActive: {
-      backgroundColor: theme.isDark ? 'rgba(108, 140, 255, 0.14)' : 'rgba(108, 140, 255, 0.08)',
-      borderColor: theme.accent,
+      backgroundColor: theme.isDark ? 'rgba(108, 140, 255, 0.14)' : 'rgba(79, 107, 255, 0.10)',
+      borderColor: '#6C8CFF',
+      borderWidth: 1.5,
     },
     activityFilterChipInactive: {
-      backgroundColor: theme.isDark ? '#15171B' : '#F4F5F7',
-      borderColor: theme.borderDefault,
+      backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
+      borderWidth: 0,
     },
     activityFilterChipText: {
       fontSize: 13,

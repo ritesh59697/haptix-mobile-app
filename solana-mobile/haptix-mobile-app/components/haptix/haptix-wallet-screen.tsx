@@ -1411,7 +1411,7 @@ export function HaptixWalletScreen() {
                     fontWeight: '600',
                   }}
                 >
-                  {isPositivePortfolio ? '+' : '-'}${formattedDollarChange} ({isPositivePortfolio ? '+' : '-'}${formattedPctChange}%) today
+                  {isPositivePortfolio ? '+' : '-'}${formattedDollarChange} ({isPositivePortfolio ? '+' : '-'}{formattedPctChange}%) today
                 </Text>
               </View>
             </>
@@ -1501,6 +1501,11 @@ export function HaptixWalletScreen() {
             {isRequestingFaucet ? '...' : 'Faucet'}
           </Text>
         </TouchableOpacity>
+      </View>
+
+      {/* TOKENS SECTION HEADER */}
+      <View style={[styles.homeSectionHeaderRow, { marginTop: 0, marginBottom: 0 }]}>
+        <Text style={[styles.homeSectionTitle, styles.textPrimary]}>Tokens</Text>
       </View>
 
       {/* ASSETS LIST */}
@@ -1664,7 +1669,7 @@ export function HaptixWalletScreen() {
           onPress={() => setDockTab('activity')}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Text style={[styles.homeSectionLink, { color: '#4F6BFF', fontWeight: '600' }]}>See all</Text>
+          <Text style={[styles.homeSectionLink, { color: theme.accent, fontWeight: '600' }]}>See all</Text>
         </TouchableOpacity>
       </View>
 
@@ -1847,15 +1852,15 @@ export function HaptixWalletScreen() {
                   isSelected
                     ? {
                         backgroundColor: isDark
-                          ? 'rgba(108, 140, 255, 0.10)'
-                          : 'rgba(108, 140, 255, 0.08)',
+                          ? 'rgba(108, 140, 255, 0.14)'
+                          : 'rgba(79, 107, 255, 0.10)',
                         borderColor: '#6C8CFF',
                         borderWidth: 1.5,
                       }
                     : {
-                        backgroundColor: isDark ? '#000000' : '#F4F4F5',
-                        borderColor: isDark ? '#222226' : 'transparent',
-                        borderWidth: 1,
+                        backgroundColor: isDark ? '#1C1C1E' : '#EFEFF0',
+                        borderColor: 'transparent',
+                        borderWidth: 0,
                       },
                 ]}
                 onPress={() => {
@@ -1902,15 +1907,15 @@ export function HaptixWalletScreen() {
                   isSelected
                     ? {
                         backgroundColor: isDark
-                          ? 'rgba(108, 140, 255, 0.10)'
-                          : 'rgba(108, 140, 255, 0.08)',
+                          ? 'rgba(108, 140, 255, 0.14)'
+                          : 'rgba(79, 107, 255, 0.10)',
                         borderColor: '#6C8CFF',
                         borderWidth: 1.5,
                       }
                     : {
-                        backgroundColor: isDark ? '#000000' : '#F4F4F5',
-                        borderColor: isDark ? '#222226' : 'transparent',
-                        borderWidth: 1,
+                        backgroundColor: isDark ? '#1C1C1E' : '#EFEFF0',
+                        borderColor: 'transparent',
+                        borderWidth: 0,
                       },
                 ]}
                 onPress={() => {
@@ -1983,8 +1988,8 @@ export function HaptixWalletScreen() {
             styles.agentRecipientInput,
             styles.input,
             {
-              backgroundColor: isDark ? '#000000' : '#FFFFFF',
-              borderColor: theme.borderDefault,
+              backgroundColor: isDark ? '#141416' : '#FFFFFF',
+              borderColor: isDark ? '#222226' : theme.borderDefault,
             },
           ]}
           value={agentRecipient}
@@ -2004,12 +2009,12 @@ export function HaptixWalletScreen() {
           style={[
             styles.agentRunTradeBtn,
             {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#F4F4F5',
-              borderColor: theme.borderDefault,
+              backgroundColor: isDark ? '#1C1C1E' : '#EFEFF0',
+              borderWidth: 0,
             },
           ]}
           onPress={confirmAgentExecute}
-          activeOpacity={0.7}
+          activeOpacity={0.75}
           accessibilityRole="button"
           accessibilityLabel="Run trade"
         >
@@ -2240,25 +2245,25 @@ export function HaptixWalletScreen() {
 
         <View style={styles.policyStatsGrid}>
           {/* Tile 1: Fast-lane limit */}
-          <View style={[styles.policyStatTile, styles.input]}>
+          <View style={styles.policyStatTile}>
             <Text style={[styles.policyStatLabel, styles.textSecondary]}>One-key limit</Text>
             <Text style={[styles.policyStatValue, styles.textPrimary]}>≤ {spendThreshold} SOL</Text>
           </View>
 
           {/* Tile 2: High-value quorum */}
-          <View style={[styles.policyStatTile, styles.input]}>
+          <View style={styles.policyStatTile}>
             <Text style={[styles.policyStatLabel, styles.textSecondary]}>Larger sends</Text>
             <Text style={[styles.policyStatValue, styles.textPrimary]}>Both keys</Text>
           </View>
 
           {/* Tile 3: Velocity circuit breaker */}
-          <View style={[styles.policyStatTile, styles.input]}>
+          <View style={styles.policyStatTile}>
             <Text style={[styles.policyStatLabel, styles.textSecondary]}>Rate limit</Text>
             <Text style={[styles.policyStatValue, styles.textPrimary]}>5 tx / hr</Text>
           </View>
 
           {/* Tile 4: Agent spending cap */}
-          <View style={[styles.policyStatTile, styles.input]}>
+          <View style={styles.policyStatTile}>
             <Text style={[styles.policyStatLabel, styles.textSecondary]}>Agent limit</Text>
             <Text style={[styles.policyStatValue, styles.textPrimary]}>
               ${(agentAllowance * solPriceUsd).toFixed(0)} / 24h
@@ -2295,7 +2300,9 @@ export function HaptixWalletScreen() {
         </View>
 
         <View style={styles.auditLogRow}>
-          <LucideCheck size={14} color={theme.textSecondary} strokeWidth={2.4} />
+          <View style={[styles.auditLogCheckBadge, { backgroundColor: theme.emeraldBg }]}>
+            <LucideCheck size={13} color={theme.emeraldText} strokeWidth={2.6} />
+          </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text style={[styles.auditLogText, styles.textPrimary]}>Passkey enrolled</Text>
@@ -2304,10 +2311,21 @@ export function HaptixWalletScreen() {
           </View>
         </View>
 
-        <View style={[styles.securityRowDivider, styles.divider]} />
+        <View style={[styles.securityRowDivider, styles.divider, { marginLeft: 36 }]} />
 
         <View style={styles.auditLogRow}>
-          <LucideCheck size={14} color={onChainWallet ? theme.textSecondary : theme.textMuted} strokeWidth={2.4} />
+          <View
+            style={[
+              styles.auditLogCheckBadge,
+              { backgroundColor: onChainWallet ? theme.emeraldBg : (theme.isDark ? '#1C1C1E' : '#EFEFF0') },
+            ]}
+          >
+            <LucideCheck
+              size={13}
+              color={onChainWallet ? theme.emeraldText : theme.textMuted}
+              strokeWidth={2.6}
+            />
+          </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text style={[styles.auditLogText, styles.textPrimary]}>

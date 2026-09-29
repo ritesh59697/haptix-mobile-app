@@ -159,8 +159,8 @@ const styles = StyleSheet.create({
   },
   container: {
     height: 48,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    borderRadius: radius.pill,
+    borderWidth: 0,
     overflow: 'hidden',
     position: 'relative',
     justifyContent: 'center',

@@ -12,9 +12,12 @@ import {
 } from '@/utils/haptix-wallet-storage'
 import {
   applyWalletCredentials,
+  bindHardwarePasskey,
   credentialIdForRecord,
   getOrCreatePrimaryPasskey,
   getOrCreateSecondaryPasskey,
+  hexToBytes,
+  PasskeyInfo,
   promptBiometricAuth,
 } from '@/utils/haptix-passkey'
 import { clearCachedBalance, clearTxHistory } from '@/utils/haptix-tx-history'
@@ -34,6 +37,8 @@ export interface AuthState {
       primaryLabel?: string
       secondaryLabel?: string
       guardianAddress?: string
+      vaultKeySource?: 'mac' | 'hardware'
+      macVaultKeyHex?: string
     },
   ) => Promise<HaptixWalletAccount>
   restoreWallet: () => Promise<HaptixWalletAccount>
@@ -126,6 +131,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       primaryLabel?: string
       secondaryLabel?: string
       guardianAddress?: string
+      vaultKeySource?: 'mac' | 'hardware'
+      macVaultKeyHex?: string
     },
   ): Promise<HaptixWalletAccount> => {
     const isFirstWallet = wallets.length === 0
@@ -133,9 +140,35 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const mode = options?.mode || 'everyday'
     const forceNew = !isFirstWallet
 
-    // Generate device-bound Secp256r1 keys in OS secure storage
+    // 1. Generate Primary Passkey
     const primary = await getOrCreatePrimaryPasskey(finalName, { forceNew })
-    const secondary = await getOrCreateSecondaryPasskey(finalName, { forceNew })
+
+    // 2. Generate Secondary Passkey (Mac Touch ID vs Security Key vs Platform)
+    let secondary: PasskeyInfo
+    if (mode === 'vault' && options?.vaultKeySource === 'mac') {
+      const cleanHex = options.macVaultKeyHex?.trim().startsWith('0x')
+        ? options.macVaultKeyHex.trim().slice(2)
+        : options.macVaultKeyHex?.trim() || ''
+      if (!cleanHex || cleanHex.length !== 66 || (!cleanHex.startsWith('02') && !cleanHex.startsWith('03'))) {
+        throw new Error('Please enter a valid 33-byte Mac Touch ID public key hex (starts with 02 or 03).')
+      }
+      secondary = {
+        id: 'secondary',
+        credentialId: 'mac_vault_' + cleanHex.slice(0, 16),
+        publicKey: hexToBytes(cleanHex),
+        publicKeyHex: cleanHex,
+        label: options?.secondaryLabel || 'Mac Touch ID (Vault Key)',
+        hasBiometrics: true,
+        mode: 'hardware',
+        hardwareBacked: true,
+      }
+      await bindHardwarePasskey('secondary', secondary.credentialId, secondary.publicKeyHex)
+    } else {
+      secondary = await getOrCreateSecondaryPasskey(finalName, {
+        forceNew,
+        attachment: mode === 'vault' ? 'securityKey' : 'platform',
+      })
+    }
 
     const threshold =
       options?.spendThreshold !== undefined

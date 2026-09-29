@@ -124,22 +124,61 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
     request.onDismiss?.()
   }, [pop])
 
+  const shouldStackButtons =
+    (active?.buttons.length ?? 0) > 2 ||
+    Boolean(active?.buttons.some((b) => b.text.length > 12))
+
+  const isButtonRow = active?.buttons.length === 2 && !shouldStackButtons
+
+  // In vertical stack: place affirmative/action buttons first, and 'cancel' at the very bottom
+  const displayButtons = useMemo(() => {
+    if (!active) return []
+    if (isButtonRow) return active.buttons
+    const nonCancel = active.buttons.filter((b) => b.style !== 'cancel')
+    const cancel = active.buttons.filter((b) => b.style === 'cancel')
+    return [...nonCancel, ...cancel]
+  }, [active, isButtonRow])
+
   const colors = useMemo(
     () => ({
-      card: { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
+      card: {
+        backgroundColor: theme.isDark ? '#1C1C1E' : '#FFFFFF',
+        borderColor: theme.isDark ? '#26262C' : theme.borderDefault,
+      },
       title: { color: theme.textPrimary },
       message: { color: theme.textSecondary },
-      divider: { backgroundColor: theme.borderSubtle },
-      accentButton: { backgroundColor: theme.accent, borderColor: theme.accent },
-      accentButtonText: { color: theme.accentForeground },
-      cancelButtonText: { color: theme.textMuted },
-      secondaryButton: { backgroundColor: theme.bgApp, borderColor: theme.borderSubtle },
+      accentButton: {
+        backgroundColor: '#4F6BFF',
+        borderColor: '#4F6BFF',
+      },
+      accentButtonText: { color: '#FFFFFF' },
+      cancelButton: {
+        backgroundColor: theme.isDark ? '#26262A' : '#EFEFF0',
+        borderColor: 'transparent',
+      },
+      cancelButtonText: { color: theme.textPrimary },
+      secondaryButton: {
+        backgroundColor: theme.isDark ? '#26262A' : '#EFEFF0',
+        borderColor: theme.isDark ? '#333338' : theme.borderSubtle,
+      },
       secondaryButtonText: { color: theme.textPrimary },
-      destructiveButton: { backgroundColor: theme.roseBg, borderColor: theme.rose },
-      destructiveButtonText: { color: theme.roseText },
+      destructiveButton: {
+        backgroundColor: theme.rose,
+        borderColor: theme.rose,
+      },
+      destructiveButtonText: { color: '#FFFFFF' },
     }),
     [theme],
   )
+
+  const statusBadgeBg =
+    active?.status === 'success'
+      ? (theme.isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.12)')
+      : active?.status === 'warning'
+        ? (theme.isDark ? 'rgba(245, 158, 11, 0.16)' : 'rgba(245, 158, 11, 0.12)')
+        : active?.status === 'error'
+          ? (theme.isDark ? 'rgba(239, 68, 68, 0.16)' : 'rgba(239, 68, 68, 0.12)')
+          : (theme.isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)')
 
   const statusColor =
     active?.status === 'success'
@@ -151,7 +190,6 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
           : theme.textMuted
 
   const statusIcon = active ? STATUS_ICON[active.status] : null
-  const isButtonRow = active?.buttons.length === 2
 
   // A fresh object here re-rendered every consumer in the tree on any provider render,
   // and made `dialog` useless as a `useCallback` dependency for callers -- their
@@ -181,23 +219,23 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
           {active && (
             <View style={[layout.card, colors.card]} accessibilityViewIsModal accessibilityLiveRegion="polite">
               {statusIcon && (
-                <MaterialIcons name={statusIcon} size={26} color={statusColor} style={layout.statusIcon} />
+                <View style={[layout.statusBadge, { backgroundColor: statusBadgeBg }]}>
+                  <MaterialIcons name={statusIcon} size={28} color={statusColor} />
+                </View>
               )}
 
               <Text style={[layout.title, colors.title]}>{active.title}</Text>
 
               {!!active.message && (
-                <ScrollView style={layout.messageScroll} bounces={false}>
+                <ScrollView style={layout.messageScroll} bounces={false} showsVerticalScrollIndicator={false}>
                   <Text style={[layout.message, colors.message]}>{active.message}</Text>
                 </ScrollView>
               )}
 
               {active.content}
 
-              <View style={[layout.divider, colors.divider]} />
-
               <View style={isButtonRow ? layout.buttonRow : layout.buttonColumn}>
-                {active.buttons.map((button, index) => {
+                {displayButtons.map((button, index) => {
                   const variant = button.style ?? 'default'
                   return (
                     <TouchableOpacity
@@ -211,14 +249,11 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
                         variant === 'default' && colors.accentButton,
                         variant === 'secondary' && colors.secondaryButton,
                         variant === 'destructive' && colors.destructiveButton,
-                        variant === 'cancel' && layout.buttonGhost,
+                        variant === 'cancel' && colors.cancelButton,
                       ]}
                     >
                       <Text
-                        // Two lines rather than one: a pair of actions like
-                        // "View on Explorer" + "Done" splits the card evenly, and the
-                        // first label truncated to "View on Explo..." at one line.
-                        numberOfLines={2}
+                        numberOfLines={1}
                         style={[
                           layout.buttonText,
                           variant === 'default' && colors.accentButtonText,
@@ -247,49 +282,59 @@ const layout = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 28,
+    paddingHorizontal: 24,
   },
   card: {
     width: '100%',
-    maxWidth: 380,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    paddingTop: 22,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    maxWidth: 350,
+    borderRadius: 24,
+    borderWidth: 1.2,
+    paddingTop: 24,
+    paddingHorizontal: 22,
+    paddingBottom: 20,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 12,
   },
-  statusIcon: {
+  statusBadge: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     alignSelf: 'center',
-    marginBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   title: {
-    fontSize: typeScale.heading,
+    fontSize: 18.5,
     fontWeight: '700',
-    letterSpacing: -0.2,
+    letterSpacing: -0.3,
+    textAlign: 'center',
+    marginBottom: 8,
   },
   messageScroll: {
-    maxHeight: 260,
-    marginTop: 10,
+    maxHeight: 220,
+    marginBottom: 6,
   },
   message: {
-    fontSize: typeScale.bodyLg,
-    lineHeight: 21,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    marginTop: 18,
-    marginBottom: 14,
+    fontSize: 13.5,
+    lineHeight: 20,
+    textAlign: 'center',
   },
   buttonRow: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 20,
   },
   buttonColumn: {
     gap: 10,
+    marginTop: 20,
   },
   button: {
-    minHeight: 46,
-    borderRadius: radius.md,
+    height: 48,
+    borderRadius: 15,
     borderWidth: 1,
     borderColor: 'transparent',
     alignItems: 'center',
@@ -299,13 +344,9 @@ const layout = StyleSheet.create({
   buttonFlex: {
     flex: 1,
   },
-  buttonGhost: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-  },
   buttonText: {
-    fontSize: typeScale.title,
-    fontWeight: '600',
+    fontSize: 14.5,
+    fontWeight: '700',
     textAlign: 'center',
   },
 })
