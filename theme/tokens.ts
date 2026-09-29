@@ -49,8 +49,8 @@ export const darkTokens: ThemeTokens = {
   isDark: true,
   bgApp: '#000000', // Pitch Black OLED (like ViperX)
   bgCard: '#000000', // Pitch Black Cards (like ViperX)
-  bgElevated: '#000000', // Ultra-deep subtle elevation for chips/controls
-  bgInput: '#000000', // Sleek pitch black input field
+  bgElevated: '#1C1C1E', // Elevated neutral surface for chips/controls (Apple HIG System Gray 6)
+  bgInput: '#141416', // Sleek recessed pitch black input field
   borderSubtle: '#141416', // Subtle separator line
   borderDefault: '#222226', // Razor-sharp 1px border (like ViperX #1c1c1e / #222226)
   borderFocus: '#6C8CFF',
@@ -95,7 +95,7 @@ export const lightTokens: ThemeTokens = {
   isDark: false,
   bgApp: '#F6F6F8', // Soft off-white canvas matching mockup
   bgCard: '#FFFFFF', // Pure White Cards
-  bgElevated: '#FFFFFF',
+  bgElevated: '#EFEFF0',
   bgInput: '#FFFFFF',
   borderSubtle: '#EEEEF0',
   borderDefault: '#E5E5EA',

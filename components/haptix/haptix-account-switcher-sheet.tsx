@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
+  ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,7 +12,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -19,6 +22,7 @@ import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { ellipsify } from '@/utils/ellipsify'
 import { isSolanaAddress } from '@/utils/solana-address'
 import { loadCachedBalance } from '@/utils/haptix-tx-history'
+import Clipboard from '@/utils/clipboard'
 import { radius, typeScale } from '@/theme/tokens'
 
 interface HaptixAccountSwitcherSheetProps {
@@ -34,6 +38,9 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
   const dialog = useHaptixDialog()
   const { activeWallet, wallets, switchWallet, createWallet } = useAuth()
 
+  const listScrollRef = useRef<ScrollView>(null)
+  const createScrollRef = useRef<ScrollView>(null)
+
   const [switchingTo, setSwitchingTo] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
 
@@ -41,6 +48,8 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
   const [newAccountName, setNewAccountName] = useState('')
   const [selectedMode, setSelectedMode] = useState<'everyday' | 'vault'>('everyday')
   const [spendLimit, setSpendLimit] = useState(0.1)
+  const [vaultKeySource, setVaultKeySource] = useState<'mac' | 'hardware'>('mac')
+  const [macVaultKeyHex, setMacVaultKeyHex] = useState('')
 
   // Advanced settings state
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -72,6 +81,14 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
       mounted = false
     }
   }, [visible, wallets])
+
+  // Reset scroll to top whenever the sheet opens
+  useEffect(() => {
+    if (visible) {
+      listScrollRef.current?.scrollTo({ y: 0, animated: false })
+      createScrollRef.current?.scrollTo({ y: 0, animated: false })
+    }
+  }, [visible])
 
   const handleSelectAccount = async (address: string) => {
     if (address === activeWallet?.address) {
@@ -108,11 +125,16 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
         ? `Hardware Vault ${wallets.length + 1}`
         : `Everyday Account ${wallets.length + 1}`
     setNewAccountName(defaultName)
+    setVaultKeySource('mac')
+    setMacVaultKeyHex('')
     setPrimaryKeyLabel('Device Biometrics (Primary)')
-    setSecondaryKeyLabel('Mac Secure Enclave / Backup Key')
+    setSecondaryKeyLabel('Mac Touch ID (Vault Key)')
     setGuardianAddress('')
     setShowAdvanced(false)
     setIsCreating(true)
+    setTimeout(() => {
+      createScrollRef.current?.scrollTo({ y: 0, animated: false })
+    }, 30)
   }
 
   const handleSelectMode = (mode: 'everyday' | 'vault') => {
@@ -127,16 +149,41 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
           : `Everyday Account ${wallets.length + 1}`
       )
     }
+    if (mode === 'vault') {
+      setSecondaryKeyLabel(
+        vaultKeySource === 'mac'
+          ? 'Mac Touch ID (Vault Key)'
+          : 'Vault Key (Security Key)'
+      )
+    } else {
+      setSecondaryKeyLabel('Backup Passkey')
+    }
+  }
+
+  const handleSelectVaultSource = (source: 'mac' | 'hardware') => {
+    Haptics.selectionAsync()
+    setVaultKeySource(source)
+    setSecondaryKeyLabel(
+      source === 'mac'
+        ? 'Mac Touch ID (Vault Key)'
+        : 'Vault Key (Security Key)'
+    )
   }
 
   const handleCancelCreate = () => {
     Haptics.selectionAsync()
+    Keyboard.dismiss()
     setIsCreating(false)
     setNewAccountName('')
+    setMacVaultKeyHex('')
     setShowAdvanced(false)
+    setTimeout(() => {
+      listScrollRef.current?.scrollTo({ y: 0, animated: false })
+    }, 30)
   }
 
   const handleConfirmCreate = async () => {
+    Keyboard.dismiss()
     const finalName =
       newAccountName.trim() ||
       (selectedMode === 'vault' ? 'Hardware Vault' : 'Everyday Account')
@@ -151,6 +198,21 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
       return
     }
 
+    if (selectedMode === 'vault' && vaultKeySource === 'mac') {
+      const cleanHex = macVaultKeyHex.trim().startsWith('0x')
+        ? macVaultKeyHex.trim().slice(2)
+        : macVaultKeyHex.trim()
+      if (!cleanHex || cleanHex.length !== 66 || (!cleanHex.startsWith('02') && !cleanHex.startsWith('03'))) {
+        dialog.alert(
+          'Mac Touch ID Public Key Required',
+          'Please open http://localhost:8081/vault.html on your Mac, tap "Enroll with Touch ID", and paste the 33-byte public key hex into the Mac Key field.',
+          undefined,
+          { status: 'warning' },
+        )
+        return
+      }
+    }
+
     try {
       setIsSubmittingCreate(true)
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
@@ -161,11 +223,17 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
         primaryLabel: primaryKeyLabel.trim() || undefined,
         secondaryLabel: secondaryKeyLabel.trim() || undefined,
         guardianAddress: guardianAddress.trim() || undefined,
+        vaultKeySource: selectedMode === 'vault' ? vaultKeySource : undefined,
+        macVaultKeyHex:
+          selectedMode === 'vault' && vaultKeySource === 'mac'
+            ? (macVaultKeyHex.trim().startsWith('0x') ? macVaultKeyHex.trim().slice(2) : macVaultKeyHex.trim())
+            : undefined,
       })
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setIsCreating(false)
       setNewAccountName('')
+      setMacVaultKeyHex('')
       setShowAdvanced(false)
       onClose()
 
@@ -196,7 +264,11 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView
+        style={styles.backdrop}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
+      >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
         <View
@@ -204,7 +276,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
             styles.sheet,
             {
               backgroundColor: theme.bgCard,
-              borderColor: theme.borderDefault,
+              borderColor: theme.isDark ? '#222226' : theme.borderDefault,
               paddingBottom: Math.max(insets.bottom, 16) + 16,
             },
           ]}
@@ -214,7 +286,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
 
           {/* Header */}
           <View style={styles.header}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={[styles.title, { color: theme.textPrimary }]}>
                 {isCreating ? 'Create account' : 'Smart Accounts'}
               </Text>
@@ -225,23 +297,27 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
               </Text>
             </View>
             <TouchableOpacity
-              style={[styles.closeBtn, { backgroundColor: theme.accentLight }]}
+              style={[styles.closeBtn, { backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0' }]}
               onPress={onClose}
               activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityLabel="Close"
             >
-              <MaterialIcons name="close" size={17} color={theme.textMuted} />
+              <MaterialIcons name="close" size={18} color={theme.textPrimary} />
             </TouchableOpacity>
           </View>
 
           {!isCreating ? (
             /* ================================================================ */
-            /* 1. ACCOUNT LIST VIEW (ZERO OVERLAPPING GUARANTEED)               */
+            /* 1. ACCOUNT LIST VIEW (ELEVATED NEUTRAL SURFACES)                 */
             /* ================================================================ */
             <ScrollView
+              key="account-list-scroll"
+              ref={listScrollRef}
               style={styles.scrollList}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
             >
               {wallets.map((wallet) => {
                 const isActive = wallet.address === activeWallet?.address
@@ -259,8 +335,13 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                     style={[
                       styles.accountCard,
                       {
-                        backgroundColor: isActive ? theme.bgElevated : theme.bgCard,
-                        borderColor: isActive ? theme.borderFocus : theme.borderSubtle,
+                        backgroundColor: isActive
+                          ? (theme.isDark ? '#1C1C1E' : '#EFEFF0')
+                          : theme.bgCard,
+                        borderColor: isActive
+                          ? (theme.isDark ? 'rgba(79, 107, 255, 0.45)' : '#6C8CFF')
+                          : (theme.isDark ? '#222226' : theme.borderSubtle),
+                        borderWidth: isActive ? 1.5 : 1,
                       },
                     ]}
                     onPress={() => handleSelectAccount(wallet.address)}
@@ -272,15 +353,14 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                       style={[
                         styles.accountAvatar,
                         {
-                          backgroundColor: theme.isDark ? '#201f1d' : '#F4F4F5',
-                          borderColor: theme.isDark ? '#2a2a28' : '#E4E4E7',
+                          backgroundColor: theme.isDark ? '#26262A' : '#E5E5EA',
                         },
                       ]}
                     >
                       {isVault ? (
-                        <MaterialIcons name="security" size={18} color="#8a8985" />
+                        <MaterialIcons name="security" size={18} color={theme.textPrimary} />
                       ) : (
-                        <MaterialIcons name="smartphone" size={18} color="#8a8985" />
+                        <MaterialIcons name="smartphone" size={18} color={theme.textPrimary} />
                       )}
                     </View>
 
@@ -293,16 +373,16 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                         {wallet.name}
                       </Text>
 
-                    <View style={styles.metaRow}>
-                      <Text style={[styles.accountAddress, { color: theme.textMuted }]}>
-                        {ellipsify(wallet.address, 4)}
-                      </Text>
-                      <Text style={[styles.bulletDot, { color: theme.textMuted }]}>•</Text>
-                      <Text style={[styles.modeTag, { color: theme.textMuted }]}>
-                        {isVault ? 'Vault (2-of-2)' : 'Everyday'}
-                      </Text>
+                      <View style={styles.metaRow}>
+                        <Text style={[styles.accountAddress, { color: theme.textMuted }]}>
+                          {ellipsify(wallet.address, 4)}
+                        </Text>
+                        <Text style={[styles.bulletDot, { color: theme.textMuted }]}>•</Text>
+                        <Text style={[styles.modeTag, { color: theme.textMuted }]}>
+                          {isVault ? 'Vault (2-of-2)' : 'Everyday'}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
 
                     {/* Right Column (Balance on top, Status / Chevron on bottom) */}
                     <View style={styles.accountRightCol}>
@@ -315,21 +395,9 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                           </Text>
 
                           {isActive ? (
-                            <View
-                              style={[
-                                styles.activeBadge,
-                                { backgroundColor: theme.accent, borderColor: theme.borderDefault },
-                              ]}
-                            >
-                              <MaterialIcons name="check" size={11} color={theme.accentForeground} />
-                              <Text
-                                style={[
-                                  styles.activeBadgeText,
-                                  { color: theme.accentForeground },
-                                ]}
-                              >
-                                Active
-                              </Text>
+                            <View style={styles.activeBadge}>
+                              <MaterialIcons name="check" size={11} color="#FFFFFF" />
+                              <Text style={styles.activeBadgeText}>Active</Text>
                             </View>
                           ) : (
                             <MaterialIcons
@@ -345,11 +413,13 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                 )
               })}
 
-              {/* Add New Account Trigger */}
+              {/* Add New Account Trigger (Solid Elevated Surface, No Dashes) */}
               <TouchableOpacity
                 style={[
                   styles.addAccountBtn,
-                  { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
+                  {
+                    backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
+                  },
                 ]}
                 onPress={handleStartCreate}
                 activeOpacity={0.75}
@@ -357,7 +427,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                 <View
                   style={[
                     styles.addAccountIconBox,
-                    { backgroundColor: theme.accentLight, borderColor: theme.borderSubtle },
+                    { backgroundColor: theme.isDark ? '#26262A' : '#E0E0E6' },
                   ]}
                 >
                   <MaterialIcons name="add" size={20} color={theme.textPrimary} />
@@ -377,14 +447,20 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
             /* 2. RICH, TRANSPARENT ACCOUNT CREATION EXPERIENCE                */
             /* ================================================================ */
             <ScrollView
+              key="account-create-scroll"
+              ref={createScrollRef}
               style={styles.scrollList}
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.scrollContent}
+              contentContainerStyle={[
+                styles.scrollContent,
+                { paddingBottom: showAdvanced ? 180 : 40 },
+              ]}
               keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
             >
               {/* Security policy */}
               <View style={styles.formGroup}>
-                <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Security policy</Text>
+                <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Security architecture</Text>
                 <View style={styles.modeCardsRow}>
                   {/* Everyday Mode Tile */}
                   <TouchableOpacity
@@ -392,9 +468,11 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                       styles.modeTile,
                       {
                         backgroundColor:
-                          selectedMode === 'everyday' ? (theme.isDark ? '#141418' : '#FAFAFA') : theme.bgCard,
+                          selectedMode === 'everyday'
+                            ? (theme.isDark ? '#1C1C1E' : '#FFFFFF')
+                            : (theme.isDark ? '#141416' : '#F5F5F7'),
                         borderColor:
-                          selectedMode === 'everyday' ? theme.accent : theme.borderDefault,
+                          selectedMode === 'everyday' ? '#4F6BFF' : (theme.isDark ? '#222226' : theme.borderSubtle),
                         borderWidth: selectedMode === 'everyday' ? 1.5 : 1,
                       },
                     ]}
@@ -404,16 +482,25 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                     <View
                       style={[
                         styles.modeTileIconBox,
-                        { backgroundColor: theme.isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' },
+                        {
+                          backgroundColor:
+                            selectedMode === 'everyday'
+                              ? (theme.isDark ? 'rgba(79, 107, 255, 0.16)' : 'rgba(79, 107, 255, 0.10)')
+                              : (theme.isDark ? '#26262A' : '#E5E5EA'),
+                        },
                       ]}
                     >
-                      <MaterialIcons name="smartphone" size={18} color={theme.textPrimary} />
+                      <MaterialIcons
+                        name="smartphone"
+                        size={19}
+                        color={selectedMode === 'everyday' ? '#4F6BFF' : theme.textPrimary}
+                      />
                     </View>
                     <Text style={[styles.modeTileTitle, { color: theme.textPrimary }]}>
-                      Everyday mode
+                      Everyday
                     </Text>
                     <Text style={[styles.modeTileDesc, { color: theme.textSecondary }]}>
-                      Fast single-fingerprint biometrics. Ideal for daily micro-sends and dApps.
+                      Both keys on this device
                     </Text>
                   </TouchableOpacity>
 
@@ -423,9 +510,11 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                       styles.modeTile,
                       {
                         backgroundColor:
-                          selectedMode === 'vault' ? (theme.isDark ? '#141418' : '#FAFAFA') : theme.bgCard,
+                          selectedMode === 'vault'
+                            ? (theme.isDark ? '#1C1C1E' : '#FFFFFF')
+                            : (theme.isDark ? '#141416' : '#F5F5F7'),
                         borderColor:
-                          selectedMode === 'vault' ? theme.accent : theme.borderDefault,
+                          selectedMode === 'vault' ? '#4F6BFF' : (theme.isDark ? '#222226' : theme.borderSubtle),
                         borderWidth: selectedMode === 'vault' ? 1.5 : 1,
                       },
                     ]}
@@ -435,23 +524,32 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                     <View
                       style={[
                         styles.modeTileIconBox,
-                        { backgroundColor: theme.isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' },
+                        {
+                          backgroundColor:
+                            selectedMode === 'vault'
+                              ? (theme.isDark ? 'rgba(79, 107, 255, 0.16)' : 'rgba(79, 107, 255, 0.10)')
+                              : (theme.isDark ? '#26262A' : '#E5E5EA'),
+                        },
                       ]}
                     >
-                      <MaterialIcons name="security" size={18} color={theme.textPrimary} />
+                      <MaterialIcons
+                        name="security"
+                        size={19}
+                        color={selectedMode === 'vault' ? '#4F6BFF' : theme.textPrimary}
+                      />
                     </View>
                     <Text style={[styles.modeTileTitle, { color: theme.textPrimary }]}>
-                      Vault mode, 2-of-2
+                      Vault mode
                     </Text>
                     <Text style={[styles.modeTileDesc, { color: theme.textSecondary }]}>
-                      Strict 2-of-2 hardware quorum with your Mac Secure Enclave for maximum cold security.
+                      Key 2 on laptop or OneKey
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
 
-              {/* Spending Limit Configuration (Everyday Mode Only) */}
-              {selectedMode === 'everyday' && (
+              {/* Spending Limit Configuration (Everyday Mode) or Vault Setup (Vault Mode) */}
+              {selectedMode === 'everyday' ? (
                 <View style={styles.formGroup}>
                   <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
                     One-key biometric threshold
@@ -465,9 +563,10 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                           style={[
                             styles.thresholdChip,
                             {
-                              backgroundColor: theme.isDark ? '#141418' : '#FAFAFA',
-                              borderColor: isSelected ? theme.accent : theme.borderDefault,
-                              borderWidth: isSelected ? 1.5 : 1,
+                              backgroundColor: isSelected
+                                ? '#4F6BFF'
+                                : (theme.isDark ? '#1C1C1E' : '#EFEFF0'),
+                              borderWidth: 0,
                             },
                           ]}
                           onPress={() => {
@@ -480,12 +579,12 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                             style={[
                               styles.thresholdChipText,
                               {
-                                color: isSelected ? theme.accent : theme.textPrimary,
+                                color: isSelected ? '#FFFFFF' : theme.textPrimary,
                                 fontWeight: isSelected ? '700' : '600',
                               },
                             ]}
                           >
-                            {val}
+                            {val} SOL
                           </Text>
                         </TouchableOpacity>
                       )
@@ -495,13 +594,212 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                     Transfers exceeding {spendLimit} SOL will automatically require 2-of-2 quorum.
                   </Text>
                 </View>
+              ) : (
+                /* Vault Mode Device Selection & Enrollment */
+                <View style={{ marginBottom: 14 }}>
+                  <View
+                    style={[
+                      styles.vaultExplainerBox,
+                      {
+                        backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
+                        borderColor: theme.isDark ? '#222226' : theme.borderSubtle,
+                      },
+                    ]}
+                  >
+                    <MaterialIcons name="info-outline" size={16} color="#6C8CFF" style={{ marginTop: 2 }} />
+                    <Text style={[styles.vaultExplainerText, { color: theme.textSecondary }]}>
+                      <Text style={{ fontWeight: '700', color: theme.textPrimary }}>Vault mode</Text>: daily spends use fingerprint on this phone. Sends above your limit will require your Mac Touch ID.
+                    </Text>
+                  </View>
+
+                  <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 14, marginBottom: 8 }]}>
+                    Vault key device
+                  </Text>
+                  <View style={styles.vaultDeviceRow}>
+                    <TouchableOpacity
+                      onPress={() => handleSelectVaultSource('mac')}
+                      style={[
+                        styles.vaultDeviceCard,
+                        {
+                          backgroundColor:
+                            vaultKeySource === 'mac'
+                              ? (theme.isDark ? '#1C1C1E' : '#FFFFFF')
+                              : (theme.isDark ? '#141416' : '#F5F5F7'),
+                          borderColor:
+                            vaultKeySource === 'mac' ? '#4F6BFF' : (theme.isDark ? '#222226' : theme.borderSubtle),
+                          borderWidth: vaultKeySource === 'mac' ? 1.5 : 1,
+                        },
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      <MaterialIcons
+                        name="laptop-mac"
+                        size={19}
+                        color={vaultKeySource === 'mac' ? '#4F6BFF' : theme.textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.vaultDeviceText,
+                          {
+                            color: vaultKeySource === 'mac' ? '#4F6BFF' : theme.textPrimary,
+                            fontWeight: vaultKeySource === 'mac' ? '700' : '600',
+                          },
+                        ]}
+                      >
+                        Mac Touch ID
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => handleSelectVaultSource('hardware')}
+                      style={[
+                        styles.vaultDeviceCard,
+                        {
+                          backgroundColor:
+                            vaultKeySource === 'hardware'
+                              ? (theme.isDark ? '#1C1C1E' : '#FFFFFF')
+                              : (theme.isDark ? '#141416' : '#F5F5F7'),
+                          borderColor:
+                            vaultKeySource === 'hardware' ? '#4F6BFF' : (theme.isDark ? '#222226' : theme.borderSubtle),
+                          borderWidth: vaultKeySource === 'hardware' ? 1.5 : 1,
+                        },
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      <MaterialIcons
+                        name="usb"
+                        size={19}
+                        color={vaultKeySource === 'hardware' ? '#4F6BFF' : theme.textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.vaultDeviceText,
+                          {
+                            color: vaultKeySource === 'hardware' ? '#4F6BFF' : theme.textPrimary,
+                            fontWeight: vaultKeySource === 'hardware' ? '700' : '600',
+                          },
+                        ]}
+                      >
+                        USB / NFC key
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {vaultKeySource === 'mac' ? (
+                    <View
+                      style={[
+                        styles.macVaultBox,
+                        {
+                          backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
+                          borderColor: theme.isDark ? '#222226' : theme.borderSubtle,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.macVaultStep, { color: theme.textSecondary }]}>
+                        1. Open on your Mac browser
+                      </Text>
+                      <View
+                        style={[
+                          styles.macVaultUrlWrap,
+                          {
+                            backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
+                            borderColor: theme.isDark ? '#222226' : theme.borderDefault,
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.macVaultUrlText, { color: '#6C8CFF' }]}>
+                          http://localhost:8081/vault.html
+                        </Text>
+                      </View>
+                      <Text style={[styles.macVaultStep, { color: theme.textSecondary }]}>
+                        2. Tap "Enroll with Touch ID" on your Mac, then paste the public key below
+                      </Text>
+                      <View
+                        style={[
+                          styles.macKeyInputContainer,
+                          {
+                            backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
+                            borderColor: theme.isDark ? '#222226' : theme.borderDefault,
+                          },
+                        ]}
+                      >
+                        <TextInput
+                          style={[styles.macKeyInput, { color: theme.textPrimary }]}
+                          value={macVaultKeyHex}
+                          onChangeText={setMacVaultKeyHex}
+                          placeholder="Paste 33-byte Mac public key (02...)"
+                          placeholderTextColor={theme.textMuted}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                        <TouchableOpacity
+                          style={styles.pasteBadgeButton}
+                          onPress={async () => {
+                            const text = await Clipboard.getString()
+                            if (text) {
+                              const clean = text.trim().startsWith('0x') ? text.trim().slice(2) : text.trim()
+                              setMacVaultKeyHex(clean)
+                              Haptics.selectionAsync()
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <MaterialIcons name="content-paste" size={14} color="#6C8CFF" style={{ marginRight: 2 }} />
+                          <Text style={styles.pasteBadgeText}>Paste</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <View
+                      style={[
+                        styles.vaultPolicyNotice,
+                        {
+                          backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
+                          marginTop: 10,
+                        },
+                      ]}
+                    >
+                      <View style={styles.vaultPolicyIconWrap}>
+                        <MaterialIcons name="usb" size={16} color="#6C8CFF" />
+                      </View>
+                      <Text style={[styles.vaultPolicyNoticeText, { color: theme.textSecondary }]}>
+                        During setup, your device will prompt you to insert or tap your FIDO2 / YubiKey hardware key over USB or NFC.
+                      </Text>
+                    </View>
+                  )}
+                </View>
               )}
 
-              {/* Collapsible Advanced Settings */}
+              {/* Wallet Name (Directly visible, matching onboarding) */}
+              <View style={styles.formGroup}>
+                <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                  Wallet name
+                </Text>
+                <TextInput
+                  style={[
+                    styles.inputField,
+                    {
+                      backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
+                      color: theme.textPrimary,
+                      borderColor: theme.isDark ? '#222226' : theme.borderDefault,
+                    },
+                  ]}
+                  value={newAccountName}
+                  onChangeText={setNewAccountName}
+                  placeholder={selectedMode === 'vault' ? 'My Vault Account' : 'My Haptix Wallet'}
+                  placeholderTextColor={theme.textMuted}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                />
+              </View>
+
+              {/* Collapsible Advanced Settings (Key Names, Guardian) */}
               <TouchableOpacity
                 style={[
                   styles.advancedToggleBtn,
-                  { backgroundColor: theme.isDark ? '#141418' : '#FAFAFA', borderColor: theme.borderDefault },
+                  {
+                    backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
+                  },
                 ]}
                 onPress={() => {
                   Haptics.selectionAsync()
@@ -512,7 +810,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                 <View style={styles.advancedToggleLeft}>
                   <MaterialIcons name="tune" size={18} color={theme.textMuted} />
                   <Text style={[styles.advancedToggleText, { color: theme.textPrimary }]}>
-                    Advanced settings, key labels, guardian
+                    {showAdvanced ? 'Hide advanced settings' : 'Advanced settings (key names, guardian)'}
                   </Text>
                 </View>
                 <MaterialIcons
@@ -524,94 +822,83 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
 
               {showAdvanced && (
                 <View style={styles.advancedGroup}>
-                  {/* Account Name */}
-                  <View style={styles.formGroup}>
-                    <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                      Account name
-                    </Text>
-                    <TextInput
-                      style={[
-                        styles.inputField,
-                        {
-                          backgroundColor: theme.bgElevated,
-                          color: theme.textPrimary,
-                          borderColor: theme.borderDefault,
-                        },
-                      ]}
-                      value={newAccountName}
-                      onChangeText={setNewAccountName}
-                      placeholder="e.g. Savings Vault or Trading"
-                      placeholderTextColor={theme.textMuted}
-                      autoCapitalize="words"
-                    />
-                  </View>
-
                   {/* Primary Key Label */}
                   <View style={styles.formGroup}>
                     <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                      Primary key label
+                      Passkey 1 name, primary
                     </Text>
                     <TextInput
                       style={[
                         styles.inputField,
                         {
-                          backgroundColor: theme.bgElevated,
+                          backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
                           color: theme.textPrimary,
-                          borderColor: theme.borderDefault,
+                          borderColor: theme.isDark ? '#222226' : theme.borderDefault,
                         },
                       ]}
                       value={primaryKeyLabel}
                       onChangeText={setPrimaryKeyLabel}
-                      placeholder="e.g. Device Biometrics"
+                      placeholder="e.g. Primary Passkey"
                       placeholderTextColor={theme.textMuted}
+                      returnKeyType="next"
                     />
                   </View>
 
                   {/* Secondary Key Label */}
                   <View style={styles.formGroup}>
                     <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                      Backup / secondary key label
+                      Passkey 2 name, backup
                     </Text>
                     <TextInput
                       style={[
                         styles.inputField,
                         {
-                          backgroundColor: theme.bgElevated,
+                          backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
                           color: theme.textPrimary,
-                          borderColor: theme.borderDefault,
+                          borderColor: theme.isDark ? '#222226' : theme.borderDefault,
                         },
                       ]}
                       value={secondaryKeyLabel}
                       onChangeText={setSecondaryKeyLabel}
-                      placeholder="e.g. Mac Secure Enclave"
+                      placeholder={
+                        selectedMode === 'vault'
+                          ? (vaultKeySource === 'mac' ? 'Vault Key (Hardware / Laptop)' : 'Vault Key (Security Key)')
+                          : 'Backup Passkey'
+                      }
                       placeholderTextColor={theme.textMuted}
+                      returnKeyType="next"
                     />
                   </View>
 
                   {/* Recovery Guardian Address */}
                   <View style={styles.formGroup}>
                     <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                      Recovery guardian address (optional)
+                      Recovery guardian, optional
                     </Text>
                     <TextInput
                       style={[
                         styles.inputField,
                         {
-                          backgroundColor: theme.bgElevated,
+                          backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
                           color: theme.textPrimary,
                           borderColor:
                             guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim())
                               ? theme.rose
-                              : theme.borderDefault,
+                              : (theme.isDark ? '#222226' : theme.borderDefault),
                         },
                       ]}
                       value={guardianAddress}
                       onChangeText={setGuardianAddress}
-                      placeholder="Trusted Solana wallet address for recovery"
+                      placeholder="A Solana address you trust"
                       placeholderTextColor={theme.textMuted}
                       autoCapitalize="none"
                       autoCorrect={false}
+                      returnKeyType="done"
+                      onSubmitEditing={Keyboard.dismiss}
                     />
+                    <Text style={[styles.fieldHint, { color: theme.textMuted, marginTop: 4 }]}>
+                      Optional. Add a trusted contact who can help you recover this wallet if you lose access. You can also add this later.
+                    </Text>
                     {guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim()) && (
                       <Text style={[styles.fieldError, { color: theme.roseText }]}>
                         Invalid Solana address
@@ -625,7 +912,9 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
               <View
                 style={[
                   styles.biometricNoticeBox,
-                  { backgroundColor: theme.isDark ? 'rgba(255, 255, 255, 0.03)' : '#F8FAFC', borderColor: theme.borderSubtle },
+                  {
+                    backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
+                  },
                 ]}
               >
                 <MaterialIcons name="fingerprint" size={20} color={theme.textMuted} style={{ marginTop: 2 }} />
@@ -639,7 +928,9 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                 <TouchableOpacity
                   style={[
                     styles.cancelBtn,
-                    { backgroundColor: theme.isDark ? '#141418' : '#FAFAFA', borderColor: theme.borderDefault },
+                    {
+                      backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
+                    },
                   ]}
                   onPress={handleCancelCreate}
                   disabled={isSubmittingCreate}
@@ -653,7 +944,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                 <TouchableOpacity
                   style={[
                     styles.submitPrimaryBtn,
-                    { backgroundColor: theme.accent },
+                    { backgroundColor: selectedMode === 'vault' ? '#4F6BFF' : '#4F6BFF' },
                   ]}
                   onPress={handleConfirmCreate}
                   disabled={isSubmittingCreate}
@@ -662,14 +953,19 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                   {isSubmittingCreate ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
-                    <Text style={styles.submitPrimaryBtnText}>Create with biometrics</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <MaterialIcons name="fingerprint" size={20} color="#FFFFFF" />
+                      <Text style={styles.submitPrimaryBtnText}>
+                        {selectedMode === 'vault' ? 'Start Vault setup' : 'Start setup'}
+                      </Text>
+                    </View>
                   )}
                 </TouchableOpacity>
               </View>
             </ScrollView>
           )}
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }
@@ -681,13 +977,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
     paddingTop: 10,
-    maxHeight: '90%',
+    maxHeight: '92%',
   },
   dragHandle: {
     width: 36,
@@ -705,7 +1001,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     letterSpacing: -0.02,
   },
@@ -714,9 +1010,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -724,7 +1020,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   scrollContent: {
-    paddingBottom: 16,
+    paddingBottom: 24,
     gap: 12,
   },
 
@@ -732,17 +1028,15 @@ const styles = StyleSheet.create({
   accountCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     gap: 12,
   },
   accountAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    borderWidth: 1,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -752,7 +1046,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   accountName: {
-    fontSize: 14.5,
+    fontSize: 15,
     fontWeight: '600',
     letterSpacing: -0.01,
   },
@@ -779,40 +1073,38 @@ const styles = StyleSheet.create({
   },
   balanceText: {
     fontFamily: 'JetBrains Mono',
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '700',
     letterSpacing: -0.02,
   },
   activeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
     borderRadius: 999,
-    borderWidth: 1,
+    backgroundColor: '#4F6BFF',
   },
   activeBadgeText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '700',
+    color: '#FFFFFF',
   },
 
   /* Add button */
   addAccountBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderStyle: 'dashed',
+    padding: 16,
+    borderRadius: 20,
     gap: 12,
     marginTop: 4,
   },
   addAccountIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -820,7 +1112,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addAccountTitle: {
-    fontSize: 14.5,
+    fontSize: 15,
     fontWeight: '600',
   },
   addAccountSubtitle: {
@@ -842,10 +1134,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   inputField: {
-    height: 48,
-    borderRadius: 12,
+    height: 50,
+    borderRadius: 14,
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     fontSize: 14,
     fontWeight: '500',
   },
@@ -853,7 +1145,7 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     lineHeight: 17,
     marginTop: 2,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   fieldError: {
     fontSize: 11.5,
@@ -863,24 +1155,24 @@ const styles = StyleSheet.create({
 
   /* Mode selection tiles */
   modeCardsRow: {
-    gap: 12,
-    marginBottom: 16,
+    gap: 10,
+    marginBottom: 12,
   },
   modeTile: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     gap: 4,
   },
   modeTileIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   modeTileTitle: {
-    fontSize: 15,
+    fontSize: 15.5,
     fontWeight: '700',
   },
   modeTileDesc: {
@@ -892,17 +1184,122 @@ const styles = StyleSheet.create({
   /* Threshold Pills */
   thresholdChipsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   thresholdChip: {
     flex: 1,
-    height: 42,
-    borderRadius: 12,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   thresholdChipText: {
     fontSize: 14,
+  },
+
+  /* Vault policy notice */
+  vaultPolicyNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 10,
+  },
+  vaultPolicyIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(79, 107, 255, 0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vaultPolicyNoticeText: {
+    flex: 1,
+    fontSize: 12.5,
+    lineHeight: 18,
+  },
+
+  /* Vault explainer & devices */
+  vaultExplainerBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 6,
+  },
+  vaultExplainerText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  vaultDeviceRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 4,
+  },
+  vaultDeviceCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  vaultDeviceText: {
+    fontSize: 13,
+  },
+  macVaultBox: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 10,
+  },
+  macVaultStep: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginBottom: 4,
+  },
+  macVaultUrlWrap: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
+    marginTop: 2,
+  },
+  macVaultUrlText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  macKeyInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 48,
+    marginTop: 4,
+  },
+  macKeyInput: {
+    flex: 1,
+    fontSize: 13,
+    padding: 0,
+  },
+  pasteBadgeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  pasteBadgeText: {
+    color: '#6C8CFF',
+    fontSize: 12.5,
+    fontWeight: '700',
   },
 
   /* Advanced Accordion Toggle */
@@ -912,10 +1309,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 16,
     marginTop: 2,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   advancedToggleLeft: {
     flexDirection: 'row',
@@ -928,7 +1324,7 @@ const styles = StyleSheet.create({
   },
   advancedGroup: {
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 12,
   },
 
   /* Biometric notice box */
@@ -937,9 +1333,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
     padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 18,
+    borderRadius: 16,
+    marginBottom: 14,
   },
   biometricNoticeText: {
     flex: 1,
@@ -956,9 +1351,8 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     height: 50,
-    paddingHorizontal: 24,
-    borderRadius: 14,
-    borderWidth: 1,
+    paddingHorizontal: 22,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -969,7 +1363,7 @@ const styles = StyleSheet.create({
   submitPrimaryBtn: {
     flex: 1,
     height: 50,
-    borderRadius: 14,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -38,6 +38,43 @@ export function webAuthnSignedRegion(authenticatorData: Uint8Array, clientDataJS
   return region
 }
 
+export interface PreparedAssertionVerification {
+  signature: Uint8Array
+  digest: Uint8Array
+}
+
+/**
+ * Pre-computes the normalized signature and SHA-256 message digest once.
+ * This avoids re-running DER parsing and hashing when scanning across many on-chain accounts.
+ */
+export function prepareAssertionVerification(assertion: WebAuthnAssertion): PreparedAssertionVerification | null {
+  try {
+    const signature = p256.Signature.fromDER(assertion.signature).normalizeS().toCompactRawBytes()
+    const digest = sha256(webAuthnSignedRegion(assertion.authenticatorData, assertion.clientDataJSON))
+    return { signature, digest }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fast-path check of a pre-computed assertion against a compressed public key.
+ * Quickly skips keys that do not start with 0x02 or 0x03 without doing elliptic curve point math.
+ */
+export function preparedAssertionMatchesPublicKey(
+  prepared: PreparedAssertionVerification,
+  compressedPublicKey: Uint8Array,
+): boolean {
+  if (compressedPublicKey.length !== 33) return false
+  const prefix = compressedPublicKey[0]
+  if (prefix !== 2 && prefix !== 3) return false
+  try {
+    return p256.verify(prepared.signature, prepared.digest, compressedPublicKey, { lowS: true })
+  } catch {
+    return false
+  }
+}
+
 /**
  * True when `assertion` was produced by the credential holding `compressedPublicKey`.
  *
@@ -51,14 +88,9 @@ export function webAuthnSignedRegion(authenticatorData: Uint8Array, clientDataJS
  * key, then reports that the passkey does not belong to the wallet).
  */
 export function assertionMatchesPublicKey(assertion: WebAuthnAssertion, compressedPublicKey: Uint8Array): boolean {
-  if (compressedPublicKey.length !== 33) return false
-  try {
-    const signature = p256.Signature.fromDER(assertion.signature).normalizeS().toCompactRawBytes()
-    const digest = sha256(webAuthnSignedRegion(assertion.authenticatorData, assertion.clientDataJSON))
-    return p256.verify(signature, digest, compressedPublicKey, { lowS: true })
-  } catch {
-    return false
-  }
+  const prepared = prepareAssertionVerification(assertion)
+  if (!prepared) return false
+  return preparedAssertionMatchesPublicKey(prepared, compressedPublicKey)
 }
 
 /**

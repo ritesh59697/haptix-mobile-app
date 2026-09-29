@@ -34,7 +34,13 @@ import {
   promptBiometricAuth,
   PasskeyInfo,
 } from '@/utils/haptix-passkey'
-import { matchWebAuthnAssertion, assertionMatchesPublicKey } from '@/utils/secp256r1-instruction'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import {
+  matchWebAuthnAssertion,
+  assertionMatchesPublicKey,
+  prepareAssertionVerification,
+  preparedAssertionMatchesPublicKey,
+} from '@/utils/secp256r1-instruction'
 import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet, HAPTIX_PROGRAM_ID } from '@/utils/haptix-client'
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
@@ -51,6 +57,30 @@ import {
 import { HaptixAppLoader } from '@/components/haptix/haptix-app-loader'
 import { HaptixRecoveryFlowSheet } from '@/components/haptix/haptix-recovery-flow-sheet'
 import { StatusBar } from 'expo-status-bar'
+
+type ProgramAccountsPromise = ReturnType<Connection['getProgramAccounts']>
+
+let cachedAccountsPromise: ProgramAccountsPromise | null = null
+let cachedAccountsTimestamp = 0
+const ACCOUNTS_CACHE_TTL_MS = 60_000
+
+function getCachedOrFetchProgramAccounts(connection: Connection): ProgramAccountsPromise {
+  const now = Date.now()
+  if (cachedAccountsPromise && now - cachedAccountsTimestamp < ACCOUNTS_CACHE_TTL_MS) {
+    return cachedAccountsPromise
+  }
+  cachedAccountsTimestamp = now
+  const p = connection
+    .getProgramAccounts(HAPTIX_PROGRAM_ID, {
+      dataSlice: { offset: 9, length: 66 },
+    })
+    .catch((err) => {
+      cachedAccountsPromise = null
+      throw err
+    })
+  cachedAccountsPromise = p
+  return p
+}
 
 const ONBOARDING_BG = require('@/assets/images/onboarding-bg.png')
 const FINGERPRINT_HERO_WHITE = require('@/assets/images/fingerprint-hero-white.png')
@@ -274,6 +304,14 @@ export default function SignIn() {
       .catch(() => setDeviceHasWallet(null))
   }, [])
 
+  useEffect(() => {
+    if (showSignInModal && savedWallets.length === 0) {
+      // Warm up the Solana program accounts cache as soon as the modal is opened
+      const connection = new Connection(AppConfig.devnetRpcUrl, { commitment: 'confirmed' })
+      getCachedOrFetchProgramAccounts(connection).catch(() => {})
+    }
+  }, [showSignInModal, savedWallets.length])
+
   const handleExecutePasskeyCreation = async () => {
     try {
       setIsCreating(true)
@@ -444,9 +482,11 @@ export default function SignIn() {
       let targetAddress = typedAddress
       if (!targetAddress) {
         // Zero-Input Passkey Discovery:
-        // When no address is specified, prompt the device's hardware authenticator directly.
-        // Once the user authenticates with fingerprint/passkey, match the cryptographic
-        // assertion against on-chain accounts to identify their exact wallet PDA automatically.
+        // Concurrently kick off on-chain program accounts fetch in parallel with biometric prompt,
+        // so network time is completely masked while user scans their fingerprint.
+        const connection = new Connection(AppConfig.devnetRpcUrl, { commitment: 'confirmed' })
+        const accountsPromise = getCachedOrFetchProgramAccounts(connection)
+
         let picked: { credentialId: string; assertion: any }
         try {
           picked = await getDiscoverablePlatformAssertion()
@@ -455,29 +495,57 @@ export default function SignIn() {
           return
         }
 
-        const connection = new Connection(AppConfig.devnetRpcUrl, { commitment: 'confirmed' })
-        const accounts = await connection.getProgramAccounts(HAPTIX_PROGRAM_ID, {
-          dataSlice: { offset: 9, length: 66 },
-        })
+        const prepared = prepareAssertionVerification(picked.assertion)
+        if (!prepared) {
+          dialog.alert('Authentication Error', 'Could not parse biometric passkey signature.')
+          return
+        }
 
         let matchedPda: PublicKey | null = null
         let matchedKeyHex: string | null = null
         let matchedRole: 'primary' | 'secondary' = 'primary'
 
-        for (const acc of accounts) {
-          const primaryKey = acc.account.data.subarray(0, 33)
-          const secondaryKey = acc.account.data.subarray(33, 66)
-          if (assertionMatchesPublicKey(picked.assertion, primaryKey)) {
-            matchedPda = acc.pubkey
-            matchedKeyHex = Buffer.from(primaryKey).toString('hex')
-            matchedRole = 'primary'
-            break
+        // 1. Instant Fast Path: If this credential ID was mapped on this device previously, verify directly!
+        const cachedPdaStr = await AsyncStorage.getItem(`@haptix_passkey_pda_${picked.credentialId}`).catch(() => null)
+        if (cachedPdaStr) {
+          try {
+            const cachedPda = new PublicKey(cachedPdaStr)
+            const cachedOnchainState = await fetchHaptixWallet(connection, cachedPda)
+            if (cachedOnchainState) {
+              if (preparedAssertionMatchesPublicKey(prepared, cachedOnchainState.primaryPasskey)) {
+                matchedPda = cachedPda
+                matchedKeyHex = Buffer.from(cachedOnchainState.primaryPasskey).toString('hex')
+                matchedRole = 'primary'
+              } else if (preparedAssertionMatchesPublicKey(prepared, cachedOnchainState.secondaryPasskey)) {
+                matchedPda = cachedPda
+                matchedKeyHex = Buffer.from(cachedOnchainState.secondaryPasskey).toString('hex')
+                matchedRole = 'secondary'
+              }
+            }
+          } catch {
+            // Fall through to program accounts scan
           }
-          if (assertionMatchesPublicKey(picked.assertion, secondaryKey)) {
-            matchedPda = acc.pubkey
-            matchedKeyHex = Buffer.from(secondaryKey).toString('hex')
-            matchedRole = 'secondary'
-            break
+        }
+
+        // 2. Full scan path: Scan accounts using pre-computed signature digest & fast prefix checks
+        if (!matchedPda) {
+          const accounts = (await accountsPromise) ?? []
+
+          for (const acc of accounts) {
+            const primaryKey = acc.account.data.subarray(0, 33)
+            const secondaryKey = acc.account.data.subarray(33, 66)
+            if (preparedAssertionMatchesPublicKey(prepared, primaryKey)) {
+              matchedPda = acc.pubkey
+              matchedKeyHex = Buffer.from(primaryKey).toString('hex')
+              matchedRole = 'primary'
+              break
+            }
+            if (preparedAssertionMatchesPublicKey(prepared, secondaryKey)) {
+              matchedPda = acc.pubkey
+              matchedKeyHex = Buffer.from(secondaryKey).toString('hex')
+              matchedRole = 'secondary'
+              break
+            }
           }
         }
 
@@ -489,6 +557,9 @@ export default function SignIn() {
           setShowAddressInput(true)
           return
         }
+
+        // Persist credentialId -> PDA mapping for instant sub-second logins next time
+        await AsyncStorage.setItem(`@haptix_passkey_pda_${picked.credentialId}`, matchedPda.toBase58()).catch(() => {})
 
         const onchainState = await fetchHaptixWallet(connection, matchedPda)
         if (!onchainState) {

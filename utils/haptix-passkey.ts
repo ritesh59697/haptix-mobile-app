@@ -2,6 +2,7 @@ import { Alert, Platform } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { p256 } from '@noble/curves/p256'
 import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
+export { bytesToHex, hexToBytes }
 import { sha256 } from '@noble/hashes/sha2'
 import { requireOptionalNativeModule } from 'expo-modules-core'
 import * as Crypto from 'expo-crypto'
