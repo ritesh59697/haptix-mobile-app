@@ -913,11 +913,7 @@ export default function SignIn() {
       setRestoreAddress(wallets[0].address)
       return
     }
-    // Attempt auto-paste if user has an address on clipboard
-    const clipAddr = await fillFromClipboard()
-    if (!clipAddr) {
-      setRestoreAddress('')
-    }
+    setRestoreAddress('')
   }
 
   const handleSearchByGuardian = async () => {
