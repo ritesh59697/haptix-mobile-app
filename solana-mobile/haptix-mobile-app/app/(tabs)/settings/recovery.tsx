@@ -572,7 +572,7 @@ export default function RecoverySettingsScreen() {
             accessibilityRole="button"
           >
             <Text style={[styles.guardianToggleText, { color: theme.textSecondary }]}>
-              {showGuardianEditor ? 'Cancel guardian change' : 'Change guardian'}
+              {showGuardianEditor ? 'Cancel' : (activeWallet?.guardianAddress ? 'Change guardian' : 'Set recovery guardian')}
             </Text>
             <MaterialIcons
               name={showGuardianEditor ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}

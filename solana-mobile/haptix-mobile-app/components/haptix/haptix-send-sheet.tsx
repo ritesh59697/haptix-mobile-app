@@ -490,9 +490,7 @@ export function HaptixSendSheet({
       const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
       const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
       const authNonce = onChain?.authNonce ?? 0n
-      if (needsInit) {
-        assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress))
-      }
+
       if (onChain) {
         const dataLen = (await connection.getAccountInfo(walletPda))?.data.length ?? WALLET_ACCOUNT_SPACE
         const reserve = BigInt(await connection.getMinimumBalanceForRentExemption(dataLen))
@@ -534,7 +532,7 @@ export function HaptixSendSheet({
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress)),
+          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey),
         })
         txInstructions.push(initIx)
       }

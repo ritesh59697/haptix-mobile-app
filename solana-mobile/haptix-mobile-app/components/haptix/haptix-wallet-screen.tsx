@@ -648,7 +648,7 @@ export function HaptixWalletScreen() {
         primaryPasskey,
         secondaryPasskey,
         spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-        guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet?.guardianAddress)),
+        guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet?.guardianAddress), payer.publicKey),
       })
 
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
@@ -728,7 +728,7 @@ export function HaptixWalletScreen() {
       primaryPasskey: new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex')),
       secondaryPasskey: new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex')),
       spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-      guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress)),
+      guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey),
     })
 
     const blockhash = await connection.getLatestBlockhash('confirmed')
