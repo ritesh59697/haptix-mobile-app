@@ -87,6 +87,7 @@ function getCachedOrFetchProgramAccounts(connection: Connection): ProgramAccount
 const ONBOARDING_BG = require('@/assets/images/onboarding-bg.png')
 const FINGERPRINT_HERO_WHITE = require('@/assets/images/fingerprint-hero-white.png')
 const FINGERPRINT_HERO_DARK = require('@/assets/images/fingerprint-hero.png')
+const FINGERPRINT_HERO_BLUE = require('@/assets/images/fingerprint-hero-blue.png')
 
 interface OnboardingPalette {
   heroBg: string
@@ -1410,10 +1411,12 @@ export default function SignIn() {
               contentContainerStyle={{ paddingBottom: 12 }}
               showsVerticalScrollIndicator={false}
             >
-              <View style={styles.heroBiometricRing}>
-                <View style={styles.heroBiometricInnerCircle}>
-                  <MaterialIcons name="fingerprint" size={28} color="#5A6EE6" />
-                </View>
+              <View style={styles.heroBiometricCircle}>
+                <Image
+                  source={FINGERPRINT_HERO_BLUE}
+                  style={styles.heroBiometricIcon}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={styles.sheetDesc}>Authenticate with your biometric passkey</Text>
 
@@ -1819,42 +1822,27 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       alignItems: 'center',
       marginBottom: 12,
     },
-    heroBiometricRing: {
-      width: 76,
-      height: 76,
-      borderRadius: 38,
-      borderWidth: 1.5,
-      borderColor: '#5A6EE6',
-      justifyContent: 'center',
-      alignItems: 'center',
-      alignSelf: 'center',
-      marginTop: 4,
-      marginBottom: 12,
-    },
-    heroBiometricInnerCircle: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: isDark ? '#161619' : '#F4F3F1',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
     heroBiometricCircle: {
-      width: 104,
-      height: 104,
-      borderRadius: 52,
-      backgroundColor: isDark ? '#141418' : '#F4F5F7',
-      borderWidth: 1,
-      borderColor: isDark ? '#26262C' : '#E2E4E9',
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      backgroundColor: isDark ? 'rgba(79, 107, 255, 0.08)' : 'rgba(79, 107, 255, 0.05)',
+      borderWidth: 1.5,
+      borderColor: isDark ? 'rgba(79, 107, 255, 0.28)' : 'rgba(79, 107, 255, 0.20)',
       justifyContent: 'center',
       alignItems: 'center',
       alignSelf: 'center',
-      marginTop: 10,
-      marginBottom: 16,
+      marginTop: 6,
+      marginBottom: 14,
+      shadowColor: '#4F6BFF',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: isDark ? 0.25 : 0.12,
+      shadowRadius: 14,
+      elevation: 4,
     },
     heroBiometricIcon: {
-      width: 76,
-      height: 76,
+      width: 66,
+      height: 66,
     },
     sheetTitle: { color: p.heroInk, fontSize: 19, fontWeight: '700' },
     sheetDesc: { color: p.inkSecondary, fontSize: 13, marginBottom: 14, textAlign: 'center' },
