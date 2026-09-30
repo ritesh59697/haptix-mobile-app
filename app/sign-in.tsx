@@ -499,7 +499,7 @@ export default function SignIn() {
               walletPda,
               primaryPasskey,
               secondaryPasskey,
-              guardian: guardian ?? payer.publicKey,
+              guardian: guardian ?? walletPda,
               recoveryTimelockSeconds: timelockParse.seconds ?? undefined,
             })
             const dripIx = SystemProgram.transfer({
