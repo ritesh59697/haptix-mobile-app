@@ -256,8 +256,13 @@ const createStyles = (theme: ThemeTokens) =>
     heroBalanceLabelRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 6,
+      justifyContent: 'space-between',
       marginBottom: 8,
+    },
+    heroBalanceLabelGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
     },
     heroBalanceLabel: {
       fontSize: 14,
@@ -265,6 +270,11 @@ const createStyles = (theme: ThemeTokens) =>
     },
     eyeToggleButton: {
       padding: 2,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    refreshBalanceButton: {
+      padding: 4,
       justifyContent: 'center',
       alignItems: 'center',
     },

@@ -18,6 +18,7 @@ import {
   useWindowDimensions,
   Animated,
   PanResponder,
+  Easing,
 } from 'react-native'
 
 import { useRouter } from 'expo-router'
@@ -540,11 +541,48 @@ export function HaptixWalletScreen() {
     void refreshMarketPrices()
   }, [fetchRealBalance, fetchRecentTransactions, refreshMarketPrices])
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await Promise.all([fetchRealBalance(), fetchRecentTransactions(), refreshMarketPrices()])
-    setRefreshing(false)
-  }
+    try {
+      await Promise.all([fetchRealBalance(), fetchRecentTransactions(), refreshMarketPrices()])
+    } finally {
+      setRefreshing(false)
+    }
+  }, [fetchRealBalance, fetchRecentTransactions, refreshMarketPrices])
+
+  const refreshAnim = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    if (refreshing) {
+      const loop = Animated.loop(
+        Animated.timing(refreshAnim, {
+          toValue: 1,
+          duration: 750,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      )
+      loop.start()
+      return () => {
+        loop.stop()
+        refreshAnim.setValue(0)
+      }
+    } else {
+      refreshAnim.setValue(0)
+    }
+  }, [refreshing, refreshAnim])
+
+  const refreshSpin = refreshAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  })
+
+  const handleRefreshBalance = useCallback(async () => {
+    if (refreshing) return
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+    await onRefresh()
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+  }, [refreshing, onRefresh])
 
   // Request Faucet Devnet SOL (+0.2 SOL from funded relayer treasury)
   const handleRequestFaucet = async () => {
@@ -1481,19 +1519,34 @@ export function HaptixWalletScreen() {
       {/* HERO BALANCE CARD */}
       <View style={styles.heroCard}>
         <View style={styles.heroBalanceLabelRow}>
-          <Text style={[styles.heroBalanceLabel, { color: theme.textSecondary }]}>Total balance</Text>
+          <View style={styles.heroBalanceLabelGroup}>
+            <Text style={[styles.heroBalanceLabel, { color: theme.textSecondary }]}>Total balance</Text>
+            <TouchableOpacity
+              style={styles.eyeToggleButton}
+              onPress={toggleBalanceHidden}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel={isBalanceHidden ? 'Show balance' : 'Hide balance'}
+            >
+              {isBalanceHidden ? (
+                <EyeHideIcon size={16} color={theme.textMuted} />
+              ) : (
+                <EyeShowIcon size={16} color={theme.textMuted} />
+              )}
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity
-            style={styles.eyeToggleButton}
-            onPress={toggleBalanceHidden}
+            style={styles.refreshBalanceButton}
+            onPress={handleRefreshBalance}
+            disabled={refreshing}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessibilityRole="button"
-            accessibilityLabel={isBalanceHidden ? 'Show balance' : 'Hide balance'}
+            accessibilityLabel="Refresh balance"
           >
-            {isBalanceHidden ? (
-              <EyeHideIcon size={16} color={theme.textMuted} />
-            ) : (
-              <EyeShowIcon size={16} color={theme.textMuted} />
-            )}
+            <Animated.View style={{ transform: [{ rotate: refreshSpin }] }}>
+              <MaterialIcons name="refresh" size={17} color={theme.textMuted} />
+            </Animated.View>
           </TouchableOpacity>
         </View>
 
