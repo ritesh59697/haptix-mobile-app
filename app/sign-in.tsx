@@ -17,6 +17,7 @@ import {
   Image,
   Animated,
   PanResponder,
+  Platform,
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -333,6 +334,7 @@ export default function SignIn() {
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [restoreAddress, setRestoreAddress] = useState('')
   const [showAddressInput, setShowAddressInput] = useState(false)
+  const [isEditingAddress, setIsEditingAddress] = useState(false)
   const [savedWallets, setSavedWallets] = useState<HaptixWalletAccount[]>([])
   const [showGuardianLookup, setShowGuardianLookup] = useState(false)
   const [guardianLookupInput, setGuardianLookupInput] = useState('')
@@ -543,7 +545,7 @@ export default function SignIn() {
       // paste the parser could not read has to be reported rather than treated as "no
       // address given": the saved-wallet branch below reads an empty value as "use the
       // wallet already on this device", so a typo would silently sign in as that one.
-      const typedInput = showAddressInput ? restoreAddress.trim() : ''
+      const typedInput = (showAddressInput || restoreParse.address) ? restoreAddress.trim() : ''
       const typedAddress = typedInput ? (restoreParse.address ?? '') : ''
 
       const allWallets = await loadWallets().catch(() => [])
@@ -877,6 +879,7 @@ export default function SignIn() {
       const parsed = parseRecipientInput(text ?? '')
       if (!parsed.address) return null
       setRestoreAddress((text ?? '').trim())
+      setIsEditingAddress(false)
       return parsed.address
     } catch {
       return null
@@ -898,6 +901,8 @@ export default function SignIn() {
    */
   const openSignInSheet = async () => {
     setShowSignInModal(true)
+    setIsEditingAddress(false)
+    setShowAddressInput(false)
     const wallets = await loadWallets().catch(() => [])
     setSavedWallets(wallets)
     const saved = await getSavedWallet().catch(() => null)
@@ -910,9 +915,7 @@ export default function SignIn() {
       setRestoreAddress(wallets[0].address)
       return
     }
-
-    setShowAddressInput(true)
-    // Note: Clipboard is only read when user explicitly taps the "Paste" button
+    setRestoreAddress('')
   }
 
   const handleSearchByGuardian = async () => {
@@ -939,6 +942,7 @@ export default function SignIn() {
       }
       const foundAddress = accounts[0].pubkey.toBase58()
       setRestoreAddress(foundAddress)
+      setIsEditingAddress(false)
       setShowAddressInput(true)
       setShowGuardianLookup(false)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
@@ -1406,21 +1410,18 @@ export default function SignIn() {
               contentContainerStyle={{ paddingBottom: 12 }}
               showsVerticalScrollIndicator={false}
             >
-              <View style={styles.heroBiometricCircle}>
-                <Image
-                  source={isDark ? FINGERPRINT_HERO_WHITE : FINGERPRINT_HERO_DARK}
-                  style={styles.heroBiometricIcon}
-                  resizeMode="contain"
-                />
+              <View style={styles.heroBiometricRing}>
+                <View style={styles.heroBiometricInnerCircle}>
+                  <MaterialIcons name="fingerprint" size={28} color="#5A6EE6" />
+                </View>
               </View>
               <Text style={styles.sheetDesc}>Authenticate with your biometric passkey</Text>
 
               {/* AUTO DISCOVERY NOTICE WHEN LOCAL STORAGE IS EMPTY */}
               {savedWallets.length === 0 && (
                 <View style={styles.autoDiscoverNotice}>
-                  <MaterialIcons name="fingerprint" size={16} color={p.inkMuted} style={{ marginTop: 2 }} />
                   <Text style={styles.autoDiscoverNoticeText}>
-                    Passkey on this device? Tap Sign in with biometrics to scan and recover your wallet on-chain.
+                    Passkey on this device? We'll scan on-chain and recover your wallet.
                   </Text>
                 </View>
               )}
@@ -1461,31 +1462,49 @@ export default function SignIn() {
                 </View>
               )}
 
-              <TouchableOpacity
-                style={styles.customAddressToggle}
-                onPress={() => {
-                  Haptics.selectionAsync()
-                  setShowAddressInput((prev) => !prev)
-                }}
-              >
-                <Text style={styles.customAddressToggleText}>
-                  {showAddressInput
-                    ? 'Hide custom address or search'
-                    : deviceHasWallet === false
-                      ? 'Wallet address required on this device'
-                      : savedWallets.length > 0
-                        ? 'Or sign into another address or search'
-                        : 'Specify custom wallet address (Optional)'}
-                </Text>
-                <MaterialIcons
-                  name={showAddressInput ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                  size={16}
-                  color={p.inkSecondary}
-                />
-              </TouchableOpacity>
+              {/* Confirmed wallet found card (shown when wallet is identified and not in edit mode) */}
+              {restoreParse.address && !isEditingAddress ? (
+                <View style={styles.walletFoundCard}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                    <MaterialIcons name="check" size={16} color={isDark ? '#34D399' : '#1F8A4C'} />
+                    <Text style={styles.walletFoundAddress} numberOfLines={1} ellipsizeMode="middle">
+                      {ellipsify(restoreParse.address, 6)}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Haptics.selectionAsync()
+                      setIsEditingAddress(true)
+                      setShowAddressInput(true)
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.walletFoundChangeText}>Change</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
 
-              {showAddressInput && (
-                <>
+              {/* Custom Address Toggle Button */}
+              {(!restoreParse.address || isEditingAddress) && (
+                <TouchableOpacity
+                  style={styles.customAddressToggle}
+                  onPress={() => {
+                    Haptics.selectionAsync()
+                    setShowAddressInput((prev) => !prev)
+                  }}
+                >
+                  <Text style={styles.customAddressToggleText}>Use a custom address</Text>
+                  <MaterialIcons
+                    name={showAddressInput ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                    size={15}
+                    color={p.inkSecondary}
+                  />
+                </TouchableOpacity>
+              )}
+
+              {/* Collapsed/Expanded Custom Address Input & Guardian Lookup */}
+              {showAddressInput && (!restoreParse.address || isEditingAddress) && (
+                <View style={{ marginBottom: 4 }}>
                   <View style={styles.addressInputContainer}>
                     <TextInput
                       style={styles.addressInput}
@@ -1497,16 +1516,29 @@ export default function SignIn() {
                       autoCorrect={false}
                     />
                     {restoreAddress.length > 0 ? (
-                      <TouchableOpacity
-                        onPress={() => setRestoreAddress('')}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <MaterialIcons name="cancel" size={18} color={p.inkMuted} />
-                      </TouchableOpacity>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <TouchableOpacity
+                          onPress={() => setRestoreAddress('')}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <MaterialIcons name="cancel" size={18} color={p.inkMuted} />
+                        </TouchableOpacity>
+                        {restoreParse.address && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              Haptics.selectionAsync()
+                              setIsEditingAddress(false)
+                            }}
+                            style={styles.doneBadgeButton}
+                          >
+                            <Text style={styles.doneBadgeText}>Done</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     ) : (
                       <TouchableOpacity style={styles.pasteBadgeButton} onPress={handlePasteAddress}>
-                        <MaterialIcons name="content-paste" size={13} color="#4F6BFF" />
-                        <Text style={styles.pasteBadgeText}>Paste</Text>
+                        <MaterialIcons name="content-paste" size={13} color="#5A6EE6" />
+                        <Text style={[styles.pasteBadgeText, { color: '#5A6EE6' }]}>Paste</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -1519,13 +1551,13 @@ export default function SignIn() {
                       setShowGuardianLookup((prev) => !prev)
                     }}
                   >
-                    <MaterialIcons name="search" size={15} color={p.inkSecondary} />
+                    <MaterialIcons name="search" size={14} color={p.inkSecondary} />
                     <Text style={styles.guardianSearchToggleText}>
-                      {showGuardianLookup ? 'Hide guardian lookup' : 'Forgot address? Search on-chain by Guardian'}
+                      {showGuardianLookup ? 'Hide guardian lookup' : 'Forgot address? Search on-chain by guardian'}
                     </Text>
                     <MaterialIcons
                       name={showGuardianLookup ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                      size={15}
+                      size={14}
                       color={p.inkSecondary}
                     />
                   </TouchableOpacity>
@@ -1559,39 +1591,39 @@ export default function SignIn() {
                       </TouchableOpacity>
                     </View>
                   )}
-                </>
-              )}
 
-              {showAddressInput && restoreHint && (
-                <View style={styles.addressHintRow}>
-                  <MaterialIcons
-                    name={restoreHint.tone === 'error' ? 'error-outline' : 'check-circle-outline'}
-                    size={14}
-                    color={restoreHint.tone === 'error' ? p.danger : p.inkSecondary}
-                  />
-                  <Text
-                    style={[
-                      styles.addressHintText,
-                      { color: restoreHint.tone === 'error' ? p.danger : p.inkSecondary },
-                    ]}
-                  >
-                    {restoreHint.text}
-                  </Text>
+                  {restoreHint && (
+                    <View style={styles.addressHintRow}>
+                      <MaterialIcons
+                        name={restoreHint.tone === 'error' ? 'error-outline' : 'check-circle-outline'}
+                        size={14}
+                        color={restoreHint.tone === 'error' ? p.danger : p.inkSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.addressHintText,
+                          { color: restoreHint.tone === 'error' ? p.danger : p.inkSecondary },
+                        ]}
+                      >
+                        {restoreHint.text}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               )}
 
               <TouchableOpacity
-                style={[styles.primaryDarkButton, { marginTop: 16 }, isSigningIn && { opacity: 0.8 }]}
+                style={[styles.primaryAccentButton, isSigningIn && { opacity: 0.8 }]}
                 onPress={handleSignInWithPasskey}
                 disabled={isSigningIn}
                 activeOpacity={0.85}
               >
                 {isSigningIn ? (
-                  <ActivityIndicator color={p.onPrimary} />
+                  <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} />
-                    <Text style={styles.primaryDarkButtonText}>Sign in with biometrics</Text>
+                    <MaterialIcons name="fingerprint" size={18} color="#FFFFFF" />
+                    <Text style={styles.primaryAccentButtonText}>Sign in with biometrics</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -1787,6 +1819,26 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       alignItems: 'center',
       marginBottom: 12,
     },
+    heroBiometricRing: {
+      width: 76,
+      height: 76,
+      borderRadius: 38,
+      borderWidth: 1.5,
+      borderColor: '#5A6EE6',
+      justifyContent: 'center',
+      alignItems: 'center',
+      alignSelf: 'center',
+      marginTop: 4,
+      marginBottom: 12,
+    },
+    heroBiometricInnerCircle: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: isDark ? '#161619' : '#F4F3F1',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     heroBiometricCircle: {
       width: 104,
       height: 104,
@@ -1805,7 +1857,7 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       height: 76,
     },
     sheetTitle: { color: p.heroInk, fontSize: 19, fontWeight: '700' },
-    sheetDesc: { color: p.inkSecondary, fontSize: 13.5, marginBottom: 16, textAlign: 'center' },
+    sheetDesc: { color: p.inkSecondary, fontSize: 13, marginBottom: 14, textAlign: 'center' },
     sheetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15 },
     sheetRowText: { color: p.heroInk, fontSize: 16 },
     primaryDarkButton: {
@@ -1817,7 +1869,80 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       alignItems: 'center',
       flexDirection: 'row',
     },
+    primaryAccentButton: {
+      width: '100%',
+      height: 50,
+      borderRadius: 14,
+      backgroundColor: '#5A6EE6',
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexDirection: 'row',
+      marginTop: 14,
+    },
+    primaryAccentButtonText: {
+      color: '#FFFFFF',
+      fontSize: 15,
+      fontWeight: '600',
+      letterSpacing: -0.2,
+    },
     primaryDarkButtonText: { color: isDark ? '#000000' : '#FFFFFF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
+    walletFoundCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: isDark ? '#111114' : '#FFFFFF',
+      borderWidth: 0.5,
+      borderColor: isDark ? '#26262C' : '#E0DDD6',
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      marginBottom: 10,
+    },
+    walletFoundLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      flex: 1,
+    },
+    walletFoundBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(31, 138, 76, 0.10)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    walletFoundSubtitle: {
+      fontSize: 11.5,
+      color: isDark ? '#8E8E93' : '#6B6A64',
+      marginBottom: 2,
+    },
+    walletFoundAddress: {
+      fontSize: 13.5,
+      fontWeight: '600',
+      color: isDark ? '#F4F4F7' : '#181714',
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    },
+    walletFoundChangeBtn: {
+      paddingVertical: 6,
+      paddingHorizontal: 10,
+    },
+    walletFoundChangeText: {
+      fontSize: 13.5,
+      fontWeight: '600',
+      color: '#4F6BFF',
+    },
+    doneBadgeButton: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+      backgroundColor: isDark ? 'rgba(79, 107, 255, 0.18)' : 'rgba(79, 107, 255, 0.12)',
+    },
+    doneBadgeText: {
+      color: '#4F6BFF',
+      fontSize: 12,
+      fontWeight: '600',
+    },
     inputGroup: { marginBottom: 16 },
     inputLabel: { color: p.heroInk, fontSize: 14, fontWeight: '600', marginBottom: 8 },
     inputHint: { color: p.inkMuted, fontSize: 12, lineHeight: 17, marginTop: 8 },
@@ -1942,21 +2067,17 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       color: p.heroInk,
     },
     autoDiscoverNotice: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      gap: 10,
-      backgroundColor: p.surfaceAlt,
-      borderRadius: 14,
-      padding: 14,
-      borderWidth: 1,
-      borderColor: p.border,
+      backgroundColor: isDark ? '#141416' : '#F4F3F1',
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
       marginBottom: 14,
     },
     autoDiscoverNoticeText: {
-      flex: 1,
-      color: p.inkSecondary,
-      fontSize: 12,
-      lineHeight: 17,
+      color: isDark ? '#A1A1AA' : '#6B6A64',
+      fontSize: 13,
+      lineHeight: 18,
+      textAlign: 'center',
     },
     savedWalletsContainer: {
       marginBottom: 14,
