@@ -4,6 +4,7 @@ import { AuthProvider } from '@/components/auth/auth-provider'
 import { ClusterProvider } from '@/components/cluster/cluster-provider'
 import { AppTheme } from '@/components/app-theme'
 import { HaptixDialogProvider } from '@/components/haptix/haptix-dialog'
+import { RemoveWalletModalProvider } from '@/components/haptix/haptix-remove-wallet'
 
 const queryClient = new QueryClient()
 /**
@@ -20,11 +21,13 @@ export function AppProviders({ children }: PropsWithChildren) {
   return (
     <AppTheme>
       <HaptixDialogProvider>
-        <QueryClientProvider client={queryClient}>
-          <ClusterProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </ClusterProvider>
-        </QueryClientProvider>
+        <RemoveWalletModalProvider>
+          <QueryClientProvider client={queryClient}>
+            <ClusterProvider>
+              <AuthProvider>{children}</AuthProvider>
+            </ClusterProvider>
+          </QueryClientProvider>
+        </RemoveWalletModalProvider>
       </HaptixDialogProvider>
     </AppTheme>
   )
