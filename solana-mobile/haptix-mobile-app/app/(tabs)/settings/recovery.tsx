@@ -30,7 +30,7 @@ import { ellipsify } from '@/utils/ellipsify'
 import { parseRecipientInput } from '@/utils/solana-address'
 import { describeTimelock, formatRemainingTime } from '@/utils/recovery-timelock'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
-import { getFundedDevnetPayer } from '@/utils/haptix-funder'
+import { getFundedDevnetPayer, isDevnetFunder } from '@/utils/haptix-funder'
 import { createSecp256r1Instruction } from '@/utils/secp256r1-instruction'
 import {
   StagedRecoveryKeys,
@@ -113,8 +113,17 @@ export default function RecoverySettingsScreen() {
     void refreshOnChain()
   }, [refreshOnChain])
 
-  const guardianAddress = onChainWallet?.guardian.toBase58() ?? null
-  const guardianSigner = useGuardianSigner(connection, guardianAddress)
+  const rawGuardianAddress = onChainWallet?.guardian.toBase58() ?? null
+  const isGuardianConfigured = Boolean(
+    rawGuardianAddress &&
+      !isDevnetFunder(rawGuardianAddress) &&
+      rawGuardianAddress !== walletAddress &&
+      rawGuardianAddress !== PublicKey.default.toBase58() &&
+      activeWallet?.guardianAddress &&
+      !isDevnetFunder(activeWallet.guardianAddress),
+  )
+  const guardianAddress = isGuardianConfigured ? rawGuardianAddress : null
+  const guardianSigner = useGuardianSigner(connection, isGuardianConfigured ? guardianAddress : null)
 
   // The recovery in flight may have been started in an earlier session; the keys it
   // proposed live in the OS secure store, not in component state.
@@ -508,22 +517,37 @@ export default function RecoverySettingsScreen() {
             { backgroundColor: 'transparent', borderColor: 'transparent', paddingHorizontal: 0, flexDirection: 'row', alignItems: 'center', gap: 4 },
           ]}
         >
-          <MaterialIcons name={onChainWallet ? 'check' : 'warning-amber'} size={14} color={onChainWallet ? theme.emeraldText : theme.amberText} />
-          <Text style={[styles.tagText, { color: onChainWallet ? theme.emeraldText : theme.amberText, fontWeight: '400' }]}>
-            {onChainWallet ? 'Active' : 'Not on-chain yet'}
+          <MaterialIcons
+            name={isGuardianConfigured ? 'check' : 'shield'}
+            size={14}
+            color={isGuardianConfigured ? theme.emeraldText : theme.textMuted}
+          />
+          <Text
+            style={[
+              styles.tagText,
+              { color: isGuardianConfigured ? theme.emeraldText : theme.textMuted, fontWeight: '400' },
+            ]}
+          >
+            {isGuardianConfigured ? 'Active' : 'Not configured'}
           </Text>
         </View>
       </View>
 
       <View style={styles.detailRow}>
         <View style={{ flex: 1, paddingRight: 8 }}>
-          <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>1 guardian</Text>
+          <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>
+            {isGuardianConfigured ? '1 guardian' : '0 guardians'}
+          </Text>
           <Text style={[styles.detailDesc, { color: theme.textMuted }]}>
-            Can only start a recovery, never move funds
+            {isGuardianConfigured
+              ? 'Can only start a recovery, never move funds'
+              : 'Add a trusted address to protect against device loss'}
           </Text>
         </View>
         <View style={{ flex: 1, alignItems: 'flex-end', paddingLeft: 8 }}>
-          <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>{timelockLabel.toLowerCase()} timelock</Text>
+          <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>
+            {timelockLabel.toLowerCase()} timelock
+          </Text>
           <Text style={[styles.detailDesc, { color: theme.textMuted, textAlign: 'right' }]}>
             Both passkeys can cancel it
           </Text>
@@ -534,22 +558,31 @@ export default function RecoverySettingsScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.guardianLabel, { color: theme.textMuted }]}>Guardian address</Text>
-            <Text style={[styles.guardianValue, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="middle">
-              {onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'Set on first on-chain activation'}
+            <Text
+              style={[
+                styles.guardianValue,
+                { color: isGuardianConfigured ? theme.textPrimary : theme.textMuted },
+              ]}
+              numberOfLines={1}
+              ellipsizeMode="middle"
+            >
+              {isGuardianConfigured && onChainWallet
+                ? ellipsify(onChainWallet.guardian.toBase58(), 6)
+                : 'None (tap below to configure)'}
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={() => {
-              if (onChainWallet) {
+          {isGuardianConfigured && onChainWallet ? (
+            <TouchableOpacity
+              onPress={() => {
                 Clipboard.setString(onChainWallet.guardian.toBase58())
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-              }
-            }}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            style={{ justifyContent: 'center', paddingLeft: 8 }}
-          >
-            <MaterialIcons name="content-copy" size={16} color={theme.textMuted} />
-          </TouchableOpacity>
+              }}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={{ justifyContent: 'center', paddingLeft: 8 }}
+            >
+              <MaterialIcons name="content-copy" size={16} color={theme.textMuted} />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
 
@@ -572,7 +605,7 @@ export default function RecoverySettingsScreen() {
             accessibilityRole="button"
           >
             <Text style={[styles.guardianToggleText, { color: theme.textSecondary }]}>
-              {showGuardianEditor ? 'Cancel' : (activeWallet?.guardianAddress ? 'Change guardian' : 'Set recovery guardian')}
+              {showGuardianEditor ? 'Cancel' : (isGuardianConfigured ? 'Change guardian' : 'Set recovery guardian')}
             </Text>
             <MaterialIcons
               name={showGuardianEditor ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
@@ -838,7 +871,7 @@ export default function RecoverySettingsScreen() {
 
               {renderReassuranceBox({ marginBottom: onChainWallet && guardianSigner ? 14 : 0 })}
 
-              {onChainWallet && guardianSigner ? (
+              {onChainWallet && guardianSigner && isGuardianConfigured ? (
                 <View
                   style={[
                     styles.testSimulationBox,

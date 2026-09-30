@@ -132,9 +132,6 @@ export async function fundDevnetWallet(
   return sig
 }
 
-/**
- * Direct funding helper (replaces deprecated public airdrop).
- */
 export async function airdropToWalletPda(
   connection: Connection,
   walletPda: PublicKey,
@@ -142,3 +139,23 @@ export async function airdropToWalletPda(
 ): Promise<string> {
   return fundDevnetWallet(connection, walletPda, amountSol)
 }
+
+/**
+ * Checks whether an address matches the Devnet sponsor/funder key.
+ */
+export function isDevnetFunder(pubkey?: PublicKey | string | null): boolean {
+  if (!pubkey) return false
+  const address = typeof pubkey === 'string' ? pubkey : pubkey.toBase58()
+  try {
+    if (cachedFunder) return cachedFunder.publicKey.toBase58() === address
+    const raw = process.env.EXPO_PUBLIC_HAPTIX_FUNDER_KEY?.trim()
+    if (!raw) return false
+    const parsed = JSON.parse(raw)
+    const funder = Keypair.fromSecretKey(Uint8Array.from(parsed))
+    cachedFunder = funder
+    return funder.publicKey.toBase58() === address
+  } catch {
+    return false
+  }
+}
+

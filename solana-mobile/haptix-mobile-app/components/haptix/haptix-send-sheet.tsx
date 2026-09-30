@@ -532,7 +532,7 @@ export function HaptixSendSheet({
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey),
+          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), walletPda),
         })
         txInstructions.push(initIx)
       }
