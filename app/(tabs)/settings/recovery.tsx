@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   Linking,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StatusBar as RNStatusBar,
   StyleSheet,
@@ -74,7 +76,7 @@ export default function RecoverySettingsScreen() {
   const { activeWallet, updateWallet } = useAuth()
   const { connection, getExplorerUrl } = useCluster()
 
-  const styles = useMemo(() => createStyles(theme), [theme])
+  const styles = useMemo(() => createStyles(theme, isDark), [theme, isDark])
 
   const [onChainWallet, setOnChainWallet] = useState<WalletState | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -82,6 +84,7 @@ export default function RecoverySettingsScreen() {
   const [stagedRecovery, setStagedRecovery] = useState<StagedRecoveryKeys | null>(null)
   const [guardianDraft, setGuardianDraft] = useState('')
   const [showGuardianEditor, setShowGuardianEditor] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [guardianBusy, setGuardianBusy] = useState(false)
   const [showPolicySheet, setShowPolicySheet] = useState(false)
   const [nowSeconds, setNowSeconds] = useState(() => Math.floor(Date.now() / 1000))
@@ -464,20 +467,7 @@ export default function RecoverySettingsScreen() {
       dialog.alert('Check the guardian address', parsed.error ?? 'Enter the address that should guard this wallet.')
       return
     }
-    dialog.alert(
-      'Change The Guardian?',
-      `Recovery would be started by ${ellipsify(parsed.address, 6)} instead of ${ellipsify(
-        onChainWallet.guardian.toBase58(),
-        6,
-      )}.\n\n` +
-        'This needs both passkeys, because handing recovery to an address you do not control is the same as giving ' +
-        'your wallet away. It cannot be undone without both passkeys either.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Change Guardian', style: 'destructive', onPress: () => void runSetGuardian() },
-      ],
-      { status: 'warning' },
-    )
+    setShowConfirmModal(true)
   }
 
   // Same inset maths as the settings header, so the two screens' headers sit at the same
@@ -926,11 +916,117 @@ export default function RecoverySettingsScreen() {
         topic={showPolicySheet ? 'recovery' : null}
         onClose={() => setShowPolicySheet(false)}
       />
+
+      {/* Change / Set Guardian Confirmation Modal */}
+      <Modal
+        visible={showConfirmModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowConfirmModal(false)}
+      >
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setShowConfirmModal(false)}
+        >
+          <Pressable style={styles.confirmDialogCard} onPress={(e) => e.stopPropagation()}>
+            {/* Header Alert Circle Icon */}
+            <View style={styles.confirmDialogIconCircle}>
+              <MaterialIcons name="error-outline" size={26} color="#E5484D" />
+            </View>
+
+            {/* Header Title & Subtitle */}
+            <Text style={styles.confirmDialogTitle}>
+              {isGuardianConfigured ? 'Change the guardian?' : 'Set a guardian?'}
+            </Text>
+            <Text style={styles.confirmDialogSubtitle}>
+              The new guardian will be able to start a recovery of this wallet.
+            </Text>
+
+            {/* Address Comparison Card */}
+            <View style={styles.confirmAddressTable}>
+              {isGuardianConfigured && onChainWallet ? (
+                <View style={styles.confirmAddressRowBorder}>
+                  <Text style={styles.confirmAddressLabel}>Current</Text>
+                  <Text style={styles.confirmAddressValueMono}>
+                    {ellipsify(onChainWallet.guardian.toBase58(), 6)}
+                  </Text>
+                </View>
+              ) : null}
+              <View style={styles.confirmAddressRow}>
+                <Text style={styles.confirmAddressLabel}>
+                  {isGuardianConfigured ? 'New' : 'Guardian'}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={styles.confirmAddressNewValue}>
+                    {ellipsify(guardianDraftParse.address ?? '', 6)}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (guardianDraftParse.address) {
+                        Clipboard.setString(guardianDraftParse.address)
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                      }
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <MaterialIcons name="content-copy" size={13} color="#8A8985" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {/* Three Consequences */}
+            <View style={styles.confirmConsequencesList}>
+              <View style={styles.confirmConsequenceRow}>
+                <MaterialIcons name="warning-amber" size={16} color="#8A8985" style={{ marginTop: 1, flexShrink: 0 }} />
+                <Text style={styles.confirmConsequenceText}>
+                  Handing recovery to an address you don't control is the same as giving your wallet away.
+                </Text>
+              </View>
+              <View style={styles.confirmConsequenceRow}>
+                <MaterialIcons name="fingerprint" size={16} color="#8A8985" style={{ marginTop: 1, flexShrink: 0 }} />
+                <Text style={styles.confirmConsequenceText}>
+                  Needs both passkeys to confirm.
+                </Text>
+              </View>
+              <View style={styles.confirmConsequenceRow}>
+                <MaterialIcons name="replay" size={16} color="#8A8985" style={{ marginTop: 1, flexShrink: 0 }} />
+                <Text style={styles.confirmConsequenceText}>
+                  You can undo this later, but only with both passkeys.
+                </Text>
+              </View>
+            </View>
+
+            {/* Bottom Actions */}
+            <View style={styles.confirmButtonsRow}>
+              <TouchableOpacity
+                style={styles.confirmCancelBtn}
+                onPress={() => setShowConfirmModal(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.confirmCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmActionBtn}
+                onPress={() => {
+                  setShowConfirmModal(false)
+                  void runSetGuardian()
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.confirmActionText}>
+                  {isGuardianConfigured ? 'Change guardian' : 'Set guardian'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   )
 }
 
-const createStyles = (theme: ThemeTokens) =>
+const createStyles = (theme: ThemeTokens, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -1196,5 +1292,139 @@ const createStyles = (theme: ThemeTokens) =>
     simulateBtnText: {
       fontSize: 13.5,
       fontWeight: '600',
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.72)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+    },
+    confirmDialogCard: {
+      width: '100%',
+      maxWidth: 340,
+      backgroundColor: isDark ? '#141416' : '#FFFFFF',
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#E5E7EB',
+      borderRadius: 22,
+      padding: 22,
+      paddingHorizontal: 18,
+      paddingBottom: 18,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 16 },
+      shadowOpacity: 0.45,
+      shadowRadius: 28,
+      elevation: 16,
+    },
+    confirmDialogIconCircle: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: 'rgba(229, 72, 77, 0.12)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      alignSelf: 'center',
+      marginBottom: 14,
+    },
+    confirmDialogTitle: {
+      fontSize: 17,
+      fontWeight: '600',
+      lineHeight: 22,
+      marginBottom: 6,
+      textAlign: 'center',
+      color: isDark ? '#F2F1EE' : '#111827',
+    },
+    confirmDialogSubtitle: {
+      fontSize: 13,
+      lineHeight: 18,
+      textAlign: 'center',
+      color: isDark ? '#8A8985' : '#6B7280',
+      marginBottom: 16,
+    },
+    confirmAddressTable: {
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#E5E7EB',
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 2,
+      backgroundColor: isDark ? '#18181B' : '#F9FAFB',
+      marginBottom: 14,
+    },
+    confirmAddressRowBorder: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 11,
+      borderBottomWidth: 0.5,
+      borderBottomColor: isDark ? '#201F1D' : '#E5E7EB',
+    },
+    confirmAddressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 11,
+    },
+    confirmAddressLabel: {
+      fontSize: 13,
+      color: isDark ? '#8A8985' : '#6B7280',
+    },
+    confirmAddressValueMono: {
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+      fontSize: 12.5,
+      color: isDark ? '#8A8985' : '#6B7280',
+    },
+    confirmAddressNewValue: {
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: isDark ? '#F2F1EE' : '#111827',
+    },
+    confirmConsequencesList: {
+      flexDirection: 'column',
+      gap: 11,
+      marginBottom: 18,
+    },
+    confirmConsequenceRow: {
+      flexDirection: 'row',
+      gap: 10,
+      alignItems: 'flex-start',
+    },
+    confirmConsequenceText: {
+      flex: 1,
+      fontSize: 12.5,
+      lineHeight: 18,
+      color: isDark ? '#B4B3AE' : '#4B5563',
+    },
+    confirmButtonsRow: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    confirmCancelBtn: {
+      flex: 1,
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#D1D5DB',
+      backgroundColor: isDark ? '#18181A' : '#F3F4F6',
+      borderRadius: 12,
+      paddingVertical: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    confirmCancelText: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: isDark ? '#F2F1EE' : '#374151',
+    },
+    confirmActionBtn: {
+      flex: 1.25,
+      backgroundColor: '#DC3D55',
+      borderRadius: 12,
+      paddingVertical: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    confirmActionText: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: '#FFFFFF',
     },
   })
