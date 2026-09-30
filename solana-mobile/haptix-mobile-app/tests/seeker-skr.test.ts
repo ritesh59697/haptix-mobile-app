@@ -96,14 +96,23 @@ assert(
 
 // 5. Gasless Onboarding Paymaster Funder
 async function runFunderCheck() {
-  const funder = await getFundedDevnetPayer()
-  assert(funder !== null, 'Devnet sponsor paymaster keypair is loaded')
-  if (funder) {
-    assert(
-      typeof funder.publicKey?.toBase58 === 'function',
-      'Sponsor paymaster has valid Solana PublicKey',
-    )
+  const dev = process.env.EXPO_PUBLIC_HAPTIX_DEV_MODE === 'true'
+  const key = process.env.EXPO_PUBLIC_HAPTIX_FUNDER_KEY?.trim()
+  if (!dev || !key) {
+    let threw = false
+    try {
+      await getFundedDevnetPayer()
+    } catch {
+      threw = true
+    }
+    assert(threw, 'sponsor key is not embedded; missing dev mode or env key refuses to load a funder')
+    return
   }
+  const funder = await getFundedDevnetPayer()
+  assert(
+    typeof funder.publicKey?.toBase58 === 'function',
+    'Sponsor paymaster has valid Solana PublicKey when dev mode and the env key are set',
+  )
 }
 
 void runFunderCheck().then(() => {

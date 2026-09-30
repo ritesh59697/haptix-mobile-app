@@ -241,7 +241,12 @@ export default function RecoverySettingsScreen() {
     setRecoveryBusy('cancel')
     try {
       const walletPda = new PublicKey(walletAddress)
-      const message = getCancelRecoverySignedMessage()
+      const fresh = await fetchHaptixWallet(connection, walletPda)
+      if (!fresh) {
+        dialog.alert('Wallet not on-chain', 'There is no on-chain wallet to veto a recovery for.')
+        return
+      }
+      const message = getCancelRecoverySignedMessage(fresh.authNonce)
 
       const primarySig = await signWithPasskey('primary', message, 'Veto Guardian Recovery (Primary)')
       const secondarySig = await signWithPasskey(
@@ -388,7 +393,12 @@ export default function RecoverySettingsScreen() {
     setGuardianBusy(true)
     try {
       const walletPda = new PublicKey(activeWallet.address)
-      const message = getSetGuardianSignedMessage(newGuardian)
+      const fresh = await fetchHaptixWallet(connection, walletPda)
+      if (!fresh) {
+        dialog.alert('Wallet not on-chain', 'Activate the wallet before changing its guardian.')
+        return
+      }
+      const message = getSetGuardianSignedMessage(newGuardian, fresh.authNonce)
 
       const primarySig = await signWithPasskey('primary', message, 'Change Guardian (Primary)')
       const secondarySig = await signWithPasskey('secondary', message, 'Confirm the new guardian with your backup key')

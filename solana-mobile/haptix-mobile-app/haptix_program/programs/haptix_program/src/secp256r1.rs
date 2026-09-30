@@ -542,7 +542,7 @@ mod tests {
 
     #[test]
     fn accepts_hardware_webauthn_assertion() {
-        let (data, key) = valid_instruction("https://haptix.io");
+        let (data, key) = valid_instruction("https://haptix-passkeys.vercel.app");
         assert!(parse_precompile_data(&data, &key, PAYLOAD).is_ok());
     }
 
@@ -557,7 +557,7 @@ mod tests {
     /// but for somebody else's transfer, must not authorize this one.
     #[test]
     fn rejects_hardware_assertion_for_a_different_payload() {
-        let (data, key) = valid_instruction("https://haptix.io");
+        let (data, key) = valid_instruction("https://haptix-passkeys.vercel.app");
 
         let mut other = PAYLOAD.to_vec();
         other[0] = b'X';
@@ -566,7 +566,7 @@ mod tests {
 
     #[test]
     fn rejects_hardware_assertion_under_a_foreign_pubkey() {
-        let (data, _) = valid_instruction("https://haptix.io");
+        let (data, _) = valid_instruction("https://haptix-passkeys.vercel.app");
         assert!(parse_precompile_data(&data, &pubkey(0xBB), PAYLOAD).is_err());
     }
 
@@ -574,7 +574,7 @@ mod tests {
     fn rejects_hardware_assertion_with_wrong_relying_party() {
         let key = pubkey(0xAA);
         let auth_data = crate::webauthn::test_support::auth_data(b"evil.example", 0x05);
-        let (_, cdj) = assertion("https://haptix.io", 0x05);
+        let (_, cdj) = assertion("https://haptix-passkeys.vercel.app", 0x05);
         let data = build_webauthn(&signature(0x01), &key, &auth_data, &cdj);
 
         assert!(parse_precompile_data(&data, &key, PAYLOAD).is_err());
@@ -583,12 +583,12 @@ mod tests {
     #[test]
     fn rejects_hardware_assertion_without_user_verification() {
         for flags in [0u8, 0x01, 0x04] {
-            let (data, key) = valid_instruction("https://haptix.io");
+            let (data, key) = valid_instruction("https://haptix-passkeys.vercel.app");
             let mut weakened = build_webauthn(
                 &signature(0x01),
                 &key,
                 &crate::webauthn::test_support::auth_data(RP_ID, flags),
-                &assertion("https://haptix.io", flags).1,
+                &assertion("https://haptix-passkeys.vercel.app", flags).1,
             );
             // Keep the region/hash split honest by rebuilding rather than patching.
             assert!(parse_precompile_data(&data, &key, PAYLOAD).is_ok());
@@ -613,7 +613,7 @@ mod tests {
 
     #[test]
     fn rejects_webauthn_layout_deviations() {
-        let (data, key) = valid_instruction("https://haptix.io");
+        let (data, key) = valid_instruction("https://haptix-passkeys.vercel.app");
 
         // Trailing bytes after the clientDataJSON.
         let mut trailing = data.clone();
@@ -646,7 +646,7 @@ mod tests {
     #[test]
     fn rejects_client_data_inside_the_signed_region() {
         let key = pubkey(0xAA);
-        let (ad, cdj) = assertion("https://haptix.io", 0x05);
+        let (ad, cdj) = assertion("https://haptix-passkeys.vercel.app", 0x05);
 
         let mut region = ad.clone();
         region.extend_from_slice(&hash(&cdj).to_bytes());
@@ -675,7 +675,7 @@ mod tests {
     #[test]
     fn rejects_hardware_assertion_with_short_authenticator_data() {
         let key = pubkey(0xAA);
-        let (ad, cdj) = assertion("https://haptix.io", 0x05);
+        let (ad, cdj) = assertion("https://haptix-passkeys.vercel.app", 0x05);
 
         // Only 36 bytes of "authData" before the hash.
         let data = build_webauthn(&signature(0x01), &key, &ad[..36], &cdj);
@@ -689,14 +689,14 @@ mod tests {
 
     #[test]
     fn webauthn_mode_still_requires_a_non_empty_payload() {
-        let (data, key) = valid_instruction("https://haptix.io");
+        let (data, key) = valid_instruction("https://haptix-passkeys.vercel.app");
         assert!(parse_precompile_data(&data, &key, &[]).is_err());
     }
 
     #[test]
     fn webauthn_fixture_uses_the_real_relying_party() {
-        assert_eq!(RP_ID, b"haptix.io");
-        let (ad, _) = assertion("https://haptix.io", 0x05);
+        assert_eq!(RP_ID, b"haptix-passkeys.vercel.app");
+        let (ad, _) = assertion("https://haptix-passkeys.vercel.app", 0x05);
         assert_eq!(&ad[..32], &hash(RP_ID).to_bytes()[..]);
     }
 }

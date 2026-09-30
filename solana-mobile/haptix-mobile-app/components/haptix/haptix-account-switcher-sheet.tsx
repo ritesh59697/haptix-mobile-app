@@ -22,6 +22,7 @@ import { useAuth } from '@/components/auth/auth-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { ellipsify } from '@/utils/ellipsify'
+import { assertRecoveryGuardian, parseGuardianAddress } from '@/utils/haptix-client'
 import { isSolanaAddress } from '@/utils/solana-address'
 import { loadCachedBalance } from '@/utils/haptix-tx-history'
 import Clipboard from '@/utils/clipboard'
@@ -232,10 +233,15 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
       newAccountName.trim() ||
       (selectedMode === 'vault' ? 'Hardware Vault' : 'Everyday Account')
 
-    if (guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim())) {
+    let guardian
+    try {
+      guardian = assertRecoveryGuardian(parseGuardianAddress(guardianAddress))
+    } catch (err) {
       dialog.alert(
-        'Invalid Guardian Address',
-        'Please enter a valid 32-to-44 character base58 Solana address, or leave it blank.',
+        'Add a recovery guardian',
+        err instanceof Error
+          ? err.message
+          : 'Open advanced settings and enter a Solana address. The wallet cannot be created on-chain without a recovery guardian, and that address cannot spend.',
         undefined,
         { status: 'warning' },
       )
@@ -266,7 +272,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
         spendThreshold: selectedMode === 'vault' ? 0.0 : spendLimit,
         primaryLabel: primaryKeyLabel.trim() || undefined,
         secondaryLabel: secondaryKeyLabel.trim() || undefined,
-        guardianAddress: guardianAddress.trim() || undefined,
+        guardianAddress: guardian.toBase58(),
         vaultKeySource: selectedMode === 'vault' ? vaultKeySource : undefined,
         macVaultKeyHex:
           selectedMode === 'vault' && vaultKeySource === 'mac'
@@ -920,7 +926,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                   {/* Recovery Guardian Address */}
                   <View style={styles.formGroup}>
                     <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                      Recovery guardian, optional
+                      Recovery guardian
                     </Text>
                     <TextInput
                       style={[
@@ -944,7 +950,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                       onSubmitEditing={Keyboard.dismiss}
                     />
                     <Text style={[styles.fieldHint, { color: theme.textMuted, marginTop: 4 }]}>
-                      Optional. Add a trusted contact who can help you recover this wallet if you lose access. You can also add this later.
+                      Required before this wallet can be created on-chain. That address can start a recovery and cannot spend.
                     </Text>
                     {guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim()) && (
                       <Text style={[styles.fieldError, { color: theme.roseText }]}>

@@ -35,22 +35,18 @@ const SKR_BALANCE_PREFIX = '@haptix_skr_balance_'
 const USDC_BALANCE_PREFIX = '@haptix_usdc_balance_'
 
 /**
- * Reads the stored SKR token balance for a smart wallet address.
- * If this wallet is new, it automatically seeds it with the Seeker Genesis Reward (100 SKR).
+ * Reads a SKR figure previously written on this phone.
+ * Nothing is invented when the key is missing: there is no on-chain SKR balance.
  */
 export async function getStoredSkrBalance(walletAddress: string): Promise<number> {
   if (!walletAddress) return 0
   try {
     const raw = await AsyncStorage.getItem(`${SKR_BALANCE_PREFIX}${walletAddress}`)
-    if (raw !== null) {
-      const parsed = parseFloat(raw)
-      return isNaN(parsed) ? 0 : parsed
-    }
-    // Automatically grant Seeker Genesis Reward to new smart wallets
-    await setStoredSkrBalance(walletAddress, SKR_TOKEN_METADATA.initialGenesisReward)
-    return SKR_TOKEN_METADATA.initialGenesisReward
+    if (raw === null) return 0
+    const parsed = parseFloat(raw)
+    return Number.isFinite(parsed) ? parsed : 0
   } catch {
-    return SKR_TOKEN_METADATA.initialGenesisReward
+    return 0
   }
 }
 
@@ -64,16 +60,9 @@ export async function setStoredSkrBalance(walletAddress: string, amount: number)
   } catch {}
 }
 
-/**
- * Explicitly claims or confirms the 100 SKR Seeker Genesis Reward for an onboarding wallet.
- */
-export async function claimSeekerGenesisReward(walletAddress: string): Promise<number> {
-  const current = await getStoredSkrBalance(walletAddress)
-  if (current <= 0) {
-    await setStoredSkrBalance(walletAddress, SKR_TOKEN_METADATA.initialGenesisReward)
-    return SKR_TOKEN_METADATA.initialGenesisReward
-  }
-  return current
+/** There is no on-chain SKR genesis mint. This used to write a fake balance. */
+export async function claimSeekerGenesisReward(_walletAddress: string): Promise<number> {
+  return 0
 }
 
 /**
@@ -93,14 +82,11 @@ export async function getStoredUsdcBalance(walletAddress: string): Promise<numbe
   if (!walletAddress) return 0
   try {
     const raw = await AsyncStorage.getItem(`${USDC_BALANCE_PREFIX}${walletAddress}`)
-    if (raw !== null) {
-      const parsed = parseFloat(raw)
-      return isNaN(parsed) ? 0 : parsed
-    }
-    await setStoredUsdcBalance(walletAddress, USDC_TOKEN_METADATA.initialGenesisReward)
-    return USDC_TOKEN_METADATA.initialGenesisReward
+    if (raw === null) return 0
+    const parsed = parseFloat(raw)
+    return Number.isFinite(parsed) ? parsed : 0
   } catch {
-    return USDC_TOKEN_METADATA.initialGenesisReward
+    return 0
   }
 }
 

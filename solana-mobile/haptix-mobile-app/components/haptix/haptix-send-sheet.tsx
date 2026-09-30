@@ -57,13 +57,15 @@ import { HaptixWalletAccount } from '@/utils/haptix-wallet-storage'
 import {
   createExecuteTransferInstruction,
   createInitializeWalletInstruction,
+  assertRecoveryGuardian,
   fetchHaptixWallet,
   getTransferSignedMessage,
   parseGuardianAddress,
+  WALLET_ACCOUNT_SPACE,
 } from '@/utils/haptix-client'
 import { useHaptixDialog } from './haptix-dialog'
 import { radius, space, typeScale, ThemeTokens } from '@/theme/tokens'
-import { deductSkrBalance, deductUsdcBalance, SKR_TOKEN_METADATA, USDC_TOKEN_METADATA } from '@/utils/haptix-tokens'
+import { SKR_TOKEN_METADATA, USDC_TOKEN_METADATA } from '@/utils/haptix-tokens'
 import { SeekerTokenLogo, SolanaTokenLogo, UsdcTokenLogo } from './haptix-icons'
 
 // The fee quoted before the cluster has answered. `estimateTransferFee` prices the real
@@ -137,9 +139,9 @@ export function HaptixSendSheet({
   network,
   connection,
   balance,
-  skrBalance = 100,
+  skrBalance = 0,
   onSkrBalanceChange,
-  usdcBalance = 25,
+  usdcBalance = 0,
   onUsdcBalanceChange,
   spendThreshold,
   isFrozen,
@@ -424,7 +426,7 @@ export function HaptixSendSheet({
       return
     }
 
-    const available = selectedToken === 'SKR' ? (skrBalance ?? 100) : balance
+    const available = selectedToken === 'SKR' ? skrBalance : balance
     if (amt > available) {
       dialog.alert(
         'Insufficient Funds',
@@ -470,140 +472,12 @@ export function HaptixSendSheet({
     }
 
     const walletPda = new PublicKey(activeWallet.address)
-    const isHighRiskQuorum =
-      selectedToken === 'SKR'
-        ? amt > SKR_TOKEN_METADATA.quorumThreshold
-        : selectedToken === 'USDC'
-        ? amt > USDC_TOKEN_METADATA.quorumThreshold
-        : amt > spendThreshold
-
-    if (selectedToken === 'SKR') {
-      try {
-        setIsSending(true)
-        await Haptics.impactAsync(
-          isHighRiskQuorum ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light,
-        )
-
-        // 1. Primary Passkey authorization for SKR
-        const message = Buffer.from(`TRANSFER_SKR:${toPubkey.toBase58()}:${amt}`)
-        await signWithPasskey(
-          'primary',
-          message,
-          `Authorize ${amt} SKR transfer to ${ellipsify(toPubkey.toBase58(), 4)}`,
-        )
-
-        // 2. High-Risk: 2-of-2 passkey quorum required (> 50 SKR)
-        if (isHighRiskQuorum) {
-          onStepChange(2)
-          const secondaryPrompt =
-            activeWallet?.securityMode === 'vault'
-              ? `Touch your Vault Key (Mac / YubiKey) to approve ${amt} SKR`
-              : `Confirm with your backup key: ${amt} SKR`
-          await signWithPasskey('secondary', message, secondaryPrompt)
-        }
-
-        const updatedSkr = await deductSkrBalance(activeWallet.address, amt)
-        onSkrBalanceChange?.(updatedSkr)
-
-        const fakeSig = `skr_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`
-        const newRecord: TransactionRecord = {
-          signature: fakeSig,
-          type: 'transfer',
-          direction: 'send',
-          amount: amt,
-          tokenSymbol: 'SKR',
-          recipientOrSender: toPubkey.toBase58(),
-          timestamp: Date.now(),
-          status: 'confirmed',
-          securityType: isHighRiskQuorum ? '2-of-2 Hardware Quorum' : '1-Tap Passkey Approval',
-        }
-        await onTransferSent(newRecord)
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        setIsSending(false)
-        setConfirmedTransfer({
-          signature: fakeSig,
-          amount: amt,
-          tokenSymbol: 'SKR',
-          recipientAddress: toPubkey.toBase58(),
-          isQuorum: isHighRiskQuorum,
-          networkFee: '0.00 SOL (Sponsored)',
-        })
-        return
-      } catch (err: any) {
-        console.error('[Haptix SKR Send] Execution error:', err)
-        const errorMsg = err?.message || 'SKR transfer failed'
-        setSendErrorMsg(errorMsg)
-        setIsSending(false)
-        dialog.alert('Transfer Error', errorMsg)
-        return
-      } finally {
-        setIsSending(false)
-      }
+    if (selectedToken !== 'SOL') {
+      throw new Error(
+        'Only SOL can be sent. SKR and USDC figures in this app were stored on the phone, not on Solana.',
+      )
     }
-
-    if (selectedToken === 'USDC') {
-      try {
-        setIsSending(true)
-        await Haptics.impactAsync(
-          isHighRiskQuorum ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light,
-        )
-
-        // 1. Primary Passkey authorization for USDC
-        const message = Buffer.from(`TRANSFER_USDC:${toPubkey.toBase58()}:${amt}`)
-        await signWithPasskey(
-          'primary',
-          message,
-          `Authorize ${amt} USDC transfer to ${ellipsify(toPubkey.toBase58(), 4)}`,
-        )
-
-        // 2. High-Risk: 2-of-2 passkey quorum required (> 20 USDC)
-        if (isHighRiskQuorum) {
-          onStepChange(2)
-          const secondaryPrompt =
-            activeWallet?.securityMode === 'vault'
-              ? `Touch your Vault Key (Mac / YubiKey) to approve ${amt} USDC`
-              : `Confirm with your backup key: ${amt} USDC`
-          await signWithPasskey('secondary', message, secondaryPrompt)
-        }
-
-        const updatedUsdc = await deductUsdcBalance(activeWallet.address, amt)
-        onUsdcBalanceChange?.(updatedUsdc)
-
-        const fakeSig = `usdc_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`
-        const newRecord: TransactionRecord = {
-          signature: fakeSig,
-          type: 'transfer',
-          direction: 'send',
-          amount: amt,
-          tokenSymbol: 'USDC',
-          recipientOrSender: toPubkey.toBase58(),
-          timestamp: Date.now(),
-          status: 'confirmed',
-          securityType: isHighRiskQuorum ? '2-of-2 Hardware Quorum' : '1-Tap Passkey Approval',
-        }
-        await onTransferSent(newRecord)
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        setIsSending(false)
-        setConfirmedTransfer({
-          signature: fakeSig,
-          amount: amt,
-          tokenSymbol: 'USDC',
-          recipientAddress: toPubkey.toBase58(),
-          isQuorum: isHighRiskQuorum,
-          networkFee: '0.00 SOL (Sponsored)',
-        })
-        return
-      } catch (err: any) {
-        console.error('[Haptix USDC Send] Execution error:', err)
-        const errorMsg = err?.message || 'USDC transfer failed'
-        setSendErrorMsg(errorMsg)
-        setIsSending(false)
-        dialog.alert('Transfer Error', errorMsg)
-        return
-      } finally {
-        setIsSending(false)
-      }
-    }
+    const isHighRiskQuorum = amt > spendThreshold
 
     const amountLamports = BigInt(Math.round(amt * LAMPORTS_PER_SOL))
 
@@ -613,8 +487,25 @@ export function HaptixSendSheet({
         isHighRiskQuorum ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light,
       )
 
-      // Expected on-chain message payload: recipient (32B) || amount (8B LE)
-      const message = getTransferSignedMessage(toPubkey, amountLamports)
+      const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
+      const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
+      const authNonce = onChain?.authNonce ?? 0n
+      if (needsInit) {
+        assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress))
+      }
+      if (onChain) {
+        const dataLen = (await connection.getAccountInfo(walletPda))?.data.length ?? WALLET_ACCOUNT_SPACE
+        const reserve = BigInt(await connection.getMinimumBalanceForRentExemption(dataLen))
+        const available = BigInt(onChain.balanceLamports)
+        if (available < amountLamports + reserve) {
+          const keepSol = Number(reserve) / LAMPORTS_PER_SOL
+          throw new Error(
+            `Leave about ${keepSol.toFixed(4)} SOL in the account. Sending ${amt} SOL would spend the rent reserve, and the network can delete the wallet if it drops below that.`,
+          )
+        }
+      }
+
+      const message = getTransferSignedMessage(toPubkey, amountLamports, authNonce)
 
       // 1. Primary Passkey authorization (Biometric challenge)
       const primarySig = await signWithPasskey(
@@ -631,10 +522,6 @@ export function HaptixSendSheet({
       // Sponsor transaction network fee on Devnet via persistent funded relayer
       const payer = await getFundedDevnetPayer(connection)
 
-      // Check if counterfactual PDA is already initialized on-chain
-      const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
-      const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
-
       let txInstructions = []
 
       // If wallet is not yet on-chain, atomically initialize it first in the SAME transaction
@@ -647,7 +534,7 @@ export function HaptixSendSheet({
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: parseGuardianAddress(activeWallet.guardianAddress) ?? undefined,
+          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress)),
         })
         txInstructions.push(initIx)
       }
@@ -1178,24 +1065,10 @@ export function HaptixSendSheet({
                     },
                   ]}
                 >
-                  {[
-                    { symbol: 'SOL' as const, name: 'Solana' },
-                    { symbol: 'SKR' as const, name: 'Seeker' },
-                    { symbol: 'USDC' as const, name: 'USD Coin' },
-                  ].map((token) => {
+                  {[{ symbol: 'SOL' as const, name: 'Solana' }].map((token) => {
                     const isSelected = selectedToken === token.symbol
-                    const tokBal =
-                      token.symbol === 'SKR'
-                        ? skrBalance
-                        : token.symbol === 'USDC'
-                        ? (usdcBalance ?? 0)
-                        : balance
-                    const tokPrice =
-                      token.symbol === 'SKR'
-                        ? SKR_TOKEN_METADATA.fallbackPriceUsd
-                        : token.symbol === 'USDC'
-                        ? USDC_TOKEN_METADATA.fallbackPriceUsd
-                        : solPriceUsd
+                    const tokBal = balance
+                    const tokPrice = solPriceUsd
                     const tokFiat = tokBal * tokPrice
 
                     return (
@@ -1213,17 +1086,13 @@ export function HaptixSendSheet({
                           Haptics.selectionAsync()
                           setSelectedToken(token.symbol)
                           setShowTokenMenu(false)
-                          if (token.symbol === 'SOL') setSendAmountText('0.05')
-                          else if (token.symbol === 'SKR') setSendAmountText('25')
-                          else setSendAmountText('10')
+                          setSendAmountText('0.05')
                         }}
                         activeOpacity={0.7}
                       >
                         <View style={styles.assetDropdownItemLeft}>
                           <View style={styles.assetDropdownLogoWrap}>
-                            {token.symbol === 'SOL' && <SolanaTokenLogo size={24} />}
-                            {token.symbol === 'SKR' && <SeekerTokenLogo size={24} />}
-                            {token.symbol === 'USDC' && <UsdcTokenLogo size={24} />}
+                            <SolanaTokenLogo size={24} />
                           </View>
                           <View>
                             <Text style={[styles.assetDropdownName, { color: theme.textPrimary }]}>

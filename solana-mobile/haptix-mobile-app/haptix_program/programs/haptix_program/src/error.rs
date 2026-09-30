@@ -34,4 +34,12 @@ pub enum HaptixError {
     InvalidRecoveryTimelock,
     #[msg("A recovery is in flight. Veto it or execute it before unlocking.")]
     RecoveryInProgress,
+    #[msg("This authorization was already used or is out of date. Approve the action again.")]
+    StaleAuthorization,
+    #[msg("That transfer would spend the rent the account needs to stay alive.")]
+    BelowRentReserve,
+    #[msg("A recovery guardian is required, and it cannot be the zero address.")]
+    GuardianRequired,
+    #[msg("This agent session is not allowed to do that.")]
+    AgentProgramNotAllowed,
 }

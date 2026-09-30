@@ -54,6 +54,7 @@ import {
 } from '@/components/ui'
 import { HaptixBiometricPromptSheet } from './haptix-biometric-prompt-sheet'
 import {
+  assertRecoveryGuardian,
   fetchHaptixWallet,
   createInitializeWalletInstruction,
   getGrantAgentSignedMessage,
@@ -62,6 +63,7 @@ import {
   createPanicFreezeInstruction,
   createUnfreezeInstruction,
   getRevokeAgentSignedMessage,
+  getUnfreezeSignedMessage,
   createRevokeAgentSessionInstruction,
   parseGuardianAddress,
   WalletState,
@@ -72,7 +74,6 @@ import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-error
 import { useCluster } from '@/components/cluster/cluster-provider'
 import { ClusterNetwork } from '@/components/cluster/cluster-network'
 import { MarketSnapshot, MarketToken, fallbackMarketSnapshot, fetchMarketSnapshot } from '@/utils/haptix-prices'
-import { getStoredSkrBalance, getStoredUsdcBalance, SKR_TOKEN_METADATA, USDC_TOKEN_METADATA } from '@/utils/haptix-tokens'
 import {
   TransactionRecord,
   fetchOnChainTransactions,
@@ -85,8 +86,6 @@ import {
 import {
   HaptixBrandMark,
   SolanaTokenLogo,
-  SeekerTokenLogo,
-  UsdcTokenLogo,
   ActionSendIcon,
   ActionReceiveIcon,
   ActionSwapIcon,
@@ -180,8 +179,7 @@ export function HaptixWalletScreen() {
 
   // Balances
   const [balance, setBalance] = useState<number>(0)
-  const [skrBalance, setSkrBalance] = useState<number>(SKR_TOKEN_METADATA.initialGenesisReward)
-  const [usdcBalance, setUsdcBalance] = useState<number>(USDC_TOKEN_METADATA.initialGenesisReward)
+
   const [isInitialBalanceLoaded, setIsInitialBalanceLoaded] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -426,11 +424,6 @@ export function HaptixWalletScreen() {
       void saveCachedBalance(activeWallet.address, lamports)
       setRpcIssue(null)
 
-      const skr = await getStoredSkrBalance(activeWallet.address)
-      setSkrBalance(skr)
-      const usdc = await getStoredUsdcBalance(activeWallet.address)
-      setUsdcBalance(usdc)
-
       if (network === 'devnet') {
         const state = await fetchHaptixWallet(connection, pubkey).catch(() => null)
         if (state) {
@@ -655,7 +648,7 @@ export function HaptixWalletScreen() {
         primaryPasskey,
         secondaryPasskey,
         spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-        guardian: parseGuardianAddress(activeWallet?.guardianAddress) ?? undefined,
+        guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet?.guardianAddress)),
       })
 
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
@@ -735,7 +728,7 @@ export function HaptixWalletScreen() {
       primaryPasskey: new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex')),
       secondaryPasskey: new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex')),
       spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-      guardian: parseGuardianAddress(activeWallet.guardianAddress) ?? undefined,
+      guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress)),
     })
 
     const blockhash = await connection.getLatestBlockhash('confirmed')
@@ -790,7 +783,14 @@ export function HaptixWalletScreen() {
       const walletPda = new PublicKey(activeWallet.address)
       const ephemeralAgent = Keypair.generate()
 
-      const grantMsg = getGrantAgentSignedMessage(ephemeralAgent.publicKey, allowanceLamports, validForSeconds)
+      const authNonce = (await fetchHaptixWallet(connection, walletPda).catch(() => null))?.authNonce ?? 0n
+      const grantMsg = getGrantAgentSignedMessage(
+        ephemeralAgent.publicKey,
+        allowanceLamports,
+        validForSeconds,
+        authNonce,
+        SystemProgram.programId,
+      )
       const primarySig = await signWithPasskey('primary', grantMsg, `Grant ${allowanceSol} SOL Session to Agent`)
 
       onStepChange(2)
@@ -948,7 +948,14 @@ export function HaptixWalletScreen() {
       const validForSeconds = 86400n // 24 hours
 
       // 1. Grant agent session on-chain via 2-of-2 passkey quorum
-      const grantMsg = getGrantAgentSignedMessage(agentKeypair.publicKey, allowanceLamports, validForSeconds)
+      const authNonce = (await fetchHaptixWallet(connection, walletPda).catch(() => null))?.authNonce ?? 0n
+      const grantMsg = getGrantAgentSignedMessage(
+        agentKeypair.publicKey,
+        allowanceLamports,
+        validForSeconds,
+        authNonce,
+        SystemProgram.programId,
+      )
       const primarySig = await signWithPasskey('primary', grantMsg, 'Grant AI Agent On-Chain Session')
       const secondarySig = await signWithPasskey(
         'secondary',
@@ -1116,7 +1123,8 @@ export function HaptixWalletScreen() {
         setRevokingAgent(agentPubkey.toBase58())
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
-        const message = getRevokeAgentSignedMessage(agentPubkey)
+        const authNonce = (await fetchHaptixWallet(connection, walletPda).catch(() => null))?.authNonce ?? 0n
+        const message = getRevokeAgentSignedMessage(agentPubkey, authNonce)
         const primarySig = await signWithPasskey('primary', message, 'Revoke Agent Session (Primary)')
         const secondarySig = await signWithPasskey(
           'secondary',
@@ -1311,7 +1319,8 @@ export function HaptixWalletScreen() {
         )
       } else {
         // Unfreeze requires a 2-of-2 passkey quorum
-        const unfreezeMsg = new Uint8Array(Buffer.from('UNFREEZE_WALLET'))
+        const authNonce = (await fetchHaptixWallet(connection, walletPda).catch(() => null))?.authNonce ?? 0n
+        const unfreezeMsg = getUnfreezeSignedMessage(authNonce)
 
         const primarySig = await signWithPasskey('primary', unfreezeMsg, 'Authorize Wallet Unfreeze (Primary)')
         const secondarySig = await signWithPasskey(
@@ -1410,18 +1419,13 @@ export function HaptixWalletScreen() {
 
   // Derived Total Balance in USD (SOL + Seeker SKR + USDC)
   const solToken = market.tokens.find((t) => t.symbol === 'SOL')
-  const skrToken = market.tokens.find((t) => t.symbol === 'SKR')
-  const usdcToken = market.tokens.find((t) => t.symbol === 'USDC')
 
-  const skrPriceUsd = skrToken?.priceUsd ?? SKR_TOKEN_METADATA.fallbackPriceUsd
-  const totalUsdBalance = balance * solPriceUsd + skrBalance * skrPriceUsd + usdcBalance * 1.0
+  const totalUsdBalance = balance * solPriceUsd
 
   // 24h portfolio gain/loss computation
   const solChangePct = solToken?.changePct ?? 0.84
-  const skrChangePct = skrToken?.changePct ?? -0.20
   const solDollarChange = balance * solPriceUsd * (solChangePct / 100)
-  const skrDollarChange = skrBalance * skrPriceUsd * (skrChangePct / 100)
-  const totalDollarChange = solDollarChange + skrDollarChange
+  const totalDollarChange = solDollarChange
   const totalChangePct = totalUsdBalance > 0 ? (totalDollarChange / totalUsdBalance) * 100 : 0.60
   const isPositivePortfolio = totalDollarChange >= 0
   const formattedDollarChange = Math.abs(totalDollarChange).toFixed(2)
@@ -1639,108 +1643,6 @@ export function HaptixWalletScreen() {
                 }}
               >
                 {solToken?.change ?? '+0.65%'}
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        <View style={[styles.assetDivider, styles.divider]} />
-
-        {/* Seeker (SKR) */}
-        <TouchableOpacity
-          style={styles.assetRow}
-          activeOpacity={0.7}
-          onPress={() => {
-            Haptics.selectionAsync().catch(() => {})
-            const skrMarket = market.tokens.find((t) => t.symbol === 'SKR') ?? {
-              symbol: 'SKR',
-              name: 'Seeker',
-              price: `$${skrPriceUsd.toFixed(2)}`,
-              priceUsd: skrPriceUsd,
-              change: '-5.10%',
-              changePct: -5.10,
-              isPositive: false,
-            }
-            setSelectedDetailToken(skrMarket)
-          }}
-        >
-          <View style={styles.assetLeft}>
-            <View
-              style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
-            >
-              <SeekerTokenLogo size={32} />
-            </View>
-            <View>
-              <Text style={[styles.assetPrimaryName, styles.textPrimary]}>Seeker</Text>
-              <Text style={[styles.assetSecondaryTag, styles.textMuted]}>SKR</Text>
-            </View>
-          </View>
-          <View style={styles.assetRight}>
-            <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{skrBalance.toFixed(0)} SKR</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
-              <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
-                ≈ ${(skrBalance * skrPriceUsd).toFixed(2)}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: (skrToken?.isPositive ?? false) ? theme.emeraldText : theme.roseText,
-                  marginLeft: 6,
-                  fontWeight: '600',
-                }}
-              >
-                {skrToken?.change ?? '-5.10%'}
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        <View style={[styles.assetDivider, styles.divider]} />
-
-        {/* USD Coin (USDC) */}
-        <TouchableOpacity
-          style={styles.assetRow}
-          activeOpacity={0.7}
-          onPress={() => {
-            Haptics.selectionAsync().catch(() => {})
-            const usdcMarket = market.tokens.find((t) => t.symbol === 'USDC') ?? {
-              symbol: 'USDC',
-              name: 'USD Coin',
-              price: '$1.00',
-              priceUsd: 1.0,
-              change: '+0.00%',
-              changePct: 0.0,
-              isPositive: true,
-            }
-            setSelectedDetailToken(usdcMarket)
-          }}
-        >
-          <View style={styles.assetLeft}>
-            <View
-              style={[styles.assetLogoWrap, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
-            >
-              <UsdcTokenLogo size={32} />
-            </View>
-            <View>
-              <Text style={[styles.assetPrimaryName, styles.textPrimary]}>USD Coin</Text>
-              <Text style={[styles.assetSecondaryTag, styles.textMuted]}>USDC</Text>
-            </View>
-          </View>
-          <View style={styles.assetRight}>
-            <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{usdcBalance.toFixed(2)} USDC</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
-              <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
-                ≈ ${usdcBalance.toFixed(2)}
-              </Text>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: theme.textMuted,
-                  marginLeft: 6,
-                  fontWeight: '600',
-                }}
-              >
-                {usdcToken?.change ?? '+0.00%'}
               </Text>
             </View>
           </View>
@@ -2590,10 +2492,6 @@ export function HaptixWalletScreen() {
         network={network}
         connection={connection}
         balance={balance}
-        skrBalance={skrBalance}
-        onSkrBalanceChange={setSkrBalance}
-        usdcBalance={usdcBalance}
-        onUsdcBalanceChange={setUsdcBalance}
         spendThreshold={spendThreshold}
         isFrozen={isFrozen}
         recoveryInFlight={recoveryInFlight}

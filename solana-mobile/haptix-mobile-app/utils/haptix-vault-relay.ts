@@ -71,10 +71,7 @@ export function getRelayCandidateHosts(): string[] {
     }
   } catch {}
 
-  // 4. Current known Mac LAN IP
-  candidates.push('192.168.1.3')
-
-  // 5. Android emulator alias & loopback
+  // Android emulator alias & loopback. A guessed LAN address is not a relay.
   if (Platform.OS === 'android') {
     candidates.push('10.0.2.2')
   }
@@ -112,8 +109,9 @@ export async function findActiveRelayHost(): Promise<string> {
     } catch {}
   }
 
-  // Fallback to primary LAN IP
-  return '192.168.1.3'
+  throw new Error(
+    'No Haptix vault relay is running on this network. On the Mac, run `npm run relay` and open vault.html before approving a send over the limit.',
+  )
 }
 
 /**

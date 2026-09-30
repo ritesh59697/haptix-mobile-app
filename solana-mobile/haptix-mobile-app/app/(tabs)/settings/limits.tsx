@@ -168,8 +168,13 @@ export default function SpendingLimitsScreen() {
     setIsUpdating(true)
     try {
       const walletPda = new PublicKey(activeWallet.address)
+      const fresh = await fetchHaptixWallet(connection, walletPda)
+      if (!fresh) {
+        dialog.alert('Wallet not on-chain', 'Activate the wallet before changing the spending limit.')
+        return
+      }
       const newThresholdLamports = BigInt(Math.round(effectiveLimit * LAMPORTS_PER_SOL))
-      const message = getSetSpendThresholdSignedMessage(newThresholdLamports)
+      const message = getSetSpendThresholdSignedMessage(newThresholdLamports, fresh.authNonce)
 
       // 1. Sign with Primary Passkey
       const primarySig = await signWithPasskey(
