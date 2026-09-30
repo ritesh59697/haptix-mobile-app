@@ -34,6 +34,7 @@ import {
 } from '@solana/web3.js'
 import { Buffer } from 'buffer'
 import * as Haptics from 'expo-haptics'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import Clipboard from '@/utils/clipboard'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg'
@@ -353,6 +354,25 @@ export function HaptixWalletScreen() {
   const [dockTab, setDockTab] = useState<DockTabId>('home')
   const [isBalanceHidden, setIsBalanceHidden] = useState(false)
   const [hasCopiedAddress, setHasCopiedAddress] = useState(false)
+
+  useEffect(() => {
+    AsyncStorage.getItem('@haptix_balance_hidden')
+      .then((val) => {
+        if (val !== null) {
+          setIsBalanceHidden(val === 'true')
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const toggleBalanceHidden = useCallback(() => {
+    Haptics.selectionAsync()
+    setIsBalanceHidden((prev) => {
+      const next = !prev
+      AsyncStorage.setItem('@haptix_balance_hidden', next ? 'true' : 'false').catch(() => {})
+      return next
+    })
+  }, [])
 
   const handleCopyWalletAddress = async () => {
     if (!activeWallet?.address) return
@@ -1464,10 +1484,7 @@ export function HaptixWalletScreen() {
           <Text style={[styles.heroBalanceLabel, { color: theme.textSecondary }]}>Total balance</Text>
           <TouchableOpacity
             style={styles.eyeToggleButton}
-            onPress={() => {
-              Haptics.selectionAsync()
-              setIsBalanceHidden((prev) => !prev)
-            }}
+            onPress={toggleBalanceHidden}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessibilityRole="button"
             accessibilityLabel={isBalanceHidden ? 'Show balance' : 'Hide balance'}
@@ -1629,10 +1646,12 @@ export function HaptixWalletScreen() {
             </View>
           </View>
           <View style={styles.assetRight}>
-            <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>{balance.toFixed(4)} SOL</Text>
+            <Text style={[styles.assetCryptoAmount, styles.textPrimary]}>
+              {isBalanceHidden ? '•••• SOL' : `${balance.toFixed(4)} SOL`}
+            </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 2 }}>
               <Text style={[styles.assetFiatAmount, styles.textSecondary]}>
-                ≈ ${(balance * solPriceUsd).toFixed(2)}
+                {isBalanceHidden ? '≈ $••••' : `≈ $${(balance * solPriceUsd).toFixed(2)}`}
               </Text>
               <Text
                 style={{
@@ -1736,7 +1755,9 @@ export function HaptixWalletScreen() {
                     ]}
                   >
                     {tx.amount > 0
-                      ? `${received ? '+' : '-'}${tx.amount.toFixed(4)} ${tx.tokenSymbol || 'SOL'}`
+                      ? isBalanceHidden
+                        ? `${received ? '+' : '-'}•••• ${tx.tokenSymbol || 'SOL'}`
+                        : `${received ? '+' : '-'}${tx.amount.toFixed(4)} ${tx.tokenSymbol || 'SOL'}`
                       : '—'}
                   </Text>
                 </TouchableOpacity>
@@ -2137,7 +2158,12 @@ export function HaptixWalletScreen() {
                   {group.items.map((tx, idx) => (
                     <React.Fragment key={tx.signature ? `${tx.signature}-${idx}` : `${group.day}-${idx}`}>
                       {idx > 0 && <View style={[styles.activityRowDivider, styles.divider]} />}
-                      <ActivityRow tx={tx} variant="detail" onSelect={handleSelectTransaction} />
+                      <ActivityRow
+                        tx={tx}
+                        variant="detail"
+                        onSelect={handleSelectTransaction}
+                        isBalanceHidden={isBalanceHidden}
+                      />
                     </React.Fragment>
                   ))}
                 </View>
@@ -2651,7 +2677,9 @@ export function HaptixWalletScreen() {
 
                         {isValue ? (
                           <Text style={[styles.txDetailAmountText, styles.textPrimary]}>
-                            {`${selectedTransaction.direction === 'receive' ? '+' : '-'}${selectedTransaction.amount.toFixed(4)} ${selectedTransaction.tokenSymbol}`}
+                            {isBalanceHidden
+                              ? `${selectedTransaction.direction === 'receive' ? '+' : '-'}•••• ${selectedTransaction.tokenSymbol}`
+                              : `${selectedTransaction.direction === 'receive' ? '+' : '-'}${selectedTransaction.amount.toFixed(4)} ${selectedTransaction.tokenSymbol}`}
                           </Text>
                         ) : (
                           <Text style={[styles.txDetailNoValueText, styles.textSecondary]}>
@@ -2661,7 +2689,9 @@ export function HaptixWalletScreen() {
 
                         {isValue && selectedTransaction.tokenSymbol === 'SOL' && (
                           <Text style={[styles.txDetailFiatText, styles.textMuted]}>
-                            ≈ ${(selectedTransaction.amount * solPriceUsd).toFixed(2)} USD
+                            {isBalanceHidden
+                              ? '≈ $•••• USD'
+                              : `≈ ${(selectedTransaction.amount * solPriceUsd).toFixed(2)} USD`}
                           </Text>
                         )}
 
@@ -2998,6 +3028,7 @@ export function HaptixWalletScreen() {
       <HaptixAccountSwitcherSheet
         visible={isAccountSwitcherOpen}
         onClose={() => setIsAccountSwitcherOpen(false)}
+        isBalanceHidden={isBalanceHidden}
       />
 
       {/* ==================================================================== */}
@@ -3062,6 +3093,7 @@ export function HaptixWalletScreen() {
         token={selectedDetailToken}
         balanceSol={balance}
         solPriceUsd={solPriceUsd}
+        isBalanceHidden={isBalanceHidden}
         onClose={() => setSelectedDetailToken(null)}
         onSend={() => setShowSendModal(true)}
         onReceive={() => setShowReceiveModal(true)}
