@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { router } from 'expo-router'
 import { useAuth } from '@/components/auth/auth-provider'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
@@ -15,6 +15,8 @@ import {
   Pressable,
   ImageBackground,
   Image,
+  Animated,
+  PanResponder,
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -222,6 +224,88 @@ export default function SignIn() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSignInModal, setShowSignInModal] = useState(false)
   const [showRecoveryModal, setShowRecoveryModal] = useState(false)
+
+  // Fluid pull-down gesture to dismiss sign-in bottom sheet
+  const panYSignIn = useRef(new Animated.Value(0)).current
+  const panResponderSignIn = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 4,
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panYSignIn.setValue(gestureState.dy)
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 100 || gestureState.vy > 0.8) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Animated.timing(panYSignIn, {
+              toValue: 600,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              panYSignIn.setValue(0)
+              setShowSignInModal(false)
+            })
+          } else {
+            Animated.spring(panYSignIn, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start()
+          }
+        },
+      }),
+    [panYSignIn],
+  )
+
+  useEffect(() => {
+    if (!showSignInModal) {
+      panYSignIn.setValue(0)
+    }
+  }, [showSignInModal, panYSignIn])
+
+  // Fluid pull-down gesture to dismiss create wallet bottom sheet
+  const panYCreate = useRef(new Animated.Value(0)).current
+  const panResponderCreate = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 4,
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panYCreate.setValue(gestureState.dy)
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 100 || gestureState.vy > 0.8) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Animated.timing(panYCreate, {
+              toValue: 600,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              panYCreate.setValue(0)
+              setShowCreateModal(false)
+            })
+          } else {
+            Animated.spring(panYCreate, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start()
+          }
+        },
+      }),
+    [panYCreate],
+  )
+
+  useEffect(() => {
+    if (!showCreateModal) {
+      panYCreate.setValue(0)
+    }
+  }, [showCreateModal, panYCreate])
 
   const [isCreating, setIsCreating] = useState(false)
   const [creationStep, setCreationStep] = useState<0 | 1 | 2 | 3>(0)
@@ -952,7 +1036,18 @@ export default function SignIn() {
       {/* CREATE WALLET MODAL */}
       <Modal visible={showCreateModal} animationType="slide" transparent={true}>
         <View style={styles.sheetBackdrop}>
-          <View style={[styles.sheetCard, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowCreateModal(false)} />
+          <Animated.View
+            style={[
+              styles.sheetCard,
+              { paddingBottom: Math.max(insets.bottom, 24), transform: [{ translateY: panYCreate }] },
+            ]}
+          >
+            {/* DRAG HANDLE */}
+            <View style={styles.dragHandleTouchZone} {...panResponderCreate.panHandlers}>
+              <View style={styles.sheetHandle} />
+            </View>
+
             <View
               style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}
             >
@@ -1224,17 +1319,17 @@ export default function SignIn() {
                 {/* PINNED ACTION BUTTON - Always visible without scrolling */}
                 <View style={{ paddingTop: 12 }}>
                   <TouchableOpacity
-                    style={[styles.primaryDarkButton, securityMode === 'vault' && { backgroundColor: '#6C8CFF' }, isCreating && { opacity: 0.6 }]}
+                    style={[styles.primaryDarkButton, { backgroundColor: '#5E81FF' }, isCreating && { opacity: 0.6 }]}
                     onPress={handleExecutePasskeyCreation}
                     disabled={isCreating}
                     activeOpacity={0.85}
                   >
                     {isCreating ? (
-                      <ActivityIndicator size="small" color={p.onPrimary} style={{ marginRight: 8 }} />
+                      <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
                     ) : (
-                      <MaterialIcons name="fingerprint" size={20} color={p.onPrimary} style={{ marginRight: 8 }} />
+                      <MaterialIcons name="fingerprint" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
                     )}
-                    <Text style={styles.primaryDarkButtonText}>
+                    <Text style={[styles.primaryDarkButtonText, { color: '#FFFFFF' }]}>
                       {securityMode === 'vault' ? 'Start Vault setup' : 'Start setup'}
                     </Text>
                   </TouchableOpacity>
@@ -1273,16 +1368,24 @@ export default function SignIn() {
                 </View>
               </View>
             )}
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
       {/* SIGN IN MODAL */}
       <Modal visible={showSignInModal} animationType="slide" transparent={true}>
         <View style={styles.sheetBackdrop}>
-          <View style={[styles.sheetCard, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowSignInModal(false)} />
+          <Animated.View
+            style={[
+              styles.sheetCard,
+              { paddingBottom: Math.max(insets.bottom, 24), transform: [{ translateY: panYSignIn }] },
+            ]}
+          >
             {/* DRAG HANDLE */}
-            <View style={styles.sheetHandle} />
+            <View style={styles.dragHandleTouchZone} {...panResponderSignIn.panHandlers}>
+              <View style={styles.sheetHandle} />
+            </View>
 
             <View style={styles.sheetHeaderRow}>
               <Text style={styles.sheetTitle}>Sign in</Text>
@@ -1489,7 +1592,7 @@ export default function SignIn() {
                 )}
               </TouchableOpacity>
             </ScrollView>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
@@ -1660,13 +1763,19 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       paddingTop: 12,
       maxHeight: '92%',
     },
+    dragHandleTouchZone: {
+      width: '100%',
+      paddingTop: 0,
+      paddingBottom: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     sheetHandle: {
       width: 36,
       height: 4,
       borderRadius: 2,
-      backgroundColor: isDark ? '#2C2C2E' : '#D1D5DB',
+      backgroundColor: isDark ? '#3a3a37' : '#D1D1D6',
       alignSelf: 'center',
-      marginBottom: 14,
     },
     sheetHeaderRow: {
       flexDirection: 'row',

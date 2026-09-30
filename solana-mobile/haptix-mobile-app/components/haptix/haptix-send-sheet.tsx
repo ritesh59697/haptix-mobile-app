@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Animated,
   KeyboardAvoidingView,
   Linking,
   Modal,
+  PanResponder,
   Platform,
   ScrollView,
   StyleSheet,
@@ -60,7 +62,6 @@ import {
   parseGuardianAddress,
 } from '@/utils/haptix-client'
 import { useHaptixDialog } from './haptix-dialog'
-import { HaptixBiometricPromptSheet } from './haptix-biometric-prompt-sheet'
 import { radius, space, typeScale, ThemeTokens } from '@/theme/tokens'
 import { deductSkrBalance, deductUsdcBalance, SKR_TOKEN_METADATA, USDC_TOKEN_METADATA } from '@/utils/haptix-tokens'
 import { SeekerTokenLogo, SolanaTokenLogo, UsdcTokenLogo } from './haptix-icons'
@@ -155,7 +156,6 @@ export function HaptixSendSheet({
   const [selectedToken, setSelectedToken] = useState<'SOL' | 'SKR' | 'USDC'>('SOL')
   const [showTokenMenu, setShowTokenMenu] = useState(false)
   const [isSending, setIsSending] = useState(false)
-  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
   const [sendErrorMsg, setSendErrorMsg] = useState('')
   const [sendRecipient, setSendRecipient] = useState('')
   const [sendAmountText, setSendAmountText] = useState('0.05')
@@ -181,6 +181,54 @@ export function HaptixSendSheet({
   const [pendingContactName, setPendingContactName] = useState<string | null>(null)
   // Live network fee for the transfer being previewed.
   const [feeEstimate, setFeeEstimate] = useState<TransferFeeEstimate | null>(null)
+  const [confirmedTransfer, setConfirmedTransfer] = useState<{
+    signature: string
+    amount: number
+    tokenSymbol: string
+    recipientAddress: string
+    isQuorum: boolean
+    networkFee: string
+  } | null>(null)
+  const [copiedSig, setCopiedSig] = useState(false)
+  const [copiedRecipient, setCopiedRecipient] = useState(false)
+
+  // Fluid pull-down gesture to dismiss bottom sheet
+  const panY = useRef(new Animated.Value(0)).current
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          return gestureState.dy > 4
+        },
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panY.setValue(gestureState.dy)
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 100 || gestureState.vy > 0.8) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Animated.timing(panY, {
+              toValue: 600,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              panY.setValue(0)
+              onClose()
+            })
+          } else {
+            Animated.spring(panY, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start()
+          }
+        },
+      }),
+    [onClose, panY],
+  )
 
   // The screen cleared the recipient and its validation flags in the button handler that
   // opened this sheet. Now that the sheet owns them it clears on close instead of on
@@ -189,6 +237,7 @@ export function HaptixSendSheet({
   // deliberately left alone: re-sending the same size is the common case.
   useEffect(() => {
     if (visible) return
+    panY.setValue(0)
     setSendRecipient('')
     setSendRecipientSource(null)
     setRecipientAttemptError('')
@@ -196,7 +245,10 @@ export function HaptixSendSheet({
     setSendRecipientBlurred(false)
     setSendErrorMsg('')
     setShowTokenMenu(false)
-  }, [visible])
+    setConfirmedTransfer(null)
+    setCopiedSig(false)
+    setCopiedRecipient(false)
+  }, [visible, panY])
 
   // Recipient typing. Addresses are pasted far more often than they are typed, and a
   // paste can arrive as a link, a chat line or an address wrapped over two lines. Any
@@ -353,8 +405,8 @@ export function HaptixSendSheet({
     )
   }
 
-  // Initiate send flow by validating inputs and opening the clean biometric prompt sheet
-  const handleInitiateSendFlow = () => {
+  // Initiate send flow by validating inputs and triggering on-chain passkey transfer directly
+  const handleInitiateSendFlow = async () => {
     setSendErrorMsg('')
     if (isFrozen) {
       dialog.alert(
@@ -401,7 +453,11 @@ export function HaptixSendSheet({
       return
     }
 
-    setShowBiometricPrompt(true)
+    try {
+      await handleExecuteSend(() => {})
+    } catch {
+      // Handled and alerted inside handleExecuteSend
+    }
   }
 
   // On-chain Send Transaction execution via Haptix Anchor Program & Secp256r1 Precompile
@@ -463,13 +519,23 @@ export function HaptixSendSheet({
         }
         await onTransferSent(newRecord)
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        onClose()
+        setIsSending(false)
+        setConfirmedTransfer({
+          signature: fakeSig,
+          amount: amt,
+          tokenSymbol: 'SKR',
+          recipientAddress: toPubkey.toBase58(),
+          isQuorum: isHighRiskQuorum,
+          networkFee: '0.00 SOL (Sponsored)',
+        })
         return
       } catch (err: any) {
         console.error('[Haptix SKR Send] Execution error:', err)
-        setSendErrorMsg(err?.message || 'SKR transfer failed')
+        const errorMsg = err?.message || 'SKR transfer failed'
+        setSendErrorMsg(errorMsg)
         setIsSending(false)
-        throw err
+        dialog.alert('Transfer Error', errorMsg)
+        return
       } finally {
         setIsSending(false)
       }
@@ -517,13 +583,23 @@ export function HaptixSendSheet({
         }
         await onTransferSent(newRecord)
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        onClose()
+        setIsSending(false)
+        setConfirmedTransfer({
+          signature: fakeSig,
+          amount: amt,
+          tokenSymbol: 'USDC',
+          recipientAddress: toPubkey.toBase58(),
+          isQuorum: isHighRiskQuorum,
+          networkFee: '0.00 SOL (Sponsored)',
+        })
         return
       } catch (err: any) {
         console.error('[Haptix USDC Send] Execution error:', err)
-        setSendErrorMsg(err?.message || 'USDC transfer failed')
+        const errorMsg = err?.message || 'USDC transfer failed'
+        setSendErrorMsg(errorMsg)
         setIsSending(false)
-        throw err
+        dialog.alert('Transfer Error', errorMsg)
+        return
       } finally {
         setIsSending(false)
       }
@@ -732,45 +808,21 @@ export function HaptixSendSheet({
         status: 'confirmed',
       })
 
-      setTimeout(() => {
-        setShowBiometricPrompt(false)
-        setIsSending(false)
-        onClose()
-
-        dialog.alert(
-          'Transfer Confirmed On-Chain',
-          `Sent ${amt} SOL.\n\n${
-            isHighRiskQuorum ? 'Verified: both passkeys' : 'Verified: passkey'
-          }\n\nSignature: ${ellipsify(sig, 8)}`,
-          [
-            {
-              text: 'Copy Link',
-              style: 'secondary',
-              onPress: () => {
-                const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-                Clipboard.setString(`https://solscan.io/tx/${sig}${clusterParam}`)
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-              },
-            },
-            {
-              text: 'View on Solscan',
-              style: 'secondary',
-              onPress: () => {
-                const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-                Linking.openURL(`https://solscan.io/tx/${sig}${clusterParam}`)
-              },
-            },
-            { text: 'Done', style: 'cancel' },
-          ],
-          { status: 'success' }
-        )
-      }, 1100)
+      setIsSending(false)
+      setConfirmedTransfer({
+        signature: sig,
+        amount: amt,
+        tokenSymbol: 'SOL',
+        recipientAddress: toPubkey.toBase58(),
+        isQuorum: isHighRiskQuorum,
+        networkFee: `${effectiveFeeSol} SOL`,
+      })
     } catch (err: any) {
       console.error('[Haptix Send] Execution error:', formatChainErrorForLog(err))
       const errorText = describeChainError(err, 'The transfer could not be completed on-chain. Please try again.')
       setSendErrorMsg(errorText)
       setIsSending(false)
-      throw new Error(errorText)
+      dialog.alert('Transfer Error', errorText)
     }
   }
 
@@ -893,10 +945,139 @@ export function HaptixSendSheet({
         style={styles.expandedModalBackdrop}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.expandedSendSheet, styles.modalSheet, { paddingBottom: insets.bottom + 20 }]}>
-          <View style={[styles.modalDragHandle, { backgroundColor: '#3a3a37' }]} />
+        <Animated.View
+          style={[
+            styles.expandedSendSheet,
+            styles.modalSheet,
+            { paddingBottom: insets.bottom + 20, transform: [{ translateY: panY }] },
+          ]}
+        >
+          {/* Functional Drag Handle Touch Zone */}
+          <View style={styles.dragHandleTouchZone} {...panResponder.panHandlers}>
+            <View style={[styles.modalDragHandle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
+          </View>
 
-          {/* Modal Header */}
+          {confirmedTransfer ? (
+            /* ==================== TRANSFER CONFIRMED VIEW ==================== */
+            <View style={styles.confirmedViewContainer}>
+              {/* Checkmark Ring Badge */}
+              <View style={styles.confirmedRingOuter}>
+                <View style={styles.confirmedRingInner}>
+                  <MaterialIcons name="check" size={28} color={isDark ? '#34D399' : '#059669'} />
+                </View>
+              </View>
+
+              <Text style={styles.confirmedSubtitle}>Transfer confirmed</Text>
+              <Text style={styles.confirmedHeroAmount}>
+                −{confirmedTransfer.amount} {confirmedTransfer.tokenSymbol}
+              </Text>
+              <Text style={styles.confirmedNetworkText}>
+                Confirmed on Solana {network}
+              </Text>
+
+              {/* Detail Card Box */}
+              <View style={styles.confirmedDetailBox}>
+                {/* To Row */}
+                <View style={styles.confirmedRow}>
+                  <Text style={styles.confirmedRowLabel}>To</Text>
+                  <TouchableOpacity
+                    style={styles.confirmedCopyableValue}
+                    onPress={() => {
+                      Clipboard.setString(confirmedTransfer.recipientAddress)
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                      setCopiedRecipient(true)
+                      setTimeout(() => setCopiedRecipient(false), 2000)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.confirmedMonoText}>
+                      {ellipsify(confirmedTransfer.recipientAddress, 4)}
+                    </Text>
+                    <MaterialIcons
+                      name={copiedRecipient ? 'check' : 'content-copy'}
+                      size={13}
+                      color={copiedRecipient ? '#5fbf7a' : (isDark ? '#8a8985' : theme.textMuted)}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.confirmedRowDivider} />
+
+                {/* Network Fee Row */}
+                <View style={styles.confirmedRow}>
+                  <Text style={styles.confirmedRowLabel}>Network fee</Text>
+                  <Text style={styles.confirmedRowValue}>{confirmedTransfer.networkFee}</Text>
+                </View>
+
+                <View style={styles.confirmedRowDivider} />
+
+                {/* Verified By Row */}
+                <View style={styles.confirmedRow}>
+                  <Text style={styles.confirmedRowLabel}>Verified by</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <MaterialIcons name="fingerprint" size={15} color={isDark ? '#8a8985' : theme.accent} />
+                    <Text style={styles.confirmedRowValue}>
+                      {confirmedTransfer.isQuorum ? 'Both passkeys' : 'Passkey'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.confirmedRowDivider} />
+
+                {/* Signature Row */}
+                <View style={styles.confirmedRow}>
+                  <Text style={styles.confirmedRowLabel}>Signature</Text>
+                  <TouchableOpacity
+                    style={styles.confirmedCopyableValue}
+                    onPress={() => {
+                      Clipboard.setString(confirmedTransfer.signature)
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                      setCopiedSig(true)
+                      setTimeout(() => setCopiedSig(false), 2000)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.confirmedMonoText}>
+                      {ellipsify(confirmedTransfer.signature, 8)}
+                    </Text>
+                    <MaterialIcons
+                      name={copiedSig ? 'check' : 'content-copy'}
+                      size={13}
+                      color={copiedSig ? '#5fbf7a' : (isDark ? '#8a8985' : theme.textMuted)}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Done Button */}
+              <TouchableOpacity
+                style={styles.confirmedDoneBtn}
+                onPress={() => {
+                  setConfirmedTransfer(null)
+                  onClose()
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.confirmedDoneBtnText}>Done</Text>
+              </TouchableOpacity>
+
+              {/* View on Solscan Button */}
+              <TouchableOpacity
+                style={styles.confirmedSolscanBtn}
+                onPress={() => {
+                  const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+                  Linking.openURL(`https://solscan.io/tx/${confirmedTransfer.signature}${clusterParam}`).catch(() => {})
+                }}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="open-in-new" size={15} color={isDark ? '#8a8985' : theme.textMuted} />
+                <Text style={styles.confirmedSolscanBtnText}>View on Solscan</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            // ==================== SEND FORM ====================
+            <>
+              {/* Modal Header */}
           <View style={styles.modalSheetHeader}>
             <View>
               <Text style={styles.cleanModalTitle}>
@@ -1447,49 +1628,143 @@ export function HaptixSendSheet({
               )}
             </View>
           </ScrollView>
-        </View>
-
-        {/* Clean Biometric Passkey Sheet (In-Modal Overlay) */}
-        <HaptixBiometricPromptSheet
-          visible={showBiometricPrompt}
-          onClose={() => {
-            setShowBiometricPrompt(false)
-            setIsSending(false)
-          }}
-          actionType="transfer"
-          amountSol={sendAmountNum}
-          tokenSymbol={selectedToken}
-          solPriceUsd={
-            selectedToken === 'SKR'
-              ? SKR_TOKEN_METADATA.fallbackPriceUsd
-              : selectedToken === 'USDC'
-              ? USDC_TOKEN_METADATA.fallbackPriceUsd
-              : solPriceUsd
-          }
-          recipientAddress={sendRecipient}
-          recipientLabel={resolvedName || (savedContact ? savedContact.label : undefined)}
-          isQuorumRequired={isSendQuorumRequired}
-          securityMode={wallet?.securityMode ?? 'phone'}
-          asModal={false}
-          onAuthorize={handleExecuteSend}
-        />
+          </>
+          )}
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   )
 }
 
-const createSendSheetStyles = (theme: ThemeTokens) =>
+const createSendSheetStyles = (theme: ThemeTokens, isDark: boolean) =>
   StyleSheet.create({
+    confirmedViewContainer: {
+      paddingTop: 4,
+      paddingBottom: 8,
+      alignItems: 'stretch',
+    },
+    confirmedRingOuter: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: isDark ? 'rgba(16, 185, 129, 0.10)' : '#E6F9F0',
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+      marginBottom: 16,
+    },
+    confirmedRingInner: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: isDark ? 'rgba(16, 185, 129, 0.22)' : '#CEF5E1',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    confirmedSubtitle: {
+      color: isDark ? '#8a8985' : theme.textSecondary,
+      fontSize: 12.5,
+      textAlign: 'center',
+      marginBottom: 4,
+    },
+    confirmedHeroAmount: {
+      fontSize: 32,
+      fontWeight: '600',
+      letterSpacing: -0.5,
+      color: isDark ? '#f2f1ee' : theme.textPrimary,
+      textAlign: 'center',
+    },
+    confirmedNetworkText: {
+      color: isDark ? '#8a8985' : theme.textMuted,
+      fontSize: 13,
+      marginTop: 4,
+      textAlign: 'center',
+      marginBottom: 22,
+    },
+    confirmedDetailBox: {
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: isDark ? '#2a2a28' : theme.borderDefault,
+      backgroundColor: isDark ? '#141416' : '#F6F6F8',
+      paddingHorizontal: 14,
+      paddingVertical: 2,
+      marginBottom: 18,
+    },
+    confirmedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 12,
+    },
+    confirmedRowLabel: {
+      color: isDark ? '#8a8985' : theme.textSecondary,
+      fontSize: 13,
+    },
+    confirmedRowValue: {
+      color: isDark ? '#f2f1ee' : theme.textPrimary,
+      fontSize: 13,
+      fontWeight: '500',
+    },
+    confirmedCopyableValue: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 2,
+    },
+    confirmedMonoText: {
+      color: isDark ? '#f2f1ee' : theme.textPrimary,
+      fontSize: 12.5,
+      fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
+    },
+    confirmedRowDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: isDark ? '#201f1d' : theme.borderSubtle,
+    },
+    confirmedDoneBtn: {
+      backgroundColor: '#6c8cff',
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    confirmedDoneBtnText: {
+      color: '#0c0c0d',
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    confirmedSolscanBtn: {
+      borderWidth: 1,
+      borderColor: isDark ? '#2a2a28' : theme.borderDefault,
+      borderRadius: 12,
+      paddingVertical: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7,
+      backgroundColor: isDark ? 'transparent' : '#FFFFFF',
+    },
+    confirmedSolscanBtnText: {
+      color: isDark ? '#f2f1ee' : theme.textPrimary,
+      fontSize: 14,
+      fontWeight: '500',
+    },
     card: { backgroundColor: theme.bgCard, borderColor: theme.borderDefault },
     divider: { backgroundColor: theme.borderSubtle },
     elevatedCard: { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
     input: { backgroundColor: theme.bgInput, borderColor: theme.borderDefault, color: theme.textPrimary },
+    dragHandleTouchZone: {
+      width: '100%',
+      paddingTop: 8,
+      paddingBottom: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     modalDragHandle: {
       width: 36,
       height: 4,
       borderRadius: radius.pill,
       alignSelf: 'center',
-      marginBottom: 16,
     },
     modalSheet: {
       backgroundColor: theme.bgCard,
@@ -2126,6 +2401,6 @@ const createSendSheetStyles = (theme: ThemeTokens) =>
   })
 
 function useSendSheetStyles() {
-  const { theme } = useAppTheme()
-  return useMemo(() => createSendSheetStyles(theme), [theme])
+  const { theme, isDark } = useAppTheme()
+  return useMemo(() => createSendSheetStyles(theme, isDark), [theme, isDark])
 }

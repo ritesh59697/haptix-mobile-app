@@ -16,6 +16,8 @@ import {
   StatusBar as RNStatusBar,
   StyleSheet,
   useWindowDimensions,
+  Animated,
+  PanResponder,
 } from 'react-native'
 
 import { useRouter } from 'expo-router'
@@ -204,6 +206,89 @@ export function HaptixWalletScreen() {
   const [showTxDetailModal, setShowTxDetailModal] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionRecord | null>(null)
   const [isAccountSwitcherOpen, setIsAccountSwitcherOpen] = useState(false)
+
+  // Fluid pull-down gesture to dismiss Receive Modal
+  const panYReceive = useRef(new Animated.Value(0)).current
+  const panResponderReceive = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 4,
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panYReceive.setValue(gestureState.dy)
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 100 || gestureState.vy > 0.8) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Animated.timing(panYReceive, {
+              toValue: 600,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              panYReceive.setValue(0)
+              setShowReceiveModal(false)
+            })
+          } else {
+            Animated.spring(panYReceive, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start()
+          }
+        },
+      }),
+    [panYReceive],
+  )
+
+  useEffect(() => {
+    if (!showReceiveModal) {
+      panYReceive.setValue(0)
+    }
+  }, [showReceiveModal, panYReceive])
+
+  // Fluid pull-down gesture to dismiss Transaction Details Modal
+  const panYTxDetail = useRef(new Animated.Value(0)).current
+  const panResponderTxDetail = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 4,
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panYTxDetail.setValue(gestureState.dy)
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 100 || gestureState.vy > 0.8) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Animated.timing(panYTxDetail, {
+              toValue: 600,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              panYTxDetail.setValue(0)
+              setShowTxDetailModal(false)
+              setCopiedTxLink(false)
+            })
+          } else {
+            Animated.spring(panYTxDetail, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start()
+          }
+        },
+      }),
+    [panYTxDetail],
+  )
+
+  useEffect(() => {
+    if (!showTxDetailModal) {
+      panYTxDetail.setValue(0)
+    }
+  }, [showTxDetailModal, panYTxDetail])
 
   const [copiedTxLink, setCopiedTxLink] = useState(false)
   const copyTxLinkTimeoutRef = useRef<any>(null)
@@ -2522,8 +2607,17 @@ export function HaptixWalletScreen() {
       {/* ==================================================================== */}
       <Modal visible={showReceiveModal} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalSheet, { paddingBottom: insets.bottom + 24 }]}>
-            <View style={[styles.modalDragHandle, { backgroundColor: theme.borderDefault }]} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowReceiveModal(false)} />
+          <Animated.View
+            style={[
+              styles.modalSheet,
+              { paddingBottom: insets.bottom + 24, transform: [{ translateY: panYReceive }] },
+            ]}
+          >
+            {/* Functional Drag Handle Touch Zone */}
+            <View style={styles.dragHandleTouchZone} {...panResponderReceive.panHandlers}>
+              <View style={[styles.modalDragHandle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
+            </View>
 
             <View style={styles.modalSheetHeader}>
               <Text style={[styles.modalSheetTitle, styles.textPrimary]}>Receive assets</Text>
@@ -2600,7 +2694,7 @@ export function HaptixWalletScreen() {
               <MaterialIcons name="ios-share" size={18} color="#FFFFFF" />
               <Text style={styles.receiveShareBtnText}>Share address</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
@@ -2609,8 +2703,23 @@ export function HaptixWalletScreen() {
       {/* ==================================================================== */}
       <Modal visible={showTxDetailModal} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalSheet, styles.modalSheet, { paddingBottom: insets.bottom + 24 }]}>
-            <View style={[styles.modalDragHandle, { backgroundColor: theme.borderDefault }]} />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => {
+              setShowTxDetailModal(false)
+              setCopiedTxLink(false)
+            }}
+          />
+          <Animated.View
+            style={[
+              styles.modalSheet,
+              { paddingBottom: insets.bottom + 24, transform: [{ translateY: panYTxDetail }] },
+            ]}
+          >
+            {/* Functional Drag Handle Touch Zone */}
+            <View style={styles.dragHandleTouchZone} {...panResponderTxDetail.panHandlers}>
+              <View style={[styles.modalDragHandle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
+            </View>
 
             <View style={styles.modalSheetHeader}>
               <Text style={[styles.modalSheetTitle, styles.textPrimary]}>Transaction Details</Text>
@@ -2858,7 +2967,7 @@ export function HaptixWalletScreen() {
                 </View>
               </ScrollView>
             )}
-          </View>
+          </Animated.View>
         </View>
       </Modal>
 
