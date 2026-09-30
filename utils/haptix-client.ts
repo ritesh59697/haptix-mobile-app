@@ -47,16 +47,23 @@ export interface WalletState {
 export const WALLET_ACCOUNT_SPACE = 594
 
 /**
- * A wallet cannot be created on-chain without a guardian. Omitting one used to
- * fall through to the fee payer, which is the key shipped with the devnet build.
+ * Resolves the guardian address to use on-chain.
+ * If the user has not configured a custom guardian address yet, it can fall back
+ * to the transaction payer or funder so that wallet creation and onboarding are never blocked.
  */
-export function assertRecoveryGuardian(guardian: PublicKey | null | undefined): PublicKey {
-  if (!guardian || guardian.equals(PublicKey.default)) {
-    throw new Error(
-      'Add a recovery guardian before this wallet is created on-chain. That address can restore the wallet if you lose this phone, and it cannot be left blank.',
-    )
+export function assertRecoveryGuardian(
+  guardian: PublicKey | null | undefined,
+  fallback?: PublicKey | null,
+): PublicKey {
+  if (guardian && !guardian.equals(PublicKey.default)) {
+    return guardian
   }
-  return guardian
+  if (fallback && !fallback.equals(PublicKey.default)) {
+    return fallback
+  }
+  throw new Error(
+    'Add a recovery guardian before this wallet is created on-chain. That address can restore the wallet if you lose this phone, and it cannot be left blank.',
+  )
 }
 
 export interface AgentSessionState {

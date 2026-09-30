@@ -43,7 +43,7 @@ import {
   prepareAssertionVerification,
   preparedAssertionMatchesPublicKey,
 } from '@/utils/secp256r1-instruction'
-import { assertRecoveryGuardian, getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet, HAPTIX_PROGRAM_ID } from '@/utils/haptix-client'
+import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet, HAPTIX_PROGRAM_ID } from '@/utils/haptix-client'
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
@@ -408,16 +408,14 @@ export default function SignIn() {
       const primaryName = primaryKeyName.trim() || 'Primary Passkey'
       const secondaryName = secondaryKeyName.trim() || 'Backup Key'
 
-      if (!guardianPublicKey) {
+      if (guardianInput.trim() && !guardianPublicKey) {
         dialog.alert(
-          'Add a recovery guardian',
-          guardianInput.trim()
-            ? guardianParse.error || 'That is not a Solana address.'
-            : 'Open advanced settings and enter a Solana address. That address can restore this wallet if you lose the phone, and the wallet cannot be created on-chain without one.',
+          'Check the guardian address',
+          guardianParse.error || 'That is not a valid Solana address. Leave blank if you want to set it up later.',
         )
         return
       }
-      const guardian = assertRecoveryGuardian(guardianPublicKey)
+      const guardian = guardianPublicKey ?? undefined
       if (timelockParse.error) {
         dialog.alert('Check the recovery timelock', timelockParse.error)
         return
@@ -477,7 +475,7 @@ export default function SignIn() {
         secondaryCredentialId: credentialIdForRecord(secondary),
         primaryLabel: primary.label,
         secondaryLabel: secondary.label,
-        guardianAddress: guardian.toBase58(),
+        guardianAddress: guardian ? guardian.toBase58() : undefined,
         spendThreshold: 0.1,
         network: 'devnet',
         securityMode,
@@ -502,7 +500,7 @@ export default function SignIn() {
               walletPda,
               primaryPasskey,
               secondaryPasskey,
-              guardian,
+              guardian: guardian ?? payer.publicKey,
               recoveryTimelockSeconds: timelockParse.seconds ?? undefined,
             })
             const dripIx = SystemProgram.transfer({
@@ -1298,7 +1296,7 @@ export default function SignIn() {
                       </View>
 
                       <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Recovery guardian</Text>
+                        <Text style={styles.inputLabel}>Recovery guardian (optional)</Text>
                         <TextInput
                           style={[
                             styles.textInputField,
@@ -1306,7 +1304,7 @@ export default function SignIn() {
                           ]}
                           value={guardianInput}
                           onChangeText={setGuardianInput}
-                          placeholder="A Solana address you trust"
+                          placeholder="A Solana address you trust (optional)"
                           placeholderTextColor={p.inkMuted}
                           autoCorrect={false}
                           autoCapitalize="none"
@@ -1318,7 +1316,7 @@ export default function SignIn() {
                                 `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
                                 'timelock means you can still veto it. It can never move funds.'
                               : guardianParse.error
-                            : 'Required. The only address that can start a recovery. It cannot spend, and it cannot be left blank.'}
+                            : 'Optional. Leave blank to set up your wallet immediately. You can add a trusted recovery address anytime in Settings.'}
                         </Text>
                       </View>
                     </>

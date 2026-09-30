@@ -257,9 +257,7 @@ export function HaptixSwapSheet({
       const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
       const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
       const authNonce = onChain?.authNonce ?? 0n
-      if (needsInit) {
-        assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress))
-      }
+
       const message = getTransferSignedMessage(payer.publicKey, amountLamports, authNonce)
 
       // 2. Primary Passkey Authorization
@@ -285,7 +283,7 @@ export function HaptixSwapSheet({
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress)),
+          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey),
         })
         txInstructions.push(initIx)
       }
