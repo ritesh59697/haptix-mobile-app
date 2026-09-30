@@ -87,6 +87,7 @@ function getCachedOrFetchProgramAccounts(connection: Connection): ProgramAccount
 const ONBOARDING_BG = require('@/assets/images/onboarding-bg.png')
 const FINGERPRINT_HERO_WHITE = require('@/assets/images/fingerprint-hero-white.png')
 const FINGERPRINT_HERO_DARK = require('@/assets/images/fingerprint-hero.png')
+const FINGERPRINT_HERO_BLUE = require('@/assets/images/fingerprint-hero-blue.png')
 
 interface OnboardingPalette {
   heroBg: string
@@ -1410,7 +1411,11 @@ export default function SignIn() {
             >
               <View style={styles.heroBiometricRing}>
                 <View style={styles.heroBiometricInnerCircle}>
-                  <TablerFingerprintIcon size={28} color="#6C8CFF" strokeWidth={2} />
+                  <Image
+                    source={FINGERPRINT_HERO_BLUE}
+                    style={{ width: 34, height: 34 }}
+                    resizeMode="contain"
+                  />
                 </View>
               </View>
               <Text style={styles.sheetDesc}>Authenticate with your biometric passkey</Text>
