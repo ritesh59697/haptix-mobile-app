@@ -836,7 +836,7 @@ export function HaptixSendSheet({
           style={[
             styles.expandedSendSheet,
             styles.modalSheet,
-            { paddingBottom: insets.bottom + 20, transform: [{ translateY: panY }] },
+            { paddingBottom: 0, transform: [{ translateY: panY }] },
           ]}
         >
           {/* Functional Drag Handle Touch Zone */}
@@ -846,7 +846,7 @@ export function HaptixSendSheet({
 
           {confirmedTransfer ? (
             /* ==================== TRANSFER CONFIRMED VIEW ==================== */
-            <View style={styles.confirmedViewContainer}>
+            <View style={[styles.confirmedViewContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
               {/* Checkmark Ring Badge */}
               <View style={styles.confirmedRingOuter}>
                 <View style={styles.confirmedRingInner}>
@@ -963,33 +963,34 @@ export function HaptixSendSheet({
             </View>
           ) : (
             // ==================== SEND FORM ====================
-            <>
+            <View style={{ flex: 1 }}>
               {/* Modal Header */}
-          <View style={styles.modalSheetHeader}>
-            <View>
-              <Text style={styles.cleanModalTitle}>
-                Send {selectedToken === 'SKR' ? 'Seeker' : selectedToken === 'USDC' ? 'USD Coin' : 'Solana'}
-              </Text>
-              <Text style={styles.cleanModalSubtitle}>
-                Instant on-chain transfer via passkey
-              </Text>
-            </View>
-            <TouchableOpacity
-              onPress={() => onClose()}
-              style={styles.modalCloseBtn}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel="Close send sheet"
-            >
-              <MaterialIcons name="close" size={18} color="#8a8985" />
-            </TouchableOpacity>
-          </View>
+              <View style={styles.modalSheetHeader}>
+                <View>
+                  <Text style={styles.cleanModalTitle}>
+                    Send {selectedToken === 'SKR' ? 'Seeker' : selectedToken === 'USDC' ? 'USD Coin' : 'Solana'}
+                  </Text>
+                  <Text style={styles.cleanModalSubtitle}>
+                    Instant on-chain transfer via passkey
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => onClose()}
+                  style={styles.modalCloseBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close send sheet"
+                >
+                  <MaterialIcons name="close" size={18} color="#8a8985" />
+                </TouchableOpacity>
+              </View>
 
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 16 }}
-          >
+              <ScrollView
+                style={{ flex: 1 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 16 }}
+              >
             {/* HERO AMOUNT INPUT SECTION */}
             <View style={styles.cleanSendCard}>
               {/* Header row: Clickable Asset Selector Menu + Available Balance */}
@@ -1453,51 +1454,52 @@ export function HaptixSendSheet({
               </View>
             ) : null}
 
-            {/* ACTION BUTTON & HELPER */}
-            <View style={{ marginTop: 2, marginBottom: 8 }}>
-              <TouchableOpacity
-                style={[
-                  styles.cleanSubmitBtn,
-                  (isSending || !recipientAddress || sendAmountNum <= 0 || !!sendAmountError)
-                    ? styles.cleanSubmitBtnDisabled
-                    : styles.cleanSubmitBtnEnabled,
-                ]}
-                onPress={handleInitiateSendFlow}
-                disabled={isSending || !recipientAddress || sendAmountNum <= 0 || !!sendAmountError}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Sign and send with passkey"
-              >
-                {isSending ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  <Text
-                    style={[
-                      styles.cleanSubmitBtnText,
-                      (!recipientAddress || sendAmountNum <= 0 || !!sendAmountError)
-                        ? styles.cleanSubmitBtnTextDisabled
-                        : styles.cleanSubmitBtnTextEnabled,
-                    ]}
-                  >
-                    {isSendQuorumRequired ? 'Sign and send with 2 passkeys' : 'Sign and send with passkey'}
+              </ScrollView>
+
+              {/* ACTION BUTTON & HELPER - PINNED STICKY AT BOTTOM */}
+              <View style={[styles.stickyFooter, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+                <TouchableOpacity
+                  style={[
+                    styles.cleanSubmitBtn,
+                    (isSending || !recipientAddress || sendAmountNum <= 0 || !!sendAmountError)
+                      ? styles.cleanSubmitBtnDisabled
+                      : styles.cleanSubmitBtnEnabled,
+                  ]}
+                  onPress={handleInitiateSendFlow}
+                  disabled={isSending || !recipientAddress || sendAmountNum <= 0 || !!sendAmountError}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign and send with passkey"
+                >
+                  {isSending ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.cleanSubmitBtnText,
+                        (!recipientAddress || sendAmountNum <= 0 || !!sendAmountError)
+                          ? styles.cleanSubmitBtnTextDisabled
+                          : styles.cleanSubmitBtnTextEnabled,
+                      ]}
+                    >
+                      {isSendQuorumRequired ? 'Sign and send with 2 passkeys' : 'Sign and send with passkey'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+
+                {(!recipientAddress || sendAmountNum <= 0 || !!sendAmountError) && (
+                  <Text style={styles.cleanDisabledHelper}>
+                    {!recipientAddress
+                      ? 'Add a recipient address to continue'
+                      : sendAmountNum <= 0
+                      ? 'Enter an amount to continue'
+                      : sendAmountError
+                      ? 'Adjust amount to continue'
+                      : 'Complete form to continue'}
                   </Text>
                 )}
-              </TouchableOpacity>
-
-              {(!recipientAddress || sendAmountNum <= 0 || !!sendAmountError) && (
-                <Text style={styles.cleanDisabledHelper}>
-                  {!recipientAddress
-                    ? 'Add a recipient address to continue'
-                    : sendAmountNum <= 0
-                    ? 'Enter an amount to continue'
-                    : sendAmountError
-                    ? 'Adjust amount to continue'
-                    : 'Complete form to continue'}
-                </Text>
-              )}
+              </View>
             </View>
-          </ScrollView>
-          </>
           )}
         </Animated.View>
       </KeyboardAvoidingView>
@@ -1696,7 +1698,14 @@ const createSendSheetStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderWidth: 1,
       paddingHorizontal: 20,
       paddingTop: 12,
-      maxHeight: '92%',
+      maxHeight: '94%',
+      height: '90%',
+    },
+    stickyFooter: {
+      paddingTop: 10,
+      backgroundColor: theme.isDark ? '#000000' : theme.bgCard,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.isDark ? '#201f1d' : theme.borderDefault,
     },
     cleanModalTitle: {
       fontSize: 19,
@@ -1707,14 +1716,14 @@ const createSendSheetStyles = (theme: ThemeTokens, isDark: boolean) =>
       color: '#8a8985',
       fontSize: 13,
       marginTop: 2,
-      marginBottom: 16,
+      marginBottom: 10,
     },
     cleanSendCard: {
       borderWidth: 1,
       borderColor: theme.borderDefault,
       borderRadius: 14,
-      padding: 14,
-      marginBottom: 16,
+      padding: 12,
+      marginBottom: 10,
       backgroundColor: theme.isDark ? '#000000' : theme.bgElevated,
     },
     cleanTokenHeaderRow: {
@@ -1901,9 +1910,9 @@ const createSendSheetStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderWidth: 1,
       borderColor: theme.borderDefault,
       borderRadius: 12,
-      paddingVertical: 11,
+      paddingVertical: 10,
       paddingHorizontal: 12,
-      marginBottom: 16,
+      marginBottom: 10,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -1930,19 +1939,19 @@ const createSendSheetStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderColor: theme.borderDefault,
       borderRadius: 14,
       paddingHorizontal: 16,
-      paddingVertical: 12,
-      marginBottom: 16,
+      paddingVertical: 10,
+      marginBottom: 10,
       backgroundColor: theme.isDark ? '#000000' : theme.bgElevated,
     },
     cleanPreviewRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 5,
+      paddingVertical: 4,
     },
     cleanPreviewDivider: {
       height: StyleSheet.hairlineWidth,
-      marginVertical: 8,
+      marginVertical: 6,
     },
     cleanPreviewLabel: {
       color: theme.textSecondary,
