@@ -308,7 +308,7 @@ const createStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       justifyContent: 'space-evenly',
       marginTop: 8,
-      marginBottom: 24,
+      marginBottom: 16,
     },
     heroActionBtn: {
       flex: 1,
@@ -393,9 +393,15 @@ const createStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 12,
-      marginTop: 16,
-      marginBottom: 10,
+      paddingHorizontal: 4,
+      marginTop: 6,
+      marginBottom: 6,
+    },
+    homeSectionDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.isDark ? '#262522' : theme.borderDefault,
+      marginHorizontal: 4,
+      marginVertical: 12,
     },
 
     homeSectionTitle: {
@@ -640,14 +646,14 @@ const createStyles = (theme: ThemeTokens) =>
 
     /* ASSETS LIST (CLEAN LIST WITHOUT CARD CLUTTER) */
     assetList: {
-      paddingHorizontal: 12,
-      paddingBottom: 24,
+      paddingHorizontal: 4,
+      paddingBottom: 0,
     },
     assetRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 16,
+      paddingVertical: 10,
     },
     assetLeft: {
       flexDirection: 'row',
@@ -971,7 +977,7 @@ const createStyles = (theme: ThemeTokens) =>
       textAlign: 'center',
     },
     activityList: {
-      paddingHorizontal: 12,
+      paddingHorizontal: 4,
       paddingBottom: 24,
     },
     activityGroupsWrapper: {
@@ -1008,7 +1014,7 @@ const createStyles = (theme: ThemeTokens) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 14,
+      paddingVertical: 10,
     },
     activityLeft: {
       flexDirection: 'row',
