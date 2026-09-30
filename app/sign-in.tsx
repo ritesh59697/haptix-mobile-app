@@ -543,7 +543,7 @@ export default function SignIn() {
       // paste the parser could not read has to be reported rather than treated as "no
       // address given": the saved-wallet branch below reads an empty value as "use the
       // wallet already on this device", so a typo would silently sign in as that one.
-      const typedInput = (showAddressInput || restoreParse.address) ? restoreAddress.trim() : ''
+      const typedInput = restoreAddress.trim()
       const typedAddress = typedInput ? (restoreParse.address ?? '') : ''
 
       const allWallets = await loadWallets().catch(() => [])
@@ -900,7 +900,7 @@ export default function SignIn() {
   const openSignInSheet = async () => {
     setShowSignInModal(true)
     setIsEditingAddress(false)
-    setShowAddressInput(false)
+    setShowAddressInput(true)
     const wallets = await loadWallets().catch(() => [])
     setSavedWallets(wallets)
     const saved = await getSavedWallet().catch(() => null)
@@ -913,7 +913,11 @@ export default function SignIn() {
       setRestoreAddress(wallets[0].address)
       return
     }
-    setRestoreAddress('')
+    // Attempt auto-paste if user has an address on clipboard
+    const clipAddr = await fillFromClipboard()
+    if (!clipAddr) {
+      setRestoreAddress('')
+    }
   }
 
   const handleSearchByGuardian = async () => {
@@ -1415,15 +1419,6 @@ export default function SignIn() {
               </View>
               <Text style={styles.sheetDesc}>Authenticate with your biometric passkey</Text>
 
-              {/* AUTO DISCOVERY NOTICE WHEN LOCAL STORAGE IS EMPTY */}
-              {savedWallets.length === 0 && (
-                <View style={styles.autoDiscoverNotice}>
-                  <Text style={styles.autoDiscoverNoticeText}>
-                    Passkey on this device? We'll scan on-chain and recover your wallet.
-                  </Text>
-                </View>
-              )}
-
               {/* SAVED WALLETS ON THIS DEVICE */}
               {savedWallets.length > 0 && (
                 <View style={styles.savedWalletsContainer}>
@@ -1460,155 +1455,130 @@ export default function SignIn() {
                 </View>
               )}
 
-              {/* Confirmed wallet found card (shown when wallet is identified and not in edit mode) */}
-              {restoreParse.address && !isEditingAddress ? (
-                <View style={styles.walletFoundCard}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                    <MaterialIcons name="check" size={16} color={isDark ? '#34D399' : '#1F8A4C'} />
-                    <Text style={styles.walletFoundAddress} numberOfLines={1} ellipsizeMode="middle">
-                      {ellipsify(restoreParse.address, 6)}
+              {/* PROMINENT WALLET ADDRESS BOX (ALWAYS VISIBLE) */}
+              <View style={{ marginTop: savedWallets.length > 0 ? 12 : 8, marginBottom: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: p.inkSecondary }}>
+                    {savedWallets.length > 0 ? 'Or use another wallet address' : 'Wallet address'}
+                  </Text>
+                  {restoreAddress.length === 0 && (
+                    <TouchableOpacity
+                      style={styles.pasteBadgeButton}
+                      onPress={handlePasteAddress}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                    >
+                      <MaterialIcons name="content-paste" size={13} color="#5A6EE6" />
+                      <Text style={[styles.pasteBadgeText, { color: '#5A6EE6' }]}>Paste</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <View
+                  style={[
+                    styles.addressInputContainer,
+                    restoreParse.address
+                      ? { borderColor: isDark ? 'rgba(52, 211, 153, 0.45)' : 'rgba(31, 138, 76, 0.45)' }
+                      : null,
+                  ]}
+                >
+                  <TextInput
+                    style={[
+                      styles.addressInput,
+                      restoreAddress ? { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 12.5 } : null,
+                    ]}
+                    value={restoreAddress}
+                    onChangeText={setRestoreAddress}
+                    placeholder="Paste Solana smart wallet address"
+                    placeholderTextColor={p.inkMuted}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {restoreAddress.length > 0 ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      {restoreParse.address && (
+                        <MaterialIcons name="check-circle" size={17} color={isDark ? '#34D399' : '#1F8A4C'} />
+                      )}
+                      <TouchableOpacity
+                        onPress={() => {
+                          setRestoreAddress('')
+                          Haptics.selectionAsync().catch(() => {})
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <MaterialIcons name="cancel" size={18} color={p.inkMuted} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
+                </View>
+
+                {restoreHint && (
+                  <View style={styles.addressHintRow}>
+                    <MaterialIcons
+                      name={restoreHint.tone === 'error' ? 'error-outline' : 'check-circle-outline'}
+                      size={14}
+                      color={restoreHint.tone === 'error' ? p.danger : p.inkSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.addressHintText,
+                        { color: restoreHint.tone === 'error' ? p.danger : p.inkSecondary },
+                      ]}
+                    >
+                      {restoreHint.text}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      Haptics.selectionAsync()
-                      setIsEditingAddress(true)
-                      setShowAddressInput(true)
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Text style={styles.walletFoundChangeText}>Change</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
+                )}
 
-              {/* Custom Address Toggle Button */}
-              {(!restoreParse.address || isEditingAddress) && (
+                {/* FORGOT ADDRESS: GUARDIAN SEARCH */}
                 <TouchableOpacity
-                  style={styles.customAddressToggle}
+                  style={styles.guardianSearchToggle}
                   onPress={() => {
                     Haptics.selectionAsync()
-                    setShowAddressInput((prev) => !prev)
+                    setShowGuardianLookup((prev) => !prev)
                   }}
                 >
-                  <Text style={styles.customAddressToggleText}>Use a custom address</Text>
+                  <MaterialIcons name="search" size={14} color={p.inkSecondary} />
+                  <Text style={styles.guardianSearchToggleText}>
+                    {showGuardianLookup ? 'Hide guardian lookup' : 'Forgot address? Search on-chain by guardian'}
+                  </Text>
                   <MaterialIcons
-                    name={showAddressInput ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                    size={15}
+                    name={showGuardianLookup ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                    size={14}
                     color={p.inkSecondary}
                   />
                 </TouchableOpacity>
-              )}
 
-              {/* Collapsed/Expanded Custom Address Input & Guardian Lookup */}
-              {showAddressInput && (!restoreParse.address || isEditingAddress) && (
-                <View style={{ marginBottom: 4 }}>
-                  <View style={styles.addressInputContainer}>
-                    <TextInput
-                      style={styles.addressInput}
-                      value={restoreAddress}
-                      onChangeText={setRestoreAddress}
-                      placeholder="Paste Solana smart wallet address"
-                      placeholderTextColor={p.inkMuted}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                    {restoreAddress.length > 0 ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <TouchableOpacity
-                          onPress={() => setRestoreAddress('')}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <MaterialIcons name="cancel" size={18} color={p.inkMuted} />
-                        </TouchableOpacity>
-                        {restoreParse.address && (
-                          <TouchableOpacity
-                            onPress={() => {
-                              Haptics.selectionAsync()
-                              setIsEditingAddress(false)
-                            }}
-                            style={styles.doneBadgeButton}
-                          >
-                            <Text style={styles.doneBadgeText}>Done</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    ) : (
-                      <TouchableOpacity style={styles.pasteBadgeButton} onPress={handlePasteAddress}>
-                        <MaterialIcons name="content-paste" size={13} color="#5A6EE6" />
-                        <Text style={[styles.pasteBadgeText, { color: '#5A6EE6' }]}>Paste</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  {/* FORGOT ADDRESS: GUARDIAN SEARCH */}
-                  <TouchableOpacity
-                    style={styles.guardianSearchToggle}
-                    onPress={() => {
-                      Haptics.selectionAsync()
-                      setShowGuardianLookup((prev) => !prev)
-                    }}
-                  >
-                    <MaterialIcons name="search" size={14} color={p.inkSecondary} />
-                    <Text style={styles.guardianSearchToggleText}>
-                      {showGuardianLookup ? 'Hide guardian lookup' : 'Forgot address? Search on-chain by guardian'}
+                {showGuardianLookup && (
+                  <View style={styles.guardianSearchBox}>
+                    <Text style={styles.guardianSearchHelp}>
+                      Enter your guardian's Solana address, for example your Phantom or a friend's wallet, to find your smart wallet.
                     </Text>
-                    <MaterialIcons
-                      name={showGuardianLookup ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                      size={14}
-                      color={p.inkSecondary}
-                    />
-                  </TouchableOpacity>
-
-                  {showGuardianLookup && (
-                    <View style={styles.guardianSearchBox}>
-                      <Text style={styles.guardianSearchHelp}>
-                        Enter your guardian's Solana address, for example your Phantom or a friend's wallet, to find your smart wallet.
-                      </Text>
-                      <View style={[styles.addressInputContainer, { marginTop: 10, marginBottom: 10, height: 46 }]}>
-                        <TextInput
-                          style={styles.addressInput}
-                          value={guardianLookupInput}
-                          onChangeText={setGuardianLookupInput}
-                          placeholder="Guardian Solana address"
-                          placeholderTextColor={p.inkMuted}
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                        />
-                      </View>
-                      <TouchableOpacity
-                        style={[styles.guardianSearchBtn, isSearchingGuardian && { opacity: 0.7 }]}
-                        onPress={handleSearchByGuardian}
-                        disabled={isSearchingGuardian || !guardianLookupInput.trim()}
-                      >
-                        {isSearchingGuardian ? (
-                          <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : (
-                          <Text style={styles.guardianSearchBtnText}>Find my wallet on-chain</Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  )}
-
-                  {restoreHint && (
-                    <View style={styles.addressHintRow}>
-                      <MaterialIcons
-                        name={restoreHint.tone === 'error' ? 'error-outline' : 'check-circle-outline'}
-                        size={14}
-                        color={restoreHint.tone === 'error' ? p.danger : p.inkSecondary}
+                    <View style={[styles.addressInputContainer, { marginTop: 10, marginBottom: 10, height: 46 }]}>
+                      <TextInput
+                        style={styles.addressInput}
+                        value={guardianLookupInput}
+                        onChangeText={setGuardianLookupInput}
+                        placeholder="Guardian Solana address"
+                        placeholderTextColor={p.inkMuted}
+                        autoCapitalize="none"
+                        autoCorrect={false}
                       />
-                      <Text
-                        style={[
-                          styles.addressHintText,
-                          { color: restoreHint.tone === 'error' ? p.danger : p.inkSecondary },
-                        ]}
-                      >
-                        {restoreHint.text}
-                      </Text>
                     </View>
-                  )}
-                </View>
-              )}
+                    <TouchableOpacity
+                      style={[styles.guardianSearchBtn, isSearchingGuardian && { opacity: 0.7 }]}
+                      onPress={handleSearchByGuardian}
+                      disabled={isSearchingGuardian || !guardianLookupInput.trim()}
+                    >
+                      {isSearchingGuardian ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <Text style={styles.guardianSearchBtnText}>Find my wallet on-chain</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
 
               <TouchableOpacity
                 style={[styles.primaryAccentButton, isSigningIn && { opacity: 0.8 }]}
