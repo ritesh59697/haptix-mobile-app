@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import {
   Modal,
   View,
@@ -6,8 +6,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
+  PanResponder,
   ActivityIndicator,
   Platform,
+  Image,
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -15,6 +17,9 @@ import { useAppTheme } from '@/components/theme/theme-context'
 import { radius, typeScale, ThemeTokens } from '@/theme/tokens'
 import { ellipsify } from '@/utils/ellipsify'
 import { PrismDepthButton } from '@/components/ui'
+
+const FINGERPRINT_HERO_WHITE = require('@/assets/images/fingerprint-hero-white.png')
+const FINGERPRINT_HERO_DARK = require('@/assets/images/fingerprint-hero.png')
 
 export type BiometricActionType = 'transfer' | 'agent_session' | 'policy_update'
 
@@ -64,6 +69,42 @@ export function HaptixBiometricPromptSheet({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
 
+  // Fluid pull-down gesture to dismiss bottom sheet
+  const panY = useRef(new Animated.Value(0)).current
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 4,
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panY.setValue(gestureState.dy)
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 100 || gestureState.vy > 0.8) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Animated.timing(panY, {
+              toValue: 600,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              panY.setValue(0)
+              onClose()
+            })
+          } else {
+            Animated.spring(panY, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start()
+          }
+        },
+      }),
+    [onClose, panY],
+  )
+
   // Subtle breathing animation for the sensor aura
   const pulseAnim = useRef(new Animated.Value(1)).current
   const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null)
@@ -90,11 +131,12 @@ export function HaptixBiometricPromptSheet({
       )
       pulseLoopRef.current.start()
     } else {
+      panY.setValue(0)
       if (pulseLoopRef.current) {
         pulseLoopRef.current.stop()
       }
     }
-  }, [visible])
+  }, [visible, panY])
 
   const handleStartAuth = async () => {
     if (phase !== 'idle' && phase !== 'error') return
@@ -154,9 +196,16 @@ export function HaptixBiometricPromptSheet({
 
   const sheetContent = (
     <View style={asModal ? styles.backdrop : styles.overlayBackdrop}>
-      <View style={styles.sheetContainer}>
-        {/* Drag handle */}
-        <View style={styles.dragHandle} />
+      <Animated.View
+        style={[
+          styles.sheetContainer,
+          { transform: [{ translateY: panY }] },
+        ]}
+      >
+        {/* Functional Drag handle */}
+        <View style={styles.dragHandleTouchZone} {...panResponder.panHandlers}>
+          <View style={[styles.dragHandle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
+        </View>
 
         {/* Center Biometric Sensor Disc with soft aura */}
         <View style={styles.sensorContainer}>
@@ -165,16 +214,25 @@ export function HaptixBiometricPromptSheet({
               styles.sensorAura,
               {
                 transform: [{ scale: pulseAnim }],
-                borderColor: phase === 'confirmed' ? theme.emerald : theme.accent,
+                borderColor:
+                  phase === 'confirmed'
+                    ? theme.emerald
+                    : isDark
+                    ? 'rgba(255, 255, 255, 0.16)'
+                    : 'rgba(0, 0, 0, 0.08)',
               },
             ]}
           />
           <TouchableOpacity
             style={[
               styles.sensorDisc,
-              {
-                backgroundColor: theme.bgElevated,
-                borderColor: phase === 'confirmed' ? theme.emerald : theme.borderDefault,
+              phase === 'confirmed' && {
+                borderColor: theme.emerald,
+                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#E6F9F0',
+              },
+              phase === 'error' && {
+                borderColor: theme.rose,
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
               },
             ]}
             onPress={handleStartAuth}
@@ -184,13 +242,17 @@ export function HaptixBiometricPromptSheet({
             accessibilityLabel="Touch sensor to authorize"
           >
             {phase === 'confirmed' ? (
-              <MaterialIcons name="check" size={38} color={theme.emerald} />
+              <MaterialIcons name="check" size={44} color={theme.emerald} />
             ) : phase === 'broadcasting' ? (
-              <ActivityIndicator size="small" color={theme.accent} />
+              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
             ) : phase === 'verifying_secondary' && securityMode === 'vault' ? (
-              <MaterialIcons name="laptop-mac" size={38} color={theme.accent} />
+              <MaterialIcons name="laptop-mac" size={40} color={theme.textPrimary} />
             ) : (
-              <MaterialIcons name="fingerprint" size={42} color={theme.accent} />
+              <Image
+                source={isDark ? FINGERPRINT_HERO_WHITE : FINGERPRINT_HERO_DARK}
+                style={styles.sensorImage}
+                resizeMode="contain"
+              />
             )}
           </TouchableOpacity>
         </View>
@@ -257,7 +319,7 @@ export function HaptixBiometricPromptSheet({
             {phase === 'confirmed' ? 'Done' : 'Cancel'}
           </Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     </View>
   )
 
@@ -286,6 +348,13 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       zIndex: 9999,
       elevation: 20,
     },
+    dragHandleTouchZone: {
+      width: '100%',
+      paddingTop: 0,
+      paddingBottom: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     sheetContainer: {
       backgroundColor: theme.bgCard,
       borderTopLeftRadius: radius.xl,
@@ -302,41 +371,36 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       height: 4,
       borderRadius: radius.pill,
       backgroundColor: theme.borderDefault,
-      marginBottom: 20,
     },
     sensorContainer: {
-      width: 90,
-      height: 90,
+      width: 104,
+      height: 104,
       alignItems: 'center',
       justifyContent: 'center',
+      marginTop: 4,
       marginBottom: 16,
     },
     sensorAura: {
       position: 'absolute',
-      width: 86,
-      height: 86,
-      borderRadius: 43,
+      width: 118,
+      height: 118,
+      borderRadius: 59,
       borderWidth: 1.5,
       opacity: 0.6,
     },
     sensorDisc: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      borderWidth: 1.5,
+      width: 104,
+      height: 104,
+      borderRadius: 52,
+      borderWidth: 1,
+      backgroundColor: isDark ? '#141418' : '#F4F5F7',
+      borderColor: isDark ? '#26262C' : '#E2E4E9',
       alignItems: 'center',
       justifyContent: 'center',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#6366F1',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.15,
-          shadowRadius: 8,
-        },
-        android: {
-          elevation: 3,
-        },
-      }),
+    },
+    sensorImage: {
+      width: 76,
+      height: 76,
     },
     heroTextContainer: {
       alignItems: 'center',

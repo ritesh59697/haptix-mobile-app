@@ -1073,12 +1073,18 @@ const createStyles = (theme: ThemeTokens) =>
       paddingHorizontal: 20,
       paddingTop: 12,
     },
+    dragHandleTouchZone: {
+      width: '100%',
+      paddingTop: 0,
+      paddingBottom: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     modalDragHandle: {
       width: 36,
       height: 4,
       borderRadius: radius.pill,
       alignSelf: 'center',
-      marginBottom: 16,
     },
     modalSheetHeader: {
       flexDirection: 'row',

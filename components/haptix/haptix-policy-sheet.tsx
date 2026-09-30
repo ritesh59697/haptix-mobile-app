@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react'
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { useMemo, useRef, useEffect } from 'react'
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Animated, PanResponder } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
@@ -268,8 +268,50 @@ export interface HaptixPolicySheetProps {
 
 export function HaptixPolicySheet({ topic, threshold = 0.1, onClose }: HaptixPolicySheetProps) {
   const insets = useSafeAreaInsets()
-  const { theme } = useAppTheme()
+  const { theme, isDark } = useAppTheme()
   const content = useMemo(() => (topic ? buildPolicy(threshold)[topic] : null), [topic, threshold])
+
+  // Fluid pull-down gesture to dismiss bottom sheet
+  const panY = useRef(new Animated.Value(0)).current
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 4,
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panY.setValue(gestureState.dy)
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 100 || gestureState.vy > 0.8) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Animated.timing(panY, {
+              toValue: 600,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              panY.setValue(0)
+              onClose()
+            })
+          } else {
+            Animated.spring(panY, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start()
+          }
+        },
+      }),
+    [onClose, panY],
+  )
+
+  useEffect(() => {
+    if (!content) {
+      panY.setValue(0)
+    }
+  }, [content, panY])
 
   return (
     <Modal visible={content !== null} transparent animationType="slide" onRequestClose={onClose}>
@@ -278,16 +320,20 @@ export function HaptixPolicySheet({ topic, threshold = 0.1, onClose }: HaptixPol
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
         {/* Bottom sheet */}
-        <View
+        <Animated.View
           style={[
             styles.sheet,
             {
               backgroundColor: theme.bgCard,
               borderColor: theme.borderDefault,
+              transform: [{ translateY: panY }],
             },
           ]}
         >
-          <View style={[styles.dragHandle, { backgroundColor: theme.borderDefault }]} />
+          {/* Functional Drag Handle Touch Zone */}
+          <View style={styles.dragHandleTouchZone} {...panResponder.panHandlers}>
+            <View style={[styles.dragHandle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
+          </View>
 
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.textPrimary }]}>{content?.title}</Text>
@@ -336,7 +382,7 @@ export function HaptixPolicySheet({ topic, threshold = 0.1, onClose }: HaptixPol
               <Text style={[styles.doneBtnText, { color: theme.accentForeground }]}>Got it</Text>
             </TouchableOpacity>
           </ScrollView>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   )
@@ -359,12 +405,18 @@ const styles = StyleSheet.create({
   scrollView: {
     flexShrink: 1,
   },
+  dragHandleTouchZone: {
+    width: '100%',
+    paddingTop: 0,
+    paddingBottom: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   dragHandle: {
     width: 36,
     height: 4,
     borderRadius: radius.pill,
     alignSelf: 'center',
-    marginBottom: 14,
   },
   header: {
     flexDirection: 'row',

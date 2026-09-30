@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import {
   ActivityIndicator,
   Keyboard,
@@ -12,6 +12,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Animated,
+  PanResponder,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -59,6 +61,48 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
 
   const [isSubmittingCreate, setIsSubmittingCreate] = useState(false)
   const [balances, setBalances] = useState<Record<string, number>>({})
+
+  // Fluid pull-down gesture to dismiss bottom sheet
+  const panY = useRef(new Animated.Value(0)).current
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 4,
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panY.setValue(gestureState.dy)
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 100 || gestureState.vy > 0.8) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Animated.timing(panY, {
+              toValue: 600,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              panY.setValue(0)
+              onClose()
+            })
+          } else {
+            Animated.spring(panY, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start()
+          }
+        },
+      }),
+    [onClose, panY],
+  )
+
+  useEffect(() => {
+    if (!visible) {
+      panY.setValue(0)
+    }
+  }, [visible, panY])
 
   // Load balances for all accounts
   useEffect(() => {
@@ -271,18 +315,21 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
-        <View
+        <Animated.View
           style={[
             styles.sheet,
             {
               backgroundColor: theme.bgCard,
               borderColor: theme.isDark ? '#222226' : theme.borderDefault,
               paddingBottom: Math.max(insets.bottom, 16) + 16,
+              transform: [{ translateY: panY }],
             },
           ]}
         >
           {/* Top Drag Handle */}
-          <View style={[styles.dragHandle, { backgroundColor: theme.borderDefault }]} />
+          <View style={styles.dragHandleTouchZone} {...panResponder.panHandlers}>
+            <View style={[styles.dragHandle, { backgroundColor: theme.isDark ? '#3a3a37' : '#D1D1D6' }]} />
+          </View>
 
           {/* Header */}
           <View style={styles.header}>
@@ -944,7 +991,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                 <TouchableOpacity
                   style={[
                     styles.submitPrimaryBtn,
-                    { backgroundColor: selectedMode === 'vault' ? '#4F6BFF' : '#4F6BFF' },
+                    { backgroundColor: '#5E81FF' },
                   ]}
                   onPress={handleConfirmCreate}
                   disabled={isSubmittingCreate}
@@ -964,7 +1011,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
               </View>
             </ScrollView>
           )}
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   )
@@ -975,6 +1022,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'flex-end',
+  },
+  dragHandleTouchZone: {
+    width: '100%',
+    paddingTop: 0,
+    paddingBottom: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sheet: {
     borderTopLeftRadius: 28,
@@ -990,8 +1044,7 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 14,
-    opacity: 0.6,
+    opacity: 0.8,
   },
   header: {
     flexDirection: 'row',

@@ -601,9 +601,9 @@ export default function TabSettingsScreen() {
         <View style={styles.watermarkWrap}>
           <Image 
             source={require('@/assets/images/haptix-new-logo.png')} 
-            style={{ width: 17, height: 17, resizeMode: 'contain' }}
+            style={{ width: 18, height: 18, resizeMode: 'contain' }}
           />
-          <Text style={[styles.watermarkText, { color: theme.textMuted }]}>
+          <Text style={[styles.watermarkText, { color: theme.textSecondary }]}>
             Haptix Smart Wallet
           </Text>
         </View>
@@ -696,10 +696,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    opacity: 0.5,
-    paddingTop: 12,
-    paddingBottom: 8,
+    gap: 8,
+    opacity: 0.85,
+    paddingTop: 16,
+    paddingBottom: 10,
   },
   watermarkText: {
     fontSize: 13,

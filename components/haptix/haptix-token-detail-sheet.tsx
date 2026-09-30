@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import {
   Modal,
   View,
@@ -9,6 +9,7 @@ import {
   Platform,
   Dimensions,
   PanResponder,
+  Animated,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -138,6 +139,48 @@ export function HaptixTokenDetailSheet({
     )
   }, [activeToken.priceUsd, activeToken.changePct, timeframe, isPositive, solPriceUsd])
 
+  // Fluid pull-down gesture to dismiss bottom sheet
+  const panY = useRef(new Animated.Value(0)).current
+
+  const sheetPanResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 4,
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panY.setValue(gestureState.dy)
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 100 || gestureState.vy > 0.8) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Animated.timing(panY, {
+              toValue: 600,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              panY.setValue(0)
+              onClose()
+            })
+          } else {
+            Animated.spring(panY, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start()
+          }
+        },
+      }),
+    [onClose, panY],
+  )
+
+  useEffect(() => {
+    if (!visible) {
+      panY.setValue(0)
+    }
+  }, [visible, panY])
+
   const { linePath, areaPath, lastX, lastY, coords } = useMemo(() => {
     return buildSvgPaths(points, chartWidth, chartHeight)
   }, [points, chartWidth, chartHeight])
@@ -226,7 +269,17 @@ export function HaptixTokenDetailSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={[styles.sheetContainer, { paddingBottom: Math.max(insets.bottom, 20) + 16 }]}>
+        <Animated.View
+          style={[
+            styles.sheetContainer,
+            { paddingBottom: Math.max(insets.bottom, 20) + 16, transform: [{ translateY: panY }] },
+          ]}
+        >
+          {/* Functional Drag Handle Touch Zone */}
+          <View style={styles.dragHandleTouchZone} {...sheetPanResponder.panHandlers}>
+            <View style={[styles.dragHandle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
+          </View>
+
           {/* Header Bar */}
           <View style={styles.headerBar}>
             <TouchableOpacity
@@ -474,7 +527,7 @@ export function HaptixTokenDetailSheet({
               </View>
             </View>
           </ScrollView>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   )
@@ -486,6 +539,19 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, 0.72)',
       justifyContent: 'flex-end',
+    },
+    dragHandleTouchZone: {
+      width: '100%',
+      paddingTop: 8,
+      paddingBottom: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dragHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: radius.pill,
+      alignSelf: 'center',
     },
     sheetContainer: {
       backgroundColor: theme.bgApp,

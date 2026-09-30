@@ -23,7 +23,6 @@ import { useAuth } from '@/components/auth/auth-provider'
 import { useCluster } from '@/components/cluster/cluster-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
-import { HaptixAlert } from '@/components/haptix/haptix-alert'
 import { HaptixPolicySheet, PolicyLinkButton } from '@/components/haptix/haptix-policy-sheet'
 import { DepthOutlineButton, HoldToConfirmButton, PrismDepthButton } from '@/components/ui'
 import { useGuardianSigner } from '@/hooks/use-guardian-signer'
@@ -71,7 +70,7 @@ export default function RecoverySettingsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const dialog = useHaptixDialog()
-  const { theme } = useAppTheme()
+  const { theme, isDark } = useAppTheme()
   const { activeWallet, updateWallet } = useAuth()
   const { connection, getExplorerUrl } = useCluster()
 
@@ -469,6 +468,200 @@ export default function RecoverySettingsScreen() {
 
   const timelockLabel = onChainWallet ? describeTimelock(onChainWallet.recoveryTimelock) : '24h'
 
+  // Safety Reassurance Callout ("A recovery never moves the wallet...")
+  const renderReassuranceBox = (extraStyle?: object) => (
+    <View
+      style={[
+        styles.reassuranceBox,
+        {
+          backgroundColor: isDark ? '#161619' : '#F5F5F7',
+          borderColor: isDark ? '#26262C' : theme.borderDefault,
+        },
+        extraStyle,
+      ]}
+    >
+      <MaterialIcons name="gpp-good" size={16} color={theme.textMuted} style={{ marginTop: 2, flexShrink: 0 }} />
+      <Text style={[styles.reassuranceText, { color: theme.textSecondary }]}>
+        A recovery never moves the wallet. The address stays the same, so anything sent to it during the window is still yours afterward.
+      </Text>
+    </View>
+  )
+
+  // Guardian Card (locked during an active recovery)
+  const renderGuardianCard = (isLocked: boolean) => (
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+      <View style={styles.cardHeader}>
+        <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Guardian</Text>
+        <View
+          style={[
+            styles.tag,
+            { backgroundColor: 'transparent', borderColor: 'transparent', paddingHorizontal: 0, flexDirection: 'row', alignItems: 'center', gap: 4 },
+          ]}
+        >
+          <MaterialIcons name={onChainWallet ? 'check' : 'warning-amber'} size={14} color={onChainWallet ? theme.emeraldText : theme.amberText} />
+          <Text style={[styles.tagText, { color: onChainWallet ? theme.emeraldText : theme.amberText, fontWeight: '400' }]}>
+            {onChainWallet ? 'Active' : 'Not on-chain yet'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.detailRow}>
+        <View style={{ flex: 1, paddingRight: 8 }}>
+          <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>1 guardian</Text>
+          <Text style={[styles.detailDesc, { color: theme.textMuted }]}>
+            Can only start a recovery, never move funds
+          </Text>
+        </View>
+        <View style={{ flex: 1, alignItems: 'flex-end', paddingLeft: 8 }}>
+          <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>{timelockLabel.toLowerCase()} timelock</Text>
+          <Text style={[styles.detailDesc, { color: theme.textMuted, textAlign: 'right' }]}>
+            Both passkeys can cancel it
+          </Text>
+        </View>
+      </View>
+
+      <View style={[styles.guardianRow, { backgroundColor: theme.bgInput, borderColor: theme.borderDefault }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.guardianLabel, { color: theme.textMuted }]}>Guardian address</Text>
+            <Text style={[styles.guardianValue, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="middle">
+              {onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'Set on first on-chain activation'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => {
+              if (onChainWallet) {
+                Clipboard.setString(onChainWallet.guardian.toBase58())
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+              }
+            }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={{ justifyContent: 'center', paddingLeft: 8 }}
+          >
+            <MaterialIcons name="content-copy" size={16} color={theme.textMuted} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {isLocked ? (
+        <View style={[styles.guardianToggle, { opacity: 0.45 }]}>
+          <MaterialIcons name="lock" size={14} color={theme.textMuted} />
+          <Text style={[styles.guardianToggleText, { color: theme.textMuted }]}>
+            Change guardian locked during recovery
+          </Text>
+        </View>
+      ) : onChainWallet ? (
+        <>
+          <TouchableOpacity
+            style={styles.guardianToggle}
+            onPress={() => {
+              Haptics.selectionAsync()
+              setShowGuardianEditor((prev) => !prev)
+            }}
+            disabled={guardianBusy}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.guardianToggleText, { color: theme.textSecondary }]}>
+              {showGuardianEditor ? 'Cancel guardian change' : 'Change guardian'}
+            </Text>
+            <MaterialIcons
+              name={showGuardianEditor ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+              size={18}
+              color={theme.textSecondary}
+            />
+          </TouchableOpacity>
+
+          {showGuardianEditor && (
+            <View style={[styles.guardianEditor, { borderColor: theme.borderDefault }]}>
+              <View
+                style={[
+                  styles.guardianInputRow,
+                  { backgroundColor: theme.bgInput, borderColor: theme.borderDefault },
+                ]}
+              >
+                <TextInput
+                  style={[styles.guardianInput, { color: theme.textPrimary, flex: 1 }]}
+                  value={guardianDraft}
+                  onChangeText={setGuardianDraft}
+                  placeholder="Paste the new guardian's address"
+                  placeholderTextColor={theme.textMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!guardianBusy}
+                />
+                {guardianDraft.length > 0 ? (
+                  <TouchableOpacity
+                    onPress={() => setGuardianDraft('')}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear guardian address"
+                  >
+                    <MaterialIcons name="cancel" size={18} color={theme.textMuted} />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    onPress={async () => {
+                      const text = await Clipboard.getString()
+                      if (text) setGuardianDraft(text)
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                  >
+                    <MaterialIcons name="content-paste" size={14} color={theme.accent} />
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: theme.accent }}>Paste</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <Text
+                style={[
+                  styles.guardianHint,
+                  {
+                    color:
+                      guardianDraft.length > 0 && !guardianDraftParse.address ? theme.roseText : theme.textMuted,
+                  },
+                ]}
+              >
+                {guardianDraft.trim().length === 0
+                  ? 'A pasted link or message is read the same way a bare address is. Requires both passkeys.'
+                  : (guardianDraftParse.error ??
+                    `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.updateGuardianBtn,
+                  guardianDraftParse.address
+                    ? { backgroundColor: '#5E81FF' }
+                    : { backgroundColor: isDark ? '#1C1C20' : '#E5E5EA' },
+                  (guardianBusy || !guardianDraftParse.address) && { opacity: guardianBusy ? 0.7 : 0.6 },
+                ]}
+                disabled={guardianBusy || !guardianDraftParse.address}
+                onPress={handleSetGuardian}
+                activeOpacity={0.85}
+              >
+                {guardianBusy ? (
+                  <ActivityIndicator size="small" color={guardianDraftParse.address ? '#080C1E' : theme.textMuted} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.updateGuardianBtnText,
+                      {
+                        color: guardianDraftParse.address ? '#080C1E' : (isDark ? '#71717A' : '#8E8E93'),
+                      },
+                    ]}
+                  >
+                    Update guardian
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </>
+      ) : null}
+    </View>
+  )
+
   return (
     <View style={[styles.container, { backgroundColor: theme.bgApp }]}>
       <View
@@ -511,241 +704,178 @@ export default function RecoverySettingsScreen() {
           </View>
         ) : null}
 
-        {/* An in-flight recovery is the one thing on this screen that is time-critical, so
-            it sits above the configuration it would otherwise be buried under. */}
         {recoveryWindow ? (
-          <HaptixAlert
-            status="warning"
-            icon="lock-clock"
-            title={
-              recoveryWindow.secondsLeft > 0
-                ? `Recovery in flight (${formatRemainingTime(recoveryWindow.secondsLeft)} left)`
-                : 'Recovery in flight (timelock elapsed)'
-            }
-            message={
-              recoveryWindow.secondsLeft > 0
-                ? 'The wallet is frozen. Veto with both passkeys, or wait out the window and execute.'
-                : 'Executing installs the proposed keys and unfreezes the wallet.'
-            }
-          />
-        ) : null}
-
-        {/* 1. Guardian */}
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Guardian</Text>
+          <>
+            {/* 1. Amber Hero Countdown Banner */}
             <View
               style={[
-                styles.tag,
-                { backgroundColor: 'transparent', borderColor: 'transparent', paddingHorizontal: 0, flexDirection: 'row', alignItems: 'center', gap: 4 }
+                styles.heroCountdownBanner,
+                {
+                  backgroundColor: isDark ? 'rgba(217, 154, 43, 0.10)' : '#FEF3C7',
+                  borderColor: isDark ? 'rgba(217, 154, 43, 0.35)' : '#FDE68A',
+                },
               ]}
             >
-              <MaterialIcons name={onChainWallet ? 'check' : 'warning-amber'} size={14} color={onChainWallet ? theme.emeraldText : theme.amberText} />
-              <Text style={[styles.tagText, { color: onChainWallet ? theme.emeraldText : theme.amberText, fontWeight: '400' }]}>
-                {onChainWallet ? 'Active' : 'Not on-chain yet'}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.detailRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>1 guardian</Text>
-              <Text style={[styles.detailDesc, { color: theme.textMuted }]}>Cannot spend funds</Text>
-            </View>
-            <View style={{ flex: 1, alignItems: 'flex-end' }}>
-              <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>{timelockLabel.toLowerCase()} timelock</Text>
-              <Text style={[styles.detailDesc, { color: theme.textMuted }]}>Both passkeys can cancel it</Text>
-            </View>
-          </View>
-
-          {/* The program stores exactly one guardian and gives it no spending authority,
-              so show who it actually is rather than a capability badge. */}
-          <View style={[styles.guardianRow, { backgroundColor: theme.bgInput, borderColor: theme.borderDefault }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.guardianLabel, { color: theme.textMuted }]}>Guardian</Text>
-                <Text style={[styles.guardianValue, { color: theme.textPrimary }]} numberOfLines={1} ellipsizeMode="middle">
-                  {onChainWallet ? ellipsify(onChainWallet.guardian.toBase58(), 6) : 'Set on first on-chain activation'}
+              <View style={styles.bannerHeaderRow}>
+                <MaterialIcons name="schedule" size={18} color={isDark ? '#D99A2B' : '#D97706'} />
+                <Text style={[styles.bannerHeaderTitle, { color: isDark ? '#D99A2B' : '#D97706' }]}>
+                  Recovery in progress
                 </Text>
               </View>
-              <TouchableOpacity
-                onPress={() => {
-                  if (onChainWallet) {
-                    Clipboard.setString(onChainWallet.guardian.toBase58())
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-                  }
-                }}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                style={{ justifyContent: 'center', paddingLeft: 8 }}
+              <Text
+                style={[
+                  styles.heroCountdownText,
+                  { color: isDark ? '#FFFFFF' : '#111827' },
+                ]}
               >
-                <MaterialIcons name="content-copy" size={16} color={theme.textMuted} />
-              </TouchableOpacity>
+                {recoveryWindow.secondsLeft > 0 ? formatRemainingTime(recoveryWindow.secondsLeft) : 'Timelock elapsed'}
+              </Text>
+              <Text style={[styles.bannerSubtitle, { color: isDark ? '#A1A1AA' : '#6B7280' }]}>
+                {recoveryWindow.secondsLeft > 0
+                  ? 'left in the dispute window. The wallet is frozen while this is in progress.'
+                  : 'The dispute window has passed. You can finalize recovery or veto with your passkeys.'}
+              </Text>
             </View>
-            <Text style={[styles.guardianNote, { color: theme.textMuted }]}>
-              Can start a recovery and nothing else, it cannot move funds.
-            </Text>
-          </View>
 
-          {onChainWallet ? (
-            <>
-              <TouchableOpacity
-                style={styles.guardianToggle}
-                onPress={() => {
-                  Haptics.selectionAsync()
-                  setShowGuardianEditor((prev) => !prev)
-                }}
-                disabled={guardianBusy}
-                accessibilityRole="button"
-              >
-                <Text style={[styles.guardianToggleText, { color: theme.textSecondary }]}>
-                  {showGuardianEditor ? 'Cancel guardian change' : 'Change guardian'}
-                </Text>
-                <MaterialIcons
-                  name={showGuardianEditor ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                  size={18}
-                  color={theme.textSecondary}
-                />
-              </TouchableOpacity>
+            {/* 2. Recovery Flow Card (Promoted to Top during emergency) */}
+            <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+              <View style={styles.cardHeader}>
+                <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Recovery flow</Text>
+              </View>
 
-              {showGuardianEditor && (
-                <View style={[styles.guardianEditor, { borderColor: theme.borderDefault }]}>
-                  <View
-                    style={[
-                      styles.guardianInputRow,
-                      { backgroundColor: theme.bgInput, borderColor: theme.borderDefault },
-                    ]}
-                  >
-                    <TextInput
-                      style={[styles.guardianInput, { color: theme.textPrimary, flex: 1 }]}
-                      value={guardianDraft}
-                      onChangeText={setGuardianDraft}
-                      placeholder="Paste the new guardian's address"
-                      placeholderTextColor={theme.textMuted}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      editable={!guardianBusy}
+              {renderReassuranceBox()}
+
+              <View style={styles.actionColumn}>
+                <PrismDepthButton
+                  title="Veto and keep my keys"
+                  variant="primary"
+                  size="large"
+                  loading={recoveryBusy === 'cancel'}
+                  disabled={recoveryBusy !== null}
+                  onPress={() => void runCancelRecovery()}
+                  icon={
+                    <MaterialIcons
+                      name="gpp-good"
+                      size={20}
+                      color={recoveryBusy !== null && recoveryBusy !== 'cancel' ? theme.textMuted : theme.accentForeground}
                     />
-                    {guardianDraft.length > 0 ? (
-                      <TouchableOpacity
-                        onPress={() => setGuardianDraft('')}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        accessibilityRole="button"
-                        accessibilityLabel="Clear guardian address"
-                      >
-                        <MaterialIcons name="cancel" size={18} color={theme.textMuted} />
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={async () => {
-                          const text = await Clipboard.getString()
-                          if (text) setGuardianDraft(text)
-                        }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                      >
-                        <MaterialIcons name="content-paste" size={14} color={theme.accent} />
-                        <Text style={{ fontSize: 13, fontWeight: '600', color: theme.accent }}>Paste</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
+                  }
+                />
+                <Text style={[styles.actionCaption, { color: theme.textMuted, marginBottom: 12 }]}>
+                  Requires both passkeys
+                </Text>
 
-                  <Text
-                    style={[
-                      styles.guardianHint,
-                      {
-                        color:
-                          guardianDraft.length > 0 && !guardianDraftParse.address ? theme.roseText : theme.textMuted,
-                      },
-                    ]}
-                  >
-                    {guardianDraft.trim().length === 0
-                      ? 'A pasted link or message is read the same way a bare address is. Requires both passkeys.'
-                      : (guardianDraftParse.error ??
-                        `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
-                  </Text>
+                {recoveryWindow.secondsLeft > 0 ? (
+                  <>
+                    <View
+                      style={[
+                        styles.disabledFinalizeBtn,
+                        {
+                          backgroundColor: isDark ? '#1C1C1F' : '#F4F5F7',
+                          borderColor: isDark ? '#26262C' : '#E2E4E9',
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.disabledFinalizeText, { color: theme.textMuted }]}>
+                        Finalize recovery
+                      </Text>
+                    </View>
+                    <Text style={[styles.actionCaption, { color: theme.textMuted }]}>
+                      Unlocks when the dispute window ends
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <HoldToConfirmButton
+                      variant="danger"
+                      label={recoveryBusy === 'execute' ? 'Finalizing…' : 'Hold to Finalize Recovery'}
+                      confirmingLabel="Keep holding…"
+                      completedLabel="Finalizing…"
+                      holdDurationMs={1200}
+                      onConfirm={() => {
+                        if (recoveryBusy === null) handleExecuteRecovery()
+                      }}
+                    />
+                    <Text style={[styles.actionCaption, { color: theme.roseText }]}>
+                      Dispute window ended. Irreversibly installs proposed keys.
+                    </Text>
+                  </>
+                )}
+              </View>
+            </View>
 
-                  <DepthOutlineButton
-                    title={guardianBusy ? 'Changing…' : 'Update guardian'}
-                    size="compact"
-                    disabled={guardianBusy || !guardianDraftParse.address}
-                    onPress={handleSetGuardian}
-                  />
-                </View>
-              )}
-            </>
-          ) : null}
-        </View>
+            {/* 3. Guardian Card (Demoted to bottom and locked during recovery) */}
+            {renderGuardianCard(true)}
+          </>
+        ) : (
+          <>
+            {/* IDLE STATE: 1. Guardian Card leads */}
+            {renderGuardianCard(false)}
 
-        {/* 2. The recovery itself. Without this the program could rotate keys all day and
-            no owner would ever be able to ask it to. */}
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
-          <View style={styles.cardHeader}>
-            <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Recovery flow</Text>
-          </View>
+            {/* IDLE STATE: 2. Recovery Flow Card */}
+            <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+              <View style={styles.cardHeader}>
+                <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Recovery flow</Text>
+              </View>
 
-          <Text style={[styles.bodyText, { color: theme.textSecondary }]}>
-            {!onChainWallet
-              ? 'The guardian is recorded when the account is first created on-chain, so there is nothing to recover yet.'
-              : recoveryWindow
-                ? 'A recovery is in flight. Veto it with both passkeys to keep your current keys, or execute it once the timelock has passed.'
-                : guardianSigner
-                  ? 'Your guardian can start a recovery from their own wallet if you lose this device. You can veto it here at any point during the timelock.'
+              <Text style={[styles.bodyText, { color: theme.textSecondary, marginBottom: 12 }]}>
+                {!onChainWallet
+                  ? 'The guardian is recorded when the account is first created on-chain, so there is nothing to recover yet.'
+                  : guardianSigner
+                  ? 'Your guardian can start a recovery from their own wallet or web portal if you lose this device. You can veto it here at any point during the dispute window.'
                   : 'Recovery is started by the guardian from their own device. This build cannot sign as it.'}
-          </Text>
+              </Text>
 
-          {recoveryWindow ? (
-            <View style={styles.actionColumn}>
-              {/* The owner's own answer, and the only one that leaves the wallet where it
-                  is. It leads because the alternative is a one-way door: executing installs
-                  keys this device may not hold, and nothing here can undo it. */}
-              <PrismDepthButton
-                title={recoveryBusy === 'cancel' ? 'Keeping your keys…' : 'Keep My Keys'}
-                size="compact"
-                disabled={recoveryBusy !== null}
-                onPress={() => void runCancelRecovery()}
-              />
+              {renderReassuranceBox({ marginBottom: onChainWallet && guardianSigner ? 14 : 0 })}
 
-              {/* Executing is permissionless and irreversible, so once the window closes it
-                  is a hold rather than a tap. Inside the window the row carries only the
-                  deadline, disabled — and the disabled styling is what keeps an inert
-                  control from rendering like a live one. */}
-              {recoveryWindow.secondsLeft > 0 ? (
-                <DepthOutlineButton
-                  title={`Execute unlocks in ${formatRemainingTime(recoveryWindow.secondsLeft)}`}
-                  size="compact"
-                  disabled
-                />
-              ) : (
-                <HoldToConfirmButton
-                  variant="danger"
-                  label={recoveryBusy === 'execute' ? 'Executing…' : 'Hold to Execute Recovery'}
-                  confirmingLabel="Keep holding…"
-                  completedLabel="Executing…"
-                  holdDurationMs={1200}
-                  onConfirm={() => {
-                    if (recoveryBusy === null) handleExecuteRecovery()
-                  }}
-                />
-              )}
+              {onChainWallet && guardianSigner ? (
+                <View
+                  style={[
+                    styles.testSimulationBox,
+                    {
+                      backgroundColor: isDark ? '#141416' : '#FAFAFA',
+                      borderColor: isDark ? '#323238' : '#D1D5DB',
+                    },
+                  ]}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <MaterialIcons name="science" size={16} color={theme.textSecondary} />
+                    <Text style={[styles.testSimulationTitle, { color: theme.textPrimary }]}>
+                      Devnet simulation
+                    </Text>
+                  </View>
+                  <Text style={[styles.testSimulationDesc, { color: theme.textSecondary }]}>
+                    Simulate losing this phone by broadcasting an on-chain freeze with your devnet guardian keypair. You can test the dispute window and veto it with your passkeys.
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.simulateBtn,
+                      {
+                        backgroundColor: isDark ? '#1E1E22' : '#FFFFFF',
+                        borderColor: isDark ? '#2E2E36' : theme.borderDefault,
+                      },
+                      recoveryBusy !== null && { opacity: 0.6 },
+                    ]}
+                    onPress={handleStartRecovery}
+                    disabled={recoveryBusy !== null}
+                    activeOpacity={0.85}
+                  >
+                    {recoveryBusy === 'initiate' ? (
+                      <ActivityIndicator size="small" color="#5E81FF" />
+                    ) : (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <MaterialIcons name="lock-outline" size={16} color={isDark ? '#E4E4E7' : theme.textPrimary} />
+                        <Text style={[styles.simulateBtnText, { color: isDark ? '#E4E4E7' : theme.textPrimary }]}>
+                          Simulate lost phone recovery
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              ) : null}
             </View>
-          ) : onChainWallet && guardianSigner ? (
-            <View style={styles.actionColumn}>
-              <DepthOutlineButton
-                title={recoveryBusy === 'initiate' ? 'Starting…' : 'Start recovery (guardian)'}
-                size="compact"
-                disabled={recoveryBusy !== null}
-                onPress={handleStartRecovery}
-              />
-            </View>
-          ) : null}
-
-          <View style={{ marginTop: 20 }}>
-            <Text style={[styles.footnote, { color: theme.textMuted, paddingHorizontal: 0 }]}>
-              A recovery never moves the wallet: the address stays the same, so anything sent to it during the window is
-              still yours afterwards.
-            </Text>
-          </View>
-        </View>
+          </>
+        )}
       </ScrollView>
 
       {/* Recovery Policy Sheet */}
@@ -917,15 +1047,111 @@ const createStyles = (theme: ThemeTokens) =>
       lineHeight: 19,
     },
     actionColumn: {
-      // Stacked, not side by side: both buttons are full width with clipped labels, so
-      // sharing a row made the pair wider than the box it sits in and "Execute Recovery"
-      // hung over the border. Full-width rows also survive a large system font.
-      gap: 10,
-      marginTop: 14,
+      gap: 0,
+      marginTop: 4,
+    },
+    actionCaption: {
+      fontSize: 11.5,
+      textAlign: 'center',
+      marginTop: 6,
+    },
+    disabledFinalizeBtn: {
+      width: '100%',
+      height: 48,
+      borderRadius: 12,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    disabledFinalizeText: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    heroCountdownBanner: {
+      borderWidth: 1,
+      borderRadius: 14,
+      padding: 16,
+      marginBottom: 14,
+    },
+    bannerHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 4,
+    },
+    bannerHeaderTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    heroCountdownText: {
+      fontSize: 26,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+      marginVertical: 3,
+    },
+    bannerSubtitle: {
+      fontSize: 12.5,
+      lineHeight: 18,
+      marginTop: 2,
+    },
+    reassuranceBox: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 9,
+      borderWidth: 1,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      marginBottom: 14,
+    },
+    reassuranceText: {
+      flex: 1,
+      fontSize: 12.5,
+      lineHeight: 17,
     },
     footnote: {
       fontSize: typeScale.caption,
       lineHeight: 16,
       paddingHorizontal: 4,
+    },
+    updateGuardianBtn: {
+      width: '100%',
+      height: 48,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 4,
+    },
+    updateGuardianBtnText: {
+      fontSize: 14.5,
+      fontWeight: '600',
+    },
+    testSimulationBox: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      padding: 14,
+      marginTop: 14,
+    },
+    testSimulationTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    testSimulationDesc: {
+      fontSize: 12.5,
+      lineHeight: 18,
+      marginBottom: 12,
+    },
+    simulateBtn: {
+      width: '100%',
+      height: 46,
+      borderRadius: 12,
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    simulateBtnText: {
+      fontSize: 13.5,
+      fontWeight: '600',
     },
   })

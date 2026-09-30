@@ -142,29 +142,33 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
   const colors = useMemo(
     () => ({
       card: {
-        backgroundColor: theme.isDark ? '#1C1C1E' : '#FFFFFF',
-        borderColor: theme.isDark ? '#26262C' : theme.borderDefault,
+        backgroundColor: theme.isDark ? '#0D0D10' : '#FFFFFF',
+        borderColor: theme.isDark ? '#26262E' : theme.borderDefault,
       },
-      title: { color: theme.textPrimary },
-      message: { color: theme.textSecondary },
+      title: { color: theme.isDark ? '#FFFFFF' : theme.textPrimary },
+      message: { color: theme.isDark ? '#D4D4D8' : theme.textSecondary },
+      bulletBox: {
+        backgroundColor: theme.isDark ? '#141418' : '#F5F5F7',
+        borderColor: theme.isDark ? '#26262F' : '#E5E5EA',
+      },
       accentButton: {
         backgroundColor: '#4F6BFF',
         borderColor: '#4F6BFF',
       },
       accentButtonText: { color: '#FFFFFF' },
       cancelButton: {
-        backgroundColor: theme.isDark ? '#26262A' : '#EFEFF0',
-        borderColor: 'transparent',
+        backgroundColor: theme.isDark ? '#1C1C21' : '#EFEFF0',
+        borderColor: theme.isDark ? '#2C2C35' : 'transparent',
       },
-      cancelButtonText: { color: theme.textPrimary },
+      cancelButtonText: { color: theme.isDark ? '#F4F4F5' : theme.textPrimary },
       secondaryButton: {
-        backgroundColor: theme.isDark ? '#26262A' : '#EFEFF0',
-        borderColor: theme.isDark ? '#333338' : theme.borderSubtle,
+        backgroundColor: theme.isDark ? '#1C1C21' : '#EFEFF0',
+        borderColor: theme.isDark ? '#2C2C35' : theme.borderSubtle,
       },
-      secondaryButtonText: { color: theme.textPrimary },
+      secondaryButtonText: { color: theme.isDark ? '#F4F4F5' : theme.textPrimary },
       destructiveButton: {
-        backgroundColor: theme.rose,
-        borderColor: theme.rose,
+        backgroundColor: '#E11D48',
+        borderColor: '#E11D48',
       },
       destructiveButtonText: { color: '#FFFFFF' },
     }),
@@ -173,12 +177,21 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
 
   const statusBadgeBg =
     active?.status === 'success'
-      ? (theme.isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.12)')
+      ? (theme.isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.12)')
       : active?.status === 'warning'
-        ? (theme.isDark ? 'rgba(245, 158, 11, 0.16)' : 'rgba(245, 158, 11, 0.12)')
+        ? (theme.isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.12)')
         : active?.status === 'error'
-          ? (theme.isDark ? 'rgba(239, 68, 68, 0.16)' : 'rgba(239, 68, 68, 0.12)')
+          ? (theme.isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.12)')
           : (theme.isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)')
+
+  const statusBadgeBorder =
+    active?.status === 'success'
+      ? 'rgba(16, 185, 129, 0.3)'
+      : active?.status === 'warning'
+        ? 'rgba(245, 158, 11, 0.3)'
+        : active?.status === 'error'
+          ? 'rgba(239, 68, 68, 0.3)'
+          : 'rgba(255, 255, 255, 0.12)'
 
   const statusColor =
     active?.status === 'success'
@@ -189,7 +202,9 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
           ? theme.rose
           : theme.textMuted
 
-  const statusIcon = active ? STATUS_ICON[active.status] : null
+  const statusIcon = active
+    ? (active.status === 'warning' ? 'warning' : STATUS_ICON[active.status])
+    : null
 
   // A fresh object here re-rendered every consumer in the tree on any provider render,
   // and made `dialog` useless as a `useCallback` dependency for callers -- their
@@ -219,8 +234,8 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
           {active && (
             <View style={[layout.card, colors.card]} accessibilityViewIsModal accessibilityLiveRegion="polite">
               {statusIcon && (
-                <View style={[layout.statusBadge, { backgroundColor: statusBadgeBg }]}>
-                  <MaterialIcons name={statusIcon} size={28} color={statusColor} />
+                <View style={[layout.statusBadge, { backgroundColor: statusBadgeBg, borderColor: statusBadgeBorder }]}>
+                  <MaterialIcons name={statusIcon} size={26} color={statusColor} />
                 </View>
               )}
 
@@ -228,7 +243,58 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
 
               {!!active.message && (
                 <ScrollView style={layout.messageScroll} bounces={false} showsVerticalScrollIndicator={false}>
-                  <Text style={[layout.message, colors.message]}>{active.message}</Text>
+                  {active.message.includes('•') ? (
+                    <View style={{ gap: 10 }}>
+                      {active.message.split('\n\n').map((block, bIdx) => {
+                        if (block.includes('•')) {
+                          return (
+                            <View
+                              key={bIdx}
+                              style={[
+                                {
+                                  borderWidth: 1,
+                                  borderRadius: 14,
+                                  padding: 12,
+                                  gap: 8,
+                                },
+                                colors.bulletBox,
+                              ]}
+                            >
+                              {block.split('\n').map((line, lIdx) => {
+                                const trimmed = line.trim()
+                                const isBullet = trimmed.startsWith('•') || trimmed.startsWith('-')
+                                const isHeader = trimmed.startsWith('⚠️') || trimmed.includes('Important') || trimmed.includes('Notice')
+                                return (
+                                  <View key={lIdx} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+                                    {isBullet && (
+                                      <Text style={{ color: active.status === 'warning' ? '#F59E0B' : '#4F6BFF', fontSize: 13, lineHeight: 18 }}>•</Text>
+                                    )}
+                                    <Text
+                                      style={[
+                                        layout.message,
+                                        colors.message,
+                                        { textAlign: 'left', flex: 1, fontSize: 12.5, lineHeight: 18 },
+                                        isHeader && { fontWeight: '700', color: theme.isDark ? '#FFFFFF' : '#111827', fontSize: 13 },
+                                      ]}
+                                    >
+                                      {isBullet ? trimmed.replace(/^[•-]\s*/, '') : trimmed}
+                                    </Text>
+                                  </View>
+                                )
+                              })}
+                            </View>
+                          )
+                        }
+                        return (
+                          <Text key={bIdx} style={[layout.message, colors.message]}>
+                            {block}
+                          </Text>
+                        )
+                      })}
+                    </View>
+                  ) : (
+                    <Text style={[layout.message, colors.message]}>{active.message}</Text>
+                  )}
                 </ScrollView>
               )}
 
@@ -286,37 +352,38 @@ const layout = StyleSheet.create({
   },
   card: {
     width: '100%',
-    maxWidth: 350,
+    maxWidth: 345,
     borderRadius: 24,
     borderWidth: 1.2,
     paddingTop: 24,
     paddingHorizontal: 22,
-    paddingBottom: 20,
+    paddingBottom: 22,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.5,
+    shadowRadius: 28,
+    elevation: 16,
   },
   statusBadge: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1.2,
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   title: {
-    fontSize: 18.5,
+    fontSize: 18,
     fontWeight: '700',
     letterSpacing: -0.3,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   messageScroll: {
-    maxHeight: 220,
-    marginBottom: 6,
+    maxHeight: 260,
+    marginBottom: 4,
   },
   message: {
     fontSize: 13.5,
@@ -334,7 +401,7 @@ const layout = StyleSheet.create({
   },
   button: {
     height: 48,
-    borderRadius: 15,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: 'transparent',
     alignItems: 'center',

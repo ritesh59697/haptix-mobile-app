@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import {
   Modal,
   View,
@@ -10,6 +10,8 @@ import {
   Platform,
   ActivityIndicator,
   Linking,
+  Animated,
+  PanResponder,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -34,7 +36,6 @@ import {
 } from '@/utils/haptix-client'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { PrismDepthButton } from '@/components/ui'
-import { HaptixBiometricPromptSheet } from './haptix-biometric-prompt-sheet'
 import { HaptixTokenIcon } from './haptix-icons'
 import { useHaptixDialog } from './haptix-dialog'
 
@@ -93,8 +94,53 @@ export function HaptixSwapSheet({
   const [slippage, setSlippage] = useState<0.1 | 0.5 | 1.0>(0.5)
   const [showPayPicker, setShowPayPicker] = useState(false)
   const [showReceivePicker, setShowReceivePicker] = useState(false)
-  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false)
+  const [confirmedSwap, setConfirmedSwap] = useState<{
+    signature: string
+    payAmount: number
+    paySymbol: string
+    receiveAmount: number
+    receiveSymbol: string
+  } | null>(null)
+  const [copiedSig, setCopiedSig] = useState(false)
   const [isSwapping, setIsSwapping] = useState(false)
+
+  // Fluid pull-down gesture to dismiss bottom sheet
+  const panY = useRef(new Animated.Value(0)).current
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          return gestureState.dy > 4
+        },
+        onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy > 0) {
+            panY.setValue(gestureState.dy)
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy > 100 || gestureState.vy > 0.8) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Animated.timing(panY, {
+              toValue: 600,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              panY.setValue(0)
+              onClose()
+            })
+          } else {
+            Animated.spring(panY, {
+              toValue: 0,
+              bounciness: 4,
+              useNativeDriver: true,
+            }).start()
+          }
+        },
+      }),
+    [onClose, panY],
+  )
 
   useEffect(() => {
     if (visible) {
@@ -104,8 +150,13 @@ export function HaptixSwapSheet({
       } else if (initialPaySymbol === 'USDC') {
         setReceiveSymbol('SOL')
       }
+    } else {
+      panY.setValue(0)
+      setConfirmedSwap(null)
+      setIsSwapping(false)
+      setCopiedSig(false)
     }
-  }, [visible, initialPaySymbol, initialReceiveSymbol])
+  }, [visible, initialPaySymbol, initialReceiveSymbol, panY])
 
   // Prices
   const getPrice = (sym: string): number => {
@@ -165,7 +216,7 @@ export function HaptixSwapSheet({
     }
   }
 
-  const handleInitiateSwap = () => {
+  const handleInitiateSwap = async () => {
     if (isFrozen) {
       dialog.alert('Wallet Locked', 'This wallet is currently locked. Unlock it to perform swaps.')
       return
@@ -181,18 +232,11 @@ export function HaptixSwapSheet({
       return
     }
 
-    if (!wallet?.address) {
+    const activeWallet = wallet
+    if (!activeWallet?.address) {
       dialog.alert('Error', 'No active smart wallet found.')
       return
     }
-
-    setShowBiometricPrompt(true)
-  }
-
-  // Execute Swap via Anchor Devnet Program & Secp256r1 precompile
-  const handleExecuteSwap = async (onStepChange: (step: 1 | 2) => void) => {
-    const activeWallet = wallet
-    if (!activeWallet?.address) throw new Error('No active smart wallet found.')
 
     setIsSwapping(true)
     const walletPda = new PublicKey(activeWallet.address)
@@ -241,7 +285,6 @@ export function HaptixSwapSheet({
       const secondarySigIxIndex = needsInit ? (isQuorumRequired ? 2 : undefined) : isQuorumRequired ? 1 : undefined
 
       if (isQuorumRequired) {
-        onStepChange(2)
         const secondarySig = await signWithPasskey(
           'secondary',
           message,
@@ -309,52 +352,142 @@ export function HaptixSwapSheet({
 
       onSwapSuccess(swapRecord)
 
-      setTimeout(() => {
-        setShowBiometricPrompt(false)
-        setIsSwapping(false)
-        onClose()
-
-        dialog.alert(
-          'Swap Confirmed On-Chain',
-          `Swapped ${payAmountNum} ${paySymbol} for ≈ ${receiveAmountNum.toFixed(4)} ${receiveSymbol}\n\nSignature: ${ellipsify(sig, 8)}`,
-          [
-            {
-              text: 'Copy Link',
-              onPress: () => {
-                const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-                Clipboard.setString(`https://solscan.io/tx/${sig}${clusterParam}`)
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-              },
-            },
-            {
-              text: 'View on Solscan',
-              onPress: () => {
-                const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-                Linking.openURL(`https://solscan.io/tx/${sig}${clusterParam}`).catch(() => {})
-              },
-            },
-            { text: 'Done', style: 'cancel' },
-          ],
-        )
-      }, 1100)
+      setIsSwapping(false)
+      setConfirmedSwap({
+        signature: sig,
+        payAmount: payAmountNum,
+        paySymbol,
+        receiveAmount: receiveAmountNum,
+        receiveSymbol,
+      })
     } catch (err: any) {
       console.error('[Haptix Swap Error]:', formatChainErrorForLog(err))
       setIsSwapping(false)
       const errorText = describeChainError(err, 'The swap could not be completed on-chain. Please try again.')
-      throw new Error(errorText)
+      dialog.alert('Swap Error', errorText)
     }
   }
 
   if (!visible) return null
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={() => {
+        if (confirmedSwap) {
+          setConfirmedSwap(null)
+          onClose()
+        } else {
+          onClose()
+        }
+      }}
+    >
       <View style={styles.backdrop}>
-        <View style={[styles.sheetContainer, { paddingBottom: Math.max(insets.bottom, 20) + 16 }]}>
-          {/* Header */}
-          <View style={styles.headerBar}>
+        <Animated.View
+          style={[
+            styles.sheetContainer,
+            { paddingBottom: Math.max(insets.bottom, 20) + 16, transform: [{ translateY: panY }] },
+          ]}
+        >
+          {/* Functional Drag Handle Touch Zone */}
+          <View style={styles.dragHandleTouchZone} {...panResponder.panHandlers}>
+            <View style={[styles.dragHandle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
+          </View>
+
+          {confirmedSwap ? (
+            // ==================== 1. SWAP CONFIRMED SHEET ====================
+            <View style={styles.stepSheetContent}>
+              {/* Green Check Badge */}
+              <View style={styles.confirmedBadgeOuter}>
+                <View style={styles.confirmedBadgeInner}>
+                  <MaterialIcons name="check" size={28} color={isDark ? '#10B981' : '#059669'} />
+                </View>
+              </View>
+
+              <Text style={styles.stepHeaderLabel}>Swap confirmed</Text>
+              <Text style={styles.stepPrimaryAmount}>
+                +{confirmedSwap.receiveAmount.toFixed(4)} {confirmedSwap.receiveSymbol}
+              </Text>
+              <Text style={styles.stepSubAmount}>
+                for {confirmedSwap.payAmount.toFixed(4)} {confirmedSwap.paySymbol}
+              </Text>
+
+              {/* Detailed Info Card */}
+              <View style={styles.infoCardContainer}>
+                <View style={styles.infoCardRow}>
+                  <Text style={styles.infoCardLabel}>Via</Text>
+                  <Text style={styles.infoCardValue}>Jupiter</Text>
+                </View>
+
+                <View style={styles.infoCardDivider} />
+
+                <View style={styles.infoCardRow}>
+                  <Text style={styles.infoCardLabel}>Verified by</Text>
+                  <View style={styles.verifiedRow}>
+                    <MaterialIcons name="fingerprint" size={16} color={theme.accent} />
+                    <Text style={styles.infoCardValue}>Passkey</Text>
+                  </View>
+                </View>
+
+                <View style={styles.infoCardDivider} />
+
+                <View style={styles.infoCardRow}>
+                  <Text style={styles.infoCardLabel}>Signature</Text>
+                  <TouchableOpacity
+                    style={styles.sigCopyButton}
+                    onPress={() => {
+                      Clipboard.setString(confirmedSwap.signature)
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                      setCopiedSig(true)
+                      setTimeout(() => setCopiedSig(false), 2000)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.sigText}>
+                      {ellipsify(confirmedSwap.signature, 8)}
+                    </Text>
+                    <MaterialIcons
+                      name={copiedSig ? 'check' : 'content-copy'}
+                      size={14}
+                      color={copiedSig ? (isDark ? '#10B981' : '#059669') : theme.textMuted}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Action Buttons */}
+              <TouchableOpacity
+                style={styles.primaryActionButton}
+                onPress={() => {
+                  setConfirmedSwap(null)
+                  onClose()
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.primaryActionButtonText}>Done</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.secondaryCardButton}
+                onPress={() => {
+                  const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+                  Linking.openURL(`https://solscan.io/tx/${confirmedSwap.signature}${clusterParam}`).catch(() => {})
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.secondaryCardButtonText}>View on Solscan</Text>
+                <MaterialIcons name="open-in-new" size={16} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            // ==================== 2. MAIN SWAP FORM ====================
+            <>
+              {/* Header */}
+              <View style={styles.headerBar}>
             <TouchableOpacity
-              style={[styles.iconBtn, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+              style={styles.iconBtn}
               onPress={onClose}
               activeOpacity={0.7}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -373,7 +506,7 @@ export function HaptixSwapSheet({
                     key={slip}
                     style={[
                       styles.slipBtn,
-                      isActive && { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault },
+                      isActive && styles.slipBtnActive,
                     ]}
                     onPress={() => {
                       Haptics.selectionAsync().catch(() => {})
@@ -397,7 +530,7 @@ export function HaptixSwapSheet({
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             {/* YOU PAY CARD */}
-            <View style={[styles.tradeCard, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+            <View style={styles.tradeCard}>
               <View style={styles.cardTopRow}>
                 <Text style={[styles.cardRoleLabel, { color: theme.textMuted }]}>YOU PAY</Text>
                 <Text style={[styles.balanceHint, { color: theme.textMuted }]}>
@@ -417,7 +550,7 @@ export function HaptixSwapSheet({
                 />
 
                 <TouchableOpacity
-                  style={[styles.tokenSelectorBtn, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+                  style={styles.tokenSelectorBtn}
                   onPress={() => setShowPayPicker(!showPayPicker)}
                   activeOpacity={0.75}
                 >
@@ -436,7 +569,7 @@ export function HaptixSwapSheet({
                   {[25, 50, 100].map((pct) => (
                     <TouchableOpacity
                       key={pct}
-                      style={[styles.pctChip, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+                      style={styles.pctChip}
                       onPress={() => handleApplyPercentage(pct)}
                     >
                       <Text style={[styles.pctChipText, { color: theme.textSecondary }]}>
@@ -449,7 +582,7 @@ export function HaptixSwapSheet({
 
               {/* Pay Token Picker Dropdown */}
               {showPayPicker && (
-                <View style={[styles.dropdownMenu, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
+                <View style={styles.dropdownMenu}>
                   {AVAILABLE_SWAP_TOKENS.map((item) => (
                     <TouchableOpacity
                       key={item.symbol}
@@ -474,7 +607,7 @@ export function HaptixSwapSheet({
             {/* Invert Button */}
             <View style={styles.invertRow}>
               <TouchableOpacity
-                style={[styles.invertBtn, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}
+                style={styles.invertBtn}
                 onPress={handleInvertTokens}
                 activeOpacity={0.8}
                 accessibilityRole="button"
@@ -485,7 +618,7 @@ export function HaptixSwapSheet({
             </View>
 
             {/* YOU RECEIVE CARD */}
-            <View style={[styles.tradeCard, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+            <View style={styles.tradeCard}>
               <View style={styles.cardTopRow}>
                 <Text style={[styles.cardRoleLabel, { color: theme.textMuted }]}>YOU RECEIVE</Text>
                 <Text style={[styles.balanceHint, { color: theme.textMuted }]}>
@@ -499,7 +632,7 @@ export function HaptixSwapSheet({
                 </Text>
 
                 <TouchableOpacity
-                  style={[styles.tokenSelectorBtn, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}
+                  style={styles.tokenSelectorBtn}
                   onPress={() => setShowReceivePicker(!showReceivePicker)}
                   activeOpacity={0.75}
                 >
@@ -517,7 +650,7 @@ export function HaptixSwapSheet({
 
               {/* Receive Token Picker Dropdown */}
               {showReceivePicker && (
-                <View style={[styles.dropdownMenu, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
+                <View style={styles.dropdownMenu}>
                   {AVAILABLE_SWAP_TOKENS.map((item) => (
                     <TouchableOpacity
                       key={item.symbol}
@@ -540,7 +673,7 @@ export function HaptixSwapSheet({
             </View>
 
             {/* Routing & Security Pill Box */}
-            <View style={[styles.routeBox, { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault }]}>
+            <View style={styles.routeBox}>
               <View style={styles.routeRow}>
                 <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Route</Text>
                 <Text style={[styles.routeValue, { color: theme.textPrimary }]}>Jupiter Direct ({network})</Text>
@@ -574,28 +707,11 @@ export function HaptixSwapSheet({
               />
             </View>
           </ScrollView>
-
-          {/* Biometric Confirmation Prompt */}
-          <HaptixBiometricPromptSheet
-            visible={showBiometricPrompt}
-            onClose={() => {
-              setShowBiometricPrompt(false)
-              setIsSwapping(false)
-            }}
-            actionType="transfer"
-            amountSol={paySymbol === 'SOL' ? payAmountNum : 0.05}
-            solPriceUsd={solPriceUsd}
-            title={`Swap ${payAmountNum} ${paySymbol}`}
-            recipientAddress={wallet?.address}
-            recipientLabel={`Jupiter DEX \u2192 ${receiveSymbol}`}
-            isQuorumRequired={isQuorumRequired}
-            securityMode={wallet?.securityMode ?? 'phone'}
-            asModal={false}
-            onAuthorize={handleExecuteSwap}
-          />
-        </View>
-      </View>
-    </Modal>
+        </>
+      )}
+    </Animated.View>
+  </View>
+</Modal>
   )
 }
 
@@ -607,11 +723,11 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       justifyContent: 'flex-end',
     },
     sheetContainer: {
-      backgroundColor: theme.bgApp,
-      borderTopLeftRadius: radius.xl,
-      borderTopRightRadius: radius.xl,
+      backgroundColor: isDark ? '#000000' : '#FFFFFF',
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
       borderWidth: 1,
-      borderColor: theme.borderDefault,
+      borderColor: isDark ? '#222226' : theme.borderDefault,
       maxHeight: '92%',
     },
     headerBar: {
@@ -631,6 +747,8 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderWidth: 1,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: isDark ? '#1C1C20' : '#F6F6F8',
+      borderColor: isDark ? '#26262E' : theme.borderDefault,
     },
     title: {
       fontSize: typeScale.title,
@@ -647,6 +765,10 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderWidth: 1,
       borderColor: 'transparent',
     },
+    slipBtnActive: {
+      backgroundColor: isDark ? '#24242A' : '#E5E5EA',
+      borderColor: isDark ? '#2E2E38' : theme.borderDefault,
+    },
     slipText: {
       fontSize: typeScale.micro,
     },
@@ -658,6 +780,8 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderRadius: radius.lg,
       borderWidth: 1,
       padding: 16,
+      backgroundColor: isDark ? '#141418' : '#F6F6F8',
+      borderColor: isDark ? '#222226' : theme.borderDefault,
     },
     cardTopRow: {
       flexDirection: 'row',
@@ -697,6 +821,8 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       paddingVertical: 8,
       borderRadius: radius.pill,
       borderWidth: 1,
+      backgroundColor: isDark ? '#1C1C20' : '#FFFFFF',
+      borderColor: isDark ? '#26262E' : theme.borderDefault,
     },
     tokenSymbolText: {
       fontSize: typeScale.body,
@@ -720,6 +846,8 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       paddingVertical: 3,
       borderRadius: radius.pill,
       borderWidth: 1,
+      backgroundColor: isDark ? '#1C1C20' : '#FFFFFF',
+      borderColor: isDark ? '#26262E' : theme.borderDefault,
     },
     pctChipText: {
       fontSize: typeScale.micro,
@@ -730,6 +858,19 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderRadius: radius.md,
       borderWidth: 1,
       overflow: 'hidden',
+      backgroundColor: isDark ? '#1C1C20' : '#FFFFFF',
+      borderColor: isDark ? '#26262E' : theme.borderDefault,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: isDark ? 0.4 : 0.12,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 6,
+        },
+      }),
     },
     dropdownItem: {
       flexDirection: 'row',
@@ -757,11 +898,13 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderWidth: 1,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: isDark ? '#1C1C20' : '#FFFFFF',
+      borderColor: isDark ? '#26262E' : theme.borderDefault,
       ...Platform.select({
         ios: {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.15,
+          shadowOpacity: isDark ? 0.35 : 0.1,
           shadowRadius: 4,
         },
         android: {
@@ -775,6 +918,8 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderRadius: radius.md,
       borderWidth: 1,
       gap: 8,
+      backgroundColor: isDark ? '#141418' : '#F6F6F8',
+      borderColor: isDark ? '#222226' : theme.borderDefault,
     },
     routeRow: {
       flexDirection: 'row',
@@ -786,5 +931,136 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
     routeValue: {
       fontSize: typeScale.caption,
       fontWeight: '600',
+    },
+    dragHandleTouchZone: {
+      width: '100%',
+      paddingTop: 8,
+      paddingBottom: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dragHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: radius.pill,
+      alignSelf: 'center',
+    },
+    // Dedicated Step Sheet Styles (Confirmed)
+    stepSheetContent: {
+      paddingHorizontal: 22,
+      paddingTop: 4,
+    },
+    confirmedBadgeOuter: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      backgroundColor: isDark ? 'rgba(16, 185, 129, 0.10)' : '#E6F9F0',
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+      marginBottom: 16,
+    },
+    confirmedBadgeInner: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: isDark ? 'rgba(16, 185, 129, 0.22)' : '#CEF5E1',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    stepHeaderLabel: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.textSecondary,
+      textAlign: 'center',
+      marginBottom: 6,
+    },
+    stepPrimaryAmount: {
+      fontSize: 28,
+      fontWeight: '800',
+      color: theme.textPrimary,
+      textAlign: 'center',
+      letterSpacing: -0.3,
+    },
+    stepSubAmount: {
+      fontSize: 14,
+      color: theme.textMuted,
+      textAlign: 'center',
+      marginTop: 4,
+      marginBottom: 20,
+    },
+    infoCardContainer: {
+      backgroundColor: isDark ? '#141418' : '#F6F6F8',
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: isDark ? '#222226' : theme.borderDefault,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      marginBottom: 22,
+    },
+    infoCardRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    infoCardLabel: {
+      fontSize: 14,
+      color: theme.textSecondary,
+    },
+    infoCardValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.textPrimary,
+    },
+    infoCardDivider: {
+      height: 1,
+      backgroundColor: isDark ? '#222228' : theme.borderSubtle,
+      marginVertical: 12,
+    },
+    verifiedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    sigCopyButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 2,
+      paddingHorizontal: 4,
+    },
+    sigText: {
+      fontSize: 13,
+      color: theme.textSecondary,
+      fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
+    },
+    primaryActionButton: {
+      backgroundColor: theme.accent,
+      height: 52,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+    },
+    primaryActionButtonText: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.accentForeground,
+    },
+    secondaryCardButton: {
+      backgroundColor: isDark ? '#18181E' : '#F6F6F8',
+      borderWidth: 1,
+      borderColor: isDark ? '#26262E' : theme.borderDefault,
+      height: 48,
+      borderRadius: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+    },
+    secondaryCardButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.textPrimary,
     },
   })
