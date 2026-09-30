@@ -1410,7 +1410,7 @@ export default function SignIn() {
             >
               <View style={styles.heroBiometricRing}>
                 <View style={styles.heroBiometricInnerCircle}>
-                  <TablerFingerprintIcon size={28} color="#5A6EE6" strokeWidth={2} />
+                  <TablerFingerprintIcon size={28} color="#6C8CFF" strokeWidth={2} />
                 </View>
               </View>
               <Text style={styles.sheetDesc}>Authenticate with your biometric passkey</Text>
@@ -1431,6 +1431,7 @@ export default function SignIn() {
                         onPress={() => {
                           Haptics.selectionAsync()
                           setRestoreAddress(w.address)
+                          setIsEditingAddress(false)
                         }}
                         activeOpacity={0.8}
                       >
@@ -1443,7 +1444,7 @@ export default function SignIn() {
                         <MaterialIcons
                           name={isSelected ? 'check-circle' : 'radio-button-unchecked'}
                           size={20}
-                          color={isSelected ? p.heroAccent : p.inkMuted}
+                          color={isSelected ? '#6C8CFF' : p.inkMuted}
                         />
                       </TouchableOpacity>
                     )
@@ -1451,127 +1452,140 @@ export default function SignIn() {
                 </View>
               )}
 
-              {/* PROMINENT WALLET ADDRESS BOX (ALWAYS VISIBLE) */}
-              <View style={{ marginTop: savedWallets.length > 0 ? 12 : 8, marginBottom: 4 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: p.inkSecondary }}>
-                    {savedWallets.length > 0 ? 'Or use another wallet address' : 'Wallet address'}
-                  </Text>
-                  {restoreAddress.length === 0 && (
+              {/* ADDRESS AREA - Fixed min-height area swapping between Input & Wallet Found */}
+              <View style={styles.addressAreaWrap}>
+                <Text style={styles.addressAreaLabel}>Wallet address</Text>
+
+                {restoreParse.address && !isEditingAddress ? (
+                  /* STATE B: WALLET FOUND ROW */
+                  <View style={styles.walletFoundCard}>
+                    <View style={styles.walletFoundLeft}>
+                      <View style={styles.walletFoundBadge}>
+                        <MaterialIcons name="check" size={16} color="#5FBF7A" />
+                      </View>
+                      <View>
+                        <Text style={styles.walletFoundSubtitle}>Wallet found</Text>
+                        <Text style={styles.walletFoundAddress}>
+                          {ellipsify(restoreParse.address, 6)}
+                        </Text>
+                      </View>
+                    </View>
                     <TouchableOpacity
-                      style={styles.pasteBadgeButton}
-                      onPress={handlePasteAddress}
+                      onPress={() => {
+                        Haptics.selectionAsync()
+                        setIsEditingAddress(true)
+                      }}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       activeOpacity={0.7}
                     >
-                      <MaterialIcons name="content-paste" size={13} color="#5A6EE6" />
-                      <Text style={[styles.pasteBadgeText, { color: '#5A6EE6' }]}>Paste</Text>
+                      <Text style={styles.walletFoundChangeText}>Change</Text>
                     </TouchableOpacity>
-                  )}
-                </View>
-
-                <View
-                  style={[
-                    styles.addressInputContainer,
-                    restoreParse.address
-                      ? { borderColor: isDark ? 'rgba(52, 211, 153, 0.45)' : 'rgba(31, 138, 76, 0.45)' }
-                      : null,
-                  ]}
-                >
-                  <TextInput
-                    style={[
-                      styles.addressInput,
-                      restoreAddress ? { fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 12.5 } : null,
-                    ]}
-                    value={restoreAddress}
-                    onChangeText={setRestoreAddress}
-                    placeholder="Paste Solana smart wallet address"
-                    placeholderTextColor={p.inkMuted}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  {restoreAddress.length > 0 ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      {restoreParse.address && (
-                        <MaterialIcons name="check-circle" size={17} color={isDark ? '#34D399' : '#1F8A4C'} />
-                      )}
-                      <TouchableOpacity
-                        onPress={() => {
-                          setRestoreAddress('')
-                          Haptics.selectionAsync().catch(() => {})
-                        }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <MaterialIcons name="cancel" size={18} color={p.inkMuted} />
-                      </TouchableOpacity>
-                    </View>
-                  ) : null}
-                </View>
-
-                {restoreHint && (
-                  <View style={styles.addressHintRow}>
-                    <MaterialIcons
-                      name={restoreHint.tone === 'error' ? 'error-outline' : 'check-circle-outline'}
-                      size={14}
-                      color={restoreHint.tone === 'error' ? p.danger : p.inkSecondary}
-                    />
-                    <Text
-                      style={[
-                        styles.addressHintText,
-                        { color: restoreHint.tone === 'error' ? p.danger : p.inkSecondary },
-                      ]}
-                    >
-                      {restoreHint.text}
-                    </Text>
                   </View>
-                )}
-
-                {/* FORGOT ADDRESS: GUARDIAN SEARCH */}
-                <TouchableOpacity
-                  style={styles.guardianSearchToggle}
-                  onPress={() => {
-                    Haptics.selectionAsync()
-                    setShowGuardianLookup((prev) => !prev)
-                  }}
-                >
-                  <MaterialIcons name="search" size={14} color={p.inkSecondary} />
-                  <Text style={styles.guardianSearchToggleText}>
-                    {showGuardianLookup ? 'Hide guardian lookup' : 'Forgot address? Search on-chain by guardian'}
-                  </Text>
-                  <MaterialIcons
-                    name={showGuardianLookup ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                    size={14}
-                    color={p.inkSecondary}
-                  />
-                </TouchableOpacity>
-
-                {showGuardianLookup && (
-                  <View style={styles.guardianSearchBox}>
-                    <Text style={styles.guardianSearchHelp}>
-                      Enter your guardian's Solana address, for example your Phantom or a friend's wallet, to find your smart wallet.
-                    </Text>
-                    <View style={[styles.addressInputContainer, { marginTop: 10, marginBottom: 10, height: 46 }]}>
+                ) : (
+                  /* STATE A: EMPTY / EDITING INPUT */
+                  <View>
+                    <View style={styles.addressInputContainer}>
                       <TextInput
                         style={styles.addressInput}
-                        value={guardianLookupInput}
-                        onChangeText={setGuardianLookupInput}
-                        placeholder="Guardian Solana address"
-                        placeholderTextColor={p.inkMuted}
+                        value={restoreAddress}
+                        onChangeText={setRestoreAddress}
+                        placeholder="Paste Solana smart wallet address"
+                        placeholderTextColor="#5F5E5A"
                         autoCapitalize="none"
                         autoCorrect={false}
                       />
-                    </View>
-                    <TouchableOpacity
-                      style={[styles.guardianSearchBtn, isSearchingGuardian && { opacity: 0.7 }]}
-                      onPress={handleSearchByGuardian}
-                      disabled={isSearchingGuardian || !guardianLookupInput.trim()}
-                    >
-                      {isSearchingGuardian ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      {restoreAddress.length > 0 ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          {restoreParse.address ? (
+                            <TouchableOpacity
+                              onPress={() => {
+                                Haptics.selectionAsync()
+                                setIsEditingAddress(false)
+                              }}
+                              style={styles.doneBadgeButton}
+                            >
+                              <Text style={styles.doneBadgeText}>Done</Text>
+                            </TouchableOpacity>
+                          ) : null}
+                          <TouchableOpacity
+                            onPress={() => {
+                              setRestoreAddress('')
+                              setIsEditingAddress(true)
+                              Haptics.selectionAsync().catch(() => {})
+                            }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <MaterialIcons name="cancel" size={18} color="#8A8985" />
+                          </TouchableOpacity>
+                        </View>
                       ) : (
-                        <Text style={styles.guardianSearchBtnText}>Find my wallet on-chain</Text>
+                        <TouchableOpacity
+                          style={styles.pasteBadgeButton}
+                          onPress={async () => {
+                            const addr = await fillFromClipboard()
+                            if (addr) {
+                              Haptics.selectionAsync()
+                              setIsEditingAddress(false)
+                            }
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          activeOpacity={0.7}
+                        >
+                          <MaterialIcons name="content-paste" size={14} color="#6C8CFF" />
+                          <Text style={styles.pasteBadgeText}>Paste</Text>
+                        </TouchableOpacity>
                       )}
+                    </View>
+
+                    {/* FORGOT ADDRESS: GUARDIAN SEARCH */}
+                    <TouchableOpacity
+                      style={styles.guardianSearchToggle}
+                      onPress={() => {
+                        Haptics.selectionAsync()
+                        setShowGuardianLookup((prev) => !prev)
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <MaterialIcons name="search" size={14} color="#8A8985" />
+                      <Text style={styles.guardianSearchToggleText}>
+                        {showGuardianLookup ? 'Hide guardian lookup' : 'Forgot address? Search on-chain by guardian'}
+                      </Text>
+                      <MaterialIcons
+                        name={showGuardianLookup ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                        size={14}
+                        color="#8A8985"
+                      />
                     </TouchableOpacity>
+
+                    {showGuardianLookup && (
+                      <View style={styles.guardianSearchBox}>
+                        <Text style={styles.guardianSearchHelp}>
+                          Enter your guardian's Solana address, for example your Phantom or a friend's wallet, to find your smart wallet.
+                        </Text>
+                        <View style={[styles.addressInputContainer, { marginTop: 10, marginBottom: 10, height: 46 }]}>
+                          <TextInput
+                            style={styles.addressInput}
+                            value={guardianLookupInput}
+                            onChangeText={setGuardianLookupInput}
+                            placeholder="Guardian Solana address"
+                            placeholderTextColor="#5F5E5A"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                          />
+                        </View>
+                        <TouchableOpacity
+                          style={[styles.guardianSearchBtn, isSearchingGuardian && { opacity: 0.7 }]}
+                          onPress={handleSearchByGuardian}
+                          disabled={isSearchingGuardian || !guardianLookupInput.trim()}
+                        >
+                          {isSearchingGuardian ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <Text style={styles.guardianSearchBtnText}>Find my wallet on-chain</Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    )}
                   </View>
                 )}
               </View>
@@ -1583,10 +1597,10 @@ export default function SignIn() {
                 activeOpacity={0.85}
               >
                 {isSigningIn ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color="#0C0C0D" />
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <TablerFingerprintIcon size={18} color="#FFFFFF" strokeWidth={2.2} />
+                    <TablerFingerprintIcon size={18} color="#0C0C0D" strokeWidth={2.2} />
                     <Text style={styles.primaryAccentButtonText}>Sign in with biometrics</Text>
                   </View>
                 )}
@@ -1788,7 +1802,7 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       height: 76,
       borderRadius: 38,
       borderWidth: 1.5,
-      borderColor: '#5A6EE6',
+      borderColor: '#6C8CFF',
       justifyContent: 'center',
       alignItems: 'center',
       alignSelf: 'center',
@@ -1799,7 +1813,7 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       width: 56,
       height: 56,
       borderRadius: 28,
-      backgroundColor: isDark ? '#1A1A20' : '#F4F3F1',
+      backgroundColor: isDark ? '#17171A' : '#F4F3F1',
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -1820,30 +1834,38 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       width: '100%',
       height: 50,
       borderRadius: 14,
-      backgroundColor: '#5A6EE6',
+      backgroundColor: '#6C8CFF',
       justifyContent: 'center',
       alignItems: 'center',
       flexDirection: 'row',
-      marginTop: 14,
+      marginTop: 8,
     },
     primaryAccentButtonText: {
-      color: '#FFFFFF',
+      color: '#0C0C0D',
       fontSize: 15,
       fontWeight: '600',
       letterSpacing: -0.2,
     },
     primaryDarkButtonText: { color: isDark ? '#000000' : '#FFFFFF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
+    addressAreaWrap: {
+      minHeight: 104,
+      marginBottom: 16,
+    },
+    addressAreaLabel: {
+      color: '#8A8985',
+      fontSize: 11.5,
+      marginBottom: 6,
+    },
     walletFoundCard: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      backgroundColor: isDark ? '#111114' : '#FFFFFF',
+      backgroundColor: isDark ? '#141416' : '#FFFFFF',
       borderWidth: 0.5,
-      borderColor: isDark ? '#26262C' : '#E0DDD6',
+      borderColor: isDark ? '#2A2A28' : '#E5E7EB',
       borderRadius: 12,
       paddingVertical: 10,
       paddingHorizontal: 12,
-      marginBottom: 10,
     },
     walletFoundLeft: {
       flexDirection: 'row',
@@ -1852,22 +1874,23 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       flex: 1,
     },
     walletFoundBadge: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(31, 138, 76, 0.10)',
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: 'rgba(95, 191, 122, 0.12)',
       justifyContent: 'center',
       alignItems: 'center',
+      flexShrink: 0,
     },
     walletFoundSubtitle: {
       fontSize: 11.5,
-      color: isDark ? '#8E8E93' : '#6B6A64',
+      color: '#8A8985',
       marginBottom: 2,
     },
     walletFoundAddress: {
-      fontSize: 13.5,
-      fontWeight: '600',
-      color: isDark ? '#F4F4F7' : '#181714',
+      fontSize: 13,
+      fontWeight: '500',
+      color: isDark ? '#F2F1EE' : '#181714',
       fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     },
     walletFoundChangeBtn: {
@@ -1875,9 +1898,9 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       paddingHorizontal: 10,
     },
     walletFoundChangeText: {
-      fontSize: 13.5,
-      fontWeight: '600',
-      color: '#4F6BFF',
+      fontSize: 13,
+      fontWeight: '500',
+      color: '#6C8CFF',
     },
     doneBadgeButton: {
       paddingHorizontal: 8,
@@ -1925,29 +1948,29 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
     addressInputContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: p.surfaceAlt,
-      borderWidth: 1,
-      borderColor: p.border,
-      borderRadius: 14,
-      paddingHorizontal: 14,
+      justifyContent: 'space-between',
+      gap: 10,
+      backgroundColor: isDark ? '#141416' : p.surfaceAlt,
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#E5E7EB',
+      borderRadius: 12,
+      paddingHorizontal: 12,
       height: 48,
-      marginTop: 4,
-      marginBottom: 12,
     },
-    addressInput: { flex: 1, color: p.heroInk, fontSize: 13.5, padding: 0 },
+    addressInput: { flex: 1, color: isDark ? '#F2F1EE' : '#111827', fontSize: 13, padding: 0 },
     // Pulled up into the input's own trailing margin, so the hint sits under the field
     // rather than opening a second, wider gap below it.
     addressHintRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: 6,
-      marginTop: -6,
-      marginBottom: 12,
+      marginTop: 6,
+      marginBottom: 10,
       paddingHorizontal: 2,
     },
     addressHintText: { flex: 1, fontSize: 12, lineHeight: 16 },
-    pasteBadgeButton: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 4 },
-    pasteBadgeText: { color: '#4F6BFF', fontSize: 12, fontWeight: '700' },
+    pasteBadgeButton: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0, paddingHorizontal: 4, paddingVertical: 4 },
+    pasteBadgeText: { color: '#6C8CFF', fontSize: 13, fontWeight: '500' },
     modeCard: {
       flex: 1,
       backgroundColor: p.surfaceAlt,
@@ -2069,13 +2092,13 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: 6,
-      paddingVertical: 8,
+      marginTop: 14,
       marginBottom: 6,
     },
     guardianSearchToggleText: {
-      color: p.inkSecondary,
+      color: '#8A8985',
       fontSize: 12.5,
-      fontWeight: '500',
+      fontWeight: '400',
     },
     guardianSearchBox: {
       backgroundColor: p.surfaceAlt,
