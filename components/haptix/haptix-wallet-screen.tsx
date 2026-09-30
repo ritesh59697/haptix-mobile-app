@@ -1663,12 +1663,12 @@ export function HaptixWalletScreen() {
       </View>
 
       {/* TOKENS SECTION HEADER */}
-      <View style={[styles.homeSectionHeaderRow, { marginTop: 0, marginBottom: 0 }]}>
+      <View style={styles.homeSectionHeaderRow}>
         <Text style={[styles.homeSectionTitle, styles.textPrimary]}>Tokens</Text>
       </View>
 
       {/* ASSETS LIST */}
-      <View style={[styles.assetList]}>
+      <View style={styles.assetList}>
         {/* Solana (SOL) */}
         <TouchableOpacity
           style={styles.assetRow}
@@ -1719,7 +1719,10 @@ export function HaptixWalletScreen() {
             </View>
           </View>
         </TouchableOpacity>
-        </View>
+      </View>
+
+      {/* SECTION DIVIDER */}
+      <View style={styles.homeSectionDivider} />
 
       {/* RECENT ACTIVITY SECTION */}
       <View style={styles.homeSectionHeaderRow}>
