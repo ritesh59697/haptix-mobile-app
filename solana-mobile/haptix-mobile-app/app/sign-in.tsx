@@ -47,7 +47,7 @@ import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet, HAP
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
-import { HaptixLogoText } from '@/components/haptix/haptix-icons'
+import { HaptixLogoText, TablerFingerprintIcon } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { useAppTheme } from '@/components/theme/theme-context'
 import {
@@ -87,7 +87,6 @@ function getCachedOrFetchProgramAccounts(connection: Connection): ProgramAccount
 const ONBOARDING_BG = require('@/assets/images/onboarding-bg.png')
 const FINGERPRINT_HERO_WHITE = require('@/assets/images/fingerprint-hero-white.png')
 const FINGERPRINT_HERO_DARK = require('@/assets/images/fingerprint-hero.png')
-const FINGERPRINT_HERO_BLUE = require('@/assets/images/fingerprint-hero-blue.png')
 
 interface OnboardingPalette {
   heroBg: string
@@ -1409,12 +1408,10 @@ export default function SignIn() {
               contentContainerStyle={{ paddingBottom: 12 }}
               showsVerticalScrollIndicator={false}
             >
-              <View style={styles.heroBiometricCircle}>
-                <Image
-                  source={FINGERPRINT_HERO_BLUE}
-                  style={styles.heroBiometricIcon}
-                  resizeMode="contain"
-                />
+              <View style={styles.heroBiometricRing}>
+                <View style={styles.heroBiometricInnerCircle}>
+                  <TablerFingerprintIcon size={28} color="#5A6EE6" strokeWidth={2} />
+                </View>
               </View>
               <Text style={styles.sheetDesc}>Authenticate with your biometric passkey</Text>
 
@@ -1623,7 +1620,7 @@ export default function SignIn() {
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <MaterialIcons name="fingerprint" size={18} color="#FFFFFF" />
+                    <TablerFingerprintIcon size={18} color="#FFFFFF" strokeWidth={2.2} />
                     <Text style={styles.primaryAccentButtonText}>Sign in with biometrics</Text>
                   </View>
                 )}
@@ -1820,27 +1817,25 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       alignItems: 'center',
       marginBottom: 12,
     },
-    heroBiometricCircle: {
-      width: 96,
-      height: 96,
-      borderRadius: 48,
-      backgroundColor: isDark ? 'rgba(79, 107, 255, 0.08)' : 'rgba(79, 107, 255, 0.05)',
+    heroBiometricRing: {
+      width: 76,
+      height: 76,
+      borderRadius: 38,
       borderWidth: 1.5,
-      borderColor: isDark ? 'rgba(79, 107, 255, 0.28)' : 'rgba(79, 107, 255, 0.20)',
+      borderColor: '#5A6EE6',
       justifyContent: 'center',
       alignItems: 'center',
       alignSelf: 'center',
-      marginTop: 6,
-      marginBottom: 14,
-      shadowColor: '#4F6BFF',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: isDark ? 0.25 : 0.12,
-      shadowRadius: 14,
-      elevation: 4,
+      marginTop: 4,
+      marginBottom: 12,
     },
-    heroBiometricIcon: {
-      width: 66,
-      height: 66,
+    heroBiometricInnerCircle: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: isDark ? '#1A1A20' : '#F4F3F1',
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     sheetTitle: { color: p.heroInk, fontSize: 19, fontWeight: '700' },
     sheetDesc: { color: p.inkSecondary, fontSize: 13, marginBottom: 14, textAlign: 'center' },
