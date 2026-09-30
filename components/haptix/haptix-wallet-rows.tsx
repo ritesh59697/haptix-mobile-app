@@ -48,15 +48,20 @@ interface ActivityRowProps {
   variant: ActivityRowVariant
   /** Opens the detail sheet. Must be referentially stable or `memo` below does nothing. */
   onSelect: (tx: TransactionRecord) => void
+  isBalanceHidden?: boolean
 }
 
-export const ActivityRow = memo(function ActivityRow({ tx, variant, onSelect }: ActivityRowProps) {
+export const ActivityRow = memo(function ActivityRow({ tx, variant, onSelect, isBalanceHidden }: ActivityRowProps) {
   const { theme } = useAppTheme()
   const styles = useWalletStyles()
   const failed = tx.status === 'failed'
   const received = tx.direction === 'receive'
   const hasAmount = tx.amount > 0 && tx.direction !== 'none'
-  const amountStr = failed ? 'Failed' : activityAmountFor(tx)
+  const amountStr = failed
+    ? 'Failed'
+    : isBalanceHidden && hasAmount
+      ? `${received ? '+' : '-'}•••• ${tx.tokenSymbol || 'SOL'}`
+      : activityAmountFor(tx)
   const timeStr = new Date(tx.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase()
   const tone = activityToneFor(tx, theme)
   const iconName = activityIconFor(tx)

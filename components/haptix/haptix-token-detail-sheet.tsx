@@ -31,6 +31,7 @@ export interface HaptixTokenDetailSheetProps {
   onSend: (symbol: string) => void
   onReceive: (symbol: string) => void
   onSwap: (symbol: string) => void
+  isBalanceHidden?: boolean
 }
 
 /**
@@ -106,6 +107,7 @@ export function HaptixTokenDetailSheet({
   onSend,
   onReceive,
   onSwap,
+  isBalanceHidden,
 }: HaptixTokenDetailSheetProps) {
   const insets = useSafeAreaInsets()
   const { theme, isDark } = useAppTheme()
@@ -488,10 +490,10 @@ export function HaptixTokenDetailSheet({
               </View>
               <View style={styles.holdingsRow}>
                 <Text style={[styles.holdingsCrypto, { color: theme.textPrimary }]}>
-                  {userBalance.toFixed(4)} {activeToken.symbol}
+                  {isBalanceHidden ? `•••• ${activeToken.symbol}` : `${userBalance.toFixed(4)} ${activeToken.symbol}`}
                 </Text>
                 <Text style={[styles.holdingsFiat, { color: theme.textSecondary }]}>
-                  ≈ ${userFiatValue.toFixed(2)}
+                  {isBalanceHidden ? '≈ $••••' : `≈ $${userFiatValue.toFixed(2)}`}
                 </Text>
               </View>
             </View>

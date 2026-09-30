@@ -31,11 +31,12 @@ import { radius, typeScale } from '@/theme/tokens'
 interface HaptixAccountSwitcherSheetProps {
   visible: boolean
   onClose: () => void
+  isBalanceHidden?: boolean
 }
 
 const THRESHOLD_OPTIONS = [0.05, 0.1, 0.25, 0.5]
 
-export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSwitcherSheetProps) {
+export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }: HaptixAccountSwitcherSheetProps) {
   const insets = useSafeAreaInsets()
   const { theme } = useAppTheme()
   const dialog = useHaptixDialog()
@@ -440,7 +441,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose }: HaptixAccountSw
                       ) : (
                         <>
                           <Text style={[styles.balanceText, { color: theme.textPrimary }]}>
-                            {solBalance !== null ? `${solBalance.toFixed(4)} SOL` : '—'}
+                            {solBalance !== null ? (isBalanceHidden ? '•••• SOL' : `${solBalance.toFixed(4)} SOL`) : '—'}
                           </Text>
 
                           {isActive ? (
