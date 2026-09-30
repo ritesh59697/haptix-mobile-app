@@ -30,10 +30,12 @@ import { createSecp256r1Instruction } from '@/utils/secp256r1-instruction'
 import {
   createExecuteTransferInstruction,
   createInitializeWalletInstruction,
+  assertRecoveryGuardian,
   fetchHaptixWallet,
   getTransferSignedMessage,
   parseGuardianAddress,
 } from '@/utils/haptix-client'
+import { SWAP_ENABLED } from '@/utils/haptix-swap'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { PrismDepthButton } from '@/components/ui'
 import { HaptixTokenIcon } from './haptix-icons'
@@ -217,6 +219,14 @@ export function HaptixSwapSheet({
   }
 
   const handleInitiateSwap = async () => {
+    if (!SWAP_ENABLED) {
+      dialog.alert(
+        'Swap is not available',
+        'There is no exchange on this network. This screen will not move SOL.',
+      )
+      return
+    }
+
     if (isFrozen) {
       dialog.alert('Wallet Locked', 'This wallet is currently locked. Unlock it to perform swaps.')
       return
@@ -242,12 +252,15 @@ export function HaptixSwapSheet({
     const walletPda = new PublicKey(activeWallet.address)
 
     try {
-      // 1. Prepare on-chain message payload
       const amountLamports = BigInt(Math.round(Math.min(payAmountNum, 0.05) * LAMPORTS_PER_SOL))
       const payer = await getFundedDevnetPayer(connection)
-
-      // Expected on-chain message payload: recipient (32B) || amount (8B LE)
-      const message = getTransferSignedMessage(payer.publicKey, amountLamports)
+      const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
+      const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
+      const authNonce = onChain?.authNonce ?? 0n
+      if (needsInit) {
+        assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress))
+      }
+      const message = getTransferSignedMessage(payer.publicKey, amountLamports, authNonce)
 
       // 2. Primary Passkey Authorization
       const primarySig = await signWithPasskey(
@@ -261,10 +274,6 @@ export function HaptixSwapSheet({
         message,
       })
 
-      // Check PDA initialization
-      const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
-      const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
-
       const txInstructions = []
 
       if (needsInit) {
@@ -276,7 +285,7 @@ export function HaptixSwapSheet({
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: parseGuardianAddress(activeWallet.guardianAddress) ?? undefined,
+          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress)),
         })
         txInstructions.push(initIx)
       }

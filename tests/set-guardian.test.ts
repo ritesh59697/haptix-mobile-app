@@ -101,16 +101,21 @@ equals(
 
 // The address is inside the signed bytes, so a signature collected to appoint one
 // guardian cannot be replayed to appoint another.
-const message = getSetGuardianSignedMessage(newGuardian)
+const message = getSetGuardianSignedMessage(newGuardian, 0n)
 equals(
   Buffer.from(message.subarray(0, 13)).toString('utf8'),
   'SET_GUARDIAN:',
   'message is prefixed so it cannot collide with another action',
 )
-equals(message.length, 45, 'message is the prefix plus the 32-byte address')
+equals(message.length, 53, 'message is the prefix, an 8-byte nonce, and the 32-byte address')
+equals(Buffer.from(message).readBigUInt64LE(13), 0n, 'the nonce sits immediately after the prefix')
 assert(
-  !Buffer.from(message).equals(Buffer.from(getSetGuardianSignedMessage(walletPda))),
+  !Buffer.from(message).equals(Buffer.from(getSetGuardianSignedMessage(walletPda, 0n))),
   'a signature for a different guardian produces different bytes',
+)
+assert(
+  !Buffer.from(message).equals(Buffer.from(getSetGuardianSignedMessage(newGuardian, 1n))),
+  'a signature at a different nonce produces different bytes',
 )
 
 console.log('\n--- SET SPEND THRESHOLD ---')
@@ -170,17 +175,18 @@ equals(
   'u64::MAX survives the round trip',
 )
 
-const thresholdMessage = getSetSpendThresholdSignedMessage(250_000_000n)
+const thresholdMessage = getSetSpendThresholdSignedMessage(250_000_000n, 7n)
 equals(
   Buffer.from(thresholdMessage.subarray(0, 14)).toString('utf8'),
   'SET_THRESHOLD:',
   'threshold message carries its own prefix',
 )
-equals(thresholdMessage.length, 22, 'threshold message is the prefix plus a u64')
+equals(thresholdMessage.length, 30, 'threshold message is the prefix, an 8-byte nonce, and a u64')
+equals(Buffer.from(thresholdMessage).readBigUInt64LE(14), 7n, 'the nonce is little-endian after the prefix')
 equals(
-  Buffer.from(thresholdMessage).readBigUInt64LE(14),
+  Buffer.from(thresholdMessage).readBigUInt64LE(22),
   250_000_000n,
-  'the amount is little-endian, as the program reads it',
+  'the amount is little-endian after the nonce, as the program reads it',
 )
 
 console.log(`\n  SET GUARDIAN TOTAL: ${passed + failed} | PASSED: ${passed} | FAILED: ${failed}\n`)

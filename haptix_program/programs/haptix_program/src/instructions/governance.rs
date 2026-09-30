@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use crate::auth::{bump_auth_nonce, set_guardian_message, set_threshold_message, unfreeze_message};
 use crate::error::HaptixError;
 use crate::secp256r1::verify_passkey_precompile_signature;
 use crate::state::{is_self_derived, WalletAccount};
@@ -22,27 +23,25 @@ pub fn handle_set_guardian(
     primary_sig_ix_index: u16,
     secondary_sig_ix_index: u16,
 ) -> Result<()> {
-    let wallet = &mut ctx.accounts.wallet;
+    let nonce = ctx.accounts.wallet.auth_nonce;
+    let expected_message = set_guardian_message(nonce, &new_guardian);
 
-    let mut expected_message = Vec::with_capacity(13 + 32);
-    expected_message.extend_from_slice(b"SET_GUARDIAN:");
-    expected_message.extend_from_slice(new_guardian.as_ref());
-
-    // Governance requirement: 2-of-2 Hardware Passkey Quorum
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         primary_sig_ix_index,
-        &wallet.primary_passkey,
+        &ctx.accounts.wallet.primary_passkey,
         &expected_message,
     )?;
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         secondary_sig_ix_index,
-        &wallet.secondary_passkey,
+        &ctx.accounts.wallet.secondary_passkey,
         &expected_message,
     )?;
 
+    let wallet = &mut ctx.accounts.wallet;
+    bump_auth_nonce(wallet)?;
     wallet.guardian = new_guardian;
     msg!("Guardian updated to {:?}", new_guardian);
     Ok(())
@@ -67,27 +66,25 @@ pub fn handle_set_spend_threshold(
     primary_sig_ix_index: u16,
     secondary_sig_ix_index: u16,
 ) -> Result<()> {
-    let wallet = &mut ctx.accounts.wallet;
+    let nonce = ctx.accounts.wallet.auth_nonce;
+    let expected_message = set_threshold_message(nonce, new_threshold_lamports);
 
-    let mut expected_message = Vec::with_capacity(14 + 8);
-    expected_message.extend_from_slice(b"SET_THRESHOLD:");
-    expected_message.extend_from_slice(&new_threshold_lamports.to_le_bytes());
-
-    // Governance requirement: 2-of-2 Hardware Passkey Quorum
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         primary_sig_ix_index,
-        &wallet.primary_passkey,
+        &ctx.accounts.wallet.primary_passkey,
         &expected_message,
     )?;
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         secondary_sig_ix_index,
-        &wallet.secondary_passkey,
+        &ctx.accounts.wallet.secondary_passkey,
         &expected_message,
     )?;
 
+    let wallet = &mut ctx.accounts.wallet;
+    bump_auth_nonce(wallet)?;
     wallet.spend_threshold_lamports = new_threshold_lamports;
     msg!("Spend threshold updated to {} lamports", new_threshold_lamports);
     Ok(())
@@ -149,23 +146,24 @@ pub fn handle_unfreeze(
         HaptixError::RecoveryInProgress
     );
 
-    let expected_message = b"UNFREEZE_WALLET";
+    let nonce = wallet.auth_nonce;
+    let expected_message = unfreeze_message(nonce);
 
-    // Unfreezing requires 2-of-2 Hardware Passkey Quorum
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         primary_sig_ix_index,
         &wallet.primary_passkey,
-        expected_message,
+        &expected_message,
     )?;
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         secondary_sig_ix_index,
         &wallet.secondary_passkey,
-        expected_message,
+        &expected_message,
     )?;
 
+    bump_auth_nonce(wallet)?;
     wallet.is_frozen = false;
     msg!("Wallet unfrozen successfully with 2-of-2 Quorum.");
     Ok(())

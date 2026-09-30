@@ -34,7 +34,29 @@ export interface WalletState {
    * been rotated, and `primaryPasskey` is still the seed.
    */
   walletSeed: Uint8Array // 32 bytes
+  /**
+   * The next owner authorization must sign this value. The program increments it
+   * when the authorization succeeds, so a captured signature cannot be submitted twice.
+   * Accounts created before the field existed read as 0.
+   */
+  authNonce: bigint
   balanceLamports: number
+}
+
+/** Allocated wallet account size. Matches `WalletAccount::LEN` in the program. */
+export const WALLET_ACCOUNT_SPACE = 594
+
+/**
+ * A wallet cannot be created on-chain without a guardian. Omitting one used to
+ * fall through to the fee payer, which is the key shipped with the devnet build.
+ */
+export function assertRecoveryGuardian(guardian: PublicKey | null | undefined): PublicKey {
+  if (!guardian || guardian.equals(PublicKey.default)) {
+    throw new Error(
+      'Add a recovery guardian before this wallet is created on-chain. That address can restore the wallet if you lose this phone, and it cannot be left blank.',
+    )
+  }
+  return guardian
 }
 
 export interface AgentSessionState {
@@ -72,7 +94,7 @@ export function getWalletSeedFromState(state: { walletSeed: Uint8Array; primaryP
  *
  * Returns null rather than throwing: a record written by an older build, or one whose
  * guardian was mistyped before validation existed, must not make every on-chain action
- * fail. Null simply leaves the program's own default in place.
+ * fail. Null means "no guardian yet"; the program rejects account creation until one is set.
  */
 export function parseGuardianAddress(value?: string | null): PublicKey | null {
   const candidate = (value ?? '').trim()
@@ -168,6 +190,7 @@ export async function fetchHaptixWallet(connection: Connection, walletPda: Publi
       // Accounts created before the seed field existed leave this all zeroes, which is
       // also the "never rotated" marker, so both cases read the same.
       walletSeed: offset + 32 <= data.length ? new Uint8Array(data.subarray(offset, offset + 32)) : new Uint8Array(32),
+      authNonce: offset + 32 + 8 <= data.length ? view.getBigUint64(offset + 32, true) : 0n,
       balanceLamports: accountInfo.lamports,
     }
   } catch (err) {
@@ -262,16 +285,28 @@ export function createInitializeWalletInstruction({
   })
 }
 
+function writeNonce(message: Uint8Array, offset: number, authNonce: bigint): number {
+  new DataView(message.buffer, message.byteOffset, message.byteLength).setBigUint64(offset, authNonce, true)
+  return offset + 8
+}
+
 /**
- * Computes the canonical message payload required for transfer authorization:
- * recipient (32 bytes) || amount (8 bytes in little endian) = 40 bytes total.
+ * Transfer authorization: `TRANSFER:` || nonce u64 LE || recipient || amount u64 LE.
+ * The tag stops this  payload colliding with another instruction of the same length,
+ * and the nonce makes a captured signature useless the moment it lands.
  */
-export function getTransferSignedMessage(recipient: PublicKey, amountLamports: bigint): Uint8Array {
-  const msg = new Uint8Array(40)
-  msg.set(recipient.toBytes(), 0)
-  const view = new DataView(msg.buffer, msg.byteOffset, msg.byteLength)
-  view.setBigUint64(32, amountLamports, true)
-  return msg
+export function getTransferSignedMessage(
+  recipient: PublicKey,
+  amountLamports: bigint,
+  authNonce: bigint,
+): Uint8Array {
+  const prefix = Buffer.from('TRANSFER:')
+  const message = new Uint8Array(prefix.length + 8 + 32 + 8)
+  message.set(prefix, 0)
+  const body = writeNonce(message, prefix.length, authNonce)
+  message.set(recipient.toBytes(), body)
+  new DataView(message.buffer, message.byteOffset, message.byteLength).setBigUint64(body + 32, amountLamports, true)
+  return message
 }
 
 /**
@@ -330,22 +365,31 @@ export function createExecuteTransferInstruction({
 }
 
 /**
- * Computes the message payload required for granting an agent session:
- * b"GRANT_AGENT:" (12B) || agent_pubkey (32B) || allowance (8B LE) || valid_for (8B LE) = 60 bytes.
+ * Grant authorization:
+ * `GRANT_AGENT:` || nonce || agent || allowance u64 LE || valid_for i64 LE || allowed program.
+ * The allowed program is inside the signature so a grant for one program cannot be
+ * replayed as a grant for another, and the nonce stops the same grant being minted again.
  */
 export function getGrantAgentSignedMessage(
   agentPubkey: PublicKey,
   allowanceLamports: bigint,
   validForSeconds: bigint,
+  authNonce: bigint,
+  allowedProgram: PublicKey,
 ): Uint8Array {
   const prefix = Buffer.from('GRANT_AGENT:')
-  const msg = new Uint8Array(prefix.length + 32 + 8 + 8)
-  msg.set(prefix, 0)
-  msg.set(agentPubkey.toBytes(), prefix.length)
-  const view = new DataView(msg.buffer, msg.byteOffset, msg.byteLength)
-  view.setBigUint64(prefix.length + 32, allowanceLamports, true)
-  view.setBigInt64(prefix.length + 32 + 8, validForSeconds, true)
-  return msg
+  const message = new Uint8Array(prefix.length + 8 + 32 + 8 + 8 + 32)
+  message.set(prefix, 0)
+  let offset = writeNonce(message, prefix.length, authNonce)
+  message.set(agentPubkey.toBytes(), offset)
+  offset += 32
+  const view = new DataView(message.buffer, message.byteOffset, message.byteLength)
+  view.setBigUint64(offset, allowanceLamports, true)
+  offset += 8
+  view.setBigInt64(offset, validForSeconds, true)
+  offset += 8
+  message.set(allowedProgram.toBytes(), offset)
+  return message
 }
 
 /**
@@ -410,16 +454,14 @@ export function createGrantAgentSessionInstruction({
   })
 }
 
-/**
- * Computes the message payload required for revoking an agent session:
- * b"REVOKE_AGENT:" (13B) || agent_pubkey (32B) = 45 bytes.
- */
-export function getRevokeAgentSignedMessage(agentPubkey: PublicKey): Uint8Array {
+/** `REVOKE_AGENT:` || nonce || agent */
+export function getRevokeAgentSignedMessage(agentPubkey: PublicKey, authNonce: bigint): Uint8Array {
   const prefix = Buffer.from('REVOKE_AGENT:')
-  const msg = new Uint8Array(prefix.length + 32)
-  msg.set(prefix, 0)
-  msg.set(agentPubkey.toBytes(), prefix.length)
-  return msg
+  const message = new Uint8Array(prefix.length + 8 + 32)
+  message.set(prefix, 0)
+  const offset = writeNonce(message, prefix.length, authNonce)
+  message.set(agentPubkey.toBytes(), offset)
+  return message
 }
 
 /**
@@ -509,7 +551,7 @@ export function createPanicFreezeInstruction({
 
 /**
  * Builds the `unfreeze` instruction.
- * Requires a 2-of-2 passkey quorum on message b"UNFREEZE_WALLET".
+ * Requires a 2-of-2 passkey quorum on `UNFREEZE_WALLET:` || nonce.
  * Discriminator: [133, 160, 68, 253, 80, 232, 218, 247]
  */
 export function createUnfreezeInstruction({
@@ -542,24 +584,36 @@ export function createUnfreezeInstruction({
  * The address is inside the signed bytes, so a signature collected for one guardian
  * cannot be replayed to install a different one.
  */
-export function getSetGuardianSignedMessage(newGuardian: PublicKey): Uint8Array {
+export function getSetGuardianSignedMessage(newGuardian: PublicKey, authNonce: bigint): Uint8Array {
   const prefix = new TextEncoder().encode('SET_GUARDIAN:')
-  const message = new Uint8Array(prefix.length + 32)
+  const message = new Uint8Array(prefix.length + 8 + 32)
   message.set(prefix, 0)
-  message.set(new Uint8Array(newGuardian.toBuffer()), prefix.length)
+  const offset = writeNonce(message, prefix.length, authNonce)
+  message.set(new Uint8Array(newGuardian.toBuffer()), offset)
+  return message
+}
+
+/** `UNFREEZE_WALLET:` || nonce. A fixed string could be replayed the next time the wallet froze. */
+export function getUnfreezeSignedMessage(authNonce: bigint): Uint8Array {
+  const prefix = new TextEncoder().encode('UNFREEZE_WALLET:')
+  const message = new Uint8Array(prefix.length + 8)
+  message.set(prefix, 0)
+  writeNonce(message, prefix.length, authNonce)
   return message
 }
 
 /**
  * The payload a 2-of-2 quorum signs to move the spending threshold.
  */
-export function getSetSpendThresholdSignedMessage(newThresholdLamports: bigint): Uint8Array {
+export function getSetSpendThresholdSignedMessage(
+  newThresholdLamports: bigint,
+  authNonce: bigint,
+): Uint8Array {
   const prefix = new TextEncoder().encode('SET_THRESHOLD:')
-  const message = new Uint8Array(prefix.length + 8)
+  const message = new Uint8Array(prefix.length + 8 + 8)
   message.set(prefix, 0)
-  // Written straight into the message rather than through a Buffer: the program reads
-  // this as a little-endian u64, so the byte order is the whole point.
-  new DataView(message.buffer).setBigUint64(prefix.length, newThresholdLamports, true)
+  const offset = writeNonce(message, prefix.length, authNonce)
+  new DataView(message.buffer).setBigUint64(offset, newThresholdLamports, true)
   return message
 }
 
@@ -643,8 +697,13 @@ export function createSetSpendThresholdInstruction({
  * `clientDataJSON.challenge`, so the veto cannot be replayed from a signature the
  * owner made for some other action.
  */
-export function getCancelRecoverySignedMessage(): Uint8Array {
-  return new TextEncoder().encode('CANCEL_RECOVERY')
+/** `CANCEL_RECOVERY:` || nonce. Without the nonce, one veto signature cancels every later recovery. */
+export function getCancelRecoverySignedMessage(authNonce: bigint): Uint8Array {
+  const prefix = new TextEncoder().encode('CANCEL_RECOVERY:')
+  const message = new Uint8Array(prefix.length + 8)
+  message.set(prefix, 0)
+  writeNonce(message, prefix.length, authNonce)
+  return message
 }
 
 /**
@@ -691,7 +750,7 @@ export function createInitiateRecoveryInstruction({
  * Builds the `cancel_recovery` instruction.
  *
  * Cancels a guardian's in-flight recovery. Requires a 2-of-2 passkey quorum on
- * `b"CANCEL_RECOVERY"`, which is why the guardian cannot unilaterally take over an
+ * `CANCEL_RECOVERY:` plus the current nonce, which is why the guardian cannot unilaterally take over an
  * account: the owner keeps the last word, and the veto needs both hardware keys.
  *
  * The signature instruction indices must point at the two `Secp256r1SigVerify`

@@ -22,7 +22,6 @@ import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import Clipboard from '@/utils/clipboard'
 import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
-import { claimSeekerGenesisReward } from '@/utils/haptix-tokens'
 import { AppConfig } from '@/constants/app-config'
 import { saveWallet, getSavedWallet, createSmartWalletRecord, loadWallets, HaptixWalletAccount } from '@/utils/haptix-wallet-storage'
 import { hexToBytes } from '@noble/curves/abstract/utils'
@@ -43,7 +42,7 @@ import {
   prepareAssertionVerification,
   preparedAssertionMatchesPublicKey,
 } from '@/utils/secp256r1-instruction'
-import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet, HAPTIX_PROGRAM_ID } from '@/utils/haptix-client'
+import { assertRecoveryGuardian, getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet, HAPTIX_PROGRAM_ID } from '@/utils/haptix-client'
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
@@ -406,10 +405,16 @@ export default function SignIn() {
       const primaryName = primaryKeyName.trim() || 'Primary Passkey'
       const secondaryName = secondaryKeyName.trim() || 'Backup Key'
 
-      if (guardianInput.trim() && !guardianPublicKey) {
-        dialog.alert('Check the guardian address', guardianParse.error || 'That is not a Solana address.')
+      if (!guardianPublicKey) {
+        dialog.alert(
+          'Add a recovery guardian',
+          guardianInput.trim()
+            ? guardianParse.error || 'That is not a Solana address.'
+            : 'Open advanced settings and enter a Solana address. That address can restore this wallet if you lose the phone, and the wallet cannot be created on-chain without one.',
+        )
         return
       }
+      const guardian = assertRecoveryGuardian(guardianPublicKey)
       if (timelockParse.error) {
         dialog.alert('Check the recovery timelock', timelockParse.error)
         return
@@ -469,7 +474,7 @@ export default function SignIn() {
         secondaryCredentialId: credentialIdForRecord(secondary),
         primaryLabel: primary.label,
         secondaryLabel: secondary.label,
-        guardianAddress: guardianPublicKey?.toBase58(),
+        guardianAddress: guardian.toBase58(),
         spendThreshold: 0.1,
         network: 'devnet',
         securityMode,
@@ -494,7 +499,7 @@ export default function SignIn() {
               walletPda,
               primaryPasskey,
               secondaryPasskey,
-              guardian: guardianPublicKey ?? undefined,
+              guardian,
               recoveryTimelockSeconds: timelockParse.seconds ?? undefined,
             })
             const dripIx = SystemProgram.transfer({
@@ -509,7 +514,6 @@ export default function SignIn() {
             await sendAndConfirmTransaction(connection, tx, [payer], { commitment: 'confirmed' })
           }
           newAccount.isInitializedOnChain = true
-          await claimSeekerGenesisReward(newAccount.address)
           await saveWallet(newAccount)
           await updateWallet(newAccount)
         } catch {}
@@ -1289,7 +1293,7 @@ export default function SignIn() {
                       </View>
 
                       <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Recovery guardian, optional</Text>
+                        <Text style={styles.inputLabel}>Recovery guardian</Text>
                         <TextInput
                           style={[
                             styles.textInputField,
@@ -1309,7 +1313,7 @@ export default function SignIn() {
                                 `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
                                 'timelock means you can still veto it. It can never move funds.'
                               : guardianParse.error
-                            : 'Optional. Add a trusted contact who can help you recover this wallet if you lose access. You can also add this later.'}
+                            : 'Required. The only address that can start a recovery. It cannot spend, and it cannot be left blank.'}
                         </Text>
                       </View>
                     </>

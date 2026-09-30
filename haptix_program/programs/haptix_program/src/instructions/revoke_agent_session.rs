@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use crate::auth::{bump_auth_nonce, revoke_agent_message};
 use crate::error::HaptixError;
 use crate::secp256r1::verify_passkey_precompile_signature;
 use crate::state::{is_self_derived, WalletAccount};
@@ -27,27 +28,25 @@ pub fn revoke_agent_session(
     primary_sig_ix_index: u16,
     secondary_sig_ix_index: u16,
 ) -> Result<()> {
-    let wallet = &mut ctx.accounts.wallet;
-
-    // Message payload that must be signed by both passkeys:
-    // b"REVOKE_AGENT:" + agent_pubkey
-    let mut expected_message = Vec::with_capacity(13 + 32);
-    expected_message.extend_from_slice(b"REVOKE_AGENT:");
-    expected_message.extend_from_slice(agent_pubkey.as_ref());
+    let nonce = ctx.accounts.wallet.auth_nonce;
+    let expected_message = revoke_agent_message(nonce, &agent_pubkey);
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         primary_sig_ix_index,
-        &wallet.primary_passkey,
+        &ctx.accounts.wallet.primary_passkey,
         &expected_message,
     )?;
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         secondary_sig_ix_index,
-        &wallet.secondary_passkey,
+        &ctx.accounts.wallet.secondary_passkey,
         &expected_message,
     )?;
+
+    let wallet = &mut ctx.accounts.wallet;
+    bump_auth_nonce(wallet)?;
 
     let sessions_before = wallet.agents.len();
     wallet.agents.retain(|a| a.agent_pubkey != agent_pubkey);

@@ -23,21 +23,24 @@ import { lamportsToSol } from '@/utils/lamports-to-sol'
 
 const FUNDER_KEY_ENV = 'EXPO_PUBLIC_HAPTIX_FUNDER_KEY'
 
-const DEFAULT_DEVNET_FUNDER_SECRET: number[] = [
-  46, 129, 3, 83, 59, 175, 161, 152, 178, 87, 85, 114, 129, 215, 95, 24, 48, 1, 23, 69, 230, 202, 39, 155, 19, 65, 198, 78, 87, 15, 215, 250, 208, 90, 55, 201, 207, 250, 187, 201, 214, 80, 41, 254, 243, 231, 152, 64, 187, 254, 47, 182, 189, 241, 103, 100, 225, 184, 193, 142, 33, 44, 175, 124
-]
-
 let cachedFunder: Keypair | null = null
 
 function loadFunderSecret(): Uint8Array {
+  if (!AppConfig.devMode) {
+    throw new Error(
+      'Fee sponsorship is off. A production build cannot carry a fee-payer key. Fund the wallet with SOL, or run a server-side relayer.',
+    )
+  }
+
   // Read as a literal member expression. Expo substitutes `EXPO_PUBLIC_*` values by
   // matching this exact source text at bundle time, so a computed lookup such as
   // `process.env[FUNDER_KEY_ENV]` is never replaced.
   const raw = process.env.EXPO_PUBLIC_HAPTIX_FUNDER_KEY?.trim()
 
   if (!raw) {
-    // Sideloaded APK fallback for hackathon judges/evaluators: use verified Devnet paymaster key
-    return Uint8Array.from(DEFAULT_DEVNET_FUNDER_SECRET)
+    throw new Error(
+      `${FUNDER_KEY_ENV} is not set. Devnet fee sponsorship reads that variable at build time and will not fall back to a key checked into the app.`,
+    )
   }
 
   let parsed: unknown
@@ -63,9 +66,8 @@ function loadFunderSecret(): Uint8Array {
 }
 
 function requireDevMode(feature: string): void {
-  if (!AppConfig.devMode && !process.env.EXPO_PUBLIC_HAPTIX_FUNDER_KEY) {
-    // Sideloaded APK fallback on devnet: warn rather than fatal crash
-    console.warn(`[Haptix] Devnet fee sponsorship running with default sponsor fallback for ${feature}.`)
+  if (!AppConfig.devMode) {
+    throw new Error(`${feature} is disabled outside dev mode.`)
   }
 }
 

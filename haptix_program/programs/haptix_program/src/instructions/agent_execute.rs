@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use crate::auth::debit_keeping_rent;
 use crate::error::HaptixError;
 use crate::state::{is_self_derived, WalletAccount};
 
@@ -35,10 +36,16 @@ pub fn agent_execute(ctx: Context<AgentExecute>, amount: u64) -> Result<()> {
             .find(|a| a.agent_pubkey == agent_key)
             .ok_or(HaptixError::AgentSessionNotFound)?;
 
-        // 1. Verify session validity timestamp
         require!(current_time <= agent_session.valid_until, HaptixError::AgentSessionExpired);
 
-        // 2. Verify spending ceiling / allowance
+        // The only thing this instruction can do is move SOL. A session granted for
+        // some other program must not be treated as permission to send lamports.
+        require!(
+            agent_session.allowed_program == Pubkey::default()
+                || agent_session.allowed_program == System::id(),
+            HaptixError::AgentProgramNotAllowed
+        );
+
         require!(amount <= agent_session.allowance_lamports, HaptixError::AgentAllowanceExceeded);
 
         // 3. Deduct from allowance
@@ -50,21 +57,11 @@ pub fn agent_execute(ctx: Context<AgentExecute>, amount: u64) -> Result<()> {
         agent_session.allowance_lamports
     };
 
-    // Execute transfer from Wallet PDA to recipient
-    **ctx.accounts.wallet.to_account_info().try_borrow_mut_lamports()? = ctx
-        .accounts
-        .wallet
-        .to_account_info()
-        .lamports()
-        .checked_sub(amount)
-        .ok_or(ProgramError::InsufficientFunds)?;
-
-    **ctx.accounts.recipient.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .recipient
-        .lamports()
-        .checked_add(amount)
-        .ok_or(ProgramError::InvalidAccountData)?;
+    debit_keeping_rent(
+        &ctx.accounts.wallet.to_account_info(),
+        &ctx.accounts.recipient,
+        amount,
+    )?;
 
     msg!("Autonomous Agent {:?} executed transfer of {} lamports. Remaining allowance: {}", ctx.accounts.agent.key(), amount, remaining_allowance);
     Ok(())

@@ -34,6 +34,12 @@ pub struct WalletAccount {
     /// its lamports stay on-chain at an address no instruction can derive again. So the
     /// seed lives in its own field that only `execute_recovery` writes, and only once.
     pub wallet_seed: [u8; 32],
+    /// Incremented on every successful owner authorization.
+    ///
+    /// Sits after `wallet_seed` so accounts allocated before this field existed still
+    /// decode: their spare zero bytes read as nonce 0. The first successful
+    /// authorization on an upgraded account consumes that 0.
+    pub auth_nonce: u64,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, Default, PartialEq)]
@@ -62,7 +68,10 @@ impl WalletAccount {
         }
     }
 
-    pub const LEN: usize = 8 + 1 + 33 + 33 + 8 + 32 + 8 + 8 + 33 + 33 + 1 + 4 + (4 * 80) + 64;
+    /// Allocated space: fixed fields, four agent sessions, the 32-byte seed, the
+    /// 8-byte auth nonce, and 32 bytes of spare. Serialized size with four agents
+    /// is 562, so accounts created at the previous length (586) still fit.
+    pub const LEN: usize = 8 + 1 + 33 + 33 + 8 + 32 + 8 + 8 + 33 + 33 + 1 + 4 + (4 * 80) + 32 + 8 + 32;
 }
 
 /// True when `key` is the address this account's own state derives.

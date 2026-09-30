@@ -10,7 +10,7 @@
  *   1. a non-guardian cannot start a recovery at all;
  *   2. recovery cannot be executed before the timelock elapses;
  *   3. the guardian's initiation freezes the wallet and stores the proposed keys;
- *   4. a 2-of-2 assertion over `CANCEL_RECOVERY` clears it and keeps the original keys.
+ *   4. a 2-of-2 assertion over `CANCEL_RECOVERY:` plus the current nonce clears it and keeps the original keys.
  *
  * The last leg needs real P-256 signatures in the exact WebAuthn shape the on-chain
  * parser accepts -- rpIdHash, UP|UV flags, and a `challenge` that base64url-decodes to
@@ -29,6 +29,7 @@ import {
   createUnfreezeInstruction,
   fetchHaptixWallet,
   getCancelRecoverySignedMessage,
+  getUnfreezeSignedMessage,
   getWalletPda,
 } from '../utils/haptix-client'
 import { createWebAuthnSecp256r1Instruction, webAuthnSignedRegion } from '../utils/secp256r1-instruction'
@@ -223,6 +224,7 @@ async function run() {
       walletPda: getWalletPda(negativePrimary)[0],
       primaryPasskey: negativePrimary,
       secondaryPasskey: p256.getPublicKey(p256.utils.randomSecretKey(), true),
+      guardian: funder.publicKey,
       recoveryTimelockSeconds: -1n,
     }),
   ])
@@ -303,7 +305,7 @@ async function run() {
   // wallet's own recoverable state depends on it staying set. Signed here with the
   // wallet's current 2-of-2 keys, which are still valid at this point, so the recovery
   // itself is the only thing that can be rejecting it.
-  const pendingUnfreezeMsg = new TextEncoder().encode('UNFREEZE_WALLET')
+  const pendingUnfreezeMsg = getUnfreezeSignedMessage(stillPending?.authNonce ?? 0n)
   const escapeAttempt = await send(connection, funder, [
     createWebAuthnSecp256r1Instruction(buildAssertion(primaryKey, pendingUnfreezeMsg)),
     createWebAuthnSecp256r1Instruction(buildAssertion(secondaryKey, pendingUnfreezeMsg)),
@@ -318,9 +320,13 @@ async function run() {
   const stillFrozenAfterEscape = await fetchHaptixWallet(connection, walletPda)
   assert(stillFrozenAfterEscape?.isFrozen === true, 'stays frozen after a refused unfreeze')
   assert((stillFrozenAfterEscape?.recoveryInitiatedAt ?? 0n) > 0n, 'the refused unfreeze leaves the recovery in flight')
+  assert(
+    stillFrozenAfterEscape?.authNonce === stillPending?.authNonce,
+    'a refused unfreeze does not consume the authorization nonce',
+  )
 
   // --- The owner vetoes with 2-of-2 ---------------------------------------
-  const cancelMessage = getCancelRecoverySignedMessage()
+  const cancelMessage = getCancelRecoverySignedMessage(stillFrozenAfterEscape?.authNonce ?? 0n)
   const primaryAssertion = buildAssertion(primaryKey, cancelMessage)
   const secondaryAssertion = buildAssertion(secondaryKey, cancelMessage)
 
@@ -354,8 +360,14 @@ async function run() {
   ])
   assert(reInitiated.ok, 'the guardian can start a second recovery', reInitiated.message)
 
+  // The first veto consumed nonce 0. Reusing that signature would fail as stale
+  // and would not test the quorum.
+  const secondCancelMessage = getCancelRecoverySignedMessage(after?.authNonce ?? 0n)
+  const secondPrimary = buildAssertion(primaryKey, secondCancelMessage)
+  const secondSecondary = buildAssertion(secondaryKey, secondCancelMessage)
+
   const onlyPrimary = await send(connection, funder, [
-    createWebAuthnSecp256r1Instruction(primaryAssertion),
+    createWebAuthnSecp256r1Instruction(secondPrimary),
     // Both indices point at the same assertion, so only one distinct passkey is present.
     createCancelRecoveryInstruction({ walletPda, primarySigIxIndex: 0, secondarySigIxIndex: 0 }),
   ])
@@ -366,8 +378,8 @@ async function run() {
   assert(afterFailedVeto?.isFrozen === true, 'the rejected veto leaves the wallet frozen')
 
   const finalCancel = await send(connection, funder, [
-    createWebAuthnSecp256r1Instruction(primaryAssertion),
-    createWebAuthnSecp256r1Instruction(secondaryAssertion),
+    createWebAuthnSecp256r1Instruction(secondPrimary),
+    createWebAuthnSecp256r1Instruction(secondSecondary),
     createCancelRecoveryInstruction({ walletPda, primarySigIxIndex: 0, secondarySigIxIndex: 1 }),
   ])
   assert(finalCancel.ok, 'the full quorum still cancels afterwards', finalCancel.message)
@@ -443,7 +455,8 @@ async function run() {
   ])
   assert(postFreeze.ok, 'the recovered wallet is still reachable on-chain', postFreeze.message)
 
-  const unfreezeMsg = new TextEncoder().encode('UNFREEZE_WALLET')
+  const unfreezeNonce = rotated?.authNonce ?? 0n
+  const unfreezeMsg = getUnfreezeSignedMessage(unfreezeNonce)
   const newPrimaryAssertion = buildAssertion(replacementKey, unfreezeMsg)
   const newSecondaryAssertion = buildAssertion(replacementSecondaryKey, unfreezeMsg)
 
@@ -458,9 +471,10 @@ async function run() {
   const oldKeyFreeze = await send(connection, funder, [
     createPanicFreezeInstruction({ walletPda: lostPda, guardianSigner: funder.publicKey }),
   ])
+  const oldKeyMessage = getUnfreezeSignedMessage(unfreezeNonce + 1n)
   const oldKeyUnfreeze = await send(connection, funder, [
-    createWebAuthnSecp256r1Instruction(buildAssertion(lostPrimaryKey, unfreezeMsg)),
-    createWebAuthnSecp256r1Instruction(buildAssertion(lostSecondaryKey, unfreezeMsg)),
+    createWebAuthnSecp256r1Instruction(buildAssertion(lostPrimaryKey, oldKeyMessage)),
+    createWebAuthnSecp256r1Instruction(buildAssertion(lostSecondaryKey, oldKeyMessage)),
     createUnfreezeInstruction({ walletPda: lostPda, primarySigIxIndex: 0, secondarySigIxIndex: 1 }),
   ])
   assert(

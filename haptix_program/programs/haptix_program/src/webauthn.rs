@@ -360,7 +360,7 @@ mod tests {
 
     #[test]
     fn accepts_https_origin_assertion() {
-        let (ad, cdj, h) = valid_assertion("https://haptix.io");
+        let (ad, cdj, h) = valid_assertion("https://haptix-passkeys.vercel.app");
         assert!(verify_assertion(&ad, &cdj, &h, PAYLOAD).is_ok());
     }
 
@@ -374,7 +374,7 @@ mod tests {
 
     #[test]
     fn rejects_challenge_for_a_different_payload() {
-        let (ad, cdj, h) = valid_assertion("https://haptix.io");
+        let (ad, cdj, h) = valid_assertion("https://haptix-passkeys.vercel.app");
         let other = b"0123456789abcdefghijklmnopqrstuvwxyzABCD";
         assert!(verify_assertion(&ad, &cdj, &h, other).is_ok());
 
@@ -386,7 +386,7 @@ mod tests {
     #[test]
     fn rejects_wrong_relying_party() {
         let ad = auth_data(b"evil.example", FLAG_USER_PRESENT | FLAG_USER_VERIFIED);
-        let cdj = client_data(&b64url(PAYLOAD), "webauthn.get", "https://haptix.io");
+        let cdj = client_data(&b64url(PAYLOAD), "webauthn.get", "https://haptix-passkeys.vercel.app");
         let h = hash(&cdj).to_bytes().to_vec();
         assert!(verify_assertion(&ad, &cdj, &h, PAYLOAD).is_err());
     }
@@ -395,7 +395,7 @@ mod tests {
     fn rejects_unverified_or_absent_user_gesture() {
         for flags in [0u8, FLAG_USER_PRESENT, FLAG_USER_VERIFIED] {
             let ad = auth_data(RP_ID, flags);
-            let cdj = client_data(&b64url(PAYLOAD), "webauthn.get", "https://haptix.io");
+            let cdj = client_data(&b64url(PAYLOAD), "webauthn.get", "https://haptix-passkeys.vercel.app");
             let h = hash(&cdj).to_bytes().to_vec();
             assert!(verify_assertion(&ad, &cdj, &h, PAYLOAD).is_err(), "flags {flags} must be rejected");
         }
@@ -404,7 +404,7 @@ mod tests {
     #[test]
     fn rejects_registration_ceremony() {
         let ad = auth_data(RP_ID, FLAG_USER_PRESENT | FLAG_USER_VERIFIED);
-        let cdj = client_data(&b64url(PAYLOAD), "webauthn.create", "https://haptix.io");
+        let cdj = client_data(&b64url(PAYLOAD), "webauthn.create", "https://haptix-passkeys.vercel.app");
         let h = hash(&cdj).to_bytes().to_vec();
         assert!(verify_assertion(&ad, &cdj, &h, PAYLOAD).is_err());
     }
@@ -419,7 +419,7 @@ mod tests {
 
     #[test]
     fn rejects_decoupled_client_data_hash() {
-        let (ad, cdj, _) = valid_assertion("https://haptix.io");
+        let (ad, cdj, _) = valid_assertion("https://haptix-passkeys.vercel.app");
         let wrong = hash(b"other client data").to_bytes().to_vec();
         assert!(verify_assertion(&ad, &cdj, &wrong, PAYLOAD).is_err());
     }
@@ -427,7 +427,7 @@ mod tests {
     #[test]
     fn rejects_short_authenticator_data() {
         let ad = auth_data(RP_ID, FLAG_USER_PRESENT | FLAG_USER_VERIFIED)[..36].to_vec();
-        let cdj = client_data(&b64url(PAYLOAD), "webauthn.get", "https://haptix.io");
+        let cdj = client_data(&b64url(PAYLOAD), "webauthn.get", "https://haptix-passkeys.vercel.app");
         let h = hash(&cdj).to_bytes().to_vec();
         assert!(verify_assertion(&ad, &cdj, &h, PAYLOAD).is_err());
     }
