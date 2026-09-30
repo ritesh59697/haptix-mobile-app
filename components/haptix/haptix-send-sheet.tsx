@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
   NativeModules,
+  Keyboard,
 } from 'react-native'
 import { hexToBytes } from '@noble/curves/abstract/utils'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -301,6 +302,7 @@ export function HaptixSendSheet({
   // an address is extracted and the field is filled, anything else leaves the field
   // untouched and explains itself.
   const handlePasteRecipient = async () => {
+    Keyboard.dismiss()
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setSendRecipientAttempted(true)
     setRecipientAttemptError('')
@@ -1958,17 +1960,21 @@ const createSendSheetStyles = (theme: ThemeTokens, isDark: boolean) =>
       marginBottom: 8,
     },
     cleanSubmitBtnDisabled: {
-      backgroundColor: theme.isDark ? '#201f1d' : '#E4E4E7',
+      backgroundColor: theme.isDark ? '#1C1B19' : '#E4E4E7',
+      borderWidth: 1,
+      borderColor: theme.isDark ? '#2E2D2A' : '#D4D4D8',
     },
     cleanSubmitBtnEnabled: {
       backgroundColor: theme.isDark ? '#F2F1EE' : '#000000',
+      borderWidth: 1,
+      borderColor: theme.isDark ? '#F2F1EE' : '#000000',
     },
     cleanSubmitBtnText: {
       fontSize: 14.5,
       fontWeight: '600',
     },
     cleanSubmitBtnTextDisabled: {
-      color: theme.isDark ? '#5F5E5A' : '#A1A1AA',
+      color: theme.isDark ? '#7A7975' : '#71717A',
     },
     cleanSubmitBtnTextEnabled: {
       color: theme.isDark ? '#0C0C0D' : '#FFFFFF',
