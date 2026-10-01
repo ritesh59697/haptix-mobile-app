@@ -4,7 +4,9 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Linking,
+  Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { PublicKey, Transaction, LAMPORTS_PER_SOL, sendAndConfirmTransaction } from '@solana/web3.js'
+import Clipboard from '@/utils/clipboard'
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { useCluster } from '@/components/cluster/cluster-provider'
@@ -40,11 +43,17 @@ import { radius, typeScale, ThemeTokens } from '@/theme/tokens'
 const PRESET_LIMITS_ROW_1 = [0.05, 0.1, 0.25]
 const PRESET_LIMITS_ROW_2 = [0.5, 1.0]
 
+interface LimitUpdatedSuccessState {
+  newLimit: number
+  previousLimit: number
+  signature: string
+}
+
 export default function SpendingLimitsScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const dialog = useHaptixDialog()
-  const { theme } = useAppTheme()
+  const { theme, isDark } = useAppTheme()
   const { activeWallet, updateWallet } = useAuth()
   const { connection, getExplorerUrl } = useCluster()
 
@@ -54,6 +63,8 @@ export default function SpendingLimitsScreen() {
   const [onChainWallet, setOnChainWallet] = useState<WalletState | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [updateSuccess, setUpdateSuccess] = useState<LimitUpdatedSuccessState | null>(null)
+  const [copiedSig, setCopiedSig] = useState(false)
 
   // Separated: savedLimit (on-chain truth) vs draftLimit (active selection)
   const [draftLimit, setDraftLimit] = useState<number>(() => activeWallet?.spendThreshold ?? 0.1)
@@ -248,6 +259,8 @@ export default function SpendingLimitsScreen() {
         'confirmed',
       )
 
+      const previousLimit = savedLimit
+
       // Update local wallet record
       await updateWallet({
         ...activeWallet,
@@ -257,16 +270,11 @@ export default function SpendingLimitsScreen() {
       await refreshOnChain()
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
 
-      dialog.alert(
-        'Spending Limit Updated',
-        `Your single-key spending limit is now ${effectiveDraftLimit} SOL.\n\n` +
-          `• Sends ≤ ${effectiveDraftLimit} SOL: Instant 1-tap FaceID\n` +
-          `• Sends > ${effectiveDraftLimit} SOL: Requires both passkeys\n\nTx: ${ellipsify(sig, 8)}`,
-        [
-          { text: 'View on Explorer', onPress: () => Linking.openURL(getExplorerUrl(`tx/${sig}`)) },
-          { text: 'Done', style: 'default' },
-        ],
-      )
+      setUpdateSuccess({
+        newLimit: effectiveDraftLimit,
+        previousLimit,
+        signature: sig,
+      })
     } catch (err: any) {
       console.error('[Haptix Limits] Update error:', formatChainErrorForLog(err))
       dialog.alert(
@@ -554,6 +562,206 @@ export default function SpendingLimitsScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* SPENDING LIMIT UPDATED CONFIRMATION SHEET */}
+      <Modal
+        visible={updateSuccess !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setUpdateSuccess(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setUpdateSuccess(null)} />
+          {updateSuccess && (
+            <View
+              style={[
+                styles.modalSheet,
+                {
+                  backgroundColor: isDark ? '#141416' : '#FFFFFF',
+                  borderColor: isDark ? '#2A2A28' : '#E6E4DE',
+                  paddingBottom: Math.max(insets.bottom, 20),
+                },
+              ]}
+            >
+              {/* Drag Handle */}
+              <View
+                style={{
+                  width: 36,
+                  height: 4,
+                  backgroundColor: isDark ? '#3A3A37' : '#D8D5CE',
+                  borderRadius: 2,
+                  alignSelf: 'center',
+                  marginBottom: 20,
+                }}
+              />
+
+              {/* Header with Emerald Checkmark Ring */}
+              <View style={{ alignItems: 'center', marginBottom: 22 }}>
+                <View
+                  style={{
+                    width: 68,
+                    height: 68,
+                    borderRadius: 34,
+                    backgroundColor: 'rgba(31, 138, 76, 0.10)',
+                    borderWidth: 8,
+                    borderColor: 'rgba(31, 138, 76, 0.05)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 18,
+                  }}
+                >
+                  <MaterialIcons name="check" size={30} color="#1F8A4C" />
+                </View>
+
+                <Text style={{ color: isDark ? '#8A8985' : '#6B6A64', fontSize: 12, marginBottom: 4 }}>
+                  Spending limit updated
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 32,
+                    fontWeight: '600',
+                    letterSpacing: -0.6,
+                    color: isDark ? '#F2F1EE' : '#181714',
+                  }}
+                >
+                  {updateSuccess.newLimit} SOL
+                </Text>
+                <Text style={{ color: isDark ? '#8A8985' : '#6B6A64', fontSize: 13, marginTop: 4 }}>
+                  Changed from {updateSuccess.previousLimit} SOL
+                </Text>
+              </View>
+
+              {/* Detail Box */}
+              <View
+                style={{
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: isDark ? '#2A2A28' : '#E6E4DE',
+                  backgroundColor: isDark ? '#141416' : '#FFFFFF',
+                  paddingHorizontal: 14,
+                  paddingVertical: 2,
+                  marginBottom: 16,
+                }}
+              >
+                {/* Row 1: Up to X SOL */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: 11,
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: isDark ? '#201F1D' : '#EEECE7',
+                  }}
+                >
+                  <Text style={{ color: isDark ? '#8A8985' : '#6B6A64', fontSize: 13 }}>
+                    Up to {updateSuccess.newLimit} SOL
+                  </Text>
+                  <Text style={{ color: isDark ? '#F2F1EE' : '#181714', fontSize: 13, fontWeight: '500' }}>
+                    One biometric prompt
+                  </Text>
+                </View>
+
+                {/* Row 2: Above X SOL */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: 11,
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: isDark ? '#201F1D' : '#EEECE7',
+                  }}
+                >
+                  <Text style={{ color: isDark ? '#8A8985' : '#6B6A64', fontSize: 13 }}>
+                    Above {updateSuccess.newLimit} SOL
+                  </Text>
+                  <Text style={{ color: isDark ? '#F2F1EE' : '#181714', fontSize: 13, fontWeight: '500' }}>
+                    Both keys
+                  </Text>
+                </View>
+
+                {/* Row 3: Signature */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: 11,
+                  }}
+                >
+                  <Text style={{ color: isDark ? '#8A8985' : '#6B6A64', fontSize: 13 }}>Signature</Text>
+                  <TouchableOpacity
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                    onPress={() => {
+                      Clipboard.setString(updateSuccess.signature)
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                      setCopiedSig(true)
+                      setTimeout(() => setCopiedSig(false), 2000)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={{
+                        color: isDark ? '#F2F1EE' : '#181714',
+                        fontSize: 12,
+                        fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
+                      }}
+                    >
+                      {ellipsify(updateSuccess.signature, 8)}
+                    </Text>
+                    <MaterialIcons
+                      name={copiedSig ? 'check' : 'content-copy'}
+                      size={13}
+                      color={copiedSig ? '#1F8A4C' : isDark ? '#8A8985' : '#8C8A83'}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Done Action */}
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#5A6EE6',
+                  borderRadius: 12,
+                  paddingVertical: 13,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 8,
+                }}
+                onPress={() => setUpdateSuccess(null)}
+                activeOpacity={0.85}
+              >
+                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '500' }}>Done</Text>
+              </TouchableOpacity>
+
+              {/* View on Solscan Button */}
+              <TouchableOpacity
+                style={{
+                  borderWidth: 1,
+                  borderColor: isDark ? '#2A2A28' : '#E0DDD6',
+                  borderRadius: 12,
+                  paddingVertical: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 7,
+                  backgroundColor: isDark ? 'transparent' : '#FFFFFF',
+                }}
+                onPress={() => {
+                  Linking.openURL(getExplorerUrl(`tx/${updateSuccess.signature}`))
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="open-in-new" size={15} color={isDark ? '#8A8985' : '#8C8A83'} />
+                <Text style={{ color: isDark ? '#F2F1EE' : '#181714', fontSize: 14, fontWeight: '500' }}>
+                  View on Solscan
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -875,6 +1083,20 @@ function createStyles(theme: ThemeTokens) {
     },
     saveButtonTextDisabled: {
       color: theme.isDark ? '#5C5B57' : '#A8A6A0',
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.45)',
+      justifyContent: 'flex-end',
+    },
+    modalSheet: {
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      borderTopWidth: 1,
+      borderLeftWidth: 1,
+      borderRightWidth: 1,
+      paddingHorizontal: 20,
+      paddingTop: 12,
     },
   })
 }
