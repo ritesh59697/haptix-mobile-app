@@ -1896,8 +1896,8 @@ export function HaptixWalletScreen() {
         <View style={styles.agentSectionHeader}>
           <View>
             <Text style={[styles.agentSectionHeading, styles.textPrimary]}>Grant session key</Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 4 }}>
-              Requires both passkeys to grant.
+            <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 4, lineHeight: 18 }}>
+              Requires both passkeys to grant. The agent can spend up to this cap autonomously without asking for biometric approval.
             </Text>
           </View>
         </View>
@@ -2009,8 +2009,8 @@ export function HaptixWalletScreen() {
 
         {/* Summary text + Solid Pill Authorize session Button */}
         <View style={{ marginTop: 14 }}>
-          <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: 'left', marginBottom: 12 }}>
-            {`${customAgentAllowance} SOL for ${customAgentValidHours} hours`}
+          <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: 'left', marginBottom: 12, lineHeight: 18 }}>
+            {`Autonomous hot-key budget: ${customAgentAllowance} SOL cap, valid for ${customAgentValidHours}h. No biometric prompt required for agent trades within this limit.`}
           </Text>
           <TouchableOpacity
             style={[

@@ -26,6 +26,8 @@ pub fn handle_initiate_recovery(
     // Verify caller is the authorized guardian
     require!(ctx.accounts.guardian.key() == wallet.guardian, HaptixError::Unauthorized);
     require!(new_primary_passkey != new_secondary_passkey, HaptixError::DuplicatePasskeys);
+    // Allow only one recovery at a time: do not let a guardian reset the clock or extend the wait
+    require!(wallet.recovery_initiated_at == 0, HaptixError::RecoveryInProgress);
 
     wallet.pending_primary_passkey = new_primary_passkey;
     wallet.pending_secondary_passkey = new_secondary_passkey;
