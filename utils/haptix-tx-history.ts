@@ -11,12 +11,12 @@ const STORAGE_KEY_PREFIX = '@haptix_tx_history'
 const BALANCE_KEY_PREFIX = '@haptix_balance'
 const MAX_STORED_RECORDS = 100
 
-function storageKey(walletAddress: string): string {
-  return `${STORAGE_KEY_PREFIX}:${walletAddress}`
+function storageKey(walletAddress: string, cluster: string = 'devnet'): string {
+  return `${STORAGE_KEY_PREFIX}:${cluster}:${walletAddress}`
 }
 
-function balanceKey(walletAddress: string): string {
-  return `${BALANCE_KEY_PREFIX}:${walletAddress}`
+function balanceKey(walletAddress: string, cluster: string = 'devnet'): string {
+  return `${BALANCE_KEY_PREFIX}:${cluster}:${walletAddress}`
 }
 
 /**
@@ -27,11 +27,18 @@ function balanceKey(walletAddress: string): string {
  * hundred milliseconds -- the one number a wallet must never get wrong. Hydrating the
  * last measured value keeps the card truthful while the refresh is in flight, and a
  * failed refresh leaves the cached figure in place (with the RPC banner) rather than
- * zeroing it. Keyed per address so a stale entry can never be read for another wallet.
+ * zeroing it. Keyed per address and cluster so a stale entry can never be read for another
+ * wallet or another cluster (e.g. devnet balance showing on mainnet).
  */
-export async function loadCachedBalance(walletAddress: string): Promise<number | null> {
+export async function loadCachedBalance(
+  walletAddress: string,
+  cluster: string = 'devnet',
+): Promise<number | null> {
   try {
-    const raw = await AsyncStorage.getItem(balanceKey(walletAddress))
+    let raw = await AsyncStorage.getItem(balanceKey(walletAddress, cluster))
+    if (!raw && cluster === 'devnet') {
+      raw = await AsyncStorage.getItem(`${BALANCE_KEY_PREFIX}:${walletAddress}`)
+    }
     if (!raw) return null
     const lamports = Number(raw)
     return Number.isFinite(lamports) && lamports >= 0 ? lamports : null
@@ -41,19 +48,35 @@ export async function loadCachedBalance(walletAddress: string): Promise<number |
   }
 }
 
-export async function saveCachedBalance(walletAddress: string, lamports: number): Promise<void> {
+export async function saveCachedBalance(
+  walletAddress: string,
+  lamports: number,
+  cluster: string = 'devnet',
+): Promise<void> {
   if (!Number.isFinite(lamports) || lamports < 0) return
   try {
-    await AsyncStorage.setItem(balanceKey(walletAddress), String(lamports))
+    await AsyncStorage.setItem(balanceKey(walletAddress, cluster), String(lamports))
   } catch (err) {
     console.error('[Haptix TxHistory] Failed to persist the balance', err)
   }
 }
 
 /** Drops a wallet's cached balance. Called when the device is signed out of it. */
-export async function clearCachedBalance(walletAddress: string): Promise<void> {
+export async function clearCachedBalance(
+  walletAddress: string,
+  cluster?: string,
+): Promise<void> {
   try {
-    await AsyncStorage.removeItem(balanceKey(walletAddress))
+    if (cluster) {
+      await AsyncStorage.removeItem(balanceKey(walletAddress, cluster))
+    } else {
+      await AsyncStorage.multiRemove([
+        `${BALANCE_KEY_PREFIX}:${walletAddress}`,
+        balanceKey(walletAddress, 'devnet'),
+        balanceKey(walletAddress, 'mainnet'),
+        balanceKey(walletAddress, 'testnet'),
+      ])
+    }
   } catch (err) {
     console.error('[Haptix TxHistory] Failed to clear the cached balance', err)
   }
@@ -63,10 +86,19 @@ export async function clearCachedBalance(walletAddress: string): Promise<void> {
  * Reads persisted history for a wallet. Records written by older builds (which
  * had no direction or counterparty data) fail validation and are dropped, so a
  * stale heuristic never resurfaces in the UI.
+ *
+ * Scoped by cluster so devnet airdrops/transfers never bleed into mainnet views.
  */
-export async function loadTxHistory(walletAddress: string): Promise<TransactionRecord[]> {
+export async function loadTxHistory(
+  walletAddress: string,
+  cluster: string = 'devnet',
+): Promise<TransactionRecord[]> {
   try {
-    const raw = await AsyncStorage.getItem(storageKey(walletAddress))
+    let raw = await AsyncStorage.getItem(storageKey(walletAddress, cluster))
+    // Backwards compatibility: fallback to legacy unscoped key only if on devnet
+    if (!raw && cluster === 'devnet') {
+      raw = await AsyncStorage.getItem(`${STORAGE_KEY_PREFIX}:${walletAddress}`)
+    }
     if (!raw) return []
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
@@ -77,18 +109,34 @@ export async function loadTxHistory(walletAddress: string): Promise<TransactionR
   }
 }
 
-export async function saveTxHistory(walletAddress: string, records: TransactionRecord[]): Promise<void> {
+export async function saveTxHistory(
+  walletAddress: string,
+  records: TransactionRecord[],
+  cluster: string = 'devnet',
+): Promise<void> {
   try {
     const trimmed = mergeTxRecords([], records).slice(0, MAX_STORED_RECORDS)
-    await AsyncStorage.setItem(storageKey(walletAddress), JSON.stringify(trimmed))
+    await AsyncStorage.setItem(storageKey(walletAddress, cluster), JSON.stringify(trimmed))
   } catch (err) {
     console.error('[Haptix TxHistory] Failed to persist history', err)
   }
 }
 
-export async function clearTxHistory(walletAddress: string): Promise<void> {
+export async function clearTxHistory(
+  walletAddress: string,
+  cluster?: string,
+): Promise<void> {
   try {
-    await AsyncStorage.removeItem(storageKey(walletAddress))
+    if (cluster) {
+      await AsyncStorage.removeItem(storageKey(walletAddress, cluster))
+    } else {
+      await AsyncStorage.multiRemove([
+        `${STORAGE_KEY_PREFIX}:${walletAddress}`,
+        storageKey(walletAddress, 'devnet'),
+        storageKey(walletAddress, 'mainnet'),
+        storageKey(walletAddress, 'testnet'),
+      ])
+    }
   } catch (err) {
     console.error('[Haptix TxHistory] Failed to clear history', err)
   }

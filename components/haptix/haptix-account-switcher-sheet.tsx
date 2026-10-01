@@ -29,6 +29,7 @@ import { loadCachedBalance } from '@/utils/haptix-tx-history'
 import Clipboard from '@/utils/clipboard'
 import { radius, typeScale } from '@/theme/tokens'
 import { getDevnetFunderPublicKey, isDevnetFunder } from '@/utils/haptix-funder'
+import { useCluster, ClusterNetwork } from '@/components/cluster/cluster-provider'
 
 interface HaptixAccountSwitcherSheetProps {
   visible: boolean
@@ -41,6 +42,8 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
   const { theme } = useAppTheme()
   const dialog = useHaptixDialog()
   const { activeWallet, wallets, switchWallet, createWallet } = useAuth()
+  const { selectedCluster } = useCluster()
+  const network = selectedCluster?.network === ClusterNetwork.Mainnet ? 'mainnet' : 'devnet'
 
   const listScrollRef = useRef<ScrollView>(null)
   const createScrollRef = useRef<ScrollView>(null)
@@ -113,7 +116,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
       const results: Record<string, number> = {}
       for (const w of wallets) {
         try {
-          const cached = await loadCachedBalance(w.address)
+          const cached = await loadCachedBalance(w.address, network)
           if (cached !== null) {
             results[w.address] = cached
           }
@@ -125,7 +128,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
     return () => {
       mounted = false
     }
-  }, [visible, wallets])
+  }, [visible, wallets, network])
 
   // Reset scroll to top whenever the sheet opens
   useEffect(() => {
