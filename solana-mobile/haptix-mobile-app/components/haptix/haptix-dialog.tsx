@@ -10,9 +10,11 @@ export type HaptixDialogButtonStyle = 'default' | 'cancel' | 'destructive' | 'se
 
 export interface HaptixDialogButton {
   text: string
+  subtext?: string
   onPress?: () => void
   /** `default` renders as the accent action, `cancel` as a quiet text action. */
   style?: HaptixDialogButtonStyle
+  flex?: number
 }
 
 export interface HaptixDialogOptions {
@@ -20,8 +22,12 @@ export interface HaptixDialogOptions {
   onDismiss?: () => void
   /** Draws a status icon above the title. */
   status?: HaptixDialogStatus
+  /** Explicit icon override above the title. */
+  icon?: keyof typeof MaterialIcons.glyphMap
   /** Runs the given node between the message and the actions for whatever a string cannot carry. */
   content?: React.ReactNode
+  /** Force rendering buttons side-by-side in a row. */
+  forceRow?: boolean
 }
 
 interface DialogRequest {
@@ -32,6 +38,8 @@ interface DialogRequest {
   cancelable: boolean
   onDismiss?: () => void
   status: HaptixDialogStatus
+  icon?: keyof typeof MaterialIcons.glyphMap
+  forceRow?: boolean
 }
 
 interface HaptixDialogContextValue {
@@ -89,6 +97,8 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
           cancelable: options?.cancelable ?? true,
           onDismiss: options?.onDismiss,
           status: options?.status ?? 'neutral',
+          icon: options?.icon,
+          forceRow: options?.forceRow,
         },
       ])
     },
@@ -128,7 +138,9 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
     (active?.buttons.length ?? 0) > 2 ||
     Boolean(active?.buttons.some((b) => b.text.length > 12))
 
-  const isButtonRow = active?.buttons.length === 2 && !shouldStackButtons
+  const isButtonRow =
+    active?.buttons.length === 2 &&
+    (active.forceRow || (!shouldStackButtons && !active.buttons.some((b) => b.subtext)))
 
   // In vertical stack: place affirmative/action buttons first, and 'cancel' at the very bottom
   const displayButtons = useMemo(() => {
@@ -162,10 +174,11 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
       },
       cancelButtonText: { color: theme.isDark ? '#F4F4F5' : theme.textPrimary },
       secondaryButton: {
-        backgroundColor: theme.isDark ? '#1C1C21' : '#EFEFF0',
-        borderColor: theme.isDark ? '#2C2C35' : theme.borderSubtle,
+        backgroundColor: theme.isDark ? 'transparent' : '#FFFFFF',
+        borderColor: theme.isDark ? '#2A2A28' : '#E6E4DE',
+        borderWidth: 1,
       },
-      secondaryButtonText: { color: theme.isDark ? '#F4F4F5' : theme.textPrimary },
+      secondaryButtonText: { color: theme.isDark ? '#F2F1EE' : theme.textPrimary, fontWeight: '500' },
       destructiveButton: {
         backgroundColor: '#E11D48',
         borderColor: '#E11D48',
@@ -213,7 +226,7 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
           : theme.textMuted
 
   const statusIcon = active
-    ? (active.status === 'warning' ? 'warning' : STATUS_ICON[active.status])
+    ? (active.icon ?? (active.status === 'warning' ? 'warning' : STATUS_ICON[active.status]))
     : null
 
   // A fresh object here re-rendered every consumer in the tree on any provider render,
@@ -313,15 +326,14 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
               <View style={isButtonRow ? layout.buttonRow : layout.buttonColumn}>
                 {displayButtons.map((button, index) => {
                   const variant = button.style ?? 'default'
-                  return (
+                  const buttonElement = (
                     <TouchableOpacity
-                      key={`${button.text}-${index}`}
                       activeOpacity={0.8}
                       onPress={() => handleButton(button)}
                       accessibilityRole="button"
                       style={[
                         layout.button,
-                        isButtonRow && layout.buttonFlex,
+                        isButtonRow && (button.flex ? { flex: button.flex } : layout.buttonFlex),
                         variant === 'default' && colors.accentButton,
                         variant === 'secondary' && colors.secondaryButton,
                         variant === 'destructive' && colors.destructiveButton,
@@ -343,6 +355,23 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
                         {button.text}
                       </Text>
                     </TouchableOpacity>
+                  )
+
+                  if (button.subtext) {
+                    return (
+                      <View key={`${button.text}-${index}`} style={isButtonRow ? layout.buttonFlex : { width: '100%' }}>
+                        {buttonElement}
+                        <Text style={[layout.buttonSubtext, { color: theme.isDark ? '#8A8985' : theme.textMuted }]}>
+                          {button.subtext}
+                        </Text>
+                      </View>
+                    )
+                  }
+
+                  return (
+                    <React.Fragment key={`${button.text}-${index}`}>
+                      {buttonElement}
+                    </React.Fragment>
                   )
                 })}
               </View>
@@ -427,5 +456,12 @@ const layout = StyleSheet.create({
     fontSize: 14.5,
     fontWeight: '700',
     textAlign: 'center',
+  },
+  buttonSubtext: {
+    fontSize: 11.5,
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 2,
+    lineHeight: 16,
   },
 })

@@ -186,14 +186,97 @@ export default function SpendingLimitsScreen() {
       return
     }
 
+    const isRaise = effectiveDraftLimit > savedLimit
+    const title = isRaise ? 'Raise the spending limit?' : 'Lower the spending limit?'
+    const subtitle = isRaise
+      ? `One key will be able to send up to ${effectiveDraftLimit} SOL without the second key.`
+      : `One key will only be able to send up to ${effectiveDraftLimit} SOL. Larger sends will need both keys.`
+
+    const content = (
+      <View style={{ width: '100%', marginTop: 8 }}>
+        {/* Current vs New comparison table */}
+        <View
+          style={{
+            borderWidth: 0.5,
+            borderColor: theme.isDark ? '#2A2A28' : '#E6E4DE',
+            borderRadius: 14,
+            paddingHorizontal: 14,
+            paddingVertical: 2,
+            marginBottom: 14,
+            backgroundColor: theme.isDark ? '#18181B' : '#FFFFFF',
+          }}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingVertical: 11,
+              borderBottomWidth: 0.5,
+              borderBottomColor: theme.isDark ? '#201F1D' : '#EEECE7',
+            }}
+          >
+            <Text style={{ color: theme.isDark ? '#8A8985' : '#6B6A64', fontSize: 13 }}>Current</Text>
+            <Text style={{ color: theme.isDark ? '#D4D4D8' : '#111827', fontSize: 13, fontWeight: '500' }}>
+              {savedLimit} SOL
+            </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingVertical: 11,
+            }}
+          >
+            <Text style={{ color: theme.isDark ? '#8A8985' : '#6B6A64', fontSize: 13 }}>New</Text>
+            <Text style={{ color: theme.textPrimary, fontSize: 13, fontWeight: '600' }}>
+              {effectiveDraftLimit} SOL
+            </Text>
+          </View>
+        </View>
+
+        {/* Requirements List */}
+        <View style={{ gap: 10, marginBottom: 4 }}>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+            <MaterialIcons
+              name="fingerprint"
+              size={18}
+              color={theme.isDark ? '#8A8985' : '#6B6A64'}
+              style={{ marginTop: 1 }}
+            />
+            <Text style={{ color: theme.isDark ? '#B4B3AE' : '#4A4944', fontSize: 12.5, lineHeight: 18, flex: 1 }}>
+              Needs both keys to approve.
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+            <MaterialIcons
+              name="link"
+              size={18}
+              color={theme.isDark ? '#8A8985' : '#6B6A64'}
+              style={{ marginTop: 1 }}
+            />
+            <Text style={{ color: theme.isDark ? '#B4B3AE' : '#4A4944', fontSize: 12.5, lineHeight: 18, flex: 1 }}>
+              The limit is enforced directly on-chain.
+            </Text>
+          </View>
+        </View>
+      </View>
+    )
+
     dialog.alert(
-      'Update Spending Limit?',
-      `Changing your single-key spending limit to ${effectiveDraftLimit} SOL is enforced directly on-chain.\n\n` +
-        'This governance action requires approval from BOTH your Primary Passkey and your Backup Key.',
+      title,
+      subtitle,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Approve (2-of-2)', onPress: () => void executeThresholdUpdate() },
+        { text: 'Cancel', style: 'cancel', flex: 1 },
+        { text: 'Approve with both keys', style: 'default', flex: 1.5, onPress: () => void executeThresholdUpdate() },
       ],
+      {
+        status: isRaise ? 'warning' : 'neutral',
+        icon: isRaise ? 'warning' : 'shield',
+        forceRow: true,
+        content,
+      },
     )
   }
 

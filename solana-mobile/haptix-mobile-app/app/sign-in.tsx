@@ -958,9 +958,9 @@ export default function SignIn() {
         }
 
         const isPrimaryKey = second?.role === 'primary'
-        const title = isPrimaryKey ? 'Selected Primary Passkey' : 'Unrecognized Passkey'
+        const title = isPrimaryKey ? 'Choose a different passkey' : 'Unrecognized passkey'
         const reason = isPrimaryKey
-          ? 'You selected the Primary passkey again instead of the Backup key. On-chain security requires two distinct passkeys.'
+          ? "That's already your primary passkey. Your backup key has to be a different one."
           : "That passkey does not match this wallet's Backup key."
 
         const choice = await new Promise<'retry' | 'skip' | 'cancel'>((resolve) => {
@@ -972,11 +972,16 @@ export default function SignIn() {
           }
           dialog.alert(
             title,
-            `${reason}\n\nWould you like to try selecting your Backup key again, or proceed in Everyday Mode (spending limited to ${spendLimitSol} SOL)?`,
+            reason,
             [
-              { text: 'Cancel', style: 'cancel', onPress: () => finish('cancel') },
-              { text: 'Proceed Without It', style: 'default', onPress: () => finish('skip') },
-              { text: 'Try Again', style: 'default', onPress: () => finish('retry') },
+              { text: 'Try again', style: 'default', onPress: () => finish('retry') },
+              {
+                text: 'Continue without a backup key',
+                style: 'secondary',
+                subtext: `Sends stay limited to ${spendLimitSol} SOL.`,
+                onPress: () => finish('skip'),
+              },
+              { text: 'Cancel', style: 'plain', onPress: () => finish('cancel') },
             ],
             { onDismiss: () => finish('cancel'), status: 'warning' },
           )
