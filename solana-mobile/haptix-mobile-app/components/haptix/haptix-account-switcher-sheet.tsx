@@ -827,6 +827,67 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
               </View>
 
               {/* Collapsible Advanced Settings (Key Names, Guardian) */}
+              {/* Recovery Guardian Address (Visibly required on-chain) */}
+              <View style={styles.formGroup}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                    Recovery guardian (Required)
+                  </Text>
+                  {AppConfig.devMode && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        const funderKey = getDevnetFunderPublicKey()
+                        if (funderKey) {
+                          setGuardianAddress(funderKey.toBase58())
+                          Haptics.selectionAsync()
+                        }
+                      }}
+                      style={{
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                        borderRadius: 6,
+                        backgroundColor: theme.isDark ? 'rgba(94, 129, 255, 0.15)' : 'rgba(94, 129, 255, 0.1)',
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: theme.isDark ? '#7E9BFF' : '#4F6BFF' }}>
+                        Use Devnet Funder
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <TextInput
+                  style={[
+                    styles.inputField,
+                    {
+                      backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
+                      color: theme.textPrimary,
+                      borderColor:
+                        guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim())
+                          ? theme.rose
+                          : (theme.isDark ? '#222226' : theme.borderDefault),
+                    },
+                  ]}
+                  value={guardianAddress}
+                  onChangeText={setGuardianAddress}
+                  placeholder="Trusted Solana address (e.g. Phantom/hardware)"
+                  placeholderTextColor={theme.textMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                />
+                <Text style={[styles.fieldHint, { color: theme.textMuted, marginTop: 4 }]}>
+                  Required. The recovery guardian is the only external key that can initiate on-chain recovery if your passkeys are lost.
+                </Text>
+                {guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim()) && (
+                  <Text style={[styles.fieldError, { color: theme.roseText }]}>
+                    Invalid Solana address
+                  </Text>
+                )}
+              </View>
+
+              {/* Advanced Options Toggle */}
               <TouchableOpacity
                 style={[
                   styles.advancedToggleBtn,
@@ -843,7 +904,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                 <View style={styles.advancedToggleLeft}>
                   <MaterialIcons name="tune" size={18} color={theme.textMuted} />
                   <Text style={[styles.advancedToggleText, { color: theme.textPrimary }]}>
-                    {showAdvanced ? 'Hide recovery guardian & advanced settings' : 'Recovery guardian & advanced settings'}
+                    {showAdvanced ? 'Hide passkey labels' : 'Advanced passkey labels'}
                   </Text>
                 </View>
                 <MaterialIcons
@@ -901,66 +962,6 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       placeholderTextColor={theme.textMuted}
                       returnKeyType="next"
                     />
-                  </View>
-
-                  {/* Recovery Guardian Address */}
-                  <View style={styles.formGroup}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                        Recovery guardian (Required)
-                      </Text>
-                      {AppConfig.devMode && (
-                        <TouchableOpacity
-                          onPress={() => {
-                            const funderKey = getDevnetFunderPublicKey()
-                            if (funderKey) {
-                              setGuardianAddress(funderKey.toBase58())
-                              Haptics.selectionAsync()
-                            }
-                          }}
-                          style={{
-                            paddingHorizontal: 8,
-                            paddingVertical: 2,
-                            borderRadius: 6,
-                            backgroundColor: theme.isDark ? 'rgba(94, 129, 255, 0.15)' : 'rgba(94, 129, 255, 0.1)',
-                          }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: theme.isDark ? '#7E9BFF' : '#4F6BFF' }}>
-                            Use Devnet Funder
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    <TextInput
-                      style={[
-                        styles.inputField,
-                        {
-                          backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
-                          color: theme.textPrimary,
-                          borderColor:
-                            guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim())
-                              ? theme.rose
-                              : (theme.isDark ? '#222226' : theme.borderDefault),
-                        },
-                      ]}
-                      value={guardianAddress}
-                      onChangeText={setGuardianAddress}
-                      placeholder="Trusted Solana address (e.g. Phantom/hardware)"
-                      placeholderTextColor={theme.textMuted}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      returnKeyType="done"
-                      onSubmitEditing={Keyboard.dismiss}
-                    />
-                    <Text style={[styles.fieldHint, { color: theme.textMuted, marginTop: 4 }]}>
-                      Required. The recovery guardian is the only external key that can initiate on-chain recovery if your passkeys are lost.
-                    </Text>
-                    {guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim()) && (
-                      <Text style={[styles.fieldError, { color: theme.roseText }]}>
-                        Invalid Solana address
-                      </Text>
-                    )}
                   </View>
                 </View>
               )}
