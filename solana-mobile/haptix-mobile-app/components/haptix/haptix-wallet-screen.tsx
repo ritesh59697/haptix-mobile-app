@@ -445,7 +445,7 @@ export function HaptixWalletScreen() {
       liveBalanceRef.current = true
       setBalance(lamports / LAMPORTS_PER_SOL)
       setIsInitialBalanceLoaded(true)
-      void saveCachedBalance(activeWallet.address, lamports)
+      void saveCachedBalance(activeWallet.address, lamports, network)
       setRpcIssue(null)
 
       if (network === 'devnet') {
@@ -492,7 +492,7 @@ export function HaptixWalletScreen() {
 
   // Show the last measured balance straight away instead of a fake zero.
   // `liveBalanceRef` is set as soon as a live read lands, so a slow AsyncStorage read
-  // can never overwrite fresher chain data with an older figure.
+  // can never overwrite fresher chain data with an older figure. Keyed per network.
   const liveBalanceRef = useRef(false)
   useEffect(() => {
     const address = activeWallet?.address
@@ -500,39 +500,45 @@ export function HaptixWalletScreen() {
     let cancelled = false
     liveBalanceRef.current = false
     setIsInitialBalanceLoaded(false)
-    loadCachedBalance(address).then((lamports) => {
+    loadCachedBalance(address, network).then((lamports) => {
       if (cancelled || liveBalanceRef.current) return
       if (lamports !== null) {
         setBalance(lamports / LAMPORTS_PER_SOL)
         setIsInitialBalanceLoaded(true)
+      } else {
+        setBalance(0)
       }
     })
     return () => {
       cancelled = true
     }
-  }, [activeWallet?.address])
+  }, [activeWallet?.address, network])
 
   // Hydrate persisted history so a reload does not wipe the activity list.
+  // Scoped to cluster so devnet airdrops/transfers never bleed into mainnet views.
   useEffect(() => {
     const address = activeWallet?.address
     if (!address) return
     let cancelled = false
-    loadTxHistory(address).then((stored) => {
+    // Immediately clear in-memory state on network or wallet address switch
+    setTransactions([])
+    parsedHistoryRef.current = []
+    loadTxHistory(address, network).then((stored) => {
       if (!cancelled && stored.length > 0) {
-        setTransactions((prev) => mergeTxRecords(prev, stored))
+        setTransactions(stored)
       }
     })
     return () => {
       cancelled = true
     }
-  }, [activeWallet?.address])
+  }, [activeWallet?.address, network])
 
   // Every change to the list is written back, so local-only entries survive too.
   useEffect(() => {
     const address = activeWallet?.address
     if (!address || transactions.length === 0) return
-    void saveTxHistory(address, transactions)
-  }, [transactions, activeWallet?.address])
+    void saveTxHistory(address, transactions, network)
+  }, [transactions, activeWallet?.address, network])
 
   const refreshMarketPrices = useCallback(async () => {
     setMarket(await fetchMarketSnapshot())
@@ -1638,27 +1644,29 @@ export function HaptixWalletScreen() {
           <Text style={styles.heroActionBtnText}>Receive</Text>
         </TouchableOpacity>
 
-        {/* Faucet */}
-        <TouchableOpacity
-          style={styles.heroActionBtn}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-            handleRequestFaucet()
-          }}
-          disabled={isRequestingFaucet}
-          activeOpacity={0.78}
-        >
-          <View style={styles.actionIconContainer}>
-            {isRequestingFaucet ? (
-              <ActivityIndicator size="small" color={theme.accent} />
-            ) : (
-              <ActionFaucetIcon size={18} color={theme.textPrimary} />
-            )}
-          </View>
-          <Text style={styles.heroActionBtnText}>
-            {isRequestingFaucet ? '...' : 'Faucet'}
-          </Text>
-        </TouchableOpacity>
+        {/* Faucet (Devnet only) */}
+        {network === 'devnet' && (
+          <TouchableOpacity
+            style={styles.heroActionBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+              handleRequestFaucet()
+            }}
+            disabled={isRequestingFaucet}
+            activeOpacity={0.78}
+          >
+            <View style={styles.actionIconContainer}>
+              {isRequestingFaucet ? (
+                <ActivityIndicator size="small" color={theme.accent} />
+              ) : (
+                <ActionFaucetIcon size={18} color={theme.textPrimary} />
+              )}
+            </View>
+            <Text style={styles.heroActionBtnText}>
+              {isRequestingFaucet ? '...' : 'Faucet'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* TOKENS SECTION HEADER */}
