@@ -155,7 +155,7 @@ async function main() {
 
   // 1. Proves single-passkey attempt fails
   const newThreshold = 500_000_000n // 0.5 SOL
-  const thresholdMessage = getSetSpendThresholdSignedMessage(newThreshold, onChainInitial?.authNonce ?? 0n)
+  const thresholdMessage = getSetSpendThresholdSignedMessage(walletPda, newThreshold, onChainInitial?.authNonce ?? 0n)
   const primaryAssertion = buildAssertion(primaryPrivate, thresholdMessage)
 
   const singlePrecompile = createWebAuthnSecp256r1Instruction({
@@ -199,7 +199,7 @@ async function main() {
 
   // 3. Proves lowering threshold works as well
   const loweredThreshold = 50_000_000n // 0.05 SOL
-  const lowerMessage = getSetSpendThresholdSignedMessage(loweredThreshold, onChainUpdated?.authNonce ?? 0n)
+  const lowerMessage = getSetSpendThresholdSignedMessage(walletPda, loweredThreshold, onChainUpdated?.authNonce ?? 0n)
   const lowerPrimaryAssertion = buildAssertion(primaryPrivate, lowerMessage)
   const lowerSecondaryAssertion = buildAssertion(secondaryPrivate, lowerMessage)
 

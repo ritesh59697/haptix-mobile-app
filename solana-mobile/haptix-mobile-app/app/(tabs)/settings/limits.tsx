@@ -22,8 +22,7 @@ import { useAuth } from '@/components/auth/auth-provider'
 import { useCluster } from '@/components/cluster/cluster-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
-import { PrismDepthButton } from '@/components/ui'
-import { LucideSmartphone, LucideShieldCheck, LucideCheck, Lock1Bold } from '@/components/haptix/haptix-icons'
+import { LucideSmartphone, LucideShieldCheck, LucideCheck, Lock1Bold, LucideArrowRight } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
@@ -35,6 +34,7 @@ import {
   getSetSpendThresholdSignedMessage,
   WalletState,
 } from '@/utils/haptix-client'
+import { getHaptixAddressLookupTable, buildOptimalTransaction } from '@/utils/haptix-lookup-table'
 import { radius, typeScale, ThemeTokens } from '@/theme/tokens'
 
 const PRESET_LIMITS_ROW_1 = [0.05, 0.1, 0.25]
@@ -54,7 +54,9 @@ export default function SpendingLimitsScreen() {
   const [onChainWallet, setOnChainWallet] = useState<WalletState | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpdating, setIsUpdating] = useState(false)
-  const [selectedLimit, setSelectedLimit] = useState<number>(() => activeWallet?.spendThreshold ?? 0.1)
+
+  // Separated: savedLimit (on-chain truth) vs draftLimit (active selection)
+  const [draftLimit, setDraftLimit] = useState<number>(() => activeWallet?.spendThreshold ?? 0.1)
   const [customInput, setCustomInput] = useState('')
   const [isCustomMode, setIsCustomMode] = useState(false)
 
@@ -71,7 +73,7 @@ export default function SpendingLimitsScreen() {
       setOnChainWallet(state)
       if (state) {
         const thresholdSol = Number(state.spendThresholdLamports) / LAMPORTS_PER_SOL
-        setSelectedLimit(thresholdSol)
+        setDraftLimit(thresholdSol)
       }
     } catch (err) {
       console.error('[Haptix Limits] Read error:', formatChainErrorForLog(err))
@@ -84,17 +86,33 @@ export default function SpendingLimitsScreen() {
     void refreshOnChain()
   }, [refreshOnChain])
 
-  // Scroll to bottom when keyboard opens in custom mode so input and Save button are never hidden
+  const [keyboardVisible, setKeyboardVisible] = useState(false)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
+
+  // Track keyboard show/hide and auto-scroll to input
   useEffect(() => {
-    const keyboardSub = Keyboard.addListener('keyboardDidShow', () => {
-      if (isCustomMode) {
-        setTimeout(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: true })
-        }, 80)
-      }
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardVisible(true)
+      const kh = e.endCoordinates?.height || 320
+      setKeyboardHeight(kh)
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true })
+      }, 100)
     })
-    return () => keyboardSub.remove()
-  }, [isCustomMode])
+
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setKeyboardVisible(false)
+      setKeyboardHeight(0)
+    })
+
+    return () => {
+      showSub.remove()
+      hideSub.remove()
+    }
+  }, [])
 
   const handleBack = () => {
     Haptics.selectionAsync()
@@ -105,32 +123,38 @@ export default function SpendingLimitsScreen() {
     }
   }
 
-  const effectiveLimit = useMemo(() => {
+  // Active saved limit on-chain
+  const savedLimit = useMemo(() => {
+    if (onChainWallet) {
+      return Number(onChainWallet.spendThresholdLamports) / LAMPORTS_PER_SOL
+    }
+    return activeWallet?.spendThreshold ?? 0.1
+  }, [onChainWallet, activeWallet?.spendThreshold])
+
+  // Effective draft limit
+  const effectiveDraftLimit = useMemo(() => {
     if (isCustomMode) {
       const parsed = parseFloat(customInput)
       return isNaN(parsed) || parsed <= 0 ? 0 : parsed
     }
-    return selectedLimit
-  }, [isCustomMode, customInput, selectedLimit])
+    return draftLimit
+  }, [isCustomMode, customInput, draftLimit])
 
-  const currentOnChainLimitSol = onChainWallet
-    ? Number(onChainWallet.spendThresholdLamports) / LAMPORTS_PER_SOL
-    : (activeWallet?.spendThreshold ?? 0.1)
-
-  const isUnchanged = Math.abs(effectiveLimit - currentOnChainLimitSol) < 0.000001
+  const isUnchanged = Math.abs(effectiveDraftLimit - savedLimit) < 0.000001
+  const isSaveEnabled = !isUnchanged && effectiveDraftLimit > 0 && !isUpdating
 
   const handleSelectPreset = (val: number) => {
     Haptics.selectionAsync()
     Keyboard.dismiss()
     setIsCustomMode(false)
-    setSelectedLimit(val)
+    setDraftLimit(val)
   }
 
   const handleSelectCustom = () => {
     Haptics.selectionAsync()
     setIsCustomMode(true)
     if (!customInput) {
-      setCustomInput(selectedLimit.toString())
+      setCustomInput(draftLimit.toString())
     }
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true })
@@ -141,19 +165,19 @@ export default function SpendingLimitsScreen() {
     Keyboard.dismiss()
     if (!activeWallet?.address || !onChainWallet) return
 
-    if (effectiveLimit <= 0) {
+    if (effectiveDraftLimit <= 0) {
       dialog.alert('Invalid Limit', 'Spending limit must be greater than 0 SOL.')
       return
     }
 
     if (isUnchanged) {
-      dialog.alert('Unchanged', `Your spending limit is already ${effectiveLimit} SOL.`)
+      dialog.alert('Unchanged', `Your spending limit is already ${effectiveDraftLimit} SOL.`)
       return
     }
 
     dialog.alert(
       'Update Spending Limit?',
-      `Changing your single-key spending limit to ${effectiveLimit} SOL is enforced directly on-chain.\n\n` +
+      `Changing your single-key spending limit to ${effectiveDraftLimit} SOL is enforced directly on-chain.\n\n` +
         'This governance action requires approval from BOTH your Primary Passkey and your Backup Key.',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -173,14 +197,14 @@ export default function SpendingLimitsScreen() {
         dialog.alert('Wallet not on-chain', 'Activate the wallet before changing the spending limit.')
         return
       }
-      const newThresholdLamports = BigInt(Math.round(effectiveLimit * LAMPORTS_PER_SOL))
-      const message = getSetSpendThresholdSignedMessage(newThresholdLamports, fresh.authNonce)
+      const newThresholdLamports = BigInt(Math.round(effectiveDraftLimit * LAMPORTS_PER_SOL))
+      const message = getSetSpendThresholdSignedMessage(walletPda, newThresholdLamports, fresh.authNonce)
 
       // 1. Sign with Primary Passkey
       const primarySig = await signWithPasskey(
         'primary',
         message,
-        `Set single-key spend limit to ${effectiveLimit} SOL`,
+        `Set single-key spend limit to ${effectiveDraftLimit} SOL`,
       )
 
       // 2. Sign with Secondary / Vault Passkey
@@ -203,17 +227,31 @@ export default function SpendingLimitsScreen() {
 
       const payer = await getFundedDevnetPayer(connection)
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
-      const tx = new Transaction({
-        feePayer: payer.publicKey,
+      const lookupTable = await getHaptixAddressLookupTable(connection, walletPda, payer).catch(() => null)
+      const { rawTx } = buildOptimalTransaction({
+        payer,
         recentBlockhash: latestBlockhash.blockhash,
-      }).add(precompilePrimary, precompileSecondary, setThresholdIx)
+        instructions: [precompilePrimary, precompileSecondary, setThresholdIx],
+        lookupTable,
+      })
 
-      const sig = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: 'confirmed' })
+      const sig = await connection.sendRawTransaction(rawTx, {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      })
+      await connection.confirmTransaction(
+        {
+          signature: sig,
+          blockhash: latestBlockhash.blockhash,
+          lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        },
+        'confirmed',
+      )
 
       // Update local wallet record
       await updateWallet({
         ...activeWallet,
-        spendThreshold: effectiveLimit,
+        spendThreshold: effectiveDraftLimit,
       })
 
       await refreshOnChain()
@@ -221,9 +259,9 @@ export default function SpendingLimitsScreen() {
 
       dialog.alert(
         'Spending Limit Updated',
-        `Your single-key spending limit is now ${effectiveLimit} SOL.\n\n` +
-          `• Sends ≤ ${effectiveLimit} SOL: Instant 1-tap FaceID\n` +
-          `• Sends > ${effectiveLimit} SOL: Requires both passkeys\n\nTx: ${ellipsify(sig, 8)}`,
+        `Your single-key spending limit is now ${effectiveDraftLimit} SOL.\n\n` +
+          `• Sends ≤ ${effectiveDraftLimit} SOL: Instant 1-tap FaceID\n` +
+          `• Sends > ${effectiveDraftLimit} SOL: Requires both passkeys\n\nTx: ${ellipsify(sig, 8)}`,
         [
           { text: 'View on Explorer', onPress: () => Linking.openURL(getExplorerUrl(`tx/${sig}`)) },
           { text: 'Done', style: 'default' },
@@ -240,47 +278,67 @@ export default function SpendingLimitsScreen() {
     }
   }
 
+  // Change delta summary feedback
+  const deltaSummary = useMemo(() => {
+    if (isCustomMode && (!customInput.trim() || effectiveDraftLimit <= 0)) {
+      return { isPrompt: true, text: 'Enter a custom amount in SOL.' }
+    }
+    if (isUnchanged) {
+      return null
+    }
+    const deltaImpact =
+      effectiveDraftLimit > savedLimit
+        ? 'This lets one key send more.'
+        : 'This lowers what one key can send.'
+    return {
+      isPrompt: false,
+      from: savedLimit,
+      to: effectiveDraftLimit,
+      impact: deltaImpact,
+    }
+  }, [isCustomMode, customInput, isUnchanged, effectiveDraftLimit, savedLimit])
+
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === 'android' ? 12 : 6) }]}>
-        <TouchableOpacity
-          onPress={handleBack}
-          style={styles.backButton}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          accessibilityLabel="Back to Settings"
-        >
-          <MaterialIcons name="arrow-back-ios-new" size={17} color={theme.textPrimary} />
-        </TouchableOpacity>
-        <View style={styles.headerTitleWrap}>
-          <Text style={styles.headerTitle}>Spending Limits</Text>
-          <Text style={styles.headerSubtitle}>One-Key Fast Lane vs. Vault Quorum</Text>
-        </View>
-        <View style={styles.headerRightSpacer} />
-      </View>
-
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
       >
+        {/* Centered, Balanced Header matching Haptix Settings */}
+        <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === 'android' ? 12 : 6) }]}>
+          <TouchableOpacity
+            onPress={handleBack}
+            style={styles.backButton}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityLabel="Back to Settings"
+          >
+            <MaterialIcons name="arrow-back-ios-new" size={17} color={theme.textPrimary} />
+          </TouchableOpacity>
+          <View style={styles.headerTitleWrap}>
+            <Text style={styles.headerTitle}>Spending Limits</Text>
+            <Text style={styles.headerSubtitle}>One-Key Fast Lane vs. Vault Quorum</Text>
+          </View>
+          <View style={styles.headerRightSpacer} />
+        </View>
+
+        {/* Scroll Content Area */}
         <ScrollView
           ref={scrollViewRef}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: insets.bottom + (isCustomMode ? 280 : 36) },
+            { paddingBottom: keyboardVisible ? Math.max(keyboardHeight + 60, 360) : 24 },
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          {/* Status Card */}
+          {/* Active On-Chain Limit Card (Unified Explainer strictly on savedLimit) */}
           <View style={styles.card}>
             <View style={styles.statusHeader}>
               <View>
                 <Text style={styles.cardLabel}>ACTIVE ON-CHAIN LIMIT</Text>
                 <Text style={styles.currentLimitNumber}>
-                  {isLoading ? '...' : `${currentOnChainLimitSol} SOL`}
+                  {isLoading ? '...' : `${savedLimit} SOL`}
                 </Text>
               </View>
               <View style={styles.activeBadge}>
@@ -288,21 +346,14 @@ export default function SpendingLimitsScreen() {
                 <Text style={styles.activeBadgeText}>Live Policy</Text>
               </View>
             </View>
-            <Text style={styles.statusExplainer}>
-              Sends up to this limit run with a single biometric prompt. Any transfer exceeding this amount will
-              automatically escalate to require both your Primary and Backup keys.
-            </Text>
-          </View>
 
-          {/* How It Works Diagram Card */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>How Protection Works</Text>
+            {/* Rule Row 1: Up to limit */}
             <View style={styles.ruleRow}>
               <View style={styles.ruleIconContainer}>
                 <LucideSmartphone size={18} color={theme.textPrimary} strokeWidth={1.8} />
               </View>
               <View style={styles.ruleTextContainer}>
-                <Text style={styles.ruleTitle}>Daily Fast Lane (≤ {effectiveLimit} SOL)</Text>
+                <Text style={styles.ruleTitle}>Up to {savedLimit} SOL</Text>
                 <Text style={styles.ruleSubtitle}>
                   Instant execution with your primary passkey on this phone.
                 </Text>
@@ -311,12 +362,13 @@ export default function SpendingLimitsScreen() {
 
             <View style={styles.ruleDivider} />
 
+            {/* Rule Row 2: Above limit */}
             <View style={styles.ruleRow}>
               <View style={styles.ruleIconContainer}>
                 <LucideShieldCheck size={18} color={theme.textPrimary} strokeWidth={1.8} />
               </View>
               <View style={styles.ruleTextContainer}>
-                <Text style={styles.ruleTitle}>Vault Quorum (&gt; {effectiveLimit} SOL)</Text>
+                <Text style={styles.ruleTitle}>Above {savedLimit} SOL</Text>
                 <Text style={styles.ruleSubtitle}>
                   {activeWallet?.securityMode === 'vault'
                     ? 'Requires both this phone and your secondary device or hardware key.'
@@ -326,17 +378,20 @@ export default function SpendingLimitsScreen() {
             </View>
           </View>
 
-          {/* Limit Selector Card */}
+          {/* Change Limit Selection Card */}
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Set New Single-Key Limit</Text>
+            <View style={styles.changeHeader}>
+              <Text style={styles.sectionTitle}>Set New Single-Key Limit</Text>
+              <Text style={styles.metaCurrent}>Current: {savedLimit} SOL</Text>
+            </View>
             <Text style={styles.cardSubtitle}>
               Select a preset limit or enter a custom amount in SOL.
             </Text>
 
-            {/* Row 1 */}
+            {/* Row 1 Presets */}
             <View style={styles.presetsRow}>
               {PRESET_LIMITS_ROW_1.map((preset) => {
-                const isSelected = !isCustomMode && selectedLimit === preset
+                const isSelected = !isCustomMode && draftLimit === preset
                 return (
                   <TouchableOpacity
                     key={preset}
@@ -360,10 +415,10 @@ export default function SpendingLimitsScreen() {
               })}
             </View>
 
-            {/* Row 2 */}
-            <View style={[styles.presetsRow, { marginBottom: isCustomMode ? 12 : 16 }]}>
+            {/* Row 2 Presets + Custom */}
+            <View style={[styles.presetsRow, { marginBottom: isCustomMode ? 12 : 14 }]}>
               {PRESET_LIMITS_ROW_2.map((preset) => {
-                const isSelected = !isCustomMode && selectedLimit === preset
+                const isSelected = !isCustomMode && draftLimit === preset
                 return (
                   <TouchableOpacity
                     key={preset}
@@ -404,6 +459,7 @@ export default function SpendingLimitsScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Custom Input Container */}
             {isCustomMode && (
               <View style={styles.customInputContainer}>
                 <Text style={styles.customInputLabel}>Custom Amount (SOL)</Text>
@@ -424,19 +480,30 @@ export default function SpendingLimitsScreen() {
                       }, 120)
                     }}
                   />
-                  <View style={styles.customInputRightGroup}>
-                    <Text style={styles.solSuffix}>SOL</Text>
-                    <TouchableOpacity
-                      onPress={() => Keyboard.dismiss()}
-                      style={styles.keyboardDismissBtn}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      accessibilityLabel="Dismiss Keyboard"
-                    >
-                      <LucideCheck size={13} color="#6C8CFF" strokeWidth={2.4} />
-                      <Text style={styles.keyboardDismissText}>Done</Text>
-                    </TouchableOpacity>
-                  </View>
+                  <Text style={styles.solSuffix}>SOL</Text>
                 </View>
+              </View>
+            )}
+
+            {/* Dynamic Delta Summary Banner with Vector Arrow */}
+            {deltaSummary && (
+              <View style={styles.deltaBanner}>
+                {deltaSummary.isPrompt ? (
+                  <Text style={styles.deltaBannerText}>{deltaSummary.text}</Text>
+                ) : (
+                  <View style={styles.deltaRow}>
+                    <View style={styles.deltaTransitionGroup}>
+                      <Text style={styles.deltaAmountText}>{deltaSummary.from} SOL</Text>
+                      <LucideArrowRight
+                        size={15}
+                        color={theme.isDark ? '#F2F1EE' : '#181714'}
+                        strokeWidth={2.4}
+                      />
+                      <Text style={styles.deltaAmountText}>{deltaSummary.to} SOL.</Text>
+                    </View>
+                    <Text style={styles.deltaImpactText}>{deltaSummary.impact}</Text>
+                  </View>
+                )}
               </View>
             )}
 
@@ -451,30 +518,41 @@ export default function SpendingLimitsScreen() {
                 cannot silently raise this threshold.
               </Text>
             </View>
-
-            {/* Action Button */}
-            <View style={styles.actionContainer}>
-              <PrismDepthButton
-                title={
-                  isUpdating
-                    ? 'Verifying On-Chain Quorum...'
-                    : isUnchanged
-                    ? 'Limit Unchanged'
-                    : `Save Limit (${effectiveLimit} SOL)`
-                }
-                onPress={handleSaveLimit}
-                disabled={isUpdating || isUnchanged || effectiveLimit <= 0}
-                icon={
-                  isUpdating ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <MaterialIcons name="verified-user" size={18} color="#fff" />
-                  )
-                }
-              />
-            </View>
           </View>
         </ScrollView>
+
+        {/* Pinned Bottom Footer (Always visible, Protected above Gesture Bar) */}
+        <View
+          style={[
+            styles.pinnedFooter,
+            {
+              paddingBottom: Math.max(insets.bottom, 16),
+            },
+          ]}
+        >
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              isSaveEnabled ? styles.saveButtonActive : styles.saveButtonDisabled,
+            ]}
+            onPress={handleSaveLimit}
+            disabled={!isSaveEnabled || isUpdating}
+            activeOpacity={0.85}
+          >
+            {isUpdating ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text
+                style={[
+                  styles.saveButtonText,
+                  isSaveEnabled ? styles.saveButtonTextActive : styles.saveButtonTextDisabled,
+                ]}
+              >
+                Save limit
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </View>
   )
@@ -572,16 +650,21 @@ function createStyles(theme: ThemeTokens) {
       color: theme.textSecondary,
       fontWeight: '600',
     },
-    statusExplainer: {
-      fontSize: typeScale.footnote,
-      color: theme.textSecondary,
-      lineHeight: 20,
+    changeHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    metaCurrent: {
+      fontSize: 12,
+      fontWeight: '700',
+      color: theme.accent,
     },
     sectionTitle: {
       fontSize: typeScale.title,
       color: theme.textPrimary,
       fontWeight: '700',
-      marginBottom: 4,
     },
     cardSubtitle: {
       fontSize: typeScale.caption,
@@ -640,6 +723,11 @@ function createStyles(theme: ThemeTokens) {
     presetChipActive: {
       backgroundColor: theme.accent,
       borderWidth: 0,
+      shadowColor: theme.accent,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      elevation: 3,
     },
     presetChipText: {
       fontSize: 14,
@@ -657,7 +745,7 @@ function createStyles(theme: ThemeTokens) {
       borderColor: theme.isDark ? '#26262B' : theme.borderDefault,
       paddingHorizontal: 16,
       paddingVertical: 12,
-      marginBottom: 16,
+      marginBottom: 14,
     },
     customInputLabel: {
       fontSize: typeScale.caption,
@@ -701,6 +789,41 @@ function createStyles(theme: ThemeTokens) {
       color: '#6C8CFF',
       fontWeight: '700',
     },
+    deltaBanner: {
+      backgroundColor: theme.isDark ? '#1C1C1E' : '#F4F3F1',
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      marginBottom: 12,
+    },
+    deltaBannerText: {
+      fontSize: 13.5,
+      color: theme.isDark ? '#F2F1EE' : '#181714',
+      lineHeight: 19,
+    },
+    deltaRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      columnGap: 6,
+      rowGap: 2,
+    },
+    deltaTransitionGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    deltaAmountText: {
+      fontSize: 13.5,
+      fontWeight: '600',
+      color: theme.isDark ? '#F2F1EE' : '#181714',
+      lineHeight: 19,
+    },
+    deltaImpactText: {
+      fontSize: 13.5,
+      color: theme.isDark ? '#8A8985' : '#6B6A64',
+      lineHeight: 19,
+    },
     guaranteeBanner: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -709,7 +832,6 @@ function createStyles(theme: ThemeTokens) {
       padding: 14,
       borderRadius: 16,
       borderWidth: 0,
-      marginBottom: 16,
     },
     guaranteeIconWrap: {
       width: 32,
@@ -725,8 +847,34 @@ function createStyles(theme: ThemeTokens) {
       flex: 1,
       lineHeight: 18,
     },
-    actionContainer: {
-      marginTop: 4,
+    pinnedFooter: {
+      paddingHorizontal: 16,
+      paddingTop: 10,
+      backgroundColor: theme.bgApp,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.borderSubtle,
+    },
+    saveButton: {
+      borderRadius: 12,
+      paddingVertical: 13.5,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    saveButtonActive: {
+      backgroundColor: '#5A6EE6',
+    },
+    saveButtonDisabled: {
+      backgroundColor: theme.isDark ? '#1C1C1E' : '#E9E8E4',
+    },
+    saveButtonText: {
+      fontSize: 15,
+      fontWeight: '500',
+    },
+    saveButtonTextActive: {
+      color: '#FFFFFF',
+    },
+    saveButtonTextDisabled: {
+      color: theme.isDark ? '#5C5B57' : '#A8A6A0',
     },
   })
 }

@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use crate::auth::{bump_auth_nonce, debit_keeping_rent, transfer_message};
 use crate::error::HaptixError;
 use crate::secp256r1::verify_passkey_precompile_signature;
 use crate::state::{is_self_derived, WalletAccount};
@@ -28,55 +29,69 @@ pub fn execute_transfer(
     primary_sig_ix_index: u16,
     secondary_sig_ix_index: Option<u16>,
 ) -> Result<()> {
-    let wallet = &ctx.accounts.wallet;
+    require!(!ctx.accounts.wallet.is_frozen, HaptixError::WalletFrozen);
 
-    require!(!wallet.is_frozen, HaptixError::WalletFrozen);
+    let current_time = Clock::get()?.unix_timestamp;
+    const VELOCITY_WINDOW_SECONDS: i64 = 86_400; // 24 hours
 
-    // Dynamic Spend Policy enforcement
-    let quorum_required = amount > wallet.spend_threshold_lamports;
+    // Quorum is required if single transfer exceeds threshold OR rolling 24h cumulative spend exceeds threshold
+    let (window_spent, is_new_window) = if ctx.accounts.wallet.window_start == 0
+        || current_time.saturating_sub(ctx.accounts.wallet.window_start) >= VELOCITY_WINDOW_SECONDS
+    {
+        (0u64, true)
+    } else {
+        (ctx.accounts.wallet.window_spent, false)
+    };
 
-    // Message payload that must be signed: recipient pubkey + amount bytes
-    let mut expected_message = Vec::with_capacity(32 + 8);
-    expected_message.extend_from_slice(ctx.accounts.recipient.key.as_ref());
-    expected_message.extend_from_slice(&amount.to_le_bytes());
+    let cumulative_spent = window_spent.saturating_add(amount);
+    let quorum_required = amount > ctx.accounts.wallet.spend_threshold_lamports
+        || cumulative_spent > ctx.accounts.wallet.spend_threshold_lamports;
 
-    // 1. Verify Primary Passkey signature
+    let nonce = ctx.accounts.wallet.auth_nonce;
+    let cluster_tag = ctx.accounts.wallet.cluster_tag();
+    let expected_message = transfer_message(
+        &ctx.accounts.wallet.key(),
+        &cluster_tag,
+        nonce,
+        ctx.accounts.recipient.key,
+        amount,
+    );
+
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         primary_sig_ix_index,
-        &wallet.primary_passkey,
+        &ctx.accounts.wallet.primary_passkey,
         &expected_message,
     )?;
 
-    // 2. If amount exceeds threshold, enforce 2-of-2 Hardware Passkey Quorum
     if quorum_required {
         require!(secondary_sig_ix_index.is_some(), HaptixError::QuorumRequired);
         verify_passkey_precompile_signature(
             &ctx.accounts.instructions_sysvar,
             secondary_sig_ix_index.unwrap(),
-            &wallet.secondary_passkey,
+            &ctx.accounts.wallet.secondary_passkey,
             &expected_message,
         )?;
         msg!("High-risk transaction: Verified 2-of-2 Hardware Passkey Quorum.");
     } else {
-        msg!("Low-risk transaction: Verified 1-tap Passkey signature.");
+        // Track 1-tap velocity window spend
+        if is_new_window {
+            ctx.accounts.wallet.window_start = current_time;
+            ctx.accounts.wallet.window_spent = amount;
+        } else {
+            ctx.accounts.wallet.window_spent = cumulative_spent;
+        }
+        msg!("Low-risk transaction: Verified 1-tap Passkey signature within 24h velocity budget.");
     }
 
-    // Transfer lamports from Wallet PDA to Recipient using PDA signer seeds
-    **ctx.accounts.wallet.to_account_info().try_borrow_mut_lamports()? = ctx
-        .accounts
-        .wallet
-        .to_account_info()
-        .lamports()
-        .checked_sub(amount)
-        .ok_or(ProgramError::InsufficientFunds)?;
-
-    **ctx.accounts.recipient.try_borrow_mut_lamports()? = ctx
-        .accounts
-        .recipient
-        .lamports()
-        .checked_add(amount)
-        .ok_or(ProgramError::InvalidAccountData)?;
+    // Only a signature the program just accepted may advance the nonce. A failed
+    // check above returns before this, so a rejected attempt can be retried.
+    bump_auth_nonce(&mut ctx.accounts.wallet)?;
+    debit_keeping_rent(
+        &ctx.accounts.wallet.to_account_info(),
+        &ctx.accounts.recipient,
+        amount,
+    )?;
 
     msg!("Transferred {} lamports to {:?}", amount, ctx.accounts.recipient.key());
     Ok(())

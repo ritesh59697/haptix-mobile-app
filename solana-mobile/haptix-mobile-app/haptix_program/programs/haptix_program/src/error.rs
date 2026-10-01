@@ -42,4 +42,8 @@ pub enum HaptixError {
     GuardianRequired,
     #[msg("This agent session is not allowed to do that.")]
     AgentProgramNotAllowed,
+    #[msg("The wallet cannot be its own recovery guardian.")]
+    InvalidGuardian,
+    #[msg("Invalid cluster tag. Must be devnet or mainnet.")]
+    InvalidClusterTag,
 }

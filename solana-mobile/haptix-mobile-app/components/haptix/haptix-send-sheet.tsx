@@ -64,6 +64,7 @@ import {
   parseGuardianAddress,
   WALLET_ACCOUNT_SPACE,
 } from '@/utils/haptix-client'
+import { getHaptixAddressLookupTable, buildOptimalTransaction } from '@/utils/haptix-lookup-table'
 import { useHaptixDialog } from './haptix-dialog'
 import { radius, space, typeScale, ThemeTokens } from '@/theme/tokens'
 import { SKR_TOKEN_METADATA, USDC_TOKEN_METADATA } from '@/utils/haptix-tokens'
@@ -457,6 +458,11 @@ export function HaptixSendSheet({
       return
     }
 
+    if (sendRecipient.trim() === wallet.address) {
+      dialog.alert('Self-Transfer Not Supported', 'Cannot transfer funds to your own wallet address. Please enter a different recipient address.')
+      return
+    }
+
     try {
       await handleExecuteSend(() => {})
     } catch {
@@ -474,6 +480,9 @@ export function HaptixSendSheet({
     }
 
     const walletPda = new PublicKey(activeWallet.address)
+    if (toPubkey.equals(walletPda)) {
+      throw new Error('Cannot transfer funds to your own wallet address.')
+    }
     if (selectedToken !== 'SOL') {
       throw new Error(
         'Only SOL can be sent. SKR and USDC figures in this app were stored on the phone, not on Solana.',
@@ -505,7 +514,7 @@ export function HaptixSendSheet({
         }
       }
 
-      const message = getTransferSignedMessage(toPubkey, amountLamports, authNonce)
+      const message = getTransferSignedMessage(walletPda, toPubkey, amountLamports, authNonce)
 
       // 1. Primary Passkey authorization (Biometric challenge)
       const primarySig = await signWithPasskey(
@@ -522,9 +531,12 @@ export function HaptixSendSheet({
       // Sponsor transaction network fee on Devnet via persistent funded relayer
       const payer = await getFundedDevnetPayer(connection)
 
-      let txInstructions = []
-
-      // If wallet is not yet on-chain, atomically initialize it first in the SAME transaction
+      // The wallet PDA has to exist on-chain before the program can write to it, and
+      // `initialize_wallet` MUST get its own transaction rather than riding along with
+      // a passkey instruction. Each hardware passkey contributes a secp256r1 precompile
+      // carrying a full WebAuthn assertion (~380 bytes each) — two of those already consume
+      // most of Solana's 1232-byte transaction limit. Bundling initIx + 2 precompiles +
+      // transferIx exceeds Solana's 1232-byte MTU limit (1266 > 1232).
       if (needsInit) {
         const primaryPasskey = new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex'))
         const secondaryPasskey = new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex'))
@@ -534,13 +546,35 @@ export function HaptixSendSheet({
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), walletPda),
+          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey, walletPda),
         })
-        txInstructions.push(initIx)
+
+        const initBlockhash = await connection.getLatestBlockhash('confirmed')
+        const initTx = new Transaction({
+          feePayer: payer.publicKey,
+          recentBlockhash: initBlockhash.blockhash,
+        }).add(initIx)
+        initTx.sign(payer)
+
+        const initSig = await connection.sendRawTransaction(initTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed',
+        })
+
+        await connection.confirmTransaction(
+          {
+            signature: initSig,
+            blockhash: initBlockhash.blockhash,
+            lastValidBlockHeight: initBlockhash.lastValidBlockHeight,
+          },
+          'confirmed',
+        )
       }
 
-      const primarySigIxIndex = needsInit ? 1 : 0
-      const secondarySigIxIndex = needsInit ? (isHighRiskQuorum ? 2 : undefined) : isHighRiskQuorum ? 1 : undefined
+      const primarySigIxIndex = 0
+      const secondarySigIxIndex = isHighRiskQuorum ? 1 : undefined
+
+      let txInstructions = []
 
       if (isHighRiskQuorum) {
         onStepChange(2)
@@ -649,14 +683,14 @@ export function HaptixSendSheet({
       }
 
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
-      const tx = new Transaction({
-        feePayer: payer.publicKey,
+      const lookupTable = await getHaptixAddressLookupTable(connection, walletPda, payer).catch(() => null)
+      const { rawTx } = buildOptimalTransaction({
+        payer,
         recentBlockhash: latestBlockhash.blockhash,
-      }).add(...txInstructions)
+        instructions: txInstructions,
+        lookupTable,
+      })
 
-      tx.sign(payer)
-
-      const rawTx = tx.serialize()
       const sig = await connection.sendRawTransaction(rawTx, {
         skipPreflight: false,
         preflightCommitment: 'confirmed',
@@ -725,10 +759,9 @@ export function HaptixSendSheet({
   // Not blocked: moving your own SOL back to yourself is a legitimate devnet test. It is
   // only worth saying out loud so it does not happen by accident.
   const isRecipientSelf = !!recipientAddress && recipientAddress === wallet?.address
-  // A `.sns`/`.sol` name is neither an address nor a mistake: it is looked up, so the
-  // "not a Solana address" messaging has to stand down while that happens.
   const nameInput = looksLikeSolName(sendRecipient) ? extractSolName(sendRecipient) : null
   const savedContact = findContact(contacts, recipientAddress)
+  const isValidRecipient = Boolean(recipientAddress && !isRecipientSelf)
   // While an address is being typed it is invalid many times on the way to being valid,
   // so the error text waits until the paste was rejected, the field was left, or what is
   // in it is already longer than any address could be.
@@ -737,6 +770,11 @@ export function HaptixSendSheet({
     (!!recipientAttemptError ||
       (!!recipientParse.error &&
         (sendRecipientAttempted || sendRecipientBlurred || sendRecipient.trim().length > MAX_SOLANA_ADDRESS_LENGTH)))
+  const isRecipientInvalid = Boolean(
+    isRecipientSelf ||
+      recipientAttemptError ||
+      (showRecipientError && recipientParse.error),
+  )
   const recipientNotice = describeRecipientSource(sendRecipientSource)
 
   // Everything the fee is subtracted from: the balance chip, the percentage chips and the
@@ -836,6 +874,7 @@ export function HaptixSendSheet({
           style={[
             styles.expandedSendSheet,
             styles.modalSheet,
+            confirmedTransfer && { height: 'auto', maxHeight: '92%' },
             { paddingBottom: 0, transform: [{ translateY: panY }] },
           ]}
         >
@@ -846,7 +885,7 @@ export function HaptixSendSheet({
 
           {confirmedTransfer ? (
             /* ==================== TRANSFER CONFIRMED VIEW ==================== */
-            <View style={[styles.confirmedViewContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <View style={[styles.confirmedViewContainer, { paddingBottom: Math.max(insets.bottom, 22) }]}>
               {/* Checkmark Ring Badge */}
               <View style={styles.confirmedRingOuter}>
                 <View style={styles.confirmedRingInner}>
@@ -1199,47 +1238,74 @@ export function HaptixSendSheet({
             {/* RECIPIENT INPUT SECTION */}
             <View style={{ marginBottom: 16 }}>
               <Text style={styles.cleanFieldLabel}>Recipient Solana address</Text>
-              <View style={styles.cleanRecipientBox}>
-                <TextInput
-                  style={styles.cleanRecipientInput}
-                  value={sendRecipient}
-                  onChangeText={handleRecipientTextChange}
-                  onBlur={() => setSendRecipientBlurred(true)}
-                  placeholder="Enter recipient address"
-                  placeholderTextColor="#5f5e5a"
-                  selectionColor="#6c8cff"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  accessibilityLabel="Recipient Solana address"
-                />
+              <View
+                style={[
+                  styles.cleanRecipientBox,
+                  isValidRecipient && { borderColor: theme.emeraldBorder },
+                  isRecipientInvalid && { borderColor: theme.roseBorder },
+                ]}
+              >
+                <View style={{ flex: 1, minWidth: 0, overflow: 'hidden', marginRight: 8 }}>
+                  <TextInput
+                    style={styles.cleanRecipientInput}
+                    value={sendRecipient}
+                    onChangeText={handleRecipientTextChange}
+                    onBlur={() => setSendRecipientBlurred(true)}
+                    placeholder="Enter recipient address"
+                    placeholderTextColor="#5f5e5a"
+                    selectionColor="#6c8cff"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    numberOfLines={1}
+                    multiline={false}
+                    accessibilityLabel="Recipient Solana address"
+                  />
+                </View>
                 {sendRecipient ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                    {isValidRecipient ? (
+                      <View
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: 11,
+                          backgroundColor: theme.emeraldBg,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <MaterialIcons name="check" size={14} color={theme.emerald} />
+                      </View>
+                    ) : null}
+                    <TouchableOpacity
+                      style={{ padding: 4 }}
+                      onPress={() => {
+                        Haptics.selectionAsync()
+                        setSendRecipient('')
+                        setSendRecipientSource(null)
+                        setRecipientAttemptError('')
+                        setSendRecipientAttempted(false)
+                        setResolvedName(null)
+                        setNameLookup(null)
+                        setPendingContactName(null)
+                      }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      accessibilityLabel="Clear recipient address"
+                    >
+                      <MaterialIcons name="cancel" size={16} color="#8a8985" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
                   <TouchableOpacity
-                    style={{ marginRight: 8 }}
-                    onPress={() => {
-                      Haptics.selectionAsync()
-                      setSendRecipient('')
-                      setSendRecipientSource(null)
-                      setRecipientAttemptError('')
-                      setSendRecipientAttempted(false)
-                      setResolvedName(null)
-                      setNameLookup(null)
-                      setPendingContactName(null)
-                    }}
-                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    accessibilityLabel="Clear recipient address"
+                    style={styles.cleanPasteBtn}
+                    onPress={handlePasteRecipient}
+                    accessibilityLabel="Paste address from clipboard"
+                    activeOpacity={0.7}
                   >
-                    <MaterialIcons name="cancel" size={16} color="#8a8985" />
+                    <MaterialIcons name="content-paste" size={14} color="#6c8cff" />
+                    <Text style={styles.cleanPasteBtnText}>Paste</Text>
                   </TouchableOpacity>
-                ) : null}
-                <TouchableOpacity
-                  style={styles.cleanPasteBtn}
-                  onPress={handlePasteRecipient}
-                  accessibilityLabel="Paste address from clipboard"
-                  activeOpacity={0.7}
-                >
-                  <MaterialIcons name="content-paste" size={14} color="#6c8cff" />
-                  <Text style={styles.cleanPasteBtnText}>Paste</Text>
-                </TouchableOpacity>
+                )}
               </View>
 
               {/* One message slot under the field: what the paste did, what a name
@@ -1268,10 +1334,12 @@ export function HaptixSendSheet({
                     {nameLookup.message}
                   </Text>
                 </View>
-              ) : recipientNotice ? (
+              ) : isRecipientSelf ? (
                 <View style={styles.fieldMessageRow}>
-                  <MaterialIcons name="auto-fix-high" size={13} color={theme.emerald} />
-                  <Text style={[styles.fieldMessageText, styles.textSecondary]}>{recipientNotice}</Text>
+                  <MaterialIcons name="error-outline" size={13} color={theme.roseText} />
+                  <Text style={[styles.fieldMessageText, { color: theme.roseText }]}>
+                    Cannot send to this wallet&apos;s own address.
+                  </Text>
                 </View>
               ) : recipientAttemptError || (showRecipientError && recipientParse.error) ? (
                 <View style={styles.fieldMessageRow}>
@@ -1280,13 +1348,16 @@ export function HaptixSendSheet({
                     {recipientAttemptError || recipientParse.error}
                   </Text>
                 </View>
-              ) : isRecipientSelf ? (
-                // Not blocked: moving your own SOL back to yourself is a legitimate
-                // devnet test. It just is not worth a fee by accident.
+              ) : recipientNotice ? (
                 <View style={styles.fieldMessageRow}>
-                  <MaterialIcons name="info-outline" size={13} color={theme.amber} />
-                  <Text style={[styles.fieldMessageText, { color: theme.amberText }]}>
-                    That is this wallet&apos;s own address - the transfer would only cost the network fee.
+                  <MaterialIcons name="auto-fix-high" size={13} color={theme.emerald} />
+                  <Text style={[styles.fieldMessageText, styles.textSecondary]}>{recipientNotice}</Text>
+                </View>
+              ) : isValidRecipient ? (
+                <View style={styles.fieldMessageRow}>
+                  <MaterialIcons name="check-circle" size={13} color={theme.emerald} />
+                  <Text style={[styles.fieldMessageText, { color: theme.emeraldText }]}>
+                    {savedContact ? `Saved contact (${savedContact.label})` : 'Valid Solana address'}
                   </Text>
                 </View>
               ) : null}
@@ -1461,12 +1532,12 @@ export function HaptixSendSheet({
                 <TouchableOpacity
                   style={[
                     styles.cleanSubmitBtn,
-                    (isSending || !recipientAddress || sendAmountNum <= 0 || !!sendAmountError)
+                    (isSending || !recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError)
                       ? styles.cleanSubmitBtnDisabled
                       : styles.cleanSubmitBtnEnabled,
                   ]}
                   onPress={handleInitiateSendFlow}
-                  disabled={isSending || !recipientAddress || sendAmountNum <= 0 || !!sendAmountError}
+                  disabled={isSending || !recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError}
                   activeOpacity={0.8}
                   accessibilityRole="button"
                   accessibilityLabel="Sign and send with passkey"
@@ -1477,7 +1548,7 @@ export function HaptixSendSheet({
                     <Text
                       style={[
                         styles.cleanSubmitBtnText,
-                        (!recipientAddress || sendAmountNum <= 0 || !!sendAmountError)
+                        (!recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError)
                           ? styles.cleanSubmitBtnTextDisabled
                           : styles.cleanSubmitBtnTextEnabled,
                       ]}
@@ -1921,8 +1992,8 @@ const createSendSheetStyles = (theme: ThemeTokens, isDark: boolean) =>
     cleanRecipientInput: {
       color: theme.textPrimary,
       fontSize: 13,
-      flex: 1,
       padding: 0,
+      margin: 0,
     },
     cleanPasteBtn: {
       flexDirection: 'row',

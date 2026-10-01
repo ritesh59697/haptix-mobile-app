@@ -35,6 +35,7 @@ import {
   getTransferSignedMessage,
   parseGuardianAddress,
 } from '@/utils/haptix-client'
+import { getHaptixAddressLookupTable, buildOptimalTransaction } from '@/utils/haptix-lookup-table'
 import { SWAP_ENABLED } from '@/utils/haptix-swap'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { PrismDepthButton } from '@/components/ui'
@@ -258,7 +259,7 @@ export function HaptixSwapSheet({
       const needsInit = !onChain && !!(activeWallet.primaryPasskeyHex && activeWallet.secondaryPasskeyHex)
       const authNonce = onChain?.authNonce ?? 0n
 
-      const message = getTransferSignedMessage(payer.publicKey, amountLamports, authNonce)
+      const message = getTransferSignedMessage(walletPda, payer.publicKey, amountLamports, authNonce)
 
       // 2. Primary Passkey Authorization
       const primarySig = await signWithPasskey(
@@ -272,8 +273,12 @@ export function HaptixSwapSheet({
         message,
       })
 
-      const txInstructions = []
-
+      // The wallet PDA has to exist on-chain before the program can write to it, and
+      // `initialize_wallet` MUST get its own transaction rather than riding along with
+      // a passkey instruction. Each hardware passkey contributes a secp256r1 precompile
+      // carrying a full WebAuthn assertion (~380 bytes each) — two of those already consume
+      // most of Solana's 1232-byte transaction limit. Bundling initIx + 2 precompiles +
+      // transferIx exceeds Solana's 1232-byte MTU limit.
       if (needsInit) {
         const primaryPasskey = new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex'))
         const secondaryPasskey = new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex'))
@@ -283,13 +288,35 @@ export function HaptixSwapSheet({
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), walletPda),
+          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey, walletPda),
         })
-        txInstructions.push(initIx)
+
+        const initBlockhash = await connection.getLatestBlockhash('confirmed')
+        const initTx = new Transaction({
+          feePayer: payer.publicKey,
+          recentBlockhash: initBlockhash.blockhash,
+        }).add(initIx)
+        initTx.sign(payer)
+
+        const initSig = await connection.sendRawTransaction(initTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed',
+        })
+
+        await connection.confirmTransaction(
+          {
+            signature: initSig,
+            blockhash: initBlockhash.blockhash,
+            lastValidBlockHeight: initBlockhash.lastValidBlockHeight,
+          },
+          'confirmed',
+        )
       }
 
-      const primarySigIxIndex = needsInit ? 1 : 0
-      const secondarySigIxIndex = needsInit ? (isQuorumRequired ? 2 : undefined) : isQuorumRequired ? 1 : undefined
+      const primarySigIxIndex = 0
+      const secondarySigIxIndex = isQuorumRequired ? 1 : undefined
+
+      const txInstructions = []
 
       if (isQuorumRequired) {
         const secondarySig = await signWithPasskey(
@@ -321,13 +348,15 @@ export function HaptixSwapSheet({
       }
 
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
-      const tx = new Transaction({
-        feePayer: payer.publicKey,
+      const lookupTable = await getHaptixAddressLookupTable(connection, walletPda, payer).catch(() => null)
+      const { rawTx } = buildOptimalTransaction({
+        payer,
         recentBlockhash: latestBlockhash.blockhash,
-      }).add(...txInstructions)
-      tx.sign(payer)
+        instructions: txInstructions,
+        lookupTable,
+      })
 
-      const sig = await connection.sendRawTransaction(tx.serialize(), {
+      const sig = await connection.sendRawTransaction(rawTx, {
         skipPreflight: false,
         preflightCommitment: 'confirmed',
       })

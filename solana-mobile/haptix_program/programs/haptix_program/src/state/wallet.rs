@@ -34,6 +34,18 @@ pub struct WalletAccount {
     /// its lamports stay on-chain at an address no instruction can derive again. So the
     /// seed lives in its own field that only `execute_recovery` writes, and only once.
     pub wallet_seed: [u8; 32],
+    /// Incremented on every successful owner authorization.
+    ///
+    /// Sits after `wallet_seed` so accounts allocated before this field existed still
+    /// decode: their spare zero bytes read as nonce 0. The first successful
+    /// authorization on an upgraded account consumes that 0.
+    pub auth_nonce: u64,
+    /// Timestamp when current 24-hour spend velocity window started (0 if not started).
+    pub window_start: i64,
+    /// Lamports spent so far in the current 24-hour rolling window under 1-passkey threshold.
+    pub window_spent: u64,
+    /// Cluster binding: *b"mainnet\0" or *b"devnet\0\0" (prevents cross-cluster signature replay)
+    pub cluster: [u8; 8],
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug, Default, PartialEq)]
@@ -62,7 +74,19 @@ impl WalletAccount {
         }
     }
 
-    pub const LEN: usize = 8 + 1 + 33 + 33 + 8 + 32 + 8 + 8 + 33 + 33 + 1 + 4 + (4 * 80) + 64;
+    /// The cluster tag for this wallet. Defaults to devnet if uninitialized.
+    pub fn cluster_tag(&self) -> [u8; 8] {
+        if self.cluster == [0u8; 8] {
+            crate::constants::CLUSTER_DEVNET
+        } else {
+            self.cluster
+        }
+    }
+
+    /// Allocated space: fixed fields, four agent sessions, the 32-byte seed, the
+    /// 8-byte auth nonce, 8-byte window start, 8-byte window spent, 8-byte cluster, and 8 bytes of spare.
+    /// Preserves existing total size (586 bytes) for compatibility.
+    pub const LEN: usize = 8 + 1 + 33 + 33 + 8 + 32 + 8 + 8 + 33 + 33 + 1 + 4 + (4 * 80) + 32 + 8 + 8 + 8 + 8 + 8;
 }
 
 /// True when `key` is the address this account's own state derives.

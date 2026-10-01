@@ -29,7 +29,8 @@ pub fn revoke_agent_session(
     secondary_sig_ix_index: u16,
 ) -> Result<()> {
     let nonce = ctx.accounts.wallet.auth_nonce;
-    let expected_message = revoke_agent_message(nonce, &agent_pubkey);
+    let cluster_tag = ctx.accounts.wallet.cluster_tag();
+    let expected_message = revoke_agent_message(&ctx.accounts.wallet.key(), &cluster_tag, nonce, &agent_pubkey);
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,

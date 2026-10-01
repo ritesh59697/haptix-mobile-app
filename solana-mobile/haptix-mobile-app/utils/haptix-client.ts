@@ -11,6 +11,21 @@ export const HAPTIX_PROGRAM_ID = new PublicKey('9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BK
 
 export const WALLET_SEED = Buffer.from('haptix_wallet')
 
+export const CLUSTER_MAINNET = Buffer.from('mainnet\0')
+export const CLUSTER_DEVNET = Buffer.from('devnet\0\0')
+
+export function getClusterBytes(clusterOrNetwork?: string | Uint8Array | null): Uint8Array {
+  if (clusterOrNetwork instanceof Uint8Array) {
+    return clusterOrNetwork.subarray(0, 8)
+  }
+  if (typeof clusterOrNetwork === 'string') {
+    if (clusterOrNetwork.toLowerCase().includes('mainnet')) {
+      return CLUSTER_MAINNET
+    }
+  }
+  return CLUSTER_DEVNET
+}
+
 export interface WalletState {
   pda: PublicKey
   bump: number
@@ -40,6 +55,9 @@ export interface WalletState {
    * Accounts created before the field existed read as 0.
    */
   authNonce: bigint
+  windowStart: bigint
+  windowSpent: bigint
+  cluster: Uint8Array // 8 bytes
   balanceLamports: number
 }
 
@@ -54,11 +72,18 @@ export const WALLET_ACCOUNT_SPACE = 594
 export function assertRecoveryGuardian(
   guardian: PublicKey | null | undefined,
   fallback?: PublicKey | null,
+  walletPda?: PublicKey | null,
 ): PublicKey {
   if (guardian && !guardian.equals(PublicKey.default)) {
+    if (walletPda && guardian.equals(walletPda)) {
+      throw new Error('A wallet cannot be its own recovery guardian. Please provide a separate guardian address.')
+    }
     return guardian
   }
   if (fallback && !fallback.equals(PublicKey.default)) {
+    if (walletPda && fallback.equals(walletPda)) {
+      throw new Error('A wallet cannot be its own recovery guardian. Please provide a separate guardian address.')
+    }
     return fallback
   }
   throw new Error(
@@ -197,7 +222,10 @@ export async function fetchHaptixWallet(connection: Connection, walletPda: Publi
       // Accounts created before the seed field existed leave this all zeroes, which is
       // also the "never rotated" marker, so both cases read the same.
       walletSeed: offset + 32 <= data.length ? new Uint8Array(data.subarray(offset, offset + 32)) : new Uint8Array(32),
-      authNonce: offset + 32 + 8 <= data.length ? view.getBigUint64(offset + 32, true) : 0n,
+      authNonce: offset + 40 <= data.length ? view.getBigUint64(offset + 32, true) : 0n,
+      windowStart: offset + 48 <= data.length ? view.getBigInt64(offset + 40, true) : 0n,
+      windowSpent: offset + 56 <= data.length ? view.getBigUint64(offset + 48, true) : 0n,
+      cluster: offset + 64 <= data.length ? new Uint8Array(data.subarray(offset + 56, offset + 64)) : CLUSTER_DEVNET,
       balanceLamports: accountInfo.lamports,
     }
   } catch (err) {
@@ -218,6 +246,7 @@ export function createInitializeWalletInstruction({
   spendThresholdLamports,
   guardian,
   recoveryTimelockSeconds,
+  cluster,
 }: {
   payer: PublicKey
   walletPda: PublicKey
@@ -226,18 +255,19 @@ export function createInitializeWalletInstruction({
   spendThresholdLamports?: bigint
   guardian?: PublicKey
   recoveryTimelockSeconds?: bigint
+  cluster?: Uint8Array
 }): TransactionInstruction {
   if (primaryPasskey.length !== 33 || secondaryPasskey.length !== 33) {
     throw new Error('Both passkeys must be 33-byte compressed Secp256r1 keys.')
   }
 
   // Calculate buffer size:
-  // 8 (disc) + 33 + 33 + Option<u64> + Option<Pubkey> + Option<i64>, each option costing
-  // a 1-byte tag plus its payload when present.
+  // 8 (disc) + 33 + 33 + Option<u64> + Option<Pubkey> + Option<i64> + Option<[u8; 8]>
   const spendOptionSize = spendThresholdLamports !== undefined ? 9 : 1
   const guardianOptionSize = guardian ? 33 : 1
   const timelockOptionSize = recoveryTimelockSeconds !== undefined ? 9 : 1
-  const totalSize = 8 + 33 + 33 + spendOptionSize + guardianOptionSize + timelockOptionSize
+  const clusterOptionSize = cluster ? 9 : 1
+  const totalSize = 8 + 33 + 33 + spendOptionSize + guardianOptionSize + timelockOptionSize + clusterOptionSize
 
   const buffer = Buffer.alloc(totalSize)
   let offset = 0
@@ -281,6 +311,15 @@ export function createInitializeWalletInstruction({
     buffer.writeUInt8(0, offset++)
   }
 
+  // cluster: Option<[u8; 8]>
+  if (cluster) {
+    buffer.writeUInt8(1, offset++)
+    buffer.set(cluster.subarray(0, 8), offset)
+    offset += 8
+  } else {
+    buffer.writeUInt8(0, offset++)
+  }
+
   return new TransactionInstruction({
     programId: HAPTIX_PROGRAM_ID,
     keys: [
@@ -298,21 +337,29 @@ function writeNonce(message: Uint8Array, offset: number, authNonce: bigint): num
 }
 
 /**
- * Transfer authorization: `TRANSFER:` || nonce u64 LE || recipient || amount u64 LE.
- * The tag stops this  payload colliding with another instruction of the same length,
+ * Transfer authorization: `TRANSFER:` || wallet || cluster || nonce u64 LE || recipient || amount u64 LE.
+ * The tag stops this payload colliding with another instruction of the same length,
+ * the wallet PDA prevents replay across accounts sharing a passkey,
+ * the cluster prevents replay across environments (devnet vs mainnet),
  * and the nonce makes a captured signature useless the moment it lands.
  */
 export function getTransferSignedMessage(
+  walletPda: PublicKey,
   recipient: PublicKey,
   amountLamports: bigint,
   authNonce: bigint,
+  cluster: Uint8Array = CLUSTER_DEVNET,
 ): Uint8Array {
   const prefix = Buffer.from('TRANSFER:')
-  const message = new Uint8Array(prefix.length + 8 + 32 + 8)
+  const message = new Uint8Array(prefix.length + 32 + 8 + 8 + 32 + 8)
   message.set(prefix, 0)
-  const body = writeNonce(message, prefix.length, authNonce)
-  message.set(recipient.toBytes(), body)
-  new DataView(message.buffer, message.byteOffset, message.byteLength).setBigUint64(body + 32, amountLamports, true)
+  message.set(walletPda.toBytes(), prefix.length)
+  let offset = prefix.length + 32
+  message.set(cluster.subarray(0, 8), offset)
+  offset += 8
+  offset = writeNonce(message, offset, authNonce)
+  message.set(recipient.toBytes(), offset)
+  new DataView(message.buffer, message.byteOffset, message.byteLength).setBigUint64(offset + 32, amountLamports, true)
   return message
 }
 
@@ -373,21 +420,27 @@ export function createExecuteTransferInstruction({
 
 /**
  * Grant authorization:
- * `GRANT_AGENT:` || nonce || agent || allowance u64 LE || valid_for i64 LE || allowed program.
+ * `GRANT_AGENT:` || wallet || cluster || nonce || agent || allowance u64 LE || valid_for i64 LE || allowed program.
  * The allowed program is inside the signature so a grant for one program cannot be
- * replayed as a grant for another, and the nonce stops the same grant being minted again.
+ * replayed as a grant for another, wallet PDA binds to this account, cluster stops cross-cluster replay, and the nonce stops the same grant being minted again.
  */
 export function getGrantAgentSignedMessage(
+  walletPda: PublicKey,
   agentPubkey: PublicKey,
   allowanceLamports: bigint,
   validForSeconds: bigint,
   authNonce: bigint,
   allowedProgram: PublicKey,
+  cluster: Uint8Array = CLUSTER_DEVNET,
 ): Uint8Array {
   const prefix = Buffer.from('GRANT_AGENT:')
-  const message = new Uint8Array(prefix.length + 8 + 32 + 8 + 8 + 32)
+  const message = new Uint8Array(prefix.length + 32 + 8 + 8 + 32 + 8 + 8 + 32)
   message.set(prefix, 0)
-  let offset = writeNonce(message, prefix.length, authNonce)
+  message.set(walletPda.toBytes(), prefix.length)
+  let offset = prefix.length + 32
+  message.set(cluster.subarray(0, 8), offset)
+  offset += 8
+  offset = writeNonce(message, offset, authNonce)
   message.set(agentPubkey.toBytes(), offset)
   offset += 32
   const view = new DataView(message.buffer, message.byteOffset, message.byteLength)
@@ -461,12 +514,21 @@ export function createGrantAgentSessionInstruction({
   })
 }
 
-/** `REVOKE_AGENT:` || nonce || agent */
-export function getRevokeAgentSignedMessage(agentPubkey: PublicKey, authNonce: bigint): Uint8Array {
+/** `REVOKE_AGENT:` || wallet || cluster || nonce || agent */
+export function getRevokeAgentSignedMessage(
+  walletPda: PublicKey,
+  agentPubkey: PublicKey,
+  authNonce: bigint,
+  cluster: Uint8Array = CLUSTER_DEVNET,
+): Uint8Array {
   const prefix = Buffer.from('REVOKE_AGENT:')
-  const message = new Uint8Array(prefix.length + 8 + 32)
+  const message = new Uint8Array(prefix.length + 32 + 8 + 8 + 32)
   message.set(prefix, 0)
-  const offset = writeNonce(message, prefix.length, authNonce)
+  message.set(walletPda.toBytes(), prefix.length)
+  let offset = prefix.length + 32
+  message.set(cluster.subarray(0, 8), offset)
+  offset += 8
+  offset = writeNonce(message, offset, authNonce)
   message.set(agentPubkey.toBytes(), offset)
   return message
 }
@@ -558,7 +620,7 @@ export function createPanicFreezeInstruction({
 
 /**
  * Builds the `unfreeze` instruction.
- * Requires a 2-of-2 passkey quorum on `UNFREEZE_WALLET:` || nonce.
+ * Requires a 2-of-2 passkey quorum on `UNFREEZE_WALLET:` || wallet || nonce.
  * Discriminator: [133, 160, 68, 253, 80, 232, 218, 247]
  */
 export function createUnfreezeInstruction({
@@ -588,24 +650,41 @@ export function createUnfreezeInstruction({
 /**
  * The payload a 2-of-2 quorum signs to point the wallet at a new guardian.
  *
- * The address is inside the signed bytes, so a signature collected for one guardian
- * cannot be replayed to install a different one.
+ * The wallet, cluster, and address are inside the signed bytes, so a signature collected for one guardian, cluster, or wallet
+ * cannot be replayed.
  */
-export function getSetGuardianSignedMessage(newGuardian: PublicKey, authNonce: bigint): Uint8Array {
+export function getSetGuardianSignedMessage(
+  walletPda: PublicKey,
+  newGuardian: PublicKey,
+  authNonce: bigint,
+  cluster: Uint8Array = CLUSTER_DEVNET,
+): Uint8Array {
   const prefix = new TextEncoder().encode('SET_GUARDIAN:')
-  const message = new Uint8Array(prefix.length + 8 + 32)
+  const message = new Uint8Array(prefix.length + 32 + 8 + 8 + 32)
   message.set(prefix, 0)
-  const offset = writeNonce(message, prefix.length, authNonce)
+  message.set(walletPda.toBytes(), prefix.length)
+  let offset = prefix.length + 32
+  message.set(cluster.subarray(0, 8), offset)
+  offset += 8
+  offset = writeNonce(message, offset, authNonce)
   message.set(new Uint8Array(newGuardian.toBuffer()), offset)
   return message
 }
 
-/** `UNFREEZE_WALLET:` || nonce. A fixed string could be replayed the next time the wallet froze. */
-export function getUnfreezeSignedMessage(authNonce: bigint): Uint8Array {
+/** `UNFREEZE_WALLET:` || wallet || cluster || nonce. */
+export function getUnfreezeSignedMessage(
+  walletPda: PublicKey,
+  authNonce: bigint,
+  cluster: Uint8Array = CLUSTER_DEVNET,
+): Uint8Array {
   const prefix = new TextEncoder().encode('UNFREEZE_WALLET:')
-  const message = new Uint8Array(prefix.length + 8)
+  const message = new Uint8Array(prefix.length + 32 + 8 + 8)
   message.set(prefix, 0)
-  writeNonce(message, prefix.length, authNonce)
+  message.set(walletPda.toBytes(), prefix.length)
+  let offset = prefix.length + 32
+  message.set(cluster.subarray(0, 8), offset)
+  offset += 8
+  writeNonce(message, offset, authNonce)
   return message
 }
 
@@ -613,13 +692,19 @@ export function getUnfreezeSignedMessage(authNonce: bigint): Uint8Array {
  * The payload a 2-of-2 quorum signs to move the spending threshold.
  */
 export function getSetSpendThresholdSignedMessage(
+  walletPda: PublicKey,
   newThresholdLamports: bigint,
   authNonce: bigint,
+  cluster: Uint8Array = CLUSTER_DEVNET,
 ): Uint8Array {
   const prefix = new TextEncoder().encode('SET_THRESHOLD:')
-  const message = new Uint8Array(prefix.length + 8 + 8)
+  const message = new Uint8Array(prefix.length + 32 + 8 + 8 + 8)
   message.set(prefix, 0)
-  const offset = writeNonce(message, prefix.length, authNonce)
+  message.set(walletPda.toBytes(), prefix.length)
+  let offset = prefix.length + 32
+  message.set(cluster.subarray(0, 8), offset)
+  offset += 8
+  offset = writeNonce(message, offset, authNonce)
   new DataView(message.buffer).setBigUint64(offset, newThresholdLamports, true)
   return message
 }
@@ -704,12 +789,20 @@ export function createSetSpendThresholdInstruction({
  * `clientDataJSON.challenge`, so the veto cannot be replayed from a signature the
  * owner made for some other action.
  */
-/** `CANCEL_RECOVERY:` || nonce. Without the nonce, one veto signature cancels every later recovery. */
-export function getCancelRecoverySignedMessage(authNonce: bigint): Uint8Array {
+/** `CANCEL_RECOVERY:` || wallet || cluster || nonce. Without the nonce, one veto signature cancels every later recovery. */
+export function getCancelRecoverySignedMessage(
+  walletPda: PublicKey,
+  authNonce: bigint,
+  cluster: Uint8Array = CLUSTER_DEVNET,
+): Uint8Array {
   const prefix = new TextEncoder().encode('CANCEL_RECOVERY:')
-  const message = new Uint8Array(prefix.length + 8)
+  const message = new Uint8Array(prefix.length + 32 + 8 + 8)
   message.set(prefix, 0)
-  writeNonce(message, prefix.length, authNonce)
+  message.set(walletPda.toBytes(), prefix.length)
+  let offset = prefix.length + 32
+  message.set(cluster.subarray(0, 8), offset)
+  offset += 8
+  writeNonce(message, offset, authNonce)
   return message
 }
 

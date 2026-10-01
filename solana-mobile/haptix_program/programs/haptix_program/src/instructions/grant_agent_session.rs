@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use crate::auth::{bump_auth_nonce, grant_agent_message};
 use crate::error::HaptixError;
 use crate::secp256r1::verify_passkey_precompile_signature;
 use crate::state::{is_self_derived, AgentSession, WalletAccount};
@@ -25,33 +26,37 @@ pub fn grant_agent_session(
     primary_sig_ix_index: u16,
     secondary_sig_ix_index: u16,
 ) -> Result<()> {
-    let wallet = &mut ctx.accounts.wallet;
-    require!(!wallet.is_frozen, HaptixError::WalletFrozen);
+    require!(!ctx.accounts.wallet.is_frozen, HaptixError::WalletFrozen);
 
-    // Message payload that must be signed by both hardware passkeys:
-    // b"GRANT_AGENT:" + agent_pubkey + allowance + valid_for
-    let mut expected_message = Vec::with_capacity(12 + 32 + 8 + 8);
-    expected_message.extend_from_slice(b"GRANT_AGENT:");
-    expected_message.extend_from_slice(agent_pubkey.as_ref());
-    expected_message.extend_from_slice(&allowance_lamports.to_le_bytes());
-    expected_message.extend_from_slice(&valid_for_seconds.to_le_bytes());
+    let nonce = ctx.accounts.wallet.auth_nonce;
+    let cluster_tag = ctx.accounts.wallet.cluster_tag();
+    let expected_message = grant_agent_message(
+        &ctx.accounts.wallet.key(),
+        &cluster_tag,
+        nonce,
+        &agent_pubkey,
+        allowance_lamports,
+        valid_for_seconds,
+        &allowed_program,
+    );
 
-    // Governance requirement: 2-of-2 Hardware Passkey Quorum
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         primary_sig_ix_index,
-        &wallet.primary_passkey,
+        &ctx.accounts.wallet.primary_passkey,
         &expected_message,
     )?;
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         secondary_sig_ix_index,
-        &wallet.secondary_passkey,
+        &ctx.accounts.wallet.secondary_passkey,
         &expected_message,
     )?;
 
-    // Remove existing session for same agent if present
+    let wallet = &mut ctx.accounts.wallet;
+    bump_auth_nonce(wallet)?;
+
     wallet.agents.retain(|a| a.agent_pubkey != agent_pubkey);
 
     require!(wallet.agents.len() < 4, HaptixError::MaxAgentSessionsReached);

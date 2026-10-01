@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use crate::auth::{bump_auth_nonce, cancel_recovery_message};
 use crate::error::HaptixError;
 use crate::secp256r1::verify_passkey_precompile_signature;
 use crate::state::{is_self_derived, WalletAccount};
@@ -56,26 +57,31 @@ pub fn handle_cancel_recovery(
     primary_sig_ix_index: u16,
     secondary_sig_ix_index: u16,
 ) -> Result<()> {
-    let wallet = &mut ctx.accounts.wallet;
-    require!(wallet.recovery_initiated_at > 0, HaptixError::NoRecoveryPending);
+    require!(
+        ctx.accounts.wallet.recovery_initiated_at > 0,
+        HaptixError::NoRecoveryPending
+    );
 
-    let expected_message = b"CANCEL_RECOVERY";
+    let nonce = ctx.accounts.wallet.auth_nonce;
+    let cluster_tag = ctx.accounts.wallet.cluster_tag();
+    let expected_message = cancel_recovery_message(&ctx.accounts.wallet.key(), &cluster_tag, nonce);
 
-    // Owner aborts recovery using 2-of-2 Hardware Passkeys
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         primary_sig_ix_index,
-        &wallet.primary_passkey,
-        expected_message,
+        &ctx.accounts.wallet.primary_passkey,
+        &expected_message,
     )?;
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
         secondary_sig_ix_index,
-        &wallet.secondary_passkey,
-        expected_message,
+        &ctx.accounts.wallet.secondary_passkey,
+        &expected_message,
     )?;
 
+    let wallet = &mut ctx.accounts.wallet;
+    bump_auth_nonce(wallet)?;
     wallet.recovery_initiated_at = 0;
     wallet.pending_primary_passkey = [0u8; 33];
     wallet.pending_secondary_passkey = [0u8; 33];
@@ -112,9 +118,12 @@ pub fn handle_execute_recovery(ctx: Context<ExecuteRecovery>) -> Result<()> {
     // because the seed is already set.
     wallet.wallet_seed = wallet.identity();
 
-    // Apply the new passkeys
+    // Apply the new passkeys. Sessions granted to the old keys do not survive a
+    // rotation: a recovery that left them in place would keep paying the key it
+    // was supposed to kill.
     wallet.primary_passkey = wallet.pending_primary_passkey;
     wallet.secondary_passkey = wallet.pending_secondary_passkey;
+    wallet.agents.clear();
 
     // Reset recovery state
     wallet.recovery_initiated_at = 0;

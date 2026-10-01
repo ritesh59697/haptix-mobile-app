@@ -20,26 +20,38 @@ pub fn bump_auth_nonce(wallet: &mut WalletAccount) -> Result<()> {
     Ok(())
 }
 
-/// `TRANSFER:` || nonce u64 LE || recipient || amount u64 LE
-pub fn transfer_message(nonce: u64, recipient: &Pubkey, amount: u64) -> Vec<u8> {
-    let mut message = Vec::with_capacity(9 + 8 + 32 + 8);
+/// `TRANSFER:` || wallet || cluster [u8; 8] || nonce u64 LE || recipient || amount u64 LE
+pub fn transfer_message(
+    wallet: &Pubkey,
+    cluster: &[u8; 8],
+    nonce: u64,
+    recipient: &Pubkey,
+    amount: u64,
+) -> Vec<u8> {
+    let mut message = Vec::with_capacity(9 + 32 + 8 + 8 + 32 + 8);
     message.extend_from_slice(b"TRANSFER:");
+    message.extend_from_slice(wallet.as_ref());
+    message.extend_from_slice(cluster);
     message.extend_from_slice(&nonce.to_le_bytes());
     message.extend_from_slice(recipient.as_ref());
     message.extend_from_slice(&amount.to_le_bytes());
     message
 }
 
-/// `GRANT_AGENT:` || nonce || agent || allowance u64 LE || valid_for i64 LE || allowed program
+/// `GRANT_AGENT:` || wallet || cluster || nonce || agent || allowance u64 LE || valid_for i64 LE || allowed program
 pub fn grant_agent_message(
+    wallet: &Pubkey,
+    cluster: &[u8; 8],
     nonce: u64,
     agent: &Pubkey,
     allowance_lamports: u64,
     valid_for_seconds: i64,
     allowed_program: &Pubkey,
 ) -> Vec<u8> {
-    let mut message = Vec::with_capacity(12 + 8 + 32 + 8 + 8 + 32);
+    let mut message = Vec::with_capacity(12 + 32 + 8 + 8 + 32 + 8 + 8 + 32);
     message.extend_from_slice(b"GRANT_AGENT:");
+    message.extend_from_slice(wallet.as_ref());
+    message.extend_from_slice(cluster);
     message.extend_from_slice(&nonce.to_le_bytes());
     message.extend_from_slice(agent.as_ref());
     message.extend_from_slice(&allowance_lamports.to_le_bytes());
@@ -48,45 +60,78 @@ pub fn grant_agent_message(
     message
 }
 
-/// `REVOKE_AGENT:` || nonce || agent
-pub fn revoke_agent_message(nonce: u64, agent: &Pubkey) -> Vec<u8> {
-    let mut message = Vec::with_capacity(13 + 8 + 32);
+/// `REVOKE_AGENT:` || wallet || cluster || nonce || agent
+pub fn revoke_agent_message(
+    wallet: &Pubkey,
+    cluster: &[u8; 8],
+    nonce: u64,
+    agent: &Pubkey,
+) -> Vec<u8> {
+    let mut message = Vec::with_capacity(13 + 32 + 8 + 8 + 32);
     message.extend_from_slice(b"REVOKE_AGENT:");
+    message.extend_from_slice(wallet.as_ref());
+    message.extend_from_slice(cluster);
     message.extend_from_slice(&nonce.to_le_bytes());
     message.extend_from_slice(agent.as_ref());
     message
 }
 
-/// `SET_GUARDIAN:` || nonce || new guardian
-pub fn set_guardian_message(nonce: u64, new_guardian: &Pubkey) -> Vec<u8> {
-    let mut message = Vec::with_capacity(13 + 8 + 32);
+/// `SET_GUARDIAN:` || wallet || cluster || nonce || new guardian
+pub fn set_guardian_message(
+    wallet: &Pubkey,
+    cluster: &[u8; 8],
+    nonce: u64,
+    new_guardian: &Pubkey,
+) -> Vec<u8> {
+    let mut message = Vec::with_capacity(13 + 32 + 8 + 8 + 32);
     message.extend_from_slice(b"SET_GUARDIAN:");
+    message.extend_from_slice(wallet.as_ref());
+    message.extend_from_slice(cluster);
     message.extend_from_slice(&nonce.to_le_bytes());
     message.extend_from_slice(new_guardian.as_ref());
     message
 }
 
-/// `SET_THRESHOLD:` || nonce || new threshold u64 LE
-pub fn set_threshold_message(nonce: u64, new_threshold_lamports: u64) -> Vec<u8> {
-    let mut message = Vec::with_capacity(14 + 8 + 8);
+/// `SET_THRESHOLD:` || wallet || cluster || nonce || new threshold u64 LE
+pub fn set_threshold_message(
+    wallet: &Pubkey,
+    cluster: &[u8; 8],
+    nonce: u64,
+    new_threshold_lamports: u64,
+) -> Vec<u8> {
+    let mut message = Vec::with_capacity(14 + 32 + 8 + 8 + 8);
     message.extend_from_slice(b"SET_THRESHOLD:");
+    message.extend_from_slice(wallet.as_ref());
+    message.extend_from_slice(cluster);
     message.extend_from_slice(&nonce.to_le_bytes());
     message.extend_from_slice(&new_threshold_lamports.to_le_bytes());
     message
 }
 
-/// `CANCEL_RECOVERY:` || nonce
-pub fn cancel_recovery_message(nonce: u64) -> Vec<u8> {
-    let mut message = Vec::with_capacity(16 + 8);
+/// `CANCEL_RECOVERY:` || wallet || cluster || nonce
+pub fn cancel_recovery_message(
+    wallet: &Pubkey,
+    cluster: &[u8; 8],
+    nonce: u64,
+) -> Vec<u8> {
+    let mut message = Vec::with_capacity(16 + 32 + 8 + 8);
     message.extend_from_slice(b"CANCEL_RECOVERY:");
+    message.extend_from_slice(wallet.as_ref());
+    message.extend_from_slice(cluster);
     message.extend_from_slice(&nonce.to_le_bytes());
     message
 }
 
-/// `UNFREEZE_WALLET:` || nonce
-pub fn unfreeze_message(nonce: u64) -> Vec<u8> {
-    let mut message = Vec::with_capacity(16 + 8);
+/// `UNFREEZE_WALLET:` || wallet || cluster || nonce
+pub fn unfreeze_message(
+    wallet: &Pubkey,
+    cluster: &[u8; 8],
+    nonce: u64,
+) -> Vec<u8> {
+    let mut message = Vec::with_capacity(16 + 32 + 8 + 8);
     message.extend_from_slice(b"UNFREEZE_WALLET:");
+    message.extend_from_slice(wallet.as_ref());
+    message.extend_from_slice(cluster);
     message.extend_from_slice(&nonce.to_le_bytes());
     message
 }
@@ -123,36 +168,75 @@ pub fn debit_keeping_rent<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::{CLUSTER_DEVNET, CLUSTER_MAINNET};
 
     #[test]
-    fn transfer_message_binds_a_nonce_and_a_tag() {
+    fn transfer_message_binds_wallet_cluster_nonce_and_tag() {
+        let wallet = Pubkey::new_from_array([0xAA; 32]);
+        let other_wallet = Pubkey::new_from_array([0xBB; 32]);
         let recipient = Pubkey::new_from_array([0x11; 32]);
-        let first = transfer_message(0, &recipient, 42);
-        let second = transfer_message(1, &recipient, 42);
+        let first = transfer_message(&wallet, &CLUSTER_DEVNET, 0, &recipient, 42);
+        let second = transfer_message(&wallet, &CLUSTER_DEVNET, 1, &recipient, 42);
+        let other_account = transfer_message(&other_wallet, &CLUSTER_DEVNET, 0, &recipient, 42);
+        let mainnet_tx = transfer_message(&wallet, &CLUSTER_MAINNET, 0, &recipient, 42);
 
         assert_eq!(&first[..9], b"TRANSFER:");
-        assert_eq!(first.len(), 57);
+        assert_eq!(first.len(), 9 + 32 + 8 + 8 + 32 + 8);
         assert_ne!(first, second);
-        assert_eq!(u64::from_le_bytes(first[9..17].try_into().unwrap()), 0);
-        assert_eq!(u64::from_le_bytes(second[9..17].try_into().unwrap()), 1);
+        assert_ne!(first, other_account);
+        assert_ne!(first, mainnet_tx); // Devnet cannot be replayed on Mainnet!
+        assert_eq!(&first[9..41], wallet.as_ref());
+        assert_eq!(&first[41..49], &CLUSTER_DEVNET);
+        assert_eq!(u64::from_le_bytes(first[49..57].try_into().unwrap()), 0);
+        assert_eq!(u64::from_le_bytes(second[49..57].try_into().unwrap()), 1);
     }
 
     #[test]
-    fn fixed_strings_are_not_reusable_across_nonces() {
-        assert_ne!(cancel_recovery_message(0), cancel_recovery_message(1));
-        assert_ne!(unfreeze_message(0), unfreeze_message(1));
-        assert_eq!(&cancel_recovery_message(4)[..16], b"CANCEL_RECOVERY:");
-        assert_eq!(&unfreeze_message(4)[..16], b"UNFREEZE_WALLET:");
+    fn fixed_strings_are_not_reusable_across_nonces_wallets_or_clusters() {
+        let wallet = Pubkey::new_from_array([0xAA; 32]);
+        let other = Pubkey::new_from_array([0xBB; 32]);
+        assert_ne!(
+            cancel_recovery_message(&wallet, &CLUSTER_DEVNET, 0),
+            cancel_recovery_message(&wallet, &CLUSTER_DEVNET, 1)
+        );
+        assert_ne!(
+            cancel_recovery_message(&wallet, &CLUSTER_DEVNET, 0),
+            cancel_recovery_message(&other, &CLUSTER_DEVNET, 0)
+        );
+        assert_ne!(
+            cancel_recovery_message(&wallet, &CLUSTER_DEVNET, 0),
+            cancel_recovery_message(&wallet, &CLUSTER_MAINNET, 0)
+        );
+        assert_ne!(
+            unfreeze_message(&wallet, &CLUSTER_DEVNET, 0),
+            unfreeze_message(&wallet, &CLUSTER_DEVNET, 1)
+        );
+        assert_ne!(
+            unfreeze_message(&wallet, &CLUSTER_DEVNET, 0),
+            unfreeze_message(&other, &CLUSTER_DEVNET, 0)
+        );
+        assert_ne!(
+            unfreeze_message(&wallet, &CLUSTER_DEVNET, 0),
+            unfreeze_message(&wallet, &CLUSTER_MAINNET, 0)
+        );
+        assert_eq!(&cancel_recovery_message(&wallet, &CLUSTER_DEVNET, 4)[..16], b"CANCEL_RECOVERY:");
+        assert_eq!(&unfreeze_message(&wallet, &CLUSTER_DEVNET, 4)[..16], b"UNFREEZE_WALLET:");
     }
 
     #[test]
-    fn grant_message_covers_the_allowed_program() {
+    fn grant_message_covers_wallet_cluster_and_allowed_program() {
+        let wallet = Pubkey::new_from_array([0xAA; 32]);
+        let other_wallet = Pubkey::new_from_array([0xBB; 32]);
         let agent = Pubkey::new_from_array([0x22; 32]);
         let system = Pubkey::default();
         let other = Pubkey::new_from_array([0x33; 32]);
-        let left = grant_agent_message(3, &agent, 10, 60, &system);
-        let right = grant_agent_message(3, &agent, 10, 60, &other);
+        let left = grant_agent_message(&wallet, &CLUSTER_DEVNET, 3, &agent, 10, 60, &system);
+        let right = grant_agent_message(&wallet, &CLUSTER_DEVNET, 3, &agent, 10, 60, &other);
+        let foreign = grant_agent_message(&other_wallet, &CLUSTER_DEVNET, 3, &agent, 10, 60, &system);
+        let mainnet_grant = grant_agent_message(&wallet, &CLUSTER_MAINNET, 3, &agent, 10, 60, &system);
         assert_ne!(left, right);
-        assert_eq!(left.len(), 12 + 8 + 32 + 8 + 8 + 32);
+        assert_ne!(left, foreign);
+        assert_ne!(left, mainnet_grant);
+        assert_eq!(left.len(), 12 + 32 + 8 + 8 + 32 + 8 + 8 + 32);
     }
 }

@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
-use crate::constants::{WALLET_SEED, DEFAULT_SPEND_THRESHOLD, DEFAULT_RECOVERY_TIMELOCK};
+use crate::constants::{
+    WALLET_SEED, DEFAULT_SPEND_THRESHOLD, DEFAULT_RECOVERY_TIMELOCK, CLUSTER_DEVNET, CLUSTER_MAINNET,
+};
 use crate::error::HaptixError;
 use crate::state::WalletAccount;
 
@@ -28,8 +30,18 @@ pub fn initialize_wallet(
     spend_threshold_lamports: Option<u64>,
     guardian: Option<Pubkey>,
     recovery_timelock_seconds: Option<i64>,
+    cluster: Option<[u8; 8]>,
 ) -> Result<()> {
     require!(primary_passkey != secondary_passkey, HaptixError::DuplicatePasskeys);
+    let guardian = guardian.ok_or_else(|| error!(HaptixError::GuardianRequired))?;
+    require!(guardian != Pubkey::default(), HaptixError::GuardianRequired);
+    require!(guardian != ctx.accounts.wallet.key(), HaptixError::InvalidGuardian);
+
+    let selected_cluster = cluster.unwrap_or(CLUSTER_DEVNET);
+    require!(
+        selected_cluster == CLUSTER_DEVNET || selected_cluster == CLUSTER_MAINNET,
+        HaptixError::InvalidClusterTag
+    );
 
     // The timelock is the owner's veto window, so a negative value would mean a guardian
     // could rotate the keys before the owner ever sees the prompt. Zero is allowed but
@@ -43,7 +55,7 @@ pub fn initialize_wallet(
     wallet.primary_passkey = primary_passkey;
     wallet.secondary_passkey = secondary_passkey;
     wallet.spend_threshold_lamports = spend_threshold_lamports.unwrap_or(DEFAULT_SPEND_THRESHOLD);
-    wallet.guardian = guardian.unwrap_or(ctx.accounts.payer.key());
+    wallet.guardian = guardian;
     wallet.recovery_timelock = recovery_timelock_seconds.unwrap_or(DEFAULT_RECOVERY_TIMELOCK);
     wallet.recovery_initiated_at = 0;
     wallet.pending_primary_passkey = [0u8; 33];
@@ -53,10 +65,15 @@ pub fn initialize_wallet(
     // Pinned at creation: this is what every later instruction re-derives the address
     // from, and it has to stay put across a recovery rotation.
     wallet.wallet_seed = primary_passkey[1..33].try_into().unwrap();
+    wallet.auth_nonce = 0;
+    wallet.window_start = 0;
+    wallet.window_spent = 0;
+    wallet.cluster = selected_cluster;
 
     msg!("Haptix Wallet initialized. PDA: {:?}", wallet.key());
     msg!("Spend Threshold: {} lamports", wallet.spend_threshold_lamports);
     msg!("Guardian: {:?}", wallet.guardian);
+    msg!("Cluster: {:?}", std::str::from_utf8(&wallet.cluster).unwrap_or("unknown"));
     msg!("Recovery Timelock: {} seconds", wallet.recovery_timelock);
     Ok(())
 }

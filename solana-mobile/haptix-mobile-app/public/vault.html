@@ -766,19 +766,23 @@
       <!-- STATE B: Approval request (Appears when transfer arrives) -->
       <section class="state" id="stateRequest" hidden aria-label="Approval request">
         <div class="hero">
-          <p class="hero-eyebrow">Transfer requested from your phone</p>
+          <p class="hero-eyebrow" id="reqActionEyebrow">Transfer requested from your phone</p>
           <p class="hero-amount" id="reqAmount">0.1018 SOL</p>
           <p class="hero-fiat" id="reqUsdVal">≈ $14.76 USD</p>
         </div>
 
         <dl class="details">
-          <div class="detail-row">
-            <dt>Recipient</dt>
+          <div class="detail-row" id="reqTargetRow">
+            <dt id="reqTargetLabel">Recipient</dt>
             <dd id="reqRecipient">Hou6dz...dYp5</dd>
+          </div>
+          <div class="detail-row" id="reqWalletRow">
+            <dt>Wallet</dt>
+            <dd id="reqWallet" class="plain">--</dd>
           </div>
           <div class="detail-row">
             <dt>Network</dt>
-            <dd class="plain">Solana Devnet</dd>
+            <dd class="plain" id="reqNetwork">Solana Devnet</dd>
           </div>
           <div class="detail-row">
             <dt>Security</dt>
@@ -1105,12 +1109,311 @@
   var relayHost = window.location.hostname || 'localhost';
   var relayOrigin = 'http://' + relayHost + ':8082';
 
+  // Base58 alphabet for Solana addresses
+  var B58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  function bytesToBase58(bytes) {
+    var digits = [0];
+    for (var i = 0; i < bytes.length; i++) {
+      for (var j = 0; j < digits.length; j++) digits[j] <<= 8;
+      digits[0] += bytes[i];
+      var carry = 0;
+      for (var k = 0; k < digits.length; k++) {
+        digits[k] += carry;
+        carry = (digits[k] / 58) | 0;
+        digits[k] %= 58;
+      }
+      while (carry) {
+        digits.push(carry % 58);
+        carry = (carry / 58) | 0;
+      }
+    }
+    var str = '';
+    for (var p = 0; p < bytes.length && bytes[p] === 0; p++) str += '1';
+    for (var q = digits.length - 1; q >= 0; q--) str += B58_ALPHABET[digits[q]];
+    return str;
+  }
+
+  var reqActionEyebrow = document.getElementById('reqActionEyebrow');
+  var reqTargetLabel = document.getElementById('reqTargetLabel');
+  var reqWallet = document.getElementById('reqWallet');
+  var reqNetwork = document.getElementById('reqNetwork');
+
+  function decodeClusterTag(clusterSlice) {
+    var str = new TextDecoder().decode(clusterSlice).replace(/\0/g, '').trim();
+    if (str === 'mainnet') return 'Solana Mainnet';
+    if (str === 'devnet') return 'Solana Devnet';
+    return str ? ('Solana (' + str + ')') : 'Solana Devnet';
+  }
+
+  function parseAndValidateMessage(tx) {
+    if (!tx || !tx.messageHex) return { ok: false, error: 'Missing signature message payload' };
+    try {
+      var bytes = hexToBytes(tx.messageHex);
+      if (bytes.length < 16) return { ok: false, error: 'Payload too short (' + bytes.length + ' bytes)' };
+
+      var rawString = new TextDecoder().decode(bytes);
+
+      // 1. TRANSFER: (97 bytes: 9 tag + 32 wallet + 8 cluster + 8 nonce + 32 recipient + 8 amount)
+      if (rawString.startsWith('TRANSFER:')) {
+        if (bytes.length !== 97) {
+          return { ok: false, error: 'Malformed TRANSFER payload length (' + bytes.length + ' bytes, expected 97)' };
+        }
+        var walletBytes = bytes.slice(9, 41);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(41, 49));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 49, 8).getBigUint64(0, true);
+        var recipientBytes = bytes.slice(57, 89);
+        var recipientBase58 = bytesToBase58(recipientBytes);
+        var amountLamports = new DataView(bytes.buffer, bytes.byteOffset + 89, 8).getBigUint64(0, true);
+        var actualAmountSol = Number(amountLamports) / 1e9;
+
+        // Verify that JSON metadata strictly matches the binary payload being signed
+        if (tx.recipient && tx.recipient.length > 10 && !tx.recipient.includes('...')) {
+          if (tx.recipient !== recipientBase58) {
+            return {
+              ok: false,
+              error: 'SECURITY WARNING: Recipient mismatch! UI requested ' + tx.recipient + ' but signed payload is ' + recipientBase58
+            };
+          }
+        }
+        if (tx.amountSol !== undefined && Math.abs(tx.amountSol - actualAmountSol) > 0.000001) {
+          return {
+            ok: false,
+            error: 'SECURITY WARNING: Amount mismatch! UI displayed ' + tx.amountSol + ' SOL but signed payload is ' + actualAmountSol + ' SOL'
+          };
+        }
+
+        return {
+          ok: true,
+          actionType: 'TRANSFER',
+          eyebrow: 'Transfer requested from your phone',
+          amountDisplay: actualAmountSol + ' SOL',
+          fiatDisplay: '≈ $' + (actualAmountSol * 145).toFixed(2) + ' USD',
+          targetLabel: 'Recipient',
+          targetValue: recipientBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 2. SET_GUARDIAN: (93 bytes: 13 tag + 32 wallet + 8 cluster + 8 nonce + 32 guardian)
+      if (rawString.startsWith('SET_GUARDIAN:')) {
+        if (bytes.length !== 93) {
+          return { ok: false, error: 'Malformed SET_GUARDIAN payload length (' + bytes.length + ' bytes, expected 93)' };
+        }
+        var walletBytes = bytes.slice(13, 45);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(45, 53));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 53, 8).getBigUint64(0, true);
+        var newGuardianBytes = bytes.slice(61, 93);
+        var newGuardianBase58 = bytesToBase58(newGuardianBytes);
+
+        return {
+          ok: true,
+          actionType: 'SET_GUARDIAN',
+          eyebrow: 'Guardian Rotation requested',
+          amountDisplay: 'SET GUARDIAN',
+          fiatDisplay: 'Recovery Guardian Policy Update',
+          targetLabel: 'New Guardian',
+          targetValue: newGuardianBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 3. SET_THRESHOLD: (70 bytes: 14 tag + 32 wallet + 8 cluster + 8 nonce + 8 threshold)
+      if (rawString.startsWith('SET_THRESHOLD:')) {
+        if (bytes.length !== 70) {
+          return { ok: false, error: 'Malformed SET_THRESHOLD payload length (' + bytes.length + ' bytes, expected 70)' };
+        }
+        var walletBytes = bytes.slice(14, 46);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(46, 54));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 54, 8).getBigUint64(0, true);
+        var thresholdLamports = new DataView(bytes.buffer, bytes.byteOffset + 62, 8).getBigUint64(0, true);
+        var thresholdSol = Number(thresholdLamports) / 1e9;
+
+        return {
+          ok: true,
+          actionType: 'SET_THRESHOLD',
+          eyebrow: 'Spend Limit Policy Change requested',
+          amountDisplay: thresholdSol + ' SOL',
+          fiatDisplay: 'New 1-Passkey Threshold',
+          targetLabel: 'Policy Limit',
+          targetValue: thresholdSol + ' SOL (Sends above require 2-of-2 Quorum)',
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 4. GRANT_AGENT: (140 bytes: 12 tag + 32 wallet + 8 cluster + 8 nonce + 32 agent + 8 allowance + 8 valid + 32 program)
+      if (rawString.startsWith('GRANT_AGENT:')) {
+        if (bytes.length !== 140) {
+          return { ok: false, error: 'Malformed GRANT_AGENT payload length (' + bytes.length + ' bytes, expected 140)' };
+        }
+        var walletBytes = bytes.slice(12, 44);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(44, 52));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 52, 8).getBigUint64(0, true);
+        var agentBytes = bytes.slice(60, 92);
+        var agentBase58 = bytesToBase58(agentBytes);
+        var allowanceLamports = new DataView(bytes.buffer, bytes.byteOffset + 92, 8).getBigUint64(0, true);
+        var allowanceSol = Number(allowanceLamports) / 1e9;
+        var validForSeconds = new DataView(bytes.buffer, bytes.byteOffset + 100, 8).getBigInt64(0, true);
+
+        return {
+          ok: true,
+          actionType: 'GRANT_AGENT',
+          eyebrow: 'AI Agent Authorization requested',
+          amountDisplay: allowanceSol + ' SOL Limit',
+          fiatDisplay: 'Valid for ' + Math.round(Number(validForSeconds) / 60) + ' minutes',
+          targetLabel: 'Agent Key',
+          targetValue: agentBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 5. REVOKE_AGENT: (93 bytes: 13 tag + 32 wallet + 8 cluster + 8 nonce + 32 agent)
+      if (rawString.startsWith('REVOKE_AGENT:')) {
+        if (bytes.length !== 93) {
+          return { ok: false, error: 'Malformed REVOKE_AGENT payload length (' + bytes.length + ' bytes, expected 93)' };
+        }
+        var walletBytes = bytes.slice(13, 45);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(45, 53));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 53, 8).getBigUint64(0, true);
+        var agentBytes = bytes.slice(61, 93);
+        var agentBase58 = bytesToBase58(agentBytes);
+
+        return {
+          ok: true,
+          actionType: 'REVOKE_AGENT',
+          eyebrow: 'Agent Session Revocation',
+          amountDisplay: 'REVOKE AGENT',
+          fiatDisplay: 'Immediate Access Revocation',
+          targetLabel: 'Revoked Key',
+          targetValue: agentBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 6. UNFREEZE_WALLET: (64 bytes: 16 tag + 32 wallet + 8 cluster + 8 nonce)
+      if (rawString.startsWith('UNFREEZE_WALLET:')) {
+        if (bytes.length !== 64) {
+          return { ok: false, error: 'Malformed UNFREEZE_WALLET payload length (' + bytes.length + ' bytes, expected 64)' };
+        }
+        var walletBytes = bytes.slice(16, 48);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(48, 56));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 56, 8).getBigUint64(0, true);
+
+        return {
+          ok: true,
+          actionType: 'UNFREEZE_WALLET',
+          eyebrow: 'Unlock Smart Wallet requested',
+          amountDisplay: 'UNFREEZE',
+          fiatDisplay: 'Restore 1-Passkey Spending Operations',
+          targetLabel: 'Target Wallet',
+          targetValue: walletBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 7. CANCEL_RECOVERY: (64 bytes: 16 tag + 32 wallet + 8 cluster + 8 nonce)
+      if (rawString.startsWith('CANCEL_RECOVERY:')) {
+        if (bytes.length !== 64) {
+          return { ok: false, error: 'Malformed CANCEL_RECOVERY payload length (' + bytes.length + ' bytes, expected 64)' };
+        }
+        var walletBytes = bytes.slice(16, 48);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(48, 56));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 56, 8).getBigUint64(0, true);
+
+        return {
+          ok: true,
+          actionType: 'CANCEL_RECOVERY',
+          eyebrow: 'Veto In-Flight Recovery requested',
+          amountDisplay: 'VETO RECOVERY',
+          fiatDisplay: 'Reject Guardian Key Rotation',
+          targetLabel: 'Target Wallet',
+          targetValue: walletBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // Unrecognized action prefix -> HARD REJECT to prevent spoofing or blind signing!
+      return {
+        ok: false,
+        error: 'SECURITY ALERT: Unrecognized or malformed authorization payload (' + bytes.length + ' bytes). Touch ID signing has been blocked to prevent blind signing.'
+      };
+    } catch (e) {
+      return { ok: false, error: 'Failed to parse signed payload: ' + e.message };
+    }
+  }
+
   function displayPendingRequest(tx) {
     currentPending = tx;
-    reqAmount.textContent = tx.amountSol + ' SOL';
-    var usdEst = (tx.amountSol * 145).toFixed(2);
-    reqUsdVal.textContent = '≈ $' + usdEst + ' USD';
-    reqRecipient.textContent = tx.recipient ? (tx.recipient.slice(0, 8) + '...' + tx.recipient.slice(-6)) : 'Hou6dz...dYp5';
+    if (tx.id === 'preview_sample') {
+      reqActionEyebrow.textContent = 'Transfer requested from your phone';
+      reqAmount.textContent = tx.amountSol + ' SOL';
+      var usdEst = (tx.amountSol * 145).toFixed(2);
+      reqUsdVal.textContent = '≈ $' + usdEst + ' USD';
+      reqTargetLabel.textContent = 'Recipient';
+      reqRecipient.textContent = tx.recipient ? (tx.recipient.slice(0, 8) + '...' + tx.recipient.slice(-6)) : 'Hou6dz...dYp5';
+      reqWallet.textContent = 'PreviewWallet...';
+      reqNetwork.textContent = 'Solana Devnet';
+      errorBox.style.display = 'none';
+      authBtn.style.opacity = '1';
+      authBtn.style.pointerEvents = 'auto';
+      authBtnLabel.textContent = 'Authorize with Touch ID';
+      showState(stateRequest);
+      return;
+    }
+
+    var validation = parseAndValidateMessage(tx);
+    if (!validation.ok) {
+      console.error('[Security Warning]', validation.error);
+      errorBox.textContent = validation.error;
+      errorBox.style.display = 'block';
+      reqActionEyebrow.textContent = 'Security Alert';
+      reqAmount.textContent = 'BLOCKED';
+      reqUsdVal.textContent = 'Untrusted Payload';
+      reqTargetLabel.textContent = 'Status';
+      reqRecipient.textContent = 'Blocked by Security Check';
+      reqWallet.textContent = 'Rejected';
+      reqNetwork.textContent = 'Unknown';
+      authBtn.style.opacity = '0.3';
+      authBtn.style.pointerEvents = 'none';
+      authBtnLabel.textContent = 'Signing Blocked';
+      showState(stateRequest);
+      return;
+    }
+
+    authBtn.style.opacity = '1';
+    authBtn.style.pointerEvents = 'auto';
+    authBtnLabel.textContent = 'Authorize with Touch ID';
+    reqActionEyebrow.textContent = validation.eyebrow;
+    reqAmount.textContent = validation.amountDisplay;
+    reqUsdVal.textContent = validation.fiatDisplay;
+    reqTargetLabel.textContent = validation.targetLabel;
+    var targetVal = validation.targetValue;
+    reqRecipient.textContent = targetVal.length > 20 ? (targetVal.slice(0, 8) + '...' + targetVal.slice(-6)) : targetVal;
+    reqRecipient.title = targetVal;
+    var walletStr = validation.wallet || '--';
+    reqWallet.textContent = walletStr.length > 20 ? (walletStr.slice(0, 8) + '...' + walletStr.slice(-6)) : walletStr;
+    reqWallet.title = walletStr;
+    reqNetwork.textContent = validation.network;
     errorBox.style.display = 'none';
     showState(stateRequest);
   }

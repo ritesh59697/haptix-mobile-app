@@ -76,8 +76,8 @@ async function runTests() {
   console.log('\n--- TEST GROUP 3: SECP256R1 PRECOMPILE INSTRUCTION ---')
   const recipient = Keypair.generate().publicKey
   const amountLamports = 50_000_000n // 0.05 SOL
-  const transferMsg = getTransferSignedMessage(recipient, amountLamports, 0n)
-  assert(transferMsg.length === 57, 'Transfer payload is 9-byte tag + 8-byte nonce + 32-byte recipient + 8-byte amount')
+  const transferMsg = getTransferSignedMessage(walletPda, recipient, amountLamports, 0n)
+  assert(transferMsg.length === 97, 'Transfer payload is 9-byte tag + 32-byte wallet + 8-byte cluster + 8-byte nonce + 32-byte recipient + 8-byte amount')
 
   // Sign with noble p256 low-S. noble's `prehash` defaults to false, so the input is
   // taken as the digest: the payload has to be hashed first to match what the
@@ -97,7 +97,7 @@ async function runTests() {
     precompileIx.programId.equals(SECP256R1_PRECOMPILE_PROGRAM_ID),
     'Precompile instruction targets Secp256r1SigVerify1111111111111111111111111',
   )
-  const expectedPrecompileLen = 16 + 64 + 33 + 57 // 170 bytes
+  const expectedPrecompileLen = 16 + 64 + 33 + 97 // 210 bytes
   assert(
     precompileIx.data.length === expectedPrecompileLen,
     `Precompile instruction data length is ${expectedPrecompileLen} bytes`,
@@ -108,7 +108,7 @@ async function runTests() {
   assert(view.getUint16(2, true) === 16, 'Signature offset is 16')
   assert(view.getUint16(6, true) === 80, 'Public key offset is 80 (16 + 64)')
   assert(view.getUint16(10, true) === 113, 'Message offset is 113 (80 + 33)')
-  assert(view.getUint16(12, true) === 57, 'Message size is 57 bytes')
+  assert(view.getUint16(12, true) === 97, 'Message size is 97 bytes')
 
   // TEST 4: Anchor Instruction Discriminators and Account Layouts
   console.log('\n--- TEST GROUP 4: ANCHOR INSTRUCTION ENCODING ---')
