@@ -1598,6 +1598,9 @@ export async function authenticatePasskey(reason: string = 'Authenticate to rest
 // Signing
 // ---------------------------------------------------------------------------
 
+import { verifyWysiwysPayload } from './haptix-wysiwys'
+export { verifyWysiwysPayload }
+
 /**
  * Signs a payload with the requested passkey, after a biometric check.
  *
@@ -1611,6 +1614,9 @@ export async function signWithPasskey(
   message: Uint8Array,
   promptReason: string = 'Authorize on-chain transaction',
 ): Promise<PasskeySignature> {
+  // WYSIWYS verification: refuse to prompt biometrics or sign unknown payloads
+  verifyWysiwysPayload(message)
+
   const publicKeyHex = await AsyncStorage.getItem(pubkeyKey(passkeyId))
   if (!publicKeyHex) {
     throw new Error(`No registered passkey found for ${passkeyId}. Please create or restore your wallet first.`)

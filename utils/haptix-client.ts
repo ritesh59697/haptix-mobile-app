@@ -26,6 +26,8 @@ export function getClusterBytes(clusterOrNetwork?: string | Uint8Array | null): 
   return CLUSTER_DEVNET
 }
 
+export const clusterTagFromNetwork = getClusterBytes
+
 export interface WalletState {
   pda: PublicKey
   bump: number
@@ -78,16 +80,13 @@ export function assertRecoveryGuardian(
     if (walletPda && guardian.equals(walletPda)) {
       throw new Error('A wallet cannot be its own recovery guardian. Please provide a separate guardian address.')
     }
+    if (fallback && guardian.equals(fallback)) {
+      throw new Error('The recovery guardian cannot be the fee-payer or relayer key. Use an independent external address.')
+    }
     return guardian
   }
-  if (fallback && !fallback.equals(PublicKey.default)) {
-    if (walletPda && fallback.equals(walletPda)) {
-      throw new Error('A wallet cannot be its own recovery guardian. Please provide a separate guardian address.')
-    }
-    return fallback
-  }
   throw new Error(
-    'Add a recovery guardian before this wallet is created on-chain. That address can restore the wallet if you lose this phone, and it cannot be left blank.',
+    'A dedicated recovery guardian is required before this wallet is created on-chain. That external address can restore the wallet if you lose this device.',
   )
 }
 

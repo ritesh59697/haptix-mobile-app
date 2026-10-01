@@ -47,7 +47,7 @@ import {
 import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet, HAPTIX_PROGRAM_ID } from '@/utils/haptix-client'
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
-import { getFundedDevnetPayer, getDevnetFunderPublicKey } from '@/utils/haptix-funder'
+import { getFundedDevnetPayer, getDevnetFunderPublicKey, isDevnetFunder } from '@/utils/haptix-funder'
 import { HaptixLogoText, TablerFingerprintIcon } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -551,7 +551,14 @@ export default function SignIn() {
           'Recovery Guardian Required',
           guardianInput.trim()
             ? (guardianParse.error || 'Please enter a valid Solana address.')
-            : 'A recovery guardian is required to ensure this wallet can be recovered if this device is lost. Enter a trusted Solana address, or tap "Use Devnet Funder" for development testing.',
+            : 'A recovery guardian is required so this wallet can be recovered if this device is lost. Enter an independent, trusted Solana address (e.g. Phantom, Solflare, or a hardware wallet).',
+        )
+        return
+      }
+      if (isDevnetFunder(guardianPublicKey)) {
+        dialog.alert(
+          'Independent Guardian Required',
+          'The recovery guardian cannot be a key held by this app or the devnet funder. Please enter an independent external address (e.g. Phantom, Solflare, or a hardware wallet).',
         )
         return
       }
@@ -1398,49 +1405,41 @@ export default function SignIn() {
                   <View style={styles.inputGroup}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                       <Text style={styles.inputLabel}>Recovery guardian (Required)</Text>
-                      {AppConfig.devMode && (
-                        <TouchableOpacity
-                          onPress={() => {
-                            const funderKey = getDevnetFunderPublicKey()
-                            if (funderKey) {
-                              setGuardianInput(funderKey.toBase58())
-                              Haptics.selectionAsync()
-                            }
-                          }}
-                          style={{
-                            paddingHorizontal: 8,
-                            paddingVertical: 2,
-                            borderRadius: 6,
-                            backgroundColor: isDark ? 'rgba(94, 129, 255, 0.15)' : 'rgba(94, 129, 255, 0.1)',
-                          }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#5E81FF' }}>
-                            Use Devnet Funder
-                          </Text>
-                        </TouchableOpacity>
-                      )}
+                      <View
+                        style={{
+                          paddingHorizontal: 8,
+                          paddingVertical: 2,
+                          borderRadius: 6,
+                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: '500', color: p.inkMuted }}>
+                          External key
+                        </Text>
+                      </View>
                     </View>
                     <TextInput
                       style={[
                         styles.textInputField,
-                        guardianInput.trim() && !guardianPublicKey ? styles.textInputFieldInvalid : null,
+                        guardianInput.trim() && (!guardianPublicKey || isDevnetFunder(guardianPublicKey)) ? styles.textInputFieldInvalid : null,
                       ]}
                       value={guardianInput}
                       onChangeText={setGuardianInput}
-                      placeholder="Trusted Solana address (e.g. Phantom/hardware)"
+                      placeholder="Trusted external address (e.g. Phantom/hardware)"
                       placeholderTextColor={p.inkMuted}
                       autoCorrect={false}
                       autoCapitalize="none"
                     />
-                    <Text style={[styles.inputHint, (!guardianPublicKey || (guardianInput.trim() && !guardianPublicKey)) && styles.inputHintError]}>
+                    <Text style={[styles.inputHint, (!guardianPublicKey || isDevnetFunder(guardianPublicKey) || (guardianInput.trim() && !guardianPublicKey)) && styles.inputHintError]}>
                       {guardianInput.trim()
                         ? guardianPublicKey
-                          ? `Only ${ellipsify(guardianPublicKey.toBase58(), 4)} can start a recovery, and a ` +
-                            `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
-                            'timelock means you can still veto it. It can never move funds.'
+                          ? isDevnetFunder(guardianPublicKey)
+                            ? 'Cannot use the devnet funder. The guardian must be an external key you control outside this app.'
+                            : `Only ${ellipsify(guardianPublicKey.toBase58(), 4)} can start a recovery, and a ` +
+                              `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
+                              'timelock means you can still veto it. It can never move funds.'
                           : guardianParse.error
-                        : 'Required. The guardian is the only external key that can initiate on-chain recovery if your passkeys are lost.'}
+                        : 'Required. Enter an external trusted Solana address (e.g. Phantom, Solflare, or a hardware wallet). This key can initiate on-chain recovery if your passkeys are lost.'}
                     </Text>
                   </View>
 

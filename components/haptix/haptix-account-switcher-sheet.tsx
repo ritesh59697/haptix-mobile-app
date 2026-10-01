@@ -28,8 +28,7 @@ import { isSolanaAddress } from '@/utils/solana-address'
 import { loadCachedBalance } from '@/utils/haptix-tx-history'
 import Clipboard from '@/utils/clipboard'
 import { radius, typeScale } from '@/theme/tokens'
-import { AppConfig } from '@/constants/app-config'
-import { getDevnetFunderPublicKey } from '@/utils/haptix-funder'
+import { getDevnetFunderPublicKey, isDevnetFunder } from '@/utils/haptix-funder'
 
 interface HaptixAccountSwitcherSheetProps {
   visible: boolean
@@ -241,7 +240,17 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
         'Recovery Guardian Required',
         guardianAddress.trim()
           ? 'That is not a valid Solana address. Please enter a valid 32-byte public key.'
-          : 'A recovery guardian is required to ensure this wallet can be recovered if this device is lost. Enter a trusted Solana address, or tap "Use Devnet Funder" for development testing.',
+          : 'A recovery guardian is required so this wallet can be recovered if this device is lost. Enter an independent, trusted Solana address (e.g. Phantom, Solflare, or a hardware wallet).',
+        undefined,
+        { status: 'warning' },
+      )
+      return
+    }
+    if (isDevnetFunder(parsedGuardian)) {
+      setShowAdvanced(true)
+      dialog.alert(
+        'Independent Guardian Required',
+        'The recovery guardian cannot be a key held by this app or the devnet funder. Please enter an independent external address (e.g. Phantom, Solflare, or a hardware wallet).',
         undefined,
         { status: 'warning' },
       )
@@ -833,28 +842,18 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                   <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
                     Recovery guardian (Required)
                   </Text>
-                  {AppConfig.devMode && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        const funderKey = getDevnetFunderPublicKey()
-                        if (funderKey) {
-                          setGuardianAddress(funderKey.toBase58())
-                          Haptics.selectionAsync()
-                        }
-                      }}
-                      style={{
-                        paddingHorizontal: 8,
-                        paddingVertical: 2,
-                        borderRadius: 6,
-                        backgroundColor: theme.isDark ? 'rgba(94, 129, 255, 0.15)' : 'rgba(94, 129, 255, 0.1)',
-                      }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Text style={{ fontSize: 11, fontWeight: '600', color: theme.isDark ? '#7E9BFF' : '#4F6BFF' }}>
-                        Use Devnet Funder
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                  <View
+                    style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 2,
+                      borderRadius: 6,
+                      backgroundColor: theme.isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
+                    }}
+                  >
+                    <Text style={{ fontSize: 11, fontWeight: '500', color: theme.textMuted }}>
+                      External key
+                    </Text>
+                  </View>
                 </View>
                 <TextInput
                   style={[
@@ -863,22 +862,24 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
                       color: theme.textPrimary,
                       borderColor:
-                        guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim())
+                        guardianAddress.trim() && (!isSolanaAddress(guardianAddress.trim()) || isDevnetFunder(guardianAddress.trim()))
                           ? theme.rose
                           : (theme.isDark ? '#222226' : theme.borderDefault),
                     },
                   ]}
                   value={guardianAddress}
                   onChangeText={setGuardianAddress}
-                  placeholder="Trusted Solana address (e.g. Phantom/hardware)"
+                  placeholder="Trusted external address (e.g. Phantom/hardware)"
                   placeholderTextColor={theme.textMuted}
                   autoCapitalize="none"
                   autoCorrect={false}
                   returnKeyType="done"
                   onSubmitEditing={Keyboard.dismiss}
                 />
-                <Text style={[styles.fieldHint, { color: theme.textMuted, marginTop: 4 }]}>
-                  Required. The recovery guardian is the only external key that can initiate on-chain recovery if your passkeys are lost.
+                <Text style={[styles.fieldHint, { color: isDevnetFunder(guardianAddress.trim()) ? theme.rose : theme.textMuted, marginTop: 4 }]}>
+                  {isDevnetFunder(guardianAddress.trim())
+                    ? 'Cannot use the devnet funder. The guardian must be an external key you control outside this app.'
+                    : 'Required. The recovery guardian is the only external key that can initiate on-chain recovery if your passkeys are lost.'}
                 </Text>
                 {guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim()) && (
                   <Text style={[styles.fieldError, { color: theme.roseText }]}>
