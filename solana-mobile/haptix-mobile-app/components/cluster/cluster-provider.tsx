@@ -3,6 +3,7 @@ import { Connection } from '@solana/web3.js'
 import { AppConfig } from '@/constants/app-config'
 import { Cluster } from '@/components/cluster/cluster'
 import { ClusterNetwork } from '@/components/cluster/cluster-network'
+export { ClusterNetwork } from '@/components/cluster/cluster-network'
 
 export interface ClusterProviderContext {
   selectedCluster: Cluster
