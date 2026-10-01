@@ -288,6 +288,21 @@ async function run() {
     'does not install the proposed keys yet',
   )
 
+  // --- Guardian cannot restart or grief while recovery is in flight --------
+  const doubleInitiate = await send(connection, funder, [
+    createInitiateRecoveryInstruction({
+      walletPda,
+      guardian: funder.publicKey,
+      newPrimaryPasskey: nextPrimary,
+      newSecondaryPasskey: nextSecondary,
+    }),
+  ])
+  assert(
+    !doubleInitiate.ok && mentionsError(doubleInitiate, ERR_RECOVERY_IN_PROGRESS, 'RecoveryInProgress'),
+    'refuses to let the guardian restart the clock or grief while recovery is in flight',
+    doubleInitiate.message,
+  )
+
   // --- The timelock holds --------------------------------------------------
   const early = await send(connection, funder, [createExecuteRecoveryInstruction({ walletPda })])
   assert(
