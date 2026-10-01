@@ -52,6 +52,7 @@ import {
 import { matchWebAuthnAssertion, createSecp256r1Instruction } from '@/utils/secp256r1-instruction'
 import { createSmartWalletRecord, saveWallet, loadWallets, HaptixWalletAccount } from '@/utils/haptix-wallet-storage'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
+import { getHaptixAddressLookupTable, buildOptimalTransaction } from '@/utils/haptix-lookup-table'
 import { ellipsify } from '@/utils/ellipsify'
 import { describeTimelock } from '@/utils/recovery-timelock'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
@@ -417,12 +418,26 @@ export function HaptixRecoveryFlowSheet({
 
       const payer = await getFundedDevnetPayer(connection)
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
-      const tx = new Transaction({ feePayer: payer.publicKey, recentBlockhash: latestBlockhash.blockhash }).add(
-        precompilePrimary,
-        precompileSecondary,
-        cancelIx,
+      const lookupTable = await getHaptixAddressLookupTable(connection, walletPda, payer).catch(() => null)
+      const { rawTx } = buildOptimalTransaction({
+        payer,
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: [precompilePrimary, precompileSecondary, cancelIx],
+        lookupTable,
+      })
+
+      const sig = await connection.sendRawTransaction(rawTx, {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      })
+      await connection.confirmTransaction(
+        {
+          signature: sig,
+          blockhash: latestBlockhash.blockhash,
+          lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        },
+        'confirmed',
       )
-      const sig = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: 'confirmed' })
 
       await discardStagedRecoveryKeys()
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)

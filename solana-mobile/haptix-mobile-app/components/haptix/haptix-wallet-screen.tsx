@@ -1828,13 +1828,10 @@ export function HaptixWalletScreen() {
     <>
       {/* 1. SPENDING LIMITS (Clean side-by-side metric cards matching Image 1) */}
       <View style={{ marginBottom: 14 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-          <Text style={[styles.spendingLimitsLabel, styles.textSecondary, { marginBottom: 0 }]}>Wallet spending guardrails</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <Text style={[styles.spendingLimitsLabel, styles.textSecondary]}>Spending limits</Text>
           <PolicyLinkButton onPress={() => setPolicyTopic('agents')} />
         </View>
-        <Text style={{ color: theme.textMuted, fontSize: 12, marginBottom: 8 }}>
-          Amounts above your 1-key limit require 2-of-2 hardware passkey quorum.
-        </Text>
         <View style={styles.spendingLimitsRow}>
           <View style={[styles.spendingLimitCard, styles.card]}>
             <Text style={[styles.spendingLimitTitle, styles.textSecondary]}>One key</Text>
@@ -1896,9 +1893,7 @@ export function HaptixWalletScreen() {
         <View style={styles.agentSectionHeader}>
           <View>
             <Text style={[styles.agentSectionHeading, styles.textPrimary]}>Grant session key</Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 4, lineHeight: 18 }}>
-              Requires both passkeys to grant. The agent can spend up to this cap autonomously without asking for biometric approval.
-            </Text>
+            <Text style={[styles.agentCompactSub, styles.textMuted]}>2-of-2 passkey approval</Text>
           </View>
         </View>
 
@@ -2009,8 +2004,8 @@ export function HaptixWalletScreen() {
 
         {/* Summary text + Solid Pill Authorize session Button */}
         <View style={{ marginTop: 14 }}>
-          <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: 'left', marginBottom: 12, lineHeight: 18 }}>
-            {`Autonomous hot-key budget: ${customAgentAllowance} SOL cap, valid for ${customAgentValidHours}h. No biometric prompt required for agent trades within this limit.`}
+          <Text style={{ color: theme.textSecondary, fontSize: 13, textAlign: 'left', marginBottom: 12 }}>
+            {`Grant ${customAgentAllowance} SOL allowance for ${customAgentValidHours} hours.`}
           </Text>
           <TouchableOpacity
             style={[

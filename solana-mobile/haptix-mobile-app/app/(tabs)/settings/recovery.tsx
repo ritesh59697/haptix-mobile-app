@@ -33,6 +33,7 @@ import { parseRecipientInput } from '@/utils/solana-address'
 import { describeTimelock, formatRemainingTime } from '@/utils/recovery-timelock'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { getFundedDevnetPayer, isDevnetFunder } from '@/utils/haptix-funder'
+import { getHaptixAddressLookupTable, buildOptimalTransaction } from '@/utils/haptix-lookup-table'
 import { createSecp256r1Instruction } from '@/utils/secp256r1-instruction'
 import {
   StagedRecoveryKeys,
@@ -273,12 +274,26 @@ export default function RecoverySettingsScreen() {
 
       const payer = await getFundedDevnetPayer(connection)
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
-      const tx = new Transaction({ feePayer: payer.publicKey, recentBlockhash: latestBlockhash.blockhash }).add(
-        precompilePrimary,
-        precompileSecondary,
-        cancelIx,
+      const lookupTable = await getHaptixAddressLookupTable(connection, walletPda, payer).catch(() => null)
+      const { rawTx } = buildOptimalTransaction({
+        payer,
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: [precompilePrimary, precompileSecondary, cancelIx],
+        lookupTable,
+      })
+
+      const sig = await connection.sendRawTransaction(rawTx, {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      })
+      await connection.confirmTransaction(
+        {
+          signature: sig,
+          blockhash: latestBlockhash.blockhash,
+          lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        },
+        'confirmed',
       )
-      const sig = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: 'confirmed' })
 
       // The proposed pair is dead the moment the veto lands; keeping it staged would
       // leave this device ready to execute a recovery that no longer exists.
@@ -430,12 +445,26 @@ export default function RecoverySettingsScreen() {
 
       const payer = await getFundedDevnetPayer(connection)
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
-      const tx = new Transaction({ feePayer: payer.publicKey, recentBlockhash: latestBlockhash.blockhash }).add(
-        precompilePrimary,
-        precompileSecondary,
-        setGuardianIx,
+      const lookupTable = await getHaptixAddressLookupTable(connection, walletPda, payer).catch(() => null)
+      const { rawTx } = buildOptimalTransaction({
+        payer,
+        recentBlockhash: latestBlockhash.blockhash,
+        instructions: [precompilePrimary, precompileSecondary, setGuardianIx],
+        lookupTable,
+      })
+
+      const sig = await connection.sendRawTransaction(rawTx, {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      })
+      await connection.confirmTransaction(
+        {
+          signature: sig,
+          blockhash: latestBlockhash.blockhash,
+          lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+        },
+        'confirmed',
       )
-      const sig = await sendAndConfirmTransaction(connection, tx, [payer], { commitment: 'confirmed' })
 
       // The record carries the guardian so a wallet that is re-initialized from this
       // device is created with the one just installed, rather than the old default.
@@ -667,7 +696,7 @@ export default function RecoverySettingsScreen() {
                 ]}
               >
                 {guardianDraft.trim().length === 0
-                  ? 'A pasted link or message is read the same way a bare address is. Requires both passkeys.'
+                  ? 'Requires 2-of-2 passkeys. Guardian can only start recovery.'
                   : (guardianDraftParse.error ??
                     `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
               </Text>
@@ -1225,12 +1254,14 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       borderWidth: 1,
       borderRadius: radius.md,
       paddingHorizontal: 12,
-      paddingVertical: 8,
+      paddingVertical: 10,
+      minHeight: 48,
     },
     guardianInput: {
       flex: 1,
-      fontSize: typeScale.caption,
+      fontSize: 14,
       padding: 0,
+      includeFontPadding: false,
     },
     guardianHint: {
       fontSize: typeScale.caption,
