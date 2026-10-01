@@ -23,8 +23,12 @@ pub fn handle_set_guardian(
     primary_sig_ix_index: u16,
     secondary_sig_ix_index: u16,
 ) -> Result<()> {
+    require!(new_guardian != Pubkey::default(), HaptixError::GuardianRequired);
+    require!(new_guardian != ctx.accounts.wallet.key(), HaptixError::InvalidGuardian);
+
     let nonce = ctx.accounts.wallet.auth_nonce;
-    let expected_message = set_guardian_message(nonce, &new_guardian);
+    let cluster_tag = ctx.accounts.wallet.cluster_tag();
+    let expected_message = set_guardian_message(&ctx.accounts.wallet.key(), &cluster_tag, nonce, &new_guardian);
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
@@ -67,7 +71,8 @@ pub fn handle_set_spend_threshold(
     secondary_sig_ix_index: u16,
 ) -> Result<()> {
     let nonce = ctx.accounts.wallet.auth_nonce;
-    let expected_message = set_threshold_message(nonce, new_threshold_lamports);
+    let cluster_tag = ctx.accounts.wallet.cluster_tag();
+    let expected_message = set_threshold_message(&ctx.accounts.wallet.key(), &cluster_tag, nonce, new_threshold_lamports);
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,
@@ -147,7 +152,8 @@ pub fn handle_unfreeze(
     );
 
     let nonce = wallet.auth_nonce;
-    let expected_message = unfreeze_message(nonce);
+    let cluster_tag = wallet.cluster_tag();
+    let expected_message = unfreeze_message(&wallet.key(), &cluster_tag, nonce);
 
     verify_passkey_precompile_signature(
         &ctx.accounts.instructions_sysvar,

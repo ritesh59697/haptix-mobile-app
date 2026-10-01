@@ -72,6 +72,7 @@ import {
   AgentSessionState,
 } from '@/utils/haptix-client'
 import { getFundedDevnetPayer, fundDevnetWallet } from '@/utils/haptix-funder'
+import { getHaptixAddressLookupTable, buildOptimalTransaction } from '@/utils/haptix-lookup-table'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { useCluster } from '@/components/cluster/cluster-provider'
 import { ClusterNetwork } from '@/components/cluster/cluster-network'
@@ -338,6 +339,8 @@ export function HaptixWalletScreen() {
   const [customAgentValidHours, setCustomAgentValidHours] = useState('24')
   const [agentRecipient, setAgentRecipient] = useState('')
   const [revokingAgent, setRevokingAgent] = useState<string | null>(null)
+  const [faucetSuccess, setFaucetSuccess] = useState<{ amount: number; signature: string } | null>(null)
+  const [faucetCopiedSig, setFaucetCopiedSig] = useState(false)
 
   // Token Detail & Swap States (Phantom Style)
   const [selectedDetailToken, setSelectedDetailToken] = useState<MarketToken | null>(null)
@@ -615,17 +618,7 @@ export function HaptixWalletScreen() {
       }
       setTransactions((prev) => [newTx, ...prev])
 
-      dialog.alert(
-        'Devnet SOL Received!',
-        `Sent 0.20 SOL to your smart account from the Devnet relayer.\n\nSignature: ${ellipsify(sig, 8)}`,
-        [
-          {
-            text: 'View on Explorer',
-            onPress: () => Linking.openURL(`https://explorer.solana.com/tx/${sig}?cluster=devnet`),
-          },
-          { text: 'Great', style: 'default' },
-        ],
-      )
+      setFaucetSuccess({ amount: 0.2, signature: sig })
     } catch (err: any) {
       console.error('[Faucet Error]:', formatChainErrorForLog(err))
       dialog.alert('Faucet Request Failed', describeChainError(err, 'Could not fund this account on Devnet.'))
@@ -706,7 +699,7 @@ export function HaptixWalletScreen() {
         primaryPasskey,
         secondaryPasskey,
         spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-        guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet?.guardianAddress), walletPda),
+        guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet?.guardianAddress), payer.publicKey, walletPda),
       })
 
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
@@ -786,7 +779,7 @@ export function HaptixWalletScreen() {
       primaryPasskey: new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex')),
       secondaryPasskey: new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex')),
       spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-      guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), walletPda),
+      guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey, walletPda),
     })
 
     const blockhash = await connection.getLatestBlockhash('confirmed')
@@ -843,6 +836,7 @@ export function HaptixWalletScreen() {
 
       const authNonce = (await fetchHaptixWallet(connection, walletPda).catch(() => null))?.authNonce ?? 0n
       const grantMsg = getGrantAgentSignedMessage(
+        walletPda,
         ephemeralAgent.publicKey,
         allowanceLamports,
         validForSeconds,
@@ -889,13 +883,15 @@ export function HaptixWalletScreen() {
       txInstructions.push(precompile1, precompile2, grantIx)
 
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
-      const tx = new Transaction({
-        feePayer: payer.publicKey,
+      const lookupTable = await getHaptixAddressLookupTable(connection, walletPda, payer).catch(() => null)
+      const { rawTx } = buildOptimalTransaction({
+        payer,
         recentBlockhash: latestBlockhash.blockhash,
-      }).add(...txInstructions)
-      tx.sign(payer)
+        instructions: txInstructions,
+        lookupTable,
+      })
 
-      const sig = await connection.sendRawTransaction(tx.serialize(), {
+      const sig = await connection.sendRawTransaction(rawTx, {
         skipPreflight: false,
         preflightCommitment: 'confirmed',
       })
@@ -1008,6 +1004,7 @@ export function HaptixWalletScreen() {
       // 1. Grant agent session on-chain via 2-of-2 passkey quorum
       const authNonce = (await fetchHaptixWallet(connection, walletPda).catch(() => null))?.authNonce ?? 0n
       const grantMsg = getGrantAgentSignedMessage(
+        walletPda,
         agentKeypair.publicKey,
         allowanceLamports,
         validForSeconds,
@@ -1182,7 +1179,7 @@ export function HaptixWalletScreen() {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
         const authNonce = (await fetchHaptixWallet(connection, walletPda).catch(() => null))?.authNonce ?? 0n
-        const message = getRevokeAgentSignedMessage(agentPubkey, authNonce)
+        const message = getRevokeAgentSignedMessage(walletPda, agentPubkey, authNonce)
         const primarySig = await signWithPasskey('primary', message, 'Revoke Agent Session (Primary)')
         const secondarySig = await signWithPasskey(
           'secondary',
@@ -1378,7 +1375,7 @@ export function HaptixWalletScreen() {
       } else {
         // Unfreeze requires a 2-of-2 passkey quorum
         const authNonce = (await fetchHaptixWallet(connection, walletPda).catch(() => null))?.authNonce ?? 0n
-        const unfreezeMsg = getUnfreezeSignedMessage(authNonce)
+        const unfreezeMsg = getUnfreezeSignedMessage(walletPda, authNonce)
 
         const primarySig = await signWithPasskey('primary', unfreezeMsg, 'Authorize Wallet Unfreeze (Primary)')
         const secondarySig = await signWithPasskey(
@@ -2952,6 +2949,191 @@ export function HaptixWalletScreen() {
               </ScrollView>
             )}
           </Animated.View>
+        </View>
+      </Modal>
+
+      {/* ==================================================================== */}
+      {/* 7b. DEVNET SOL RECEIVED CONFIRMATION SHEET                          */}
+      {/* ==================================================================== */}
+      <Modal
+        visible={faucetSuccess !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setFaucetSuccess(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setFaucetSuccess(null)} />
+          {faucetSuccess && (
+            <View
+              style={[
+                styles.modalSheet,
+                {
+                  backgroundColor: isDark ? '#0C0C0D' : theme.bgCard,
+                  borderColor: isDark ? '#2A2A28' : theme.borderDefault,
+                  borderTopLeftRadius: 20,
+                  borderTopRightRadius: 20,
+                  paddingHorizontal: 20,
+                  paddingTop: 12,
+                  paddingBottom: Math.max(insets.bottom, 20),
+                },
+              ]}
+            >
+              {/* Drag Handle */}
+              <View
+                style={{
+                  width: 36,
+                  height: 4,
+                  backgroundColor: isDark ? '#3A3A37' : '#D1D1D6',
+                  borderRadius: 2,
+                  alignSelf: 'center',
+                  marginBottom: 20,
+                }}
+              />
+
+              {/* Header with Checkmark Ring */}
+              <View style={{ alignItems: 'center', marginBottom: 22 }}>
+                <View
+                  style={{
+                    width: 68,
+                    height: 68,
+                    borderRadius: 34,
+                    backgroundColor: 'rgba(95, 191, 122, 0.12)',
+                    borderWidth: 8,
+                    borderColor: 'rgba(95, 191, 122, 0.06)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 18,
+                  }}
+                >
+                  <MaterialIcons name="check" size={28} color="#5FBF7A" />
+                </View>
+
+                <Text style={{ color: isDark ? '#8A8985' : theme.textSecondary, fontSize: 12, marginBottom: 4 }}>
+                  Devnet SOL received
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 32,
+                    fontWeight: '600',
+                    letterSpacing: -0.5,
+                    color: isDark ? '#F2F1EE' : theme.textPrimary,
+                  }}
+                >
+                  +{faucetSuccess.amount.toFixed(4)} SOL
+                </Text>
+                <Text style={{ color: isDark ? '#8A8985' : theme.textMuted, fontSize: 13, marginTop: 4 }}>
+                  Added to your smart account
+                </Text>
+              </View>
+
+              {/* Detail Box */}
+              <View
+                style={{
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: isDark ? '#2A2A28' : theme.borderDefault,
+                  backgroundColor: isDark ? '#141416' : '#F6F6F8',
+                  paddingHorizontal: 14,
+                  paddingVertical: 2,
+                  marginBottom: 16,
+                }}
+              >
+                {/* From Row */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: 11,
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: isDark ? '#201F1D' : theme.borderSubtle,
+                  }}
+                >
+                  <Text style={{ color: isDark ? '#8A8985' : theme.textSecondary, fontSize: 13 }}>From</Text>
+                  <Text style={{ color: isDark ? '#F2F1EE' : theme.textPrimary, fontSize: 13, fontWeight: '500' }}>
+                    Devnet faucet
+                  </Text>
+                </View>
+
+                {/* Signature Row */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: 11,
+                  }}
+                >
+                  <Text style={{ color: isDark ? '#8A8985' : theme.textSecondary, fontSize: 13 }}>Signature</Text>
+                  <TouchableOpacity
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                    onPress={() => {
+                      Clipboard.setString(faucetSuccess.signature)
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                      setFaucetCopiedSig(true)
+                      setTimeout(() => setFaucetCopiedSig(false), 2000)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={{
+                        color: isDark ? '#F2F1EE' : theme.textPrimary,
+                        fontSize: 12,
+                        fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
+                      }}
+                    >
+                      {ellipsify(faucetSuccess.signature, 8)}
+                    </Text>
+                    <MaterialIcons
+                      name={faucetCopiedSig ? 'check' : 'content-copy'}
+                      size={13}
+                      color={faucetCopiedSig ? '#5FBF7A' : (isDark ? '#8A8985' : theme.textMuted)}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Done Action */}
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#6C8CFF',
+                  borderRadius: 12,
+                  paddingVertical: 13,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 8,
+                }}
+                onPress={() => setFaucetSuccess(null)}
+                activeOpacity={0.85}
+              >
+                <Text style={{ color: '#0C0C0D', fontSize: 15, fontWeight: '500' }}>Done</Text>
+              </TouchableOpacity>
+
+              {/* View on Solscan Button */}
+              <TouchableOpacity
+                style={{
+                  borderWidth: 1,
+                  borderColor: isDark ? '#2A2A28' : theme.borderDefault,
+                  borderRadius: 12,
+                  paddingVertical: 12,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 7,
+                  backgroundColor: isDark ? 'transparent' : '#FFFFFF',
+                }}
+                onPress={() => {
+                  Linking.openURL(`https://solscan.io/tx/${faucetSuccess.signature}?cluster=devnet`).catch(() => {})
+                }}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="open-in-new" size={15} color={isDark ? '#8A8985' : theme.textMuted} />
+                <Text style={{ color: isDark ? '#F2F1EE' : theme.textPrimary, fontSize: 14, fontWeight: '500' }}>
+                  View on Solscan
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </Modal>
 

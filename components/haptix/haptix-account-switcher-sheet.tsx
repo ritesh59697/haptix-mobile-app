@@ -17,6 +17,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import * as Haptics from 'expo-haptics'
 import { useAuth } from '@/components/auth/auth-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -27,14 +28,14 @@ import { isSolanaAddress } from '@/utils/solana-address'
 import { loadCachedBalance } from '@/utils/haptix-tx-history'
 import Clipboard from '@/utils/clipboard'
 import { radius, typeScale } from '@/theme/tokens'
+import { AppConfig } from '@/constants/app-config'
+import { getDevnetFunderPublicKey } from '@/utils/haptix-funder'
 
 interface HaptixAccountSwitcherSheetProps {
   visible: boolean
   onClose: () => void
   isBalanceHidden?: boolean
 }
-
-const THRESHOLD_OPTIONS = [0.05, 0.1, 0.25, 0.5]
 
 export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }: HaptixAccountSwitcherSheetProps) {
   const insets = useSafeAreaInsets()
@@ -51,7 +52,6 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
   // Account creation form state
   const [newAccountName, setNewAccountName] = useState('')
   const [selectedMode, setSelectedMode] = useState<'everyday' | 'vault'>('everyday')
-  const [spendLimit, setSpendLimit] = useState(0.1)
   const [vaultKeySource, setVaultKeySource] = useState<'mac' | 'hardware'>('mac')
   const [macVaultKeyHex, setMacVaultKeyHex] = useState('')
 
@@ -235,10 +235,13 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
       (selectedMode === 'vault' ? 'Hardware Vault' : 'Everyday Account')
 
     const parsedGuardian = parseGuardianAddress(guardianAddress)
-    if (guardianAddress.trim() && !parsedGuardian) {
+    if (!parsedGuardian) {
+      setShowAdvanced(true)
       dialog.alert(
-        'Check the guardian address',
-        'That is not a valid Solana address. Leave it blank if you want to add it later in Settings.',
+        'Recovery Guardian Required',
+        guardianAddress.trim()
+          ? 'That is not a valid Solana address. Please enter a valid 32-byte public key.'
+          : 'A recovery guardian is required to ensure this wallet can be recovered if this device is lost. Enter a trusted Solana address, or tap "Use Devnet Funder" for development testing.',
         undefined,
         { status: 'warning' },
       )
@@ -266,10 +269,10 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
       await createWallet(finalName, {
         mode: selectedMode,
-        spendThreshold: selectedMode === 'vault' ? 0.0 : spendLimit,
+        spendThreshold: selectedMode === 'vault' ? 0.0 : 0.1,
         primaryLabel: primaryKeyLabel.trim() || undefined,
         secondaryLabel: secondaryKeyLabel.trim() || undefined,
-        guardianAddress: parsedGuardian ? parsedGuardian.toBase58() : undefined,
+        guardianAddress: parsedGuardian.toBase58(),
         vaultKeySource: selectedMode === 'vault' ? vaultKeySource : undefined,
         macVaultKeyHex:
           selectedMode === 'vault' && vaultKeySource === 'mac'
@@ -348,7 +351,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
             </View>
             <TouchableOpacity
               style={[styles.closeBtn, { backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0' }]}
-              onPress={onClose}
+              onPress={isCreating ? handleCancelCreate : onClose}
               activeOpacity={0.7}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               accessibilityLabel="Close"
@@ -408,7 +411,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       ]}
                     >
                       {isVault ? (
-                        <MaterialIcons name="security" size={18} color={theme.textPrimary} />
+                        <MaterialCommunityIcons name="safe" size={18} color={theme.textPrimary} />
                       ) : (
                         <MaterialIcons name="smartphone" size={18} color={theme.textPrimary} />
                       )}
@@ -503,7 +506,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
               showsVerticalScrollIndicator={false}
               contentContainerStyle={[
                 styles.scrollContent,
-                { paddingBottom: showAdvanced ? 180 : 40 },
+                { paddingBottom: 24 },
               ]}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
@@ -512,17 +515,17 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
               <View style={styles.formGroup}>
                 <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Security architecture</Text>
                 <View style={styles.modeCardsRow}>
-                  {/* Everyday Mode Tile */}
+                  {/* Everyday Mode Card */}
                   <TouchableOpacity
                     style={[
-                      styles.modeTile,
+                      styles.modeCard,
                       {
                         backgroundColor:
                           selectedMode === 'everyday'
                             ? (theme.isDark ? '#1C1C1E' : '#FFFFFF')
                             : (theme.isDark ? '#141416' : '#F5F5F7'),
                         borderColor:
-                          selectedMode === 'everyday' ? '#4F6BFF' : (theme.isDark ? '#222226' : theme.borderSubtle),
+                          selectedMode === 'everyday' ? '#5E81FF' : (theme.isDark ? '#26262A' : theme.borderSubtle),
                         borderWidth: selectedMode === 'everyday' ? 1.5 : 1,
                       },
                     ]}
@@ -531,40 +534,53 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                   >
                     <View
                       style={[
-                        styles.modeTileIconBox,
+                        styles.modeCardIconBox,
                         {
                           backgroundColor:
                             selectedMode === 'everyday'
-                              ? (theme.isDark ? 'rgba(79, 107, 255, 0.16)' : 'rgba(79, 107, 255, 0.10)')
-                              : (theme.isDark ? '#26262A' : '#E5E5EA'),
+                              ? (theme.isDark ? 'rgba(94, 129, 255, 0.16)' : 'rgba(94, 129, 255, 0.10)')
+                              : (theme.isDark ? '#222226' : '#E5E5EA'),
                         },
                       ]}
                     >
                       <MaterialIcons
                         name="smartphone"
                         size={19}
-                        color={selectedMode === 'everyday' ? '#4F6BFF' : theme.textPrimary}
+                        color={selectedMode === 'everyday' ? '#5E81FF' : theme.textPrimary}
                       />
                     </View>
-                    <Text style={[styles.modeTileTitle, { color: theme.textPrimary }]}>
-                      Everyday
-                    </Text>
-                    <Text style={[styles.modeTileDesc, { color: theme.textSecondary }]}>
-                      Both keys on this device
-                    </Text>
+                    <View style={styles.modeCardTextCol}>
+                      <Text style={[styles.modeCardTitle, { color: theme.textPrimary }]}>
+                        Everyday mode
+                      </Text>
+                      <Text style={[styles.modeCardDesc, { color: theme.textSecondary }]}>
+                        Both keys on this device
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        {
+                          borderColor:
+                            selectedMode === 'everyday' ? '#5E81FF' : (theme.isDark ? '#3A3A3C' : '#D1D1D6'),
+                        },
+                      ]}
+                    >
+                      {selectedMode === 'everyday' && <View style={styles.radioInner} />}
+                    </View>
                   </TouchableOpacity>
 
-                  {/* Vault Mode Tile */}
+                  {/* Vault Mode Card */}
                   <TouchableOpacity
                     style={[
-                      styles.modeTile,
+                      styles.modeCard,
                       {
                         backgroundColor:
                           selectedMode === 'vault'
                             ? (theme.isDark ? '#1C1C1E' : '#FFFFFF')
                             : (theme.isDark ? '#141416' : '#F5F5F7'),
                         borderColor:
-                          selectedMode === 'vault' ? '#4F6BFF' : (theme.isDark ? '#222226' : theme.borderSubtle),
+                          selectedMode === 'vault' ? '#5E81FF' : (theme.isDark ? '#26262A' : theme.borderSubtle),
                         borderWidth: selectedMode === 'vault' ? 1.5 : 1,
                       },
                     ]}
@@ -573,79 +589,46 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                   >
                     <View
                       style={[
-                        styles.modeTileIconBox,
+                        styles.modeCardIconBox,
                         {
                           backgroundColor:
                             selectedMode === 'vault'
-                              ? (theme.isDark ? 'rgba(79, 107, 255, 0.16)' : 'rgba(79, 107, 255, 0.10)')
-                              : (theme.isDark ? '#26262A' : '#E5E5EA'),
+                              ? (theme.isDark ? 'rgba(94, 129, 255, 0.16)' : 'rgba(94, 129, 255, 0.10)')
+                              : (theme.isDark ? '#222226' : '#E5E5EA'),
                         },
                       ]}
                     >
-                      <MaterialIcons
-                        name="security"
+                      <MaterialCommunityIcons
+                        name="safe"
                         size={19}
-                        color={selectedMode === 'vault' ? '#4F6BFF' : theme.textPrimary}
+                        color={selectedMode === 'vault' ? '#5E81FF' : theme.textPrimary}
                       />
                     </View>
-                    <Text style={[styles.modeTileTitle, { color: theme.textPrimary }]}>
-                      Vault mode
-                    </Text>
-                    <Text style={[styles.modeTileDesc, { color: theme.textSecondary }]}>
-                      Key 2 on laptop or OneKey
-                    </Text>
+                    <View style={styles.modeCardTextCol}>
+                      <Text style={[styles.modeCardTitle, { color: theme.textPrimary }]}>
+                        Vault mode
+                      </Text>
+                      <Text style={[styles.modeCardDesc, { color: theme.textSecondary }]}>
+                        Key 2 on laptop or OneKey
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        {
+                          borderColor:
+                            selectedMode === 'vault' ? '#5E81FF' : (theme.isDark ? '#3A3A3C' : '#D1D1D6'),
+                        },
+                      ]}
+                    >
+                      {selectedMode === 'vault' && <View style={styles.radioInner} />}
+                    </View>
                   </TouchableOpacity>
                 </View>
               </View>
 
-              {/* Spending Limit Configuration (Everyday Mode) or Vault Setup (Vault Mode) */}
-              {selectedMode === 'everyday' ? (
-                <View style={styles.formGroup}>
-                  <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
-                    One-key biometric threshold
-                  </Text>
-                  <View style={styles.thresholdChipsRow}>
-                    {THRESHOLD_OPTIONS.map((val) => {
-                      const isSelected = spendLimit === val
-                      return (
-                        <TouchableOpacity
-                          key={val}
-                          style={[
-                            styles.thresholdChip,
-                            {
-                              backgroundColor: isSelected
-                                ? '#4F6BFF'
-                                : (theme.isDark ? '#1C1C1E' : '#EFEFF0'),
-                              borderWidth: 0,
-                            },
-                          ]}
-                          onPress={() => {
-                            Haptics.selectionAsync()
-                            setSpendLimit(val)
-                          }}
-                          activeOpacity={0.75}
-                        >
-                          <Text
-                            style={[
-                              styles.thresholdChipText,
-                              {
-                                color: isSelected ? '#FFFFFF' : theme.textPrimary,
-                                fontWeight: isSelected ? '700' : '600',
-                              },
-                            ]}
-                          >
-                            {val} SOL
-                          </Text>
-                        </TouchableOpacity>
-                      )
-                    })}
-                  </View>
-                  <Text style={[styles.fieldHint, { color: theme.textSecondary }]}>
-                    Transfers exceeding {spendLimit} SOL will automatically require 2-of-2 quorum.
-                  </Text>
-                </View>
-              ) : (
-                /* Vault Mode Device Selection & Enrollment */
+              {/* Vault Mode Device Selection & Enrollment */}
+              {selectedMode === 'vault' && (
                 <View style={{ marginBottom: 14 }}>
                   <View
                     style={[
@@ -860,7 +843,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                 <View style={styles.advancedToggleLeft}>
                   <MaterialIcons name="tune" size={18} color={theme.textMuted} />
                   <Text style={[styles.advancedToggleText, { color: theme.textPrimary }]}>
-                    {showAdvanced ? 'Hide advanced settings' : 'Advanced settings (key names, guardian)'}
+                    {showAdvanced ? 'Hide recovery guardian & advanced settings' : 'Recovery guardian & advanced settings'}
                   </Text>
                 </View>
                 <MaterialIcons
@@ -922,9 +905,33 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
                   {/* Recovery Guardian Address */}
                   <View style={styles.formGroup}>
-                    <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                      Recovery guardian (optional)
-                    </Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
+                        Recovery guardian (Required)
+                      </Text>
+                      {AppConfig.devMode && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            const funderKey = getDevnetFunderPublicKey()
+                            if (funderKey) {
+                              setGuardianAddress(funderKey.toBase58())
+                              Haptics.selectionAsync()
+                            }
+                          }}
+                          style={{
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            borderRadius: 6,
+                            backgroundColor: theme.isDark ? 'rgba(94, 129, 255, 0.15)' : 'rgba(94, 129, 255, 0.1)',
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: theme.isDark ? '#7E9BFF' : '#4F6BFF' }}>
+                            Use Devnet Funder
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                     <TextInput
                       style={[
                         styles.inputField,
@@ -939,7 +946,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       ]}
                       value={guardianAddress}
                       onChangeText={setGuardianAddress}
-                      placeholder="A Solana address you trust (optional)"
+                      placeholder="Trusted Solana address (e.g. Phantom/hardware)"
                       placeholderTextColor={theme.textMuted}
                       autoCapitalize="none"
                       autoCorrect={false}
@@ -947,7 +954,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       onSubmitEditing={Keyboard.dismiss}
                     />
                     <Text style={[styles.fieldHint, { color: theme.textMuted, marginTop: 4 }]}>
-                      Optional. Leave blank to set up immediately. You can add or change your recovery guardian anytime in Settings.
+                      Required. The recovery guardian is the only external key that can initiate on-chain recovery if your passkeys are lost.
                     </Text>
                     {guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim()) && (
                       <Text style={[styles.fieldError, { color: theme.roseText }]}>
@@ -973,46 +980,59 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                 </Text>
               </View>
 
-              {/* Action Buttons */}
-              <View style={styles.createActionsRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.cancelBtn,
-                    {
-                      backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
-                    },
-                  ]}
-                  onPress={handleCancelCreate}
-                  disabled={isSubmittingCreate}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.cancelBtnText, { color: theme.textPrimary }]}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.submitPrimaryBtn,
-                    { backgroundColor: '#5E81FF' },
-                  ]}
-                  onPress={handleConfirmCreate}
-                  disabled={isSubmittingCreate}
-                  activeOpacity={0.85}
-                >
-                  {isSubmittingCreate ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <MaterialIcons name="fingerprint" size={20} color="#FFFFFF" />
-                      <Text style={styles.submitPrimaryBtnText}>
-                        {selectedMode === 'vault' ? 'Start Vault setup' : 'Start setup'}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
             </ScrollView>
+          )}
+
+          {/* Pinned Action Footer (Always visible without scrolling) */}
+          {isCreating && (
+            <View
+              style={[
+                styles.pinnedFooter,
+                {
+                  backgroundColor: theme.bgCard,
+                  borderTopColor: theme.isDark ? '#201f1d' : theme.borderSubtle,
+                  paddingBottom: Math.max(insets.bottom, 14),
+                },
+              ]}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.cancelBtn,
+                  {
+                    backgroundColor: theme.isDark ? '#1A1A18' : '#EFEFF0',
+                    borderColor: theme.isDark ? '#2A2A28' : theme.borderSubtle,
+                  },
+                ]}
+                onPress={handleCancelCreate}
+                disabled={isSubmittingCreate}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.cancelBtnText, { color: theme.textPrimary }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.submitPrimaryBtn,
+                  { backgroundColor: '#5E81FF', opacity: isSubmittingCreate ? 0.7 : 1 },
+                ]}
+                onPress={handleConfirmCreate}
+                disabled={isSubmittingCreate}
+                activeOpacity={0.85}
+              >
+                {isSubmittingCreate ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+                    <MaterialIcons name="fingerprint" size={18} color="#FFFFFF" />
+                    <Text style={styles.submitPrimaryBtnText}>
+                      {selectedMode === 'vault' ? 'Start Vault setup' : 'Start setup'}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
           )}
         </Animated.View>
       </KeyboardAvoidingView>
@@ -1209,49 +1229,55 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  /* Mode selection tiles */
+  /* Mode selection cards */
   modeCardsRow: {
-    gap: 10,
-    marginBottom: 12,
+    gap: 8,
+    marginBottom: 14,
   },
-  modeTile: {
-    padding: 16,
-    borderRadius: 20,
-    gap: 4,
+  modeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 14,
+    gap: 12,
   },
-  modeTileIconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  modeCardIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    flexShrink: 0,
   },
-  modeTileTitle: {
-    fontSize: 15.5,
-    fontWeight: '700',
+  modeCardTextCol: {
+    flex: 1,
   },
-  modeTileDesc: {
-    fontSize: 13,
-    lineHeight: 18,
+  modeCardTitle: {
+    fontSize: 14.5,
+    fontWeight: '600',
+  },
+  modeCardDesc: {
+    fontSize: 12,
     marginTop: 2,
+    lineHeight: 16,
+  },
+  radioOuter: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginLeft: 'auto',
+  },
+  radioInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#5E81FF',
   },
 
-  /* Threshold Pills */
-  thresholdChipsRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  thresholdChip: {
-    flex: 1,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  thresholdChipText: {
-    fontSize: 14,
-  },
 
   /* Vault policy notice */
   vaultPolicyNotice: {
@@ -1399,33 +1425,36 @@ const styles = StyleSheet.create({
   },
 
   /* Form actions */
-  createActionsRow: {
+  pinnedFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 4,
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    borderTopWidth: 0.5,
   },
   cancelBtn: {
-    height: 50,
-    paddingHorizontal: 22,
-    borderRadius: 25,
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 0.5,
   },
   cancelBtnText: {
-    fontSize: 14.5,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '500',
   },
   submitPrimaryBtn: {
-    flex: 1,
-    height: 50,
-    borderRadius: 25,
+    flex: 2,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   submitPrimaryBtnText: {
-    fontSize: 14.5,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
 })

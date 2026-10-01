@@ -305,7 +305,7 @@ async function run() {
   // wallet's own recoverable state depends on it staying set. Signed here with the
   // wallet's current 2-of-2 keys, which are still valid at this point, so the recovery
   // itself is the only thing that can be rejecting it.
-  const pendingUnfreezeMsg = getUnfreezeSignedMessage(stillPending?.authNonce ?? 0n)
+  const pendingUnfreezeMsg = getUnfreezeSignedMessage(walletPda, stillPending?.authNonce ?? 0n)
   const escapeAttempt = await send(connection, funder, [
     createWebAuthnSecp256r1Instruction(buildAssertion(primaryKey, pendingUnfreezeMsg)),
     createWebAuthnSecp256r1Instruction(buildAssertion(secondaryKey, pendingUnfreezeMsg)),
@@ -326,7 +326,7 @@ async function run() {
   )
 
   // --- The owner vetoes with 2-of-2 ---------------------------------------
-  const cancelMessage = getCancelRecoverySignedMessage(stillFrozenAfterEscape?.authNonce ?? 0n)
+  const cancelMessage = getCancelRecoverySignedMessage(walletPda, stillFrozenAfterEscape?.authNonce ?? 0n)
   const primaryAssertion = buildAssertion(primaryKey, cancelMessage)
   const secondaryAssertion = buildAssertion(secondaryKey, cancelMessage)
 
@@ -362,7 +362,7 @@ async function run() {
 
   // The first veto consumed nonce 0. Reusing that signature would fail as stale
   // and would not test the quorum.
-  const secondCancelMessage = getCancelRecoverySignedMessage(after?.authNonce ?? 0n)
+  const secondCancelMessage = getCancelRecoverySignedMessage(walletPda, after?.authNonce ?? 0n)
   const secondPrimary = buildAssertion(primaryKey, secondCancelMessage)
   const secondSecondary = buildAssertion(secondaryKey, secondCancelMessage)
 
@@ -456,7 +456,7 @@ async function run() {
   assert(postFreeze.ok, 'the recovered wallet is still reachable on-chain', postFreeze.message)
 
   const unfreezeNonce = rotated?.authNonce ?? 0n
-  const unfreezeMsg = getUnfreezeSignedMessage(unfreezeNonce)
+  const unfreezeMsg = getUnfreezeSignedMessage(lostPda, unfreezeNonce)
   const newPrimaryAssertion = buildAssertion(replacementKey, unfreezeMsg)
   const newSecondaryAssertion = buildAssertion(replacementSecondaryKey, unfreezeMsg)
 
@@ -471,7 +471,7 @@ async function run() {
   const oldKeyFreeze = await send(connection, funder, [
     createPanicFreezeInstruction({ walletPda: lostPda, guardianSigner: funder.publicKey }),
   ])
-  const oldKeyMessage = getUnfreezeSignedMessage(unfreezeNonce + 1n)
+  const oldKeyMessage = getUnfreezeSignedMessage(lostPda, unfreezeNonce + 1n)
   const oldKeyUnfreeze = await send(connection, funder, [
     createWebAuthnSecp256r1Instruction(buildAssertion(lostPrimaryKey, oldKeyMessage)),
     createWebAuthnSecp256r1Instruction(buildAssertion(lostSecondaryKey, oldKeyMessage)),

@@ -6,7 +6,7 @@ import { useAppTheme } from '@/components/theme/theme-context'
 import { radius, typeScale } from '@/theme/tokens'
 
 export type HaptixDialogStatus = 'neutral' | 'success' | 'warning' | 'error'
-export type HaptixDialogButtonStyle = 'default' | 'cancel' | 'destructive' | 'secondary'
+export type HaptixDialogButtonStyle = 'default' | 'cancel' | 'destructive' | 'secondary' | 'plain'
 
 export interface HaptixDialogButton {
   text: string
@@ -113,7 +113,7 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
 
     // Android's back button maps to the cancel action when one exists, and only
     // falls through to a plain dismissal when the dialog allows it.
-    const cancelButton = request.buttons.find((button) => button.style === 'cancel')
+    const cancelButton = request.buttons.find((button) => button.style === 'cancel' || button.style === 'plain')
     if (cancelButton) {
       pop()
       cancelButton.onPress?.()
@@ -134,26 +134,26 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
   const displayButtons = useMemo(() => {
     if (!active) return []
     if (isButtonRow) return active.buttons
-    const nonCancel = active.buttons.filter((b) => b.style !== 'cancel')
-    const cancel = active.buttons.filter((b) => b.style === 'cancel')
+    const nonCancel = active.buttons.filter((b) => b.style !== 'cancel' && b.style !== 'plain')
+    const cancel = active.buttons.filter((b) => b.style === 'cancel' || b.style === 'plain')
     return [...nonCancel, ...cancel]
   }, [active, isButtonRow])
 
   const colors = useMemo(
     () => ({
       card: {
-        backgroundColor: theme.isDark ? '#0D0D10' : '#FFFFFF',
-        borderColor: theme.isDark ? '#26262E' : theme.borderDefault,
+        backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
+        borderColor: theme.isDark ? '#2A2A28' : theme.borderDefault,
       },
-      title: { color: theme.isDark ? '#FFFFFF' : theme.textPrimary },
+      title: { color: theme.isDark ? '#F2F1EE' : theme.textPrimary },
       message: { color: theme.isDark ? '#D4D4D8' : theme.textSecondary },
       bulletBox: {
         backgroundColor: theme.isDark ? '#141418' : '#F5F5F7',
         borderColor: theme.isDark ? '#26262F' : '#E5E5EA',
       },
       accentButton: {
-        backgroundColor: '#4F6BFF',
-        borderColor: '#4F6BFF',
+        backgroundColor: '#6C8CFF',
+        borderColor: '#6C8CFF',
       },
       accentButtonText: { color: '#FFFFFF' },
       cancelButton: {
@@ -171,6 +171,16 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
         borderColor: '#E11D48',
       },
       destructiveButtonText: { color: '#FFFFFF' },
+      plainButton: {
+        backgroundColor: 'transparent',
+        borderColor: 'transparent',
+        height: 38,
+      },
+      plainButtonText: {
+        color: theme.isDark ? '#8A8985' : theme.textMuted,
+        fontWeight: '500',
+        fontSize: 14,
+      },
     }),
     [theme],
   )
@@ -316,6 +326,7 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
                         variant === 'secondary' && colors.secondaryButton,
                         variant === 'destructive' && colors.destructiveButton,
                         variant === 'cancel' && colors.cancelButton,
+                        variant === 'plain' && colors.plainButton,
                       ]}
                     >
                       <Text
@@ -326,6 +337,7 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
                           variant === 'secondary' && colors.secondaryButtonText,
                           variant === 'destructive' && colors.destructiveButtonText,
                           variant === 'cancel' && colors.cancelButtonText,
+                          variant === 'plain' && colors.plainButtonText,
                         ]}
                       >
                         {button.text}

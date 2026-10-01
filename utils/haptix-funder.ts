@@ -159,3 +159,22 @@ export function isDevnetFunder(pubkey?: PublicKey | string | null): boolean {
   }
 }
 
+/**
+ * Returns the Devnet funder's public key if available in the environment,
+ * allowing developers to explicitly populate the recovery guardian in dev mode.
+ */
+export function getDevnetFunderPublicKey(): PublicKey | null {
+  try {
+    if (cachedFunder) return cachedFunder.publicKey
+    const raw = process.env.EXPO_PUBLIC_HAPTIX_FUNDER_KEY?.trim()
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    const funder = Keypair.fromSecretKey(Uint8Array.from(parsed))
+    cachedFunder = funder
+    return funder.publicKey
+  } catch {
+    return null
+  }
+}
+
+

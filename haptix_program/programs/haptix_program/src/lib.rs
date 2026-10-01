@@ -26,6 +26,7 @@ pub mod haptix_program {
         spend_threshold_lamports: Option<u64>,
         guardian: Option<Pubkey>,
         recovery_timelock_seconds: Option<i64>,
+        cluster: Option<[u8; 8]>,
     ) -> Result<()> {
         instructions::initialize_wallet::initialize_wallet(
             ctx,
@@ -34,6 +35,7 @@ pub mod haptix_program {
             spend_threshold_lamports,
             guardian,
             recovery_timelock_seconds,
+            cluster,
         )
     }
 

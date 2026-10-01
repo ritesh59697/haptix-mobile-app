@@ -29,7 +29,10 @@ pub fn grant_agent_session(
     require!(!ctx.accounts.wallet.is_frozen, HaptixError::WalletFrozen);
 
     let nonce = ctx.accounts.wallet.auth_nonce;
+    let cluster_tag = ctx.accounts.wallet.cluster_tag();
     let expected_message = grant_agent_message(
+        &ctx.accounts.wallet.key(),
+        &cluster_tag,
         nonce,
         &agent_pubkey,
         allowance_lamports,

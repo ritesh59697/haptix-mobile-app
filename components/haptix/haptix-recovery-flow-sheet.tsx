@@ -338,7 +338,7 @@ export function HaptixRecoveryFlowSheet({
     try {
       const walletPda = onChainWallet.pda
       const fresh = (await fetchHaptixWallet(connection, walletPda).catch(() => null)) ?? onChainWallet
-      const message = getCancelRecoverySignedMessage(fresh.authNonce)
+      const message = getCancelRecoverySignedMessage(walletPda, fresh.authNonce)
 
       // 1. Ensure local saved credentials for this wallet are bound
       const wallets = await loadWallets().catch(() => [])

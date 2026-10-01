@@ -21,6 +21,7 @@ import {
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import Clipboard from '@/utils/clipboard'
 import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { AppConfig } from '@/constants/app-config'
@@ -46,7 +47,7 @@ import {
 import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet, HAPTIX_PROGRAM_ID } from '@/utils/haptix-client'
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
-import { getFundedDevnetPayer } from '@/utils/haptix-funder'
+import { getFundedDevnetPayer, getDevnetFunderPublicKey } from '@/utils/haptix-funder'
 import { HaptixLogoText, TablerFingerprintIcon } from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -179,6 +180,135 @@ const darkPalette: OnboardingPalette = {
   shadow: 'rgba(0,0,0,0.8)',
 }
 
+interface BackupKeyDialogContentProps {
+  spendLimitSol: number | string
+  isDark: boolean
+  textPrimary: string
+  textSecondary: string
+}
+
+function BackupKeyDialogContent({ spendLimitSol, isDark, textPrimary, textSecondary }: BackupKeyDialogContentProps) {
+  const cardBorder = isDark ? '#2A2A28' : '#E5E5EA'
+  const cardBg = isDark ? '#141416' : '#F9F9FB'
+  const rowDivider = isDark ? '#201F1D' : '#ECECEE'
+  const mutedText = isDark ? '#8A8985' : textSecondary
+  const bodyText = isDark ? '#F2F1EE' : textPrimary
+
+  return (
+    <View style={{ gap: 10, marginTop: 4, marginBottom: 2 }}>
+      {/* Key Status Card */}
+      <View
+        style={{
+          borderWidth: 1,
+          borderColor: cardBorder,
+          backgroundColor: cardBg,
+          borderRadius: 14,
+          paddingHorizontal: 14,
+          paddingVertical: 2,
+        }}
+      >
+        {/* Row 1: Primary key added */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            paddingVertical: 11,
+            borderBottomWidth: 1,
+            borderBottomColor: rowDivider,
+          }}
+        >
+          <View
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: 10,
+              backgroundColor: 'rgba(95, 191, 122, 0.14)',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <MaterialIcons name="check" size={13} color="#5FBF7A" />
+          </View>
+          <Text style={{ fontSize: 13, fontWeight: '500', color: bodyText }}>
+            Primary key added
+          </Text>
+        </View>
+
+        {/* Row 2: Backup key */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            paddingVertical: 11,
+          }}
+        >
+          <View
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: 10,
+              borderWidth: 1.5,
+              borderColor: isDark ? '#3A3A37' : '#C7C7CC',
+            }}
+          />
+          <Text style={{ flex: 1, fontSize: 13, color: mutedText }}>Backup key</Text>
+          <Text style={{ fontSize: 12, color: mutedText }}>Not added yet</Text>
+        </View>
+      </View>
+
+      {/* Permissions Breakdown Card */}
+      <View
+        style={{
+          borderWidth: 1,
+          borderColor: cardBorder,
+          backgroundColor: cardBg,
+          borderRadius: 14,
+          paddingHorizontal: 14,
+          paddingVertical: 2,
+        }}
+      >
+        {/* Row 1: One key */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: 12,
+            paddingVertical: 11,
+            borderBottomWidth: 1,
+            borderBottomColor: rowDivider,
+          }}
+        >
+          <Text style={{ width: 68, fontSize: 13, color: mutedText, fontWeight: '500' }}>
+            One key
+          </Text>
+          <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
+            Send up to {spendLimitSol} SOL
+          </Text>
+        </View>
+
+        {/* Row 2: Both keys */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: 12,
+            paddingVertical: 11,
+          }}
+        >
+          <Text style={{ width: 68, fontSize: 13, color: mutedText, fontWeight: '500' }}>
+            Both keys
+          </Text>
+          <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
+            Larger sends, unlocking the wallet, and cancelling a recovery
+          </Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
 export default function SignIn() {
   const insets = useSafeAreaInsets()
   const { activeWallet, isLoading, updateWallet } = useAuth()
@@ -194,12 +324,8 @@ export default function SignIn() {
 
   /**
    * Async `confirm`, because the recovery flow has to branch on the answer.
-   *
-   * `onDismiss` settles the promise as well: a dialog dismissed with the Android back
-   * gesture calls neither button, and a promise that never settles would leave the sign-in
-   * button spinning forever.
    */
-  const confirmDialog = (title: string, message: string, confirmText: string) =>
+  const confirmBackupKeyDialog = (spendLimit: number | string) =>
     new Promise<boolean>((resolve) => {
       let settled = false
       const finish = (value: boolean) => {
@@ -208,13 +334,24 @@ export default function SignIn() {
         resolve(value)
       }
       dialog.alert(
-        title,
-        message,
+        'Add the backup key?',
+        undefined,
         [
-          { text: 'Not Now', style: 'cancel', onPress: () => finish(false) },
-          { text: confirmText, onPress: () => finish(true) },
+          { text: 'Add backup key', style: 'default', onPress: () => finish(true) },
+          { text: 'Not now', style: 'plain', onPress: () => finish(false) },
         ],
-        { onDismiss: () => finish(false) },
+        {
+          cancelable: true,
+          onDismiss: () => finish(false),
+          content: (
+            <BackupKeyDialogContent
+              spendLimitSol={spendLimit}
+              isDark={isDark}
+              textPrimary={p.ink}
+              textSecondary={p.inkSecondary}
+            />
+          ),
+        },
       )
     })
 
@@ -408,14 +545,17 @@ export default function SignIn() {
       const primaryName = primaryKeyName.trim() || 'Primary Passkey'
       const secondaryName = secondaryKeyName.trim() || 'Backup Key'
 
-      if (guardianInput.trim() && !guardianPublicKey) {
+      if (!guardianPublicKey) {
+        setShowAdvancedOptions(true)
         dialog.alert(
-          'Check the guardian address',
-          guardianParse.error || 'That is not a valid Solana address. Leave blank if you want to set it up later.',
+          'Recovery Guardian Required',
+          guardianInput.trim()
+            ? (guardianParse.error || 'Please enter a valid Solana address.')
+            : 'A recovery guardian is required to ensure this wallet can be recovered if this device is lost. Enter a trusted Solana address, or tap "Use Devnet Funder" for development testing.',
         )
         return
       }
-      const guardian = guardianPublicKey ?? undefined
+      const guardian = guardianPublicKey
       if (timelockParse.error) {
         dialog.alert('Check the recovery timelock', timelockParse.error)
         return
@@ -463,6 +603,17 @@ export default function SignIn() {
 
       const [walletPda] = getWalletPda(primary.publicKey)
 
+      if (guardian.equals(walletPda)) {
+        setShowAdvancedOptions(true)
+        dialog.alert(
+          'Invalid Recovery Guardian',
+          'A smart wallet cannot be its own recovery guardian. Please provide a separate Solana address.',
+        )
+        setIsCreating(false)
+        setCreationStep(0)
+        return
+      }
+
       const newAccount = await createSmartWalletRecord({
         name: finalName,
         primaryPasskeyHex: primary.publicKeyHex,
@@ -475,7 +626,7 @@ export default function SignIn() {
         secondaryCredentialId: credentialIdForRecord(secondary),
         primaryLabel: primary.label,
         secondaryLabel: secondary.label,
-        guardianAddress: guardian ? guardian.toBase58() : undefined,
+        guardianAddress: guardian.toBase58(),
         spendThreshold: 0.1,
         network: 'devnet',
         securityMode,
@@ -500,7 +651,7 @@ export default function SignIn() {
               walletPda,
               primaryPasskey,
               secondaryPasskey,
-              guardian: guardian ?? walletPda,
+              guardian: guardian,
               recoveryTimelockSeconds: timelockParse.seconds ?? undefined,
             })
             const dripIx = SystemProgram.transfer({
@@ -790,11 +941,7 @@ export default function SignIn() {
       // but only up to the spending limit. Said in those terms rather than as "needs both
       // keys for high-value transfers", which reads as a nice-to-have and got declined.
       const bound: { primary?: string; secondary?: string } = { primary: primaryAttempt.credentialId }
-      let wantsSecondKey = await confirmDialog(
-        'Add The Backup Key?',
-        `Primary key bound.\n\nYour wallet has a second, backup key. Without it you can still send up to ${spendLimitSol} SOL. Anything above that, unlocking the wallet, and cancelling a recovery all need both keys.\n\nAdd the backup key now?`,
-        'Select Backup Passkey',
-      )
+      let wantsSecondKey = await confirmBackupKeyDialog(spendLimitSol)
 
       while (wantsSecondKey && !bound.secondary) {
         const second = await bindOne('secondary')
@@ -1114,8 +1261,8 @@ export default function SignIn() {
                           securityMode === 'vault' && styles.modeCardActive,
                         ]}
                       >
-                        <MaterialIcons
-                          name="security"
+                        <MaterialCommunityIcons
+                          name="safe"
                           size={22}
                           color={securityMode === 'vault' ? p.heroInk : p.inkMuted}
                         />
@@ -1259,7 +1406,7 @@ export default function SignIn() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <MaterialIcons name="tune" size={18} color={p.heroInk} />
                       <Text style={styles.advancedOptionsToggleText}>
-                        {showAdvancedOptions ? 'Hide advanced settings' : 'Advanced settings (key names, guardian)'}
+                        {showAdvancedOptions ? 'Hide recovery guardian & advanced settings' : 'Recovery guardian & advanced settings'}
                       </Text>
                     </View>
                     <MaterialIcons
@@ -1296,7 +1443,31 @@ export default function SignIn() {
                       </View>
 
                       <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Recovery guardian (optional)</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <Text style={styles.inputLabel}>Recovery guardian (Required)</Text>
+                          {AppConfig.devMode && (
+                            <TouchableOpacity
+                              onPress={() => {
+                                const funderKey = getDevnetFunderPublicKey()
+                                if (funderKey) {
+                                  setGuardianInput(funderKey.toBase58())
+                                  Haptics.selectionAsync()
+                                }
+                              }}
+                              style={{
+                                paddingHorizontal: 8,
+                                paddingVertical: 2,
+                                borderRadius: 6,
+                                backgroundColor: isDark ? 'rgba(94, 129, 255, 0.15)' : 'rgba(94, 129, 255, 0.1)',
+                              }}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <Text style={{ fontSize: 11, fontWeight: '600', color: '#5E81FF' }}>
+                                Use Devnet Funder
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
                         <TextInput
                           style={[
                             styles.textInputField,
@@ -1304,19 +1475,19 @@ export default function SignIn() {
                           ]}
                           value={guardianInput}
                           onChangeText={setGuardianInput}
-                          placeholder="A Solana address you trust (optional)"
+                          placeholder="Trusted Solana address (e.g. Phantom/hardware)"
                           placeholderTextColor={p.inkMuted}
                           autoCorrect={false}
                           autoCapitalize="none"
                         />
-                        <Text style={[styles.inputHint, guardianInput.trim() && !guardianPublicKey && styles.inputHintError]}>
+                        <Text style={[styles.inputHint, (!guardianPublicKey || (guardianInput.trim() && !guardianPublicKey)) && styles.inputHintError]}>
                           {guardianInput.trim()
                             ? guardianPublicKey
                               ? `Only ${ellipsify(guardianPublicKey.toBase58(), 4)} can start a recovery, and a ` +
                                 `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
                                 'timelock means you can still veto it. It can never move funds.'
                               : guardianParse.error
-                            : 'Optional. Leave blank to set up your wallet immediately. You can add a trusted recovery address anytime in Settings.'}
+                            : 'Required. The guardian is the only external key that can initiate on-chain recovery if your passkeys are lost.'}
                         </Text>
                       </View>
                     </>

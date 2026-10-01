@@ -15,7 +15,7 @@
  * layouts are pinned because the program compares them byte-for-byte: a signature over
  * the wrong bytes is rejected on-chain after the user has already done the biometrics.
  */
-import { PublicKey } from '@solana/web3.js'
+import { Keypair, PublicKey } from '@solana/web3.js'
 import { createHash } from 'node:crypto'
 import {
   createSetGuardianInstruction,
@@ -99,22 +99,28 @@ equals(
   'accounts are the wallet plus the instructions sysvar - the quorum is proved by index, not by a signer',
 )
 
-// The address is inside the signed bytes, so a signature collected to appoint one
-// guardian cannot be replayed to appoint another.
-const message = getSetGuardianSignedMessage(newGuardian, 0n)
+// The wallet and address are inside the signed bytes, so a signature collected to appoint one
+// guardian cannot be replayed to appoint another or replayed on another wallet.
+const message = getSetGuardianSignedMessage(walletPda, newGuardian, 0n)
 equals(
   Buffer.from(message.subarray(0, 13)).toString('utf8'),
   'SET_GUARDIAN:',
   'message is prefixed so it cannot collide with another action',
 )
-equals(message.length, 53, 'message is the prefix, an 8-byte nonce, and the 32-byte address')
-equals(Buffer.from(message).readBigUInt64LE(13), 0n, 'the nonce sits immediately after the prefix')
+equals(message.length, 93, 'message is the prefix, 32-byte wallet, an 8-byte cluster, an 8-byte nonce, and the 32-byte address')
+equals(Buffer.from(message.subarray(13, 45)).equals(walletPda.toBuffer()), true, 'the wallet PDA sits immediately after the prefix')
+equals(Buffer.from(message.subarray(45, 53)).toString('utf8'), 'devnet\0\0', 'the cluster tag sits immediately after the wallet PDA')
+equals(Buffer.from(message).readBigUInt64LE(53), 0n, 'the nonce sits immediately after the cluster tag')
 assert(
-  !Buffer.from(message).equals(Buffer.from(getSetGuardianSignedMessage(walletPda, 0n))),
+  !Buffer.from(message).equals(Buffer.from(getSetGuardianSignedMessage(walletPda, Keypair.generate().publicKey, 0n))),
   'a signature for a different guardian produces different bytes',
 )
 assert(
-  !Buffer.from(message).equals(Buffer.from(getSetGuardianSignedMessage(newGuardian, 1n))),
+  !Buffer.from(message).equals(Buffer.from(getSetGuardianSignedMessage(Keypair.generate().publicKey, newGuardian, 0n))),
+  'a signature for a different wallet produces different bytes',
+)
+assert(
+  !Buffer.from(message).equals(Buffer.from(getSetGuardianSignedMessage(walletPda, newGuardian, 1n))),
   'a signature at a different nonce produces different bytes',
 )
 
@@ -175,16 +181,18 @@ equals(
   'u64::MAX survives the round trip',
 )
 
-const thresholdMessage = getSetSpendThresholdSignedMessage(250_000_000n, 7n)
+const thresholdMessage = getSetSpendThresholdSignedMessage(walletPda, 250_000_000n, 7n)
 equals(
   Buffer.from(thresholdMessage.subarray(0, 14)).toString('utf8'),
   'SET_THRESHOLD:',
   'threshold message carries its own prefix',
 )
-equals(thresholdMessage.length, 30, 'threshold message is the prefix, an 8-byte nonce, and a u64')
-equals(Buffer.from(thresholdMessage).readBigUInt64LE(14), 7n, 'the nonce is little-endian after the prefix')
+equals(thresholdMessage.length, 70, 'threshold message is the prefix, 32-byte wallet, an 8-byte cluster, an 8-byte nonce, and a u64')
+equals(Buffer.from(thresholdMessage.subarray(14, 46)).equals(walletPda.toBuffer()), true, 'wallet sits after prefix')
+equals(Buffer.from(thresholdMessage.subarray(46, 54)).toString('utf8'), 'devnet\0\0', 'the cluster tag sits after the wallet')
+equals(Buffer.from(thresholdMessage).readBigUInt64LE(54), 7n, 'the nonce is little-endian after the cluster tag')
 equals(
-  Buffer.from(thresholdMessage).readBigUInt64LE(22),
+  Buffer.from(thresholdMessage).readBigUInt64LE(62),
   250_000_000n,
   'the amount is little-endian after the nonce, as the program reads it',
 )

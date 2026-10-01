@@ -65,12 +65,55 @@ const TYPE_GET: &[u8] = b"webauthn.get";
 /// Length of the `SHA-256(clientDataJSON)` trailer inside the signed message region.
 pub const CLIENT_DATA_HASH_LEN: usize = 32;
 
+/// SHA-256 fingerprint of the EAS preview/release signing certificate for io.haptix.wallet.
+///
+/// Matches the entry published in `.well-known/assetlinks.json`:
+/// `63:FE:F2:23:9B:12:70:EC:37:81:E0:39:AB:7A:71:EA:8D:D0:CA:D5:F5:7B:F7:4F:6C:12:A4:CC:79:89:B7:D8`
+pub const HAPTIX_EAS_CERT_HASH: [u8; 32] = [
+    0x63, 0xfe, 0xf2, 0x23, 0x9b, 0x12, 0x70, 0xec,
+    0x37, 0x81, 0xe0, 0x39, 0xab, 0x7a, 0x71, 0xea,
+    0x8d, 0xd0, 0xca, 0xd5, 0xf5, 0x7b, 0xf7, 0x4f,
+    0x6c, 0x12, 0xa4, 0xcc, 0x79, 0x89, 0xb7, 0xd8,
+];
+
 fn invalid() -> anchor_lang::error::Error {
     error!(HaptixError::InvalidWebAuthnAssertion)
 }
 
-fn is_allowed_rp_id(auth_data_rp_hash: &[u8]) -> bool {
-    auth_data_rp_hash == &hash(RP_ID).to_bytes()[..] || auth_data_rp_hash == &hash(RP_ID_LOCAL).to_bytes()[..]
+/// Detects if an authorized message is designated for Solana Mainnet.
+///
+/// Every owner authorization payload begins with: `ACTION_TAG || wallet_pda(32) || cluster(8) || nonce(8)`.
+fn is_mainnet_message(message: &[u8]) -> bool {
+    let offset = if message.starts_with(b"TRANSFER:") {
+        9 + 32
+    } else if message.starts_with(b"GRANT_AGENT:") {
+        12 + 32
+    } else if message.starts_with(b"REVOKE_AGENT:") || message.starts_with(b"SET_GUARDIAN:") {
+        13 + 32
+    } else if message.starts_with(b"SET_THRESHOLD:") {
+        14 + 32
+    } else if message.starts_with(b"UNFREEZE_WALLET:") || message.starts_with(b"CANCEL_RECOVERY:") {
+        16 + 32
+    } else {
+        return false;
+    };
+
+    if message.len() >= offset + 8 {
+        &message[offset..offset + 8] == &crate::constants::CLUSTER_MAINNET
+    } else {
+        false
+    }
+}
+
+fn is_allowed_rp_id(auth_data_rp_hash: &[u8], is_mainnet: bool) -> bool {
+    if auth_data_rp_hash == &hash(RP_ID).to_bytes()[..] {
+        return true;
+    }
+    // Localhost RP ID is strictly forbidden on Mainnet.
+    if !is_mainnet && auth_data_rp_hash == &hash(RP_ID_LOCAL).to_bytes()[..] {
+        return true;
+    }
+    false
 }
 
 /// Validates a WebAuthn assertion whose `authenticatorData` and client data hash have
@@ -87,6 +130,8 @@ pub fn verify_assertion(
     client_data_hash: &[u8],
     expected_message: &[u8],
 ) -> Result<()> {
+    let is_mainnet = is_mainnet_message(expected_message);
+
     // 1. The hash trailer must actually commit to the client data JSON we were given.
     if client_data_hash.len() != CLIENT_DATA_HASH_LEN {
         return Err(invalid());
@@ -99,7 +144,7 @@ pub fn verify_assertion(
     if auth_data.len() < MIN_AUTH_DATA_LEN {
         return Err(invalid());
     }
-    if !is_allowed_rp_id(&auth_data[..32]) {
+    if !is_allowed_rp_id(&auth_data[..32], is_mainnet) {
         return Err(invalid());
     }
 
@@ -123,30 +168,55 @@ pub fn verify_assertion(
 
     // 6. Known origin for this relying party.
     let origin = json_find_string(client_data_json, b"origin").ok_or_else(invalid)?;
-    if !is_allowed_origin(origin) {
+    if !is_allowed_origin(origin, is_mainnet) {
         return Err(invalid());
     }
 
     Ok(())
 }
 
-/// Accepts the https origin (Apple), local dev origins (Mac Vault), or a well-formed Android app origin.
-fn is_allowed_origin(origin: &[u8]) -> bool {
+/// Accepts the https origin (Apple / Web Vault), local dev origins (Devnet only),
+/// or an authentic Android app origin.
+fn is_allowed_origin(origin: &[u8], is_mainnet: bool) -> bool {
+    // 1. Production Web & iOS origin (always allowed)
     if origin == IOS_ORIGIN {
         return true;
     }
-    if origin.starts_with(b"http://localhost") || origin.starts_with(b"http://127.0.0.1") {
-        return true;
+
+    // 2. Local dev origins (Mac Touch ID vault during local development).
+    // STRICTLY FORBIDDEN ON MAINNET.
+    // On Devnet, only accept designated localhost port origins (e.g. Expo dev server :8081).
+    if !is_mainnet {
+        if origin == b"http://localhost:8081"
+            || origin == b"http://127.0.0.1:8081"
+            || (origin.starts_with(b"http://localhost:") && origin.len() <= 22)
+            || (origin.starts_with(b"http://127.0.0.1:") && origin.len() <= 22)
+        {
+            return true;
+        }
     }
+
+    // 3. Android origin: `android:apk-key-hash:<base64url(sha256(cert))>`
     let Some(suffix) = origin.strip_prefix(ANDROID_ORIGIN_PREFIX) else {
         return false;
     };
     match base64url_decode(suffix) {
-        // A signing certificate SHA-256, nothing else.
-        Ok(bytes) => bytes.len() == 32,
+        Ok(bytes) => {
+            if bytes.len() != 32 {
+                return false;
+            }
+            if is_mainnet {
+                // On Mainnet, require the authentic Haptix EAS release/preview signing certificate
+                bytes == HAPTIX_EAS_CERT_HASH
+            } else {
+                // On Devnet, accept local debug keystores as well
+                true
+            }
+        }
         Err(_) => false,
     }
 }
+
 
 // ---------------------------------------------------------------------------
 // Minimal JSON string lookup
@@ -464,4 +534,92 @@ mod tests {
         assert_eq!(base64url_decode(b"AAE").unwrap(), vec![0x00, 0x01]);
         assert_eq!(base64url_decode(b"AAE=").unwrap(), vec![0x00, 0x01]);
     }
+
+    #[test]
+    fn rejects_localhost_origin_and_rp_on_mainnet() {
+        // Construct a Mainnet transfer message: TRANSFER: || wallet(32) || cluster(8) || nonce(8) ...
+        let wallet = Pubkey::new_unique();
+        let cluster = crate::constants::CLUSTER_MAINNET;
+        let mut msg = Vec::new();
+        msg.extend_from_slice(b"TRANSFER:");
+        msg.extend_from_slice(wallet.as_ref());
+        msg.extend_from_slice(&cluster);
+        msg.extend_from_slice(&1u64.to_le_bytes());
+        msg.extend_from_slice(Pubkey::new_unique().as_ref());
+        msg.extend_from_slice(&100_000u64.to_le_bytes());
+
+        // 1. Localhost origin on Mainnet is rejected
+        let ad_main = auth_data(RP_ID, FLAG_USER_PRESENT | FLAG_USER_VERIFIED);
+        let cdj_local = client_data(&b64url(&msg), "webauthn.get", "http://localhost:8081");
+        let h_local = hash(&cdj_local).to_bytes().to_vec();
+        assert!(verify_assertion(&ad_main, &cdj_local, &h_local, &msg).is_err());
+
+        // 2. Localhost RP ID on Mainnet is rejected
+        let ad_local = auth_data(RP_ID_LOCAL, FLAG_USER_PRESENT | FLAG_USER_VERIFIED);
+        let cdj_prod = client_data(&b64url(&msg), "webauthn.get", "https://haptix-passkeys.vercel.app");
+        let h_prod = hash(&cdj_prod).to_bytes().to_vec();
+        assert!(verify_assertion(&ad_local, &cdj_prod, &h_prod, &msg).is_err());
+
+        // 3. Valid Mainnet assertion with production RP ID and origin succeeds
+        assert!(verify_assertion(&ad_main, &cdj_prod, &h_prod, &msg).is_ok());
+    }
+
+    #[test]
+    fn accepts_localhost_origin_and_rp_on_devnet() {
+        // Construct a Devnet transfer message
+        let wallet = Pubkey::new_unique();
+        let cluster = crate::constants::CLUSTER_DEVNET;
+        let mut msg = Vec::new();
+        msg.extend_from_slice(b"TRANSFER:");
+        msg.extend_from_slice(wallet.as_ref());
+        msg.extend_from_slice(&cluster);
+        msg.extend_from_slice(&1u64.to_le_bytes());
+        msg.extend_from_slice(Pubkey::new_unique().as_ref());
+        msg.extend_from_slice(&100_000u64.to_le_bytes());
+
+        let ad_local = auth_data(RP_ID_LOCAL, FLAG_USER_PRESENT | FLAG_USER_VERIFIED);
+        let cdj_local = client_data(&b64url(&msg), "webauthn.get", "http://localhost:8081");
+        let h_local = hash(&cdj_local).to_bytes().to_vec();
+        assert!(verify_assertion(&ad_local, &cdj_local, &h_local, &msg).is_ok());
+
+        // Also accepts 127.0.0.1:8081
+        let cdj_ip = client_data(&b64url(&msg), "webauthn.get", "http://127.0.0.1:8081");
+        let h_ip = hash(&cdj_ip).to_bytes().to_vec();
+        assert!(verify_assertion(&ad_local, &cdj_ip, &h_ip, &msg).is_ok());
+
+        // But rejects localhost evil subdomain bypass
+        let cdj_evil = client_data(&b64url(&msg), "webauthn.get", "http://localhost.evil.com:8081");
+        let h_evil = hash(&cdj_evil).to_bytes().to_vec();
+        assert!(verify_assertion(&ad_local, &cdj_evil, &h_evil, &msg).is_err());
+    }
+
+    #[test]
+    fn enforces_android_eas_certificate_pinning_on_mainnet() {
+        let wallet = Pubkey::new_unique();
+        let cluster = crate::constants::CLUSTER_MAINNET;
+        let mut msg = Vec::new();
+        msg.extend_from_slice(b"TRANSFER:");
+        msg.extend_from_slice(wallet.as_ref());
+        msg.extend_from_slice(&cluster);
+        msg.extend_from_slice(&1u64.to_le_bytes());
+        msg.extend_from_slice(Pubkey::new_unique().as_ref());
+        msg.extend_from_slice(&100_000u64.to_le_bytes());
+
+        let ad_main = auth_data(RP_ID, FLAG_USER_PRESENT | FLAG_USER_VERIFIED);
+
+        // 1. Rogue 32-byte certificate on Mainnet is rejected
+        let rogue_hash = b64url(&[0xEEu8; 32]);
+        let rogue_origin = format!("android:apk-key-hash:{rogue_hash}");
+        let cdj_rogue = client_data(&b64url(&msg), "webauthn.get", &rogue_origin);
+        let h_rogue = hash(&cdj_rogue).to_bytes().to_vec();
+        assert!(verify_assertion(&ad_main, &cdj_rogue, &h_rogue, &msg).is_err());
+
+        // 2. Legitimate Haptix EAS signing certificate on Mainnet is accepted
+        let eas_hash = b64url(&HAPTIX_EAS_CERT_HASH);
+        let eas_origin = format!("android:apk-key-hash:{eas_hash}");
+        let cdj_eas = client_data(&b64url(&msg), "webauthn.get", &eas_origin);
+        let h_eas = hash(&cdj_eas).to_bytes().to_vec();
+        assert!(verify_assertion(&ad_main, &cdj_eas, &h_eas, &msg).is_ok());
+    }
 }
+

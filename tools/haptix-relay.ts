@@ -132,6 +132,6 @@ const server = http.createServer((req, res) => {
 })
 
 const PORT = 8082
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`[Haptix Relay] Listening on http://0.0.0.0:${PORT} for Mac-Phone Quorum`)
+server.listen(PORT, '127.0.0.1', () => {
+  console.log(`[Haptix Relay] Listening securely on http://127.0.0.1:${PORT} for Mac-Phone Quorum (Loopback Only)`)
 })
