@@ -42,6 +42,13 @@ export function parseTimelockInput(raw: string): TimelockParseResult {
   const multiplier = match[2] ? UNIT_SECONDS[match[2]] : 1n
   const seconds = amount * multiplier
 
+  if (seconds <= 0n) {
+    return {
+      seconds: null,
+      error: 'A zero delay removes your dispute window, making the guardian an instant spender without owner veto. Default is 24 hours.',
+    }
+  }
+
   if (seconds > MAX_TIMELOCK_SECONDS) {
     return { seconds: null, error: 'That is longer than 30 days, which would make a lost device unrecoverable.' }
   }

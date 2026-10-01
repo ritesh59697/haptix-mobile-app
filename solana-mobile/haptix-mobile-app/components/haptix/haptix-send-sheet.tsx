@@ -59,6 +59,7 @@ import {
   createExecuteTransferInstruction,
   createInitializeWalletInstruction,
   assertRecoveryGuardian,
+  clusterTagFromNetwork,
   fetchHaptixWallet,
   getTransferSignedMessage,
   parseGuardianAddress,
@@ -514,7 +515,13 @@ export function HaptixSendSheet({
         }
       }
 
-      const message = getTransferSignedMessage(walletPda, toPubkey, amountLamports, authNonce)
+      const message = getTransferSignedMessage(
+        walletPda,
+        toPubkey,
+        amountLamports,
+        authNonce,
+        clusterTagFromNetwork(onChain?.cluster ?? network),
+      )
 
       // 1. Primary Passkey authorization (Biometric challenge)
       const primarySig = await signWithPasskey(

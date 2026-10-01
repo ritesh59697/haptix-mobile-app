@@ -471,6 +471,13 @@ export default function RecoverySettingsScreen() {
       dialog.alert('Check the guardian address', parsed.error ?? 'Enter the address that should guard this wallet.')
       return
     }
+    if (isDevnetFunder(parsed.address)) {
+      dialog.alert(
+        'Independent Guardian Required',
+        'The recovery guardian cannot be a key held by this app or the devnet funder. Please enter an independent external address (e.g. Phantom, Solflare, or a hardware wallet).',
+      )
+      return
+    }
     setShowConfirmModal(true)
   }
 
@@ -774,7 +781,53 @@ export default function RecoverySettingsScreen() {
               </Text>
             </View>
 
-            {/* 2. Recovery Flow Card (Promoted to Top during emergency) */}
+            {/* 2. Proposed Pending Replacement Keys Card */}
+            {onChainWallet && (
+              <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: isDark ? 'rgba(217, 154, 43, 0.35)' : '#FDE68A', marginBottom: 16 }]}>
+                <View style={styles.cardHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <MaterialIcons name="vpn-key" size={18} color={isDark ? '#D99A2B' : '#D97706'} />
+                    <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Proposed replacement keys</Text>
+                  </View>
+                  <View style={[styles.tag, { backgroundColor: isDark ? 'rgba(217, 154, 43, 0.15)' : '#FEF3C7', borderColor: isDark ? 'rgba(217, 154, 43, 0.4)' : '#FDE68A' }]}>
+                    <Text style={[styles.tagText, { color: isDark ? '#D99A2B' : '#D97706', fontWeight: '600' }]}>Pending</Text>
+                  </View>
+                </View>
+
+                <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 12, lineHeight: 18 }}>
+                  The guardian proposed these new public keys to replace your current passkeys. If not vetoed before the timelock expires, these keys will gain full control of this wallet:
+                </Text>
+
+                <View style={{ backgroundColor: isDark ? '#161619' : '#F5F5F7', borderColor: isDark ? '#26262C' : theme.borderDefault, borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 }}>
+                  <View>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textMuted, textTransform: 'uppercase', marginBottom: 2 }}>
+                      Candidate Primary Passkey
+                    </Text>
+                    <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 12, color: theme.textPrimary }} numberOfLines={1} ellipsizeMode="middle">
+                      {onChainWallet.pendingPrimaryPasskey && onChainWallet.pendingPrimaryPasskey.some((b) => b !== 0)
+                        ? Buffer.from(onChainWallet.pendingPrimaryPasskey).toString('hex')
+                        : 'None set'}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textMuted, textTransform: 'uppercase', marginBottom: 2 }}>
+                      Candidate Backup Passkey
+                    </Text>
+                    <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 12, color: theme.textPrimary }} numberOfLines={1} ellipsizeMode="middle">
+                      {onChainWallet.pendingSecondaryPasskey && onChainWallet.pendingSecondaryPasskey.some((b) => b !== 0)
+                        ? Buffer.from(onChainWallet.pendingSecondaryPasskey).toString('hex')
+                        : 'None set'}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 10, lineHeight: 17 }}>
+                  If you still control your passkeys, tap <Text style={{ fontWeight: '600', color: theme.textPrimary }}>Veto and keep my keys</Text> below to immediately cancel this rotation and unfreeze your wallet.
+                </Text>
+              </View>
+            )}
+
+            {/* 3. Recovery Flow Card (Promoted to Top during emergency) */}
             <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
               <View style={styles.cardHeader}>
                 <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Recovery flow</Text>
