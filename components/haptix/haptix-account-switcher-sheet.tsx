@@ -869,7 +869,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                   ]}
                   value={guardianAddress}
                   onChangeText={setGuardianAddress}
-                  placeholder="Trusted external address (e.g. Phantom/hardware)"
+                  placeholder="Trusted Solana address (e.g. Phantom)"
                   placeholderTextColor={theme.textMuted}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -878,8 +878,8 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                 />
                 <Text style={[styles.fieldHint, { color: isDevnetFunder(guardianAddress.trim()) ? theme.rose : theme.textMuted, marginTop: 4 }]}>
                   {isDevnetFunder(guardianAddress.trim())
-                    ? 'Cannot use the devnet funder. The guardian must be an external key you control outside this app.'
-                    : 'Required. The recovery guardian is the only external key that can initiate on-chain recovery if your passkeys are lost.'}
+                    ? 'Cannot use the devnet funder. Guardian must be an external key.'
+                    : 'Can rescue your wallet if passkeys are lost. Cannot move funds.'}
                 </Text>
                 {guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim()) && (
                   <Text style={[styles.fieldError, { color: theme.roseText }]}>

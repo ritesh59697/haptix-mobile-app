@@ -1425,21 +1425,24 @@ export default function SignIn() {
                       ]}
                       value={guardianInput}
                       onChangeText={setGuardianInput}
-                      placeholder="Trusted external address (e.g. Phantom/hardware)"
+                      placeholder="Trusted Solana address (e.g. Phantom)"
                       placeholderTextColor={p.inkMuted}
                       autoCorrect={false}
                       autoCapitalize="none"
                     />
-                    <Text style={[styles.inputHint, (!guardianPublicKey || isDevnetFunder(guardianPublicKey) || (guardianInput.trim() && !guardianPublicKey)) && styles.inputHintError]}>
+                    <Text
+                      style={[
+                        styles.inputHint,
+                        guardianInput.trim() && (!guardianPublicKey || isDevnetFunder(guardianPublicKey)) ? styles.inputHintError : null,
+                      ]}
+                    >
                       {guardianInput.trim()
                         ? guardianPublicKey
                           ? isDevnetFunder(guardianPublicKey)
-                            ? 'Cannot use the devnet funder. The guardian must be an external key you control outside this app.'
-                            : `Only ${ellipsify(guardianPublicKey.toBase58(), 4)} can start a recovery, and a ` +
-                              `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
-                              'timelock means you can still veto it. It can never move funds.'
-                          : guardianParse.error
-                        : 'Required. Enter an external trusted Solana address (e.g. Phantom, Solflare, or a hardware wallet). This key can initiate on-chain recovery if your passkeys are lost.'}
+                            ? 'Cannot use the devnet funder. Guardian must be an external key.'
+                            : `Can rescue wallet after 1d timelock. Cannot move funds.`
+                          : (guardianParse.error ?? 'Invalid Solana address.')
+                        : 'Can rescue your wallet if passkeys are lost. Cannot move funds.'}
                     </Text>
                   </View>
 
@@ -2102,7 +2105,9 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       borderColor: p.border,
       borderRadius: 12,
       paddingHorizontal: 16,
-      paddingVertical: 14,
+      paddingVertical: 12,
+      minHeight: 48,
+      includeFontPadding: false,
     },
     modalStepRow: {
       flexDirection: 'row',
