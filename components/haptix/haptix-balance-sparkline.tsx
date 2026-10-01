@@ -14,18 +14,8 @@ import Svg, { Path, Defs, LinearGradient, Stop, Circle } from 'react-native-svg'
 
 type SparklineData = number[]
 
-// Smooth realistic 24-point market trend curves (gentle organic swings)
-const FALLBACK_POSITIVE_PRICES: SparklineData = [
-  152.0, 152.4, 152.1, 153.0, 153.6, 153.2, 154.1, 154.8,
-  154.3, 155.5, 155.1, 156.2, 156.8, 156.4, 157.6, 158.2,
-  157.8, 158.9, 159.5, 159.1, 160.2, 160.9, 161.4, 162.0,
-]
+// No hardcoded curves: only live market prices or neutral baseline
 
-const FALLBACK_NEGATIVE_PRICES: SparklineData = [
-  162.0, 161.5, 161.8, 160.9, 160.2, 160.6, 159.5, 158.9,
-  159.3, 158.2, 157.6, 158.0, 156.9, 156.2, 156.7, 155.4,
-  154.8, 155.2, 154.1, 153.4, 153.8, 152.6, 151.8, 151.2,
-]
 
 const COINGECKO_URL =
   'https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=7'
@@ -108,20 +98,14 @@ export function HaptixBalanceSparkline({
   isPositive,
   isDark,
 }: Props) {
-  const initialData = isPositive ? FALLBACK_POSITIVE_PRICES : FALLBACK_NEGATIVE_PRICES
-  const [prices, setPrices] = useState<SparklineData>(initialData)
-
-  // Update fallback when trend flips
-  useEffect(() => {
-    setPrices(isPositive ? FALLBACK_POSITIVE_PRICES : FALLBACK_NEGATIVE_PRICES)
-  }, [isPositive])
+  const [prices, setPrices] = useState<SparklineData>([])
 
   const load = useCallback(async () => {
     try {
       const live = await fetchHourlySolPrices()
       setPrices(live)
     } catch {
-      // Keep direction-aware fallback
+      // Live feed unavailable; maintain clean flat baseline without invented movements
     }
   }, [])
 
@@ -135,7 +119,15 @@ export function HaptixBalanceSparkline({
 
   const W = width
   const H = height
-  const pts = useMemo(() => pricesToPoints(prices, W, H), [prices, W, H])
+  const pts = useMemo(() => {
+    if (prices.length < 2) {
+      return [
+        { x: 4, y: H / 2 },
+        { x: W - 4, y: H / 2 },
+      ]
+    }
+    return pricesToPoints(prices, W, H)
+  }, [prices, W, H])
   const linePath = useMemo(() => buildSmoothPath(pts), [pts])
   const areaPath = useMemo(() => buildAreaPath(pts, H), [pts, H])
   const lastPt = pts.length > 0 ? pts[pts.length - 1] : null

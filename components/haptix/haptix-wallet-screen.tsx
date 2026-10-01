@@ -1478,14 +1478,16 @@ export function HaptixWalletScreen() {
   const totalUsdBalance = balance * solPriceUsd
 
   // 24h portfolio gain/loss computation
-  const solChangePct = solToken?.changePct ?? 0.84
+  const solChangePct = solToken?.changePct ?? 0
   const solDollarChange = balance * solPriceUsd * (solChangePct / 100)
   const totalDollarChange = solDollarChange
-  const totalChangePct = totalUsdBalance > 0 ? (totalDollarChange / totalUsdBalance) * 100 : 0.60
-  const isPositivePortfolio = totalDollarChange >= 0
+  const totalChangePct = totalUsdBalance > 0 ? (totalDollarChange / totalUsdBalance) * 100 : 0
+  const isPositivePortfolio = totalDollarChange > 0
   const formattedDollarChange = Math.abs(totalDollarChange).toFixed(2)
   const formattedPctChange = Math.abs(totalChangePct).toFixed(2)
-  const portfolioChangeText = `${isPositivePortfolio ? '+' : '-'}$${formattedDollarChange} (${isPositivePortfolio ? '+' : '-'}${formattedPctChange}%) today`
+  const portfolioChangeText = totalUsdBalance === 0
+    ? '$0.00 (0.00%) today'
+    : `${totalDollarChange >= 0 ? '+' : '-'}$${formattedDollarChange} (${totalDollarChange >= 0 ? '+' : '-'}${formattedPctChange}%) today`
 
   const activeAgentSessions = useMemo(
     () => agentSessions.filter((session) => Number(session.validUntil) > nowSeconds),
@@ -1567,15 +1569,15 @@ export function HaptixWalletScreen() {
                     fontWeight: '600',
                   }}
                 >
-                  {isPositivePortfolio ? '+' : '-'}${formattedDollarChange} ({isPositivePortfolio ? '+' : '-'}{formattedPctChange}%) today
+                  {portfolioChangeText}
                 </Text>
               </View>
             </>
           )}
         </View>
 
-        {/* SPARKLINE CHART */}
-        {!isBalanceHidden && (
+        {/* SPARKLINE CHART (Rendered when portfolio has positive balance) */}
+        {!isBalanceHidden && totalUsdBalance > 0 && (
           <View style={{ marginTop: 8, marginHorizontal: -24 }}>
             <HaptixBalanceSparkline
               width={screenWidth - 32}
@@ -1677,8 +1679,8 @@ export function HaptixWalletScreen() {
               name: 'Solana',
               price: `$${solPriceUsd.toFixed(2)}`,
               priceUsd: solPriceUsd,
-              change: '+0.84%',
-              changePct: 0.84,
+              change: '0.00%',
+              changePct: 0,
               isPositive: true,
             }
             setSelectedDetailToken(solMarket)
@@ -1711,7 +1713,7 @@ export function HaptixWalletScreen() {
                   fontWeight: '600',
                 }}
               >
-                {solToken?.change ?? '+0.65%'}
+                {solToken?.change ?? '0.00%'}
               </Text>
             </View>
           </View>
@@ -1734,29 +1736,29 @@ export function HaptixWalletScreen() {
 
       <View style={[styles.activityList]}>
         {transactions.length === 0 ? (
-          <TouchableOpacity
-            style={styles.activityRow}
-            activeOpacity={0.7}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-            }}
-          >
-            <View style={styles.activityLeft}>
-              <View
-                style={[
-                  styles.activityIconCircle,
-                  { backgroundColor: theme.bgElevated, borderColor: theme.borderDefault, borderRadius: 12 },
-                ]}
-              >
-                <MaterialIcons name="security" size={18} color={theme.textPrimary} />
-              </View>
-              <View>
-                <Text style={[styles.activityItemTitle, styles.textPrimary]}>On-chain setup</Text>
-                <Text style={styles.activityItemDate}>2:17 pm</Text>
-              </View>
+          <View style={{ paddingVertical: 24, alignItems: 'center', justifyContent: 'center' }}>
+            <View
+              style={[
+                styles.activityIconCircle,
+                {
+                  backgroundColor: theme.bgElevated,
+                  borderColor: theme.borderDefault,
+                  borderRadius: 20,
+                  width: 40,
+                  height: 40,
+                  marginBottom: 10,
+                },
+              ]}
+            >
+              <MaterialIcons name="receipt-long" size={20} color={theme.textMuted} />
             </View>
-            <Text style={[styles.activityAmount, styles.textMuted]}>—</Text>
-          </TouchableOpacity>
+            <Text style={[styles.activityItemTitle, styles.textPrimary, { marginBottom: 4, fontWeight: '600' }]}>
+              No transactions yet
+            </Text>
+            <Text style={{ color: theme.textMuted, fontSize: 13, textAlign: 'center' }}>
+              Your on-chain transfers and passkey actions will appear here
+            </Text>
+          </View>
         ) : (
           transactions.slice(0, 3).map((tx, idx) => {
             const received = tx.direction === 'receive'
@@ -1826,10 +1828,13 @@ export function HaptixWalletScreen() {
     <>
       {/* 1. SPENDING LIMITS (Clean side-by-side metric cards matching Image 1) */}
       <View style={{ marginBottom: 14 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <Text style={[styles.spendingLimitsLabel, styles.textSecondary, { marginBottom: 0 }]}>Spending limits</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <Text style={[styles.spendingLimitsLabel, styles.textSecondary, { marginBottom: 0 }]}>Wallet spending guardrails</Text>
           <PolicyLinkButton onPress={() => setPolicyTopic('agents')} />
         </View>
+        <Text style={{ color: theme.textMuted, fontSize: 12, marginBottom: 8 }}>
+          Amounts above your 1-key limit require 2-of-2 hardware passkey quorum.
+        </Text>
         <View style={styles.spendingLimitsRow}>
           <View style={[styles.spendingLimitCard, styles.card]}>
             <Text style={[styles.spendingLimitTitle, styles.textSecondary]}>One key</Text>
@@ -1940,7 +1945,7 @@ export function HaptixWalletScreen() {
                       : { color: theme.textSecondary, fontWeight: '600' },
                   ]}
                 >
-                  {val}
+                  {val} SOL
                 </Text>
               </TouchableOpacity>
             )

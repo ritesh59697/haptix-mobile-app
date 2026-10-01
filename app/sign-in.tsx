@@ -1394,6 +1394,56 @@ export default function SignIn() {
                     />
                   </View>
 
+                  {/* Recovery Guardian (Visibly required on-chain) */}
+                  <View style={styles.inputGroup}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <Text style={styles.inputLabel}>Recovery guardian (Required)</Text>
+                      {AppConfig.devMode && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            const funderKey = getDevnetFunderPublicKey()
+                            if (funderKey) {
+                              setGuardianInput(funderKey.toBase58())
+                              Haptics.selectionAsync()
+                            }
+                          }}
+                          style={{
+                            paddingHorizontal: 8,
+                            paddingVertical: 2,
+                            borderRadius: 6,
+                            backgroundColor: isDark ? 'rgba(94, 129, 255, 0.15)' : 'rgba(94, 129, 255, 0.1)',
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Text style={{ fontSize: 11, fontWeight: '600', color: '#5E81FF' }}>
+                            Use Devnet Funder
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <TextInput
+                      style={[
+                        styles.textInputField,
+                        guardianInput.trim() && !guardianPublicKey ? styles.textInputFieldInvalid : null,
+                      ]}
+                      value={guardianInput}
+                      onChangeText={setGuardianInput}
+                      placeholder="Trusted Solana address (e.g. Phantom/hardware)"
+                      placeholderTextColor={p.inkMuted}
+                      autoCorrect={false}
+                      autoCapitalize="none"
+                    />
+                    <Text style={[styles.inputHint, (!guardianPublicKey || (guardianInput.trim() && !guardianPublicKey)) && styles.inputHintError]}>
+                      {guardianInput.trim()
+                        ? guardianPublicKey
+                          ? `Only ${ellipsify(guardianPublicKey.toBase58(), 4)} can start a recovery, and a ` +
+                            `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
+                            'timelock means you can still veto it. It can never move funds.'
+                          : guardianParse.error
+                        : 'Required. The guardian is the only external key that can initiate on-chain recovery if your passkeys are lost.'}
+                    </Text>
+                  </View>
+
                   {/* Advanced Options Toggle */}
                   <TouchableOpacity
                     style={styles.advancedOptionsToggle}
@@ -1406,7 +1456,7 @@ export default function SignIn() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <MaterialIcons name="tune" size={18} color={p.heroInk} />
                       <Text style={styles.advancedOptionsToggleText}>
-                        {showAdvancedOptions ? 'Hide recovery guardian & advanced settings' : 'Recovery guardian & advanced settings'}
+                        {showAdvancedOptions ? 'Hide passkey labels' : 'Advanced passkey labels'}
                       </Text>
                     </View>
                     <MaterialIcons
@@ -1440,55 +1490,6 @@ export default function SignIn() {
                           placeholderTextColor={p.inkMuted}
                           autoCorrect={false}
                         />
-                      </View>
-
-                      <View style={styles.inputGroup}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                          <Text style={styles.inputLabel}>Recovery guardian (Required)</Text>
-                          {AppConfig.devMode && (
-                            <TouchableOpacity
-                              onPress={() => {
-                                const funderKey = getDevnetFunderPublicKey()
-                                if (funderKey) {
-                                  setGuardianInput(funderKey.toBase58())
-                                  Haptics.selectionAsync()
-                                }
-                              }}
-                              style={{
-                                paddingHorizontal: 8,
-                                paddingVertical: 2,
-                                borderRadius: 6,
-                                backgroundColor: isDark ? 'rgba(94, 129, 255, 0.15)' : 'rgba(94, 129, 255, 0.1)',
-                              }}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              <Text style={{ fontSize: 11, fontWeight: '600', color: '#5E81FF' }}>
-                                Use Devnet Funder
-                              </Text>
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                        <TextInput
-                          style={[
-                            styles.textInputField,
-                            guardianInput.trim() && !guardianPublicKey ? styles.textInputFieldInvalid : null,
-                          ]}
-                          value={guardianInput}
-                          onChangeText={setGuardianInput}
-                          placeholder="Trusted Solana address (e.g. Phantom/hardware)"
-                          placeholderTextColor={p.inkMuted}
-                          autoCorrect={false}
-                          autoCapitalize="none"
-                        />
-                        <Text style={[styles.inputHint, (!guardianPublicKey || (guardianInput.trim() && !guardianPublicKey)) && styles.inputHintError]}>
-                          {guardianInput.trim()
-                            ? guardianPublicKey
-                              ? `Only ${ellipsify(guardianPublicKey.toBase58(), 4)} can start a recovery, and a ` +
-                                `${describeTimelock(timelockParse.seconds ?? DEFAULT_RECOVERY_TIMELOCK_SECONDS)} ` +
-                                'timelock means you can still veto it. It can never move funds.'
-                              : guardianParse.error
-                            : 'Required. The guardian is the only external key that can initiate on-chain recovery if your passkeys are lost.'}
-                        </Text>
                       </View>
                     </>
                   )}

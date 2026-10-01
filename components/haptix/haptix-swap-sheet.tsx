@@ -565,6 +565,27 @@ export function HaptixSwapSheet({
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            {!SWAP_ENABLED && (
+              <View
+                style={{
+                  backgroundColor: isDark ? 'rgba(108, 140, 255, 0.08)' : 'rgba(79, 107, 255, 0.08)',
+                  borderColor: isDark ? 'rgba(108, 140, 255, 0.22)' : 'rgba(79, 107, 255, 0.18)',
+                  borderWidth: 1,
+                  borderRadius: radius.md,
+                  padding: 12,
+                  marginBottom: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+                <MaterialIcons name="info-outline" size={18} color={theme.accent} />
+                <Text style={{ flex: 1, fontSize: 12, color: theme.textSecondary, lineHeight: 17 }}>
+                  Devnet Preview: AMM exchange liquidity is not available on Solana Devnet. Jupiter DEX routing will activate in Mainnet release.
+                </Text>
+              </View>
+            )}
+
             {/* YOU PAY CARD */}
             <View style={styles.tradeCard}>
               <View style={styles.cardTopRow}>
@@ -730,14 +751,16 @@ export function HaptixSwapSheet({
             <View style={{ marginTop: 18 }}>
               <PrismDepthButton
                 title={
-                  payAmountNum <= 0
+                  !SWAP_ENABLED
+                    ? 'Swap Unavailable on Devnet'
+                    : payAmountNum <= 0
                     ? 'Enter an amount'
                     : isSwapping
                     ? 'Swapping'
                     : `Swap ${paySymbol} for ${receiveSymbol}`
                 }
                 size="large"
-                disabled={payAmountNum <= 0 || isSwapping}
+                disabled={!SWAP_ENABLED || payAmountNum <= 0 || isSwapping}
                 loading={isSwapping}
                 onPress={handleInitiateSwap}
               />

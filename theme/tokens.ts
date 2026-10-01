@@ -55,8 +55,8 @@ export const darkTokens: ThemeTokens = {
   borderDefault: '#222226', // Razor-sharp 1px border (like ViperX #1c1c1e / #222226)
   borderFocus: '#6C8CFF',
   textPrimary: '#FFFFFF', // Crisp pure white
-  textSecondary: '#8E8E93', // Clean Apple/ViperX muted gray
-  textMuted: '#636366',
+  textSecondary: '#A1A1AA', // High-contrast clean neutral (Zinc 400, 8:1 on black)
+  textMuted: '#8E8E93', // WCAG AA accessible muted gray (5.4:1 on black)
   accent: '#6C8CFF', // Cohesive royal blue / purple accent
   accentLight: 'rgba(108, 140, 255, 0.12)',
   accentGlow: 'rgba(108, 140, 255, 0.25)',
@@ -101,8 +101,8 @@ export const lightTokens: ThemeTokens = {
   borderDefault: '#E5E5EA',
   borderFocus: '#4F6BFF',
   textPrimary: '#09090B',
-  textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
+  textSecondary: '#4B5563', // WCAG AA accessible (7:1 on white)
+  textMuted: '#6B7280', // WCAG AA accessible (4.8:1 on white)
   accent: '#4F6BFF', // Vibrant Royal Blue Accent matching mockup (#4F6BFF)
   accentLight: 'rgba(79, 107, 255, 0.12)',
   accentGlow: 'rgba(79, 107, 255, 0.25)',
