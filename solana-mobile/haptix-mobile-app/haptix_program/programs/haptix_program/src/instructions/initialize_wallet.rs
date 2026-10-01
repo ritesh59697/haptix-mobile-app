@@ -43,11 +43,10 @@ pub fn initialize_wallet(
         HaptixError::InvalidClusterTag
     );
 
-    // The timelock is the owner's veto window, so a negative value would mean a guardian
-    // could rotate the keys before the owner ever sees the prompt. Zero is allowed but
-    // deliberately explicit: it is an opt-out of the veto, not a shortcut.
+    // The timelock is the owner's veto window. Negative and zero values are rejected
+    // on-chain: an instant (0s) recovery would eliminate the owner's veto window.
     if let Some(seconds) = recovery_timelock_seconds {
-        require!(seconds >= 0, HaptixError::InvalidRecoveryTimelock);
+        require!(seconds > 0, HaptixError::InvalidRecoveryTimelock);
     }
 
     let wallet = &mut ctx.accounts.wallet;

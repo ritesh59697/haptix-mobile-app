@@ -1598,8 +1598,8 @@ export async function authenticatePasskey(reason: string = 'Authenticate to rest
 // Signing
 // ---------------------------------------------------------------------------
 
-import { verifyWysiwysPayload } from './haptix-wysiwys'
-export { verifyWysiwysPayload }
+import { verifyWysiwysPayload, WysiwysVerificationOptions } from './haptix-wysiwys'
+export { verifyWysiwysPayload, WysiwysVerificationOptions }
 
 /**
  * Signs a payload with the requested passkey, after a biometric check.
@@ -1613,9 +1613,10 @@ export async function signWithPasskey(
   passkeyId: 'primary' | 'secondary',
   message: Uint8Array,
   promptReason: string = 'Authorize on-chain transaction',
+  wysiwysOptions?: WysiwysVerificationOptions,
 ): Promise<PasskeySignature> {
   // WYSIWYS verification: refuse to prompt biometrics or sign unknown payloads
-  verifyWysiwysPayload(message)
+  verifyWysiwysPayload(message, wysiwysOptions)
 
   const publicKeyHex = await AsyncStorage.getItem(pubkeyKey(passkeyId))
   if (!publicKeyHex) {
