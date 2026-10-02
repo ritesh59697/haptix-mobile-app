@@ -57,26 +57,120 @@
   body {
     margin: 0;
     background-color: var(--bg);
-    background-image: radial-gradient(circle at 50% 38%, var(--bg-radial) 0%, transparent 68%);
+    background-image: radial-gradient(circle at 50% 28%, var(--bg-radial) 0%, transparent 72%);
     background-repeat: no-repeat;
     background-attachment: fixed;
     color: var(--text-1);
-    min-height: 100%;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 32px 24px;
+    padding: 0;
     transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
+  }
+
+  /* ---------- Top Desktop Header ---------- */
+  .desktop-header {
+    width: 100%;
+    max-width: 980px;
+    padding: 24px 32px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand-badge {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.01em;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .relay-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-2);
+    font-weight: 500;
+  }
+
+  .relay-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+  }
+
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    border-radius: 10px;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease);
+  }
+
+  .nav-btn:hover {
+    background: var(--key-bg);
+    color: var(--text-1);
+    border-color: var(--border-strong);
+  }
+
+  .nav-btn svg {
+    color: var(--text-2);
+    flex-shrink: 0;
+  }
+
+  .nav-btn:hover svg {
+    color: var(--text-1);
   }
 
   .stage {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    justify-content: center;
+    flex: 1;
     width: 100%;
-    max-width: 480px;
+    max-width: 980px;
+    padding: 12px 32px 48px;
+    box-sizing: border-box;
   }
 
   /* ---------- Main Card ---------- */
@@ -86,16 +180,36 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow);
-    padding: 32px 30px 28px;
+    padding: 36px 38px 34px;
     position: relative;
     transition: background 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
   }
 
-  .card-top {
+  .idle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.08fr;
+    gap: 36px;
+    align-items: start;
+  }
+
+  .idle-col-identity {
     display: flex;
+    flex-direction: column;
+    gap: 16px;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  .idle-col-activity {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  #stateRequest, #stateApproved {
+    max-width: 520px;
+    width: 100%;
+    margin: 0 auto;
   }
 
   .brand {
@@ -844,132 +958,157 @@
     transform: translate(1px, -1px);
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: 768px) {
+    .desktop-header { padding: 16px 20px 8px; flex-wrap: wrap; gap: 10px; }
+    .stage { padding: 8px 16px 32px; }
     .card { padding: 24px 20px; }
+    .idle-grid { grid-template-columns: 1fr; gap: 24px; }
+    .relay-status-pill { display: none; }
+  }
+
+  @media (max-width: 480px) {
     .hero-amount { font-size: 32px; }
-    .spec-row { grid-template-columns: 1fr; gap: 8px; }
-    .spec-item:not(:first-child) { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 8px; }
   }
 </style>
 </head>
 <body>
 
+<header class="desktop-header">
+  <div class="header-left">
+    <div class="brand">
+      <img src="/haptix-logo-white.png" alt="Haptix" class="mark-img" onerror="this.style.display='none'; document.getElementById('fallbackMark').style.display='block';">
+      <svg id="fallbackMark" class="mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <rect x="2" y="2" width="28" height="28" rx="9" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M11 15.5V12a5 5 0 0 1 10 0v3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <rect x="9.5" y="15.5" width="13" height="9" rx="2.4" stroke="currentColor" stroke-width="1.6"/>
+      </svg>
+      <div class="brand-text">
+        <div class="brand-meta">
+          <h1>Haptix Vault</h1>
+          <span class="brand-badge">Mac Co-Signer</span>
+        </div>
+        <p>Hardware-isolated 2-of-2 Quorum</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="relay-status-pill" id="relayStatusPill">
+      <span class="relay-dot"></span>
+      <span class="relay-text">Relay Connected</span>
+    </div>
+    <button class="nav-btn" id="howItWorksBtn" type="button">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5" stroke-linecap="round"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/></svg>
+      <span>How this works</span>
+    </button>
+    <button class="icon-btn" id="themeToggle" aria-label="Toggle color theme" type="button" title="Toggle Light / Dark theme">
+      <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4.2"/>
+        <path d="M12 2.5v2.3M12 19.2v2.3M4.4 4.4l1.6 1.6M18 18l1.6 1.6M2.5 12h2.3M19.2 12h2.3M4.4 19.6l1.6-1.6M18 6l1.6-1.6"/>
+      </svg>
+      <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
 <div class="stage">
   <main class="card">
-    <div class="card-top">
-      <div class="brand">
-        <img src="/haptix-logo-white.png" alt="Haptix" class="mark-img" onerror="this.style.display='none'; document.getElementById('fallbackMark').style.display='block';">
-        <svg id="fallbackMark" class="mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
-          <rect x="2" y="2" width="28" height="28" rx="9" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M11 15.5V12a5 5 0 0 1 10 0v3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          <rect x="9.5" y="15.5" width="13" height="9" rx="2.4" stroke="currentColor" stroke-width="1.6"/>
-        </svg>
-        <div class="brand-text">
-          <h1>Haptix Vault</h1>
-          <p>Mac Secure Enclave</p>
-        </div>
-      </div>
-      <button class="icon-btn" id="themeToggle" aria-label="Toggle color theme" type="button" title="Toggle Light / Dark theme">
-        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
-          <circle cx="12" cy="12" r="4.2"/>
-          <path d="M12 2.5v2.3M12 19.2v2.3M4.4 4.4l1.6 1.6M18 18l1.6 1.6M2.5 12h2.3M19.2 12h2.3M4.4 19.6l1.6-1.6M18 6l1.6-1.6"/>
-        </svg>
-        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-          <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>
-        </svg>
-      </button>
-    </div>
-
     <div class="state-view">
 
       <!-- STATE A: Idle (Default) -->
       <section class="state" id="stateIdle" aria-label="Ready">
-        <!-- Visual Hardware Anchor with Mac Display Icon -->
-        <div class="hardware-anchor">
-          <div class="hardware-icon-box">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2"/>
-              <line x1="8" y1="21" x2="16" y2="21"/>
-              <line x1="12" y1="17" x2="12" y2="21"/>
-            </svg>
-          </div>
-          <h2 class="hardware-title">Apple Secure Enclave</h2>
-          <p class="hardware-subtitle">Hardware-isolated passkey for secondary transaction quorum</p>
-        </div>
-
-        <div class="listen-row">
-          <span class="pulse-dot" aria-hidden="true"></span>
-          <span>Listening for requests from your phone</span>
-        </div>
-
-        <!-- Active Wallet & Limit Policy Card -->
-        <div class="info-card">
-          <div class="info-row">
-            <span class="info-label">Wallet</span>
-            <span class="info-val" id="idleWalletName">Hardware Vault 2</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">Approves</span>
-            <span class="info-val" id="idleApprovesText">Transfers above 0.10 SOL</span>
-          </div>
-        </div>
-
-        <div id="enrolledKeySection">
-          <p class="field-label">Co-signer public key</p>
-          <div class="key-row">
-            <span class="key-value" id="pubkeyText">02...</span>
-            <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
-              <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
-                <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-              <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 12.5l5 5 11-11"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- If no key enrolled yet -->
-        <div id="unEnrolledSection" class="enroll-wrap" style="display:none;">
-          <p>This Mac has not enrolled a Secure Enclave passkey yet.</p>
-          <button class="auth-btn" id="enrollBtn" type="button">
-            <svg class="biometric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
-              <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
-              <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
-              <path d="M2 12a10 10 0 0 1 18-6"/>
-              <path d="M2 16h.01"/>
-              <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
-              <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
-              <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
-              <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
-            </svg>
-            <span id="enrollBtnText">Enroll Mac Touch ID</span>
-          </button>
-        </div>
-
-        <!-- Hardware Signing History Section -->
-        <div id="vaultHistorySection" class="history-card" style="display:none;">
-          <div class="history-head">
-            <div class="history-title-wrap">
-              <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
-              <span class="history-title">Touch ID Approvals</span>
-              <span class="history-count" id="historyCountBadge">0</span>
+        <div class="idle-grid">
+          <!-- Left Column: Device & Key Identity -->
+          <div class="idle-col-identity">
+            <div class="hardware-anchor">
+              <div class="hardware-icon-box">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/>
+                  <line x1="8" y1="21" x2="16" y2="21"/>
+                  <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+              </div>
+              <h2 class="hardware-title">Apple Secure Enclave</h2>
+              <p class="hardware-subtitle">Hardware-isolated passkey for secondary transaction quorum</p>
             </div>
-            <button class="clear-history-btn" id="clearHistoryBtn" type="button" title="Clear approval log">Clear</button>
-          </div>
-          <div class="history-list" id="historyList"></div>
-        </div>
 
-        <div class="helper-row">
-          <button class="link-btn" id="howItWorksBtn" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5" stroke-linecap="round"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/></svg>
-            How this works
-          </button>
+            <div class="listen-row" style="margin-top: -4px;">
+              <span class="pulse-dot" aria-hidden="true"></span>
+              <span>Listening for requests from your phone</span>
+            </div>
+
+            <div id="enrolledKeySection" style="width: 100%; text-align: left;">
+              <p class="field-label">Co-signer public key</p>
+              <div class="key-row">
+                <span class="key-value" id="pubkeyText">02...</span>
+                <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
+                  <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
+                    <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12.5l5 5 11-11"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- If no key enrolled yet -->
+            <div id="unEnrolledSection" class="enroll-wrap" style="display:none; width: 100%;">
+              <p>This Mac has not enrolled a Secure Enclave passkey yet.</p>
+              <button class="auth-btn" id="enrollBtn" type="button">
+                <svg class="biometric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                  <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                  <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+                  <path d="M2 12a10 10 0 0 1 18-6"/>
+                  <path d="M2 16h.01"/>
+                  <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                  <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
+                  <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+                  <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+                </svg>
+                <span id="enrollBtnText">Enroll Mac Touch ID</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column: Vault Policy & Activity -->
+          <div class="idle-col-activity">
+            <!-- Active Wallet & Limit Policy Card -->
+            <div class="info-card">
+              <div class="info-row">
+                <span class="info-label">Wallet</span>
+                <span class="info-val" id="idleWalletName">Hardware Vault 2</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Approves</span>
+                <span class="info-val" id="idleApprovesText">Transfers above 0.10 SOL</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Network</span>
+                <span class="info-val">Solana devnet</span>
+              </div>
+            </div>
+
+            <!-- Hardware Signing History Section -->
+            <div id="vaultHistorySection" class="history-card" style="display:none; margin-top: 0;">
+              <div class="history-head">
+                <div class="history-title-wrap">
+                  <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span class="history-title">Touch ID Approvals</span>
+                  <span class="history-count" id="historyCountBadge">0</span>
+                </div>
+                <button class="clear-history-btn" id="clearHistoryBtn" type="button" title="Clear approval log">Clear</button>
+              </div>
+              <div class="history-list" id="historyList"></div>
+            </div>
+          </div>
         </div>
       </section>
 
