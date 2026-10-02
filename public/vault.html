@@ -176,38 +176,80 @@
   /* ---------- Main Card ---------- */
   .card {
     width: 100%;
+    max-width: 980px;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow);
-    padding: 36px 38px 34px;
+    padding: 32px 34px;
     position: relative;
-    transition: background 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+    transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  }
+
+  .card.card-compact {
+    max-width: 520px;
+    padding: 30px 28px 28px;
   }
 
   .idle-grid {
     display: grid;
-    grid-template-columns: 1fr 1.08fr;
-    gap: 36px;
-    align-items: start;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: stretch;
   }
 
   .idle-col-identity {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    align-items: center;
+    justify-content: space-between;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 22px 18px;
     text-align: center;
+    align-items: center;
+    gap: 14px;
+    box-sizing: border-box;
+  }
+
+  .identity-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .hardware-specs-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    width: 100%;
+  }
+
+  .spec-pill {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-3);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 7px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
   }
 
   .idle-col-activity {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
+    justify-content: flex-start;
   }
 
   #stateRequest, #stateApproved {
-    max-width: 520px;
     width: 100%;
     margin: 0 auto;
   }
@@ -980,8 +1022,61 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    max-height: 200px;
+    max-height: 220px;
     overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .history-list::-webkit-scrollbar {
+    width: 4px;
+  }
+  .history-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .history-list::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 4px;
+  }
+
+  .history-empty {
+    padding: 24px 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+
+  .history-empty-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--card-inner);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-3);
+    margin-bottom: 2px;
+  }
+
+  .history-empty-icon svg { width: 16px; height: 16px; }
+
+  .history-empty-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    margin: 0;
+  }
+
+  .history-empty-desc {
+    font-size: 11.5px;
+    color: var(--text-3);
+    margin: 0;
+    line-height: 1.42;
+    max-width: 270px;
   }
 
   .history-item {
@@ -1129,56 +1224,65 @@
         <div class="idle-grid">
           <!-- Left Column: Device & Key Identity -->
           <div class="idle-col-identity">
-            <div class="hardware-anchor">
-              <div class="hardware-icon-box">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="2" y="3" width="20" height="14" rx="2"/>
-                  <line x1="8" y1="21" x2="16" y2="21"/>
-                  <line x1="12" y1="17" x2="12" y2="21"/>
-                </svg>
+            <div class="identity-body">
+              <div class="hardware-anchor">
+                <div class="hardware-icon-box">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
+                </div>
+                <h2 class="hardware-title">Apple Secure Enclave</h2>
+                <p class="hardware-subtitle">Hardware-isolated passkey for secondary transaction quorum</p>
               </div>
-              <h2 class="hardware-title">Apple Secure Enclave</h2>
-              <p class="hardware-subtitle">Hardware-isolated passkey for secondary transaction quorum</p>
-            </div>
 
-            <div class="listen-row" style="margin-top: -4px;">
-              <span class="pulse-dot" aria-hidden="true"></span>
-              <span>Listening for requests from your phone</span>
-            </div>
+              <div class="listen-row" style="margin-top: -4px;">
+                <span class="pulse-dot" aria-hidden="true"></span>
+                <span>Listening for requests from your phone</span>
+              </div>
 
-            <div id="enrolledKeySection" style="width: 100%; text-align: left;">
-              <p class="field-label">Co-signer public key</p>
-              <div class="key-row">
-                <span class="key-value" id="pubkeyText">02...</span>
-                <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
-                  <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
-                    <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              <div id="enrolledKeySection" style="width: 100%; text-align: left;">
+                <p class="field-label">Co-signer public key</p>
+                <div class="key-row">
+                  <span class="key-value" id="pubkeyText">02...</span>
+                  <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
+                    <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
+                      <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 12.5l5 5 11-11"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- If no key enrolled yet -->
+              <div id="unEnrolledSection" class="enroll-wrap" style="display:none; width: 100%;">
+                <p>This Mac has not enrolled a Secure Enclave passkey yet.</p>
+                <button class="auth-btn" id="enrollBtn" type="button">
+                  <svg class="biometric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                    <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+                    <path d="M2 12a10 10 0 0 1 18-6"/>
+                    <path d="M2 16h.01"/>
+                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                    <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
+                    <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+                    <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
                   </svg>
-                  <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 12.5l5 5 11-11"/>
-                  </svg>
+                  <span id="enrollBtnText">Enroll Mac Touch ID</span>
                 </button>
               </div>
             </div>
 
-            <!-- If no key enrolled yet -->
-            <div id="unEnrolledSection" class="enroll-wrap" style="display:none; width: 100%;">
-              <p>This Mac has not enrolled a Secure Enclave passkey yet.</p>
-              <button class="auth-btn" id="enrollBtn" type="button">
-                <svg class="biometric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
-                  <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
-                  <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
-                  <path d="M2 12a10 10 0 0 1 18-6"/>
-                  <path d="M2 16h.01"/>
-                  <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
-                  <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
-                  <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
-                  <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
-                </svg>
-                <span id="enrollBtnText">Enroll Mac Touch ID</span>
-              </button>
+            <!-- Hardware Telemetry Specs Strip -->
+            <div class="hardware-specs-strip">
+              <span class="spec-pill">NIST P-256</span>
+              <span class="spec-pill">Apple Silicon / T2</span>
+              <span class="spec-pill">Solana Precompile</span>
             </div>
           </div>
 
@@ -1201,7 +1305,7 @@
             </div>
 
             <!-- Hardware Signing History Section -->
-            <div id="vaultHistorySection" class="history-card" style="display:none; margin-top: 0;">
+            <div id="vaultHistorySection" class="history-card" style="margin-top: 0;">
               <div class="history-head">
                 <div class="history-title-wrap">
                   <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -1515,6 +1619,14 @@
   }
 
   function showState(el) {
+    var card = document.querySelector('.card');
+    if (card) {
+      if (el === stateRequest || el === stateApproved) {
+        card.classList.add('card-compact');
+      } else {
+        card.classList.remove('card-compact');
+      }
+    }
     [stateIdle, stateRequest, stateApproved].forEach(function (s) {
       s.hidden = (s !== el);
       s.classList.remove('state-enter');
@@ -1900,10 +2012,17 @@
 
   function formatTwoLineAddress(addr) {
     if (!addr) return '--';
-    if (addr.length >= 35) {
-      return addr.slice(0, 18) + '…<br>…' + addr.slice(-17);
+    if (addr.length >= 24) {
+      return addr.slice(0, 10) + '...' + addr.slice(-8);
     }
     return addr;
+  }
+
+  function formatFee(fee) {
+    if (!fee) return '0.000005 SOL';
+    var s = String(fee).trim();
+    if (/sol$/i.test(s)) return s;
+    return s + ' SOL';
   }
 
   function displayPendingRequest(tx) {
@@ -1973,7 +2092,7 @@
     }
     reqWallet.title = walletStr;
     reqNetwork.textContent = 'Solana devnet';
-    if (reqFee) reqFee.textContent = tx.feeSol ? (tx.feeSol + ' SOL') : (validation.fee || '0.000005 SOL');
+    if (reqFee) reqFee.textContent = formatFee(tx.feeSol || validation.fee);
     if (reqAuthMethod) reqAuthMethod.textContent = validation.auth || '2 passkeys';
     errorBox.style.display = 'none';
     showState(stateRequest);
@@ -2105,7 +2224,7 @@
         if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
         authBtnLabel.textContent = 'Authorize with Touch ID';
         if (approvedAmount) approvedAmount.textContent = '0.1137 SOL';
-        if (approvedTarget) approvedTarget.textContent = 'to F2KbEr68..VVrLgK';
+        if (approvedTarget) approvedTarget.textContent = 'to F2KbEr68...VVrLgK';
         showState(stateApproved);
         showToast('Authorized with Touch ID');
         recordSignatureHistory({
@@ -2191,7 +2310,7 @@
       if (approvedAmount) approvedAmount.textContent = (currentPending.amountSol ? currentPending.amountSol + ' SOL' : 'Transfer Approved');
       if (approvedTarget) {
         var recip = currentPending.recipient || '';
-        approvedTarget.textContent = recip ? ('to ' + (recip.length > 16 ? recip.slice(0, 8) + '..' + recip.slice(-6) : recip)) : '';
+        approvedTarget.textContent = recip ? ('to ' + (recip.length > 16 ? recip.slice(0, 8) + '...' + recip.slice(-6) : recip)) : '';
       }
       showState(stateApproved);
       showToast('Authorized in Secure Enclave');
@@ -2247,11 +2366,20 @@
   function renderHistory() {
     if (!vaultHistorySection || !historyList) return;
     var items = getSignatureHistory();
+    vaultHistorySection.style.display = 'block';
     if (!items || items.length === 0) {
-      vaultHistorySection.style.display = 'none';
+      if (historyCountBadge) historyCountBadge.textContent = '0';
+      historyList.innerHTML = '<div class="history-empty">' +
+        '<div class="history-empty-icon">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+            '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' +
+          '</svg>' +
+        '</div>' +
+        '<p class="history-empty-title">Awaiting Out-of-Band Sign Requests</p>' +
+        '<p class="history-empty-desc">When your phone sends over 0.10 SOL, the Touch ID request and Solana verification record will appear here.</p>' +
+      '</div>';
       return;
     }
-    vaultHistorySection.style.display = 'block';
     if (historyCountBadge) historyCountBadge.textContent = items.length;
     historyList.innerHTML = items.map(function (item) {
       var date = new Date(item.timestamp);
