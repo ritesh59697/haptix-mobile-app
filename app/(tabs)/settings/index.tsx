@@ -24,6 +24,7 @@ import { useCluster } from '@/components/cluster/cluster-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { HaptixAccountSwitcherSheet } from '@/components/haptix/haptix-account-switcher-sheet'
+import { HaptixNetworkModal } from '@/components/haptix/haptix-network-modal'
 import { HaptixPolicySheet, PolicyTopic } from '@/components/haptix/haptix-policy-sheet'
 import { HaptixTokenIcon } from '@/components/haptix/haptix-icons'
 import { useConfirmRemoveWallet } from '@/components/haptix/haptix-remove-wallet'
@@ -62,6 +63,7 @@ export default function TabSettingsScreen() {
 
   const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
   const [isAccountSwitcherOpen, setIsAccountSwitcherOpen] = useState(false)
+  const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false)
   const [hasCopied, setHasCopied] = useState(false)
   const [isRequestingFaucet, setIsRequestingFaucet] = useState(false)
   const [isBindingBackup, setIsBindingBackup] = useState(false)
@@ -106,17 +108,7 @@ export default function TabSettingsScreen() {
 
   const handleSelectCluster = () => {
     Haptics.selectionAsync()
-    dialog.alert(
-      'Solana Network',
-      'Select a cluster to connect to:',
-      clusters.map((c) => ({
-        text: c.name + (c.name === selectedCluster.name ? ' (Active)' : ''),
-        onPress: () => {
-          setSelectedCluster(c)
-          Haptics.selectionAsync()
-        },
-      })),
-    )
+    setIsNetworkModalOpen(true)
   }
 
   const handleRequestFaucet = async () => {
@@ -618,6 +610,16 @@ export default function TabSettingsScreen() {
       <HaptixAccountSwitcherSheet
         visible={isAccountSwitcherOpen}
         onClose={() => setIsAccountSwitcherOpen(false)}
+      />
+
+      <HaptixNetworkModal
+        visible={isNetworkModalOpen}
+        onClose={() => setIsNetworkModalOpen(false)}
+        clusters={clusters}
+        selectedCluster={selectedCluster}
+        onSelectCluster={(c) => {
+          setSelectedCluster(c)
+        }}
       />
     </View>
   )
