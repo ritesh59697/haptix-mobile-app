@@ -1,5 +1,9 @@
 import http from 'http'
+import fs from 'fs'
+import path from 'path'
 import { exec } from 'child_process'
+
+const VAULT_HTML_PATH = path.join(__dirname, '../public/vault.html')
 
 interface PendingTx {
   id: string
@@ -30,6 +34,19 @@ const server = http.createServer((req, res) => {
   }
 
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
+
+  // Serve vault.html directly if requested
+  if ((req.method === 'GET' || req.method === 'HEAD') && (url.pathname === '/' || url.pathname === '/vault.html' || url.pathname === '/vault')) {
+    if (fs.existsSync(VAULT_HTML_PATH)) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      if (req.method === 'HEAD') {
+        res.end()
+      } else {
+        res.end(fs.readFileSync(VAULT_HTML_PATH, 'utf-8'))
+      }
+      return
+    }
+  }
 
   if (req.method === 'GET' && url.pathname === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -132,6 +149,29 @@ const server = http.createServer((req, res) => {
 })
 
 const PORT = 8082
-server.listen(PORT, '127.0.0.1', () => {
-  console.log(`[Haptix Relay] Listening securely on http://127.0.0.1:${PORT} for Mac-Phone Quorum (Loopback Only)`)
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`[Haptix Relay] Listening on http://localhost:${PORT}/vault.html and on local network.`)
+})
+
+// Also serve vault.html on port 8081 if free, ensuring origin 'http://localhost:8081' matches on-chain Devnet policy
+const staticServer8081 = http.createServer((req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
+  if (url.pathname === '/' || url.pathname === '/vault.html' || url.pathname === '/vault') {
+    if (fs.existsSync(VAULT_HTML_PATH)) {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+      res.end(fs.readFileSync(VAULT_HTML_PATH, 'utf-8'))
+      return
+    }
+  }
+  res.writeHead(404)
+  res.end('Not found')
+})
+
+staticServer8081.listen(8081, '0.0.0.0', () => {
+  console.log(`[Haptix Vault] Serving vault.html on http://localhost:8081/vault.html`)
+}).on('error', (err: any) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`[Haptix Vault] Port 8081 in use (e.g. Metro bundler). Relay active on :${PORT}.`)
+  }
 })

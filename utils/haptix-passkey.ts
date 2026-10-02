@@ -879,6 +879,12 @@ export async function registerWebAuthnPasskey(
     throw new Error('WebAuthn passkeys are not supported in this environment.')
   }
 
+  const roleName = id === 'primary' ? 'Primary' : 'Backup'
+  const roleDisplay = id === 'primary' ? 'Primary Key' : 'Backup Key'
+  const cleanWalletName = walletName.trim() || 'Haptix Wallet'
+  const passkeyUserName = `${cleanWalletName} (${roleName})`
+  const passkeyUserDisplayName = `${cleanWalletName} • ${roleDisplay}`
+
   const challenge = crypto.getRandomValues(new Uint8Array(32))
   const userId = crypto.getRandomValues(new Uint8Array(16))
 
@@ -889,8 +895,8 @@ export async function registerWebAuthnPasskey(
         rp: { name: 'Haptix Wallet', id: window.location.hostname || 'localhost' },
         user: {
           id: userId,
-          name: walletName,
-          displayName: walletName,
+          name: passkeyUserName,
+          displayName: passkeyUserDisplayName,
         },
         pubKeyCredParams: [{ type: 'public-key', alg: -7 }], // ES256 / P-256
         authenticatorSelection: {
@@ -1038,13 +1044,22 @@ async function registerHardwarePasskey(
   }
   const { Passkey } = mod
 
+  const roleName = id === 'primary' ? 'Primary' : 'Backup'
+  const roleDisplay = id === 'primary' ? 'Primary Key' : 'Backup Key'
+  const cleanWalletName = walletName.trim() || 'Haptix Wallet'
+  // Make user.name and user.displayName unique per wallet & key role to prevent
+  // Google Password Manager / Android Credential Manager from colliding multiple keys
+  // under the identical username 'Haptix Wallet'.
+  const passkeyUserName = `${cleanWalletName} (${roleName})`
+  const passkeyUserDisplayName = `${cleanWalletName} • ${roleDisplay}`
+
   const request = {
     challenge: bytesToBase64Url(await secureRandomBytes(32)),
     rp: { id: PASSKEY_RP_ID, name: PASSKEY_RP_NAME },
     user: {
       id: bytesToBase64Url(await secureRandomBytes(16)),
-      name: walletName,
-      displayName: walletName,
+      name: passkeyUserName,
+      displayName: passkeyUserDisplayName,
     },
     // ES256 / P-256 is the only algorithm the on-chain Secp256r1 precompile accepts.
     pubKeyCredParams: [{ type: 'public-key' as const, alg: -7 }],
@@ -1164,18 +1179,29 @@ async function signHardwareAssertion(id: 'primary' | 'secondary', message: Uint8
     throw new Error(`No platform passkey is registered for the ${id} key on this device.`)
   }
 
+  const getRequest = {
+    challenge: bytesToBase64Url(message),
+    rpId: PASSKEY_RP_ID,
+    allowCredentials: [{ type: 'public-key' as const, id: credentialId }],
+    userVerification: 'required' as const,
+    timeout: 60_000,
+  }
+
   let assertion: import('react-native-passkey').PasskeyGetResult
   try {
-    assertion = await Passkey.getPlatformKey({
-      challenge: bytesToBase64Url(message),
-      rpId: PASSKEY_RP_ID,
-      allowCredentials: [{ type: 'public-key', id: credentialId }],
-      userVerification: 'required',
-      timeout: 60_000,
-    })
-  } catch (err) {
-    console.error(`[Haptix Passkey] Platform passkey assertion failed for ${id}:`, err)
-    throw new Error(describePasskeyError(err, 'get'))
+    assertion = await Passkey.getPlatformKey(getRequest)
+  } catch (platformErr: any) {
+    const errStr = String(platformErr?.message || platformErr)
+    if (errStr.includes('cancelled') || errStr.includes('canceled') || errStr.includes('UserCancel')) {
+      throw new Error(describePasskeyError(platformErr, 'get'))
+    }
+    try {
+      console.warn(`[Haptix Passkey] getPlatformKey failed for ${id}, trying Passkey.get fallback:`, platformErr)
+      assertion = await Passkey.get(getRequest)
+    } catch (fallbackErr) {
+      console.error(`[Haptix Passkey] Platform & fallback passkey assertion failed for ${id}:`, fallbackErr)
+      throw new Error(describePasskeyError(platformErr, 'get'))
+    }
   }
 
   const { signature, authenticatorData, clientDataJSON } = assertion.response
@@ -1508,16 +1534,26 @@ export async function authenticatePasskey(reason: string = 'Authenticate to rest
       throw new Error('No platform passkey is registered for this wallet on this device.')
     }
 
+    const getRequest = {
+      challenge: bytesToBase64Url(await secureRandomBytes(32)),
+      rpId: PASSKEY_RP_ID,
+      allowCredentials: [{ type: 'public-key' as const, id: credentialId }],
+      userVerification: 'required' as const,
+      timeout: 60_000,
+    }
+
     try {
-      await mod.Passkey.getPlatformKey({
-        challenge: bytesToBase64Url(await secureRandomBytes(32)),
-        rpId: PASSKEY_RP_ID,
-        allowCredentials: [{ type: 'public-key', id: credentialId }],
-        userVerification: 'required',
-        timeout: 60_000,
-      })
-    } catch (err) {
-      throw new Error(describePasskeyError(err, 'get'))
+      await mod.Passkey.getPlatformKey(getRequest)
+    } catch (platformErr: any) {
+      const errStr = String(platformErr?.message || platformErr)
+      if (errStr.includes('cancelled') || errStr.includes('canceled') || errStr.includes('UserCancel')) {
+        throw new Error(describePasskeyError(platformErr, 'get'))
+      }
+      try {
+        await mod.Passkey.get(getRequest)
+      } catch (fallbackErr) {
+        throw new Error(describePasskeyError(platformErr, 'get'))
+      }
     }
 
     return {
