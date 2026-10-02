@@ -81,7 +81,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
         },
         onPanResponderRelease: (_, gestureState) => {
           if (gestureState.dy > 100 || gestureState.vy > 0.8) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { })
             Animated.timing(panY, {
               toValue: 600,
               duration: 220,
@@ -120,7 +120,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
           if (cached !== null) {
             results[w.address] = cached
           }
-        } catch {}
+        } catch { }
       }
       if (mounted) setBalances(results)
     }
@@ -301,8 +301,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
       dialog.alert(
         'Account Created',
-        `"${finalName}" is now active in ${
-          selectedMode === 'vault' ? 'Vault (2-of-2 Hardware)' : 'Everyday'
+        `"${finalName}" is now active in ${selectedMode === 'vault' ? 'Vault (2-of-2 Hardware)' : 'Everyday'
         } mode.`,
         undefined,
         { status: 'success' },
@@ -988,9 +987,9 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                 <Text style={[styles.biometricNoticeText, { color: theme.textSecondary }]}>
                   {selectedMode === 'vault'
                     ? (vaultKeySource === 'mac'
-                        ? 'Key 1 is on this phone. Key 2 is on your Mac Touch ID and required for all sends (0 SOL limit). Survives a lost phone.'
-                        : 'Key 1 is on this phone. Key 2 is on your USB / NFC security key. Survives a lost phone.')
-                    : "Two keys held in this phone's chip. Both are required above your 0.1 SOL limit. If this phone is lost, both keys are lost and your Recovery Guardian is the only way back."}
+                      ? 'Key 1 is on this phone. Key 2 is on your Mac Touch ID and required for all sends (0 SOL limit). Survives a lost phone.'
+                      : 'Key 1 is on this phone. Key 2 is on your USB / NFC security key. Survives a lost phone.')
+                    : "Two keys held in this phone chip. Both are required above your 0.1 SOL limit. If this phone is lost, both keys are lost and your Recovery Guardian is the only way back."}
                 </Text>
               </View>
 
