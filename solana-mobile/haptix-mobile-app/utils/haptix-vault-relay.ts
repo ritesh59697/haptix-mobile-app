@@ -153,6 +153,7 @@ export async function pollVaultSignature(
     timeoutMs?: number
     pollIntervalMs?: number
     onTick?: (secondsRemaining: number) => void
+    isAborted?: () => boolean
   },
 ): Promise<VaultSignaturePayload | null> {
   const timeoutMs = options?.timeoutMs ?? 75000
@@ -163,6 +164,9 @@ export async function pollVaultSignature(
     const elapsed = Date.now() - startTime
     const secondsRemaining = Math.max(0, Math.round((timeoutMs - elapsed) / 1000))
     options?.onTick?.(secondsRemaining)
+    if (options?.isAborted?.()) {
+      throw new Error('Transfer cancelled.')
+    }
 
     try {
       const res = await fetchWithTimeout(
@@ -214,4 +218,24 @@ export function parseManualSignaturePayload(input: string): VaultSignaturePayloa
     }
   } catch {}
   return null
+}
+
+/**
+ * Cancels a pending transfer on the Mac Relay.
+ */
+export async function cancelVaultTransfer(relayHost: string, txId?: string): Promise<boolean> {
+  try {
+    const res = await fetchWithTimeout(
+      `http://${relayHost}:8082/cancel`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txId: txId || '' }),
+      },
+      3000,
+    )
+    return res.ok
+  } catch {
+    return false
+  }
 }

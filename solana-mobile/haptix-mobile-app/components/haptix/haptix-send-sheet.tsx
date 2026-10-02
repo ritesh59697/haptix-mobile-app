@@ -49,6 +49,7 @@ import {
   findActiveRelayHost,
   queueVaultTransfer,
   pollVaultSignature,
+  cancelVaultTransfer,
   parseManualSignaturePayload,
 } from '@/utils/haptix-vault-relay'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
@@ -197,6 +198,22 @@ export function HaptixSendSheet({
   } | null>(null)
   const [copiedSig, setCopiedSig] = useState(false)
   const [copiedRecipient, setCopiedRecipient] = useState(false)
+
+  const sendAbortRef = useRef(false)
+  const currentRelayTxRef = useRef<{ relayHost: string; txId: string } | null>(null)
+
+  const handleCancelSending = async () => {
+    sendAbortRef.current = true
+    if (currentRelayTxRef.current) {
+      const { relayHost, txId } = currentRelayTxRef.current
+      cancelVaultTransfer(relayHost, txId).catch(() => {})
+      currentRelayTxRef.current = null
+    }
+    setIsSending(false)
+    setSendStep('idle')
+    setSendErrorMsg('Transfer cancelled.')
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
+  }
 
   // Fluid pull-down gesture to dismiss bottom sheet
   const panY = useRef(new Animated.Value(0)).current
@@ -415,6 +432,8 @@ export function HaptixSendSheet({
   // Initiate send flow by validating inputs and triggering on-chain passkey transfer directly
   const handleInitiateSendFlow = async () => {
     setSendErrorMsg('')
+    sendAbortRef.current = false
+    currentRelayTxRef.current = null
     if (isFrozen) {
       dialog.alert(
         'Wallet Locked',
@@ -643,10 +662,12 @@ export function HaptixSendSheet({
                 recipient: toPubkey.toBase58(),
                 walletPda: walletPda.toBase58(),
               })
+              currentRelayTxRef.current = { relayHost, txId }
 
               const sigPayload = await pollVaultSignature(relayHost, txId, {
                 timeoutMs: 80000,
                 pollIntervalMs: 800,
+                isAborted: () => sendAbortRef.current,
               })
 
               if (sigPayload && activeWallet?.secondaryPasskeyHex) {
@@ -658,11 +679,20 @@ export function HaptixSendSheet({
                 }
               }
             } catch (relayErr: any) {
+              if (relayErr?.message?.includes('cancelled')) {
+                throw relayErr
+              }
               if (relayErr?.message?.includes('declined')) {
                 throw new Error('Transfer was declined on Mac Touch ID.')
               }
               console.warn('[Haptix Send] Vault relay connection failed:', relayErr)
+            } finally {
+              currentRelayTxRef.current = null
             }
+          }
+
+          if (sendAbortRef.current) {
+            throw new Error('Transfer cancelled.')
           }
 
           if (!macSig) {
@@ -778,6 +808,12 @@ export function HaptixSendSheet({
         networkFee: `${effectiveFeeSol} SOL`,
       })
     } catch (err: any) {
+      if (err?.message?.includes('cancelled') || sendAbortRef.current) {
+        setIsSending(false)
+        setSendStep('idle')
+        setSendErrorMsg('Transfer cancelled.')
+        return
+      }
       console.error('[Haptix Send] Execution error:', formatChainErrorForLog(err))
       const errorText = describeChainError(err, 'The transfer could not be completed on-chain. Please try again.')
       setSendErrorMsg(errorText)
@@ -1049,7 +1085,9 @@ export function HaptixSendSheet({
                     Send {selectedToken === 'SKR' ? 'Seeker' : selectedToken === 'USDC' ? 'USD Coin' : 'Solana'}
                   </Text>
                   <Text style={styles.cleanModalSubtitle}>
-                    Instant on-chain transfer via passkey
+                    {isSendQuorumRequired
+                      ? 'Approve on this phone and on your Mac'
+                      : 'Instant on-chain transfer via passkey'}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -1067,7 +1105,7 @@ export function HaptixSendSheet({
                 style={{ flex: 1 }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ paddingBottom: 16 }}
+                contentContainerStyle={{ paddingBottom: 150 }}
               >
             {/* HERO AMOUNT INPUT SECTION */}
             <View style={styles.cleanSendCard}>
@@ -1568,75 +1606,154 @@ export function HaptixSendSheet({
 
               {/* ACTION BUTTON & HELPER - PINNED STICKY AT BOTTOM */}
               <View style={[styles.stickyFooter, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-                {isSending && sendStep === 'secondary' && wallet?.securityMode === 'vault' && (
-                  <View style={styles.vaultPromptCallout}>
-                    <View style={styles.vaultPromptIconCircle}>
-                      <MaterialIcons name="laptop-mac" size={17} color="#10B981" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.vaultPromptTitle}>Step 2 of 2: Hardware Quorum</Text>
-                      <Text style={styles.vaultPromptSubtitle}>
-                        Touch ID prompt sent to your Mac. Open vault.html to approve.
-                      </Text>
-                    </View>
-                    <View style={styles.vaultPromptPulse}>
-                      <View style={styles.vaultPromptPulseDot} />
-                    </View>
-                  </View>
-                )}
+                {isSending ? (
+                  <View style={styles.stepApprovalCard}>
+                    {/* Step 1: This phone */}
+                    <View style={styles.stepApprovalRow}>
+                      <View style={styles.stepApprovalLeft}>
+                        <MaterialIcons
+                          name="smartphone"
+                          size={18}
+                          color={theme.isDark ? '#F2F1EE' : '#18181B'}
+                        />
+                        <Text style={styles.stepApprovalDeviceName}>This phone</Text>
+                      </View>
 
-                <TouchableOpacity
-                  style={[
-                    styles.cleanSubmitBtn,
-                    (isSending || !recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError)
-                      ? styles.cleanSubmitBtnDisabled
-                      : styles.cleanSubmitBtnEnabled,
-                  ]}
-                  onPress={handleInitiateSendFlow}
-                  disabled={isSending || !recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel="Sign and send with passkey"
-                >
-                  {isSending ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
-                      <ActivityIndicator
-                        size="small"
-                        color={theme.isDark ? '#0C0C0D' : '#FFFFFF'}
-                      />
+                      <View style={styles.stepApprovalRight}>
+                        {sendStep === 'primary' ? (
+                          <View style={styles.stepApprovalStatusBadge}>
+                            <ActivityIndicator size="small" color="#6C8CFF" style={{ marginRight: 6 }} />
+                            <Text style={styles.stepApprovalStatusActive}>Waiting for passkey</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.stepApprovalStatusBadge}>
+                            <View style={styles.stepApprovalCheckCircle}>
+                              <MaterialIcons name="check" size={12} color="#FFFFFF" />
+                            </View>
+                            <Text style={styles.stepApprovalStatusApproved}>Approved</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+
+                    {/* Step 2 (if quorum is required) */}
+                    {isSendQuorumRequired && (
+                      <>
+                        <View style={styles.stepApprovalDivider} />
+                        <View style={styles.stepApprovalRow}>
+                          <View style={styles.stepApprovalLeft}>
+                            <MaterialIcons
+                              name={wallet?.securityMode === 'vault' ? 'laptop-mac' : 'security'}
+                              size={18}
+                              color={
+                                sendStep === 'primary'
+                                  ? (theme.isDark ? '#71717A' : '#A1A1AA')
+                                  : (theme.isDark ? '#F2F1EE' : '#18181B')
+                              }
+                            />
+                            <Text
+                              style={[
+                                styles.stepApprovalDeviceName,
+                                sendStep === 'primary' && styles.stepApprovalDeviceNameMuted,
+                              ]}
+                            >
+                              {wallet?.securityMode === 'vault' ? 'Your Mac' : 'Backup key'}
+                            </Text>
+                          </View>
+
+                          <View style={styles.stepApprovalRight}>
+                            {sendStep === 'primary' ? (
+                              <View style={styles.stepApprovalStatusBadge}>
+                                <View style={styles.stepApprovalPendingDot} />
+                                <Text style={styles.stepApprovalStatusMuted}>Pending</Text>
+                              </View>
+                            ) : sendStep === 'secondary' ? (
+                              <View style={styles.stepApprovalStatusBadge}>
+                                <ActivityIndicator size="small" color="#6C8CFF" style={{ marginRight: 6 }} />
+                                <Text style={styles.stepApprovalStatusActive}>
+                                  {wallet?.securityMode === 'vault' ? 'Waiting for Touch ID' : 'Waiting for passkey'}
+                                </Text>
+                              </View>
+                            ) : (
+                              <View style={styles.stepApprovalStatusBadge}>
+                                <View style={styles.stepApprovalCheckCircle}>
+                                  <MaterialIcons name="check" size={12} color="#FFFFFF" />
+                                </View>
+                                <Text style={styles.stepApprovalStatusApproved}>Approved</Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      </>
+                    )}
+
+                    {/* Helper text when waiting for Mac */}
+                    {sendStep === 'secondary' && wallet?.securityMode === 'vault' && (
+                      <View style={styles.stepApprovalHelperRow}>
+                        <MaterialIcons name="touch-app" size={14} color="#6C8CFF" />
+                        <Text style={styles.stepApprovalHelperText}>
+                          Open Haptix Vault on your Mac and use Touch ID.
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Bottom Action: Broadcasting state OR Cancel button */}
+                    {sendStep === 'broadcasting' ? (
+                      <View style={styles.stepApprovalBroadcastingRow}>
+                        <ActivityIndicator size="small" color={theme.isDark ? '#F2F1EE' : '#18181B'} style={{ marginRight: 8 }} />
+                        <Text style={styles.stepApprovalBroadcastingText}>Sending to Solana…</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.stepApprovalCancelBtn}
+                        onPress={handleCancelSending}
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel="Cancel transfer"
+                      >
+                        <Text style={styles.stepApprovalCancelText}>Cancel</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ) : (
+                  <>
+                    <TouchableOpacity
+                      style={[
+                        styles.cleanSubmitBtn,
+                        (!recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError)
+                          ? styles.cleanSubmitBtnDisabled
+                          : styles.cleanSubmitBtnEnabled,
+                      ]}
+                      onPress={handleInitiateSendFlow}
+                      disabled={!recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Sign and send with passkey"
+                    >
                       <Text
                         style={[
                           styles.cleanSubmitBtnText,
-                          styles.cleanSubmitBtnTextEnabled,
+                          (!recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError)
+                            ? styles.cleanSubmitBtnTextDisabled
+                            : styles.cleanSubmitBtnTextEnabled,
                         ]}
                       >
-                        {getSendProgressText()}
+                        {isSendQuorumRequired ? 'Sign and send with 2 passkeys' : 'Sign and send with passkey'}
                       </Text>
-                    </View>
-                  ) : (
-                    <Text
-                      style={[
-                        styles.cleanSubmitBtnText,
-                        (!recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError)
-                          ? styles.cleanSubmitBtnTextDisabled
-                          : styles.cleanSubmitBtnTextEnabled,
-                      ]}
-                    >
-                      {isSendQuorumRequired ? 'Sign and send with 2 passkeys' : 'Sign and send with passkey'}
-                    </Text>
-                  )}
-                </TouchableOpacity>
+                    </TouchableOpacity>
 
-                {(!recipientAddress || sendAmountNum <= 0 || !!sendAmountError) && (
-                  <Text style={styles.cleanDisabledHelper}>
-                    {!recipientAddress
-                      ? 'Add a recipient address to continue'
-                      : sendAmountNum <= 0
-                      ? 'Enter an amount to continue'
-                      : sendAmountError
-                      ? 'Adjust amount to continue'
-                      : 'Complete form to continue'}
-                  </Text>
+                    {(!recipientAddress || sendAmountNum <= 0 || !!sendAmountError) && (
+                      <Text style={styles.cleanDisabledHelper}>
+                        {!recipientAddress
+                          ? 'Add a recipient address to continue'
+                          : sendAmountNum <= 0
+                          ? 'Enter an amount to continue'
+                          : sendAmountError
+                          ? 'Adjust amount to continue'
+                          : 'Complete form to continue'}
+                      </Text>
+                    )}
+                  </>
                 )}
               </View>
             </View>
@@ -2108,51 +2225,116 @@ const createSendSheetStyles = (theme: ThemeTokens, isDark: boolean) =>
       justifyContent: 'center',
       marginBottom: 8,
     },
-    vaultPromptCallout: {
+    stepApprovalCard: {
+      backgroundColor: theme.isDark ? '#141416' : '#F4F4F5',
+      borderWidth: 1,
+      borderColor: theme.isDark ? '#27272A' : '#E4E4E7',
+      borderRadius: 14,
+      padding: 14,
+      marginBottom: 8,
+    },
+    stepApprovalRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
-      borderRadius: 12,
-      backgroundColor: theme.isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.06)',
-      borderWidth: 1,
-      borderColor: theme.isDark ? 'rgba(16, 185, 129, 0.28)' : 'rgba(16, 185, 129, 0.22)',
-      marginBottom: 10,
+      justifyContent: 'space-between',
+      paddingVertical: 2,
     },
-    vaultPromptIconCircle: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: theme.isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.12)',
+    stepApprovalLeft: {
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
+      gap: 9,
     },
-    vaultPromptTitle: {
-      fontSize: 12.5,
+    stepApprovalDeviceName: {
+      fontSize: 14,
       fontWeight: '600',
-      color: theme.isDark ? '#34D399' : '#059669',
-      letterSpacing: -0.1,
+      color: theme.isDark ? '#F4F4F5' : '#18181B',
     },
-    vaultPromptSubtitle: {
-      fontSize: 11.5,
+    stepApprovalDeviceNameMuted: {
+      color: theme.isDark ? '#71717A' : '#A1A1AA',
+    },
+    stepApprovalRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    stepApprovalStatusBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    stepApprovalCheckCircle: {
+      width: 17,
+      height: 17,
+      borderRadius: 8.5,
+      backgroundColor: '#10B981',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 6,
+    },
+    stepApprovalStatusApproved: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#10B981',
+    },
+    stepApprovalStatusActive: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: '#6C8CFF',
+    },
+    stepApprovalPendingDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: theme.isDark ? '#3F3F46' : '#D4D4D8',
+      marginRight: 7,
+    },
+    stepApprovalStatusMuted: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: theme.isDark ? '#71717A' : '#A1A1AA',
+    },
+    stepApprovalDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: theme.isDark ? '#27272A' : '#E4E4E7',
+      marginVertical: 10,
+    },
+    stepApprovalHelperRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 10,
+      paddingTop: 9,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.isDark ? '#27272A' : '#E4E4E7',
+    },
+    stepApprovalHelperText: {
+      fontSize: 12,
       color: theme.isDark ? '#A1A1AA' : '#52525B',
-      marginTop: 1,
-      lineHeight: 15,
+      fontWeight: '400',
+      flex: 1,
     },
-    vaultPromptPulse: {
-      width: 14,
-      height: 14,
-      borderRadius: 7,
-      backgroundColor: 'rgba(16, 185, 129, 0.20)',
+    stepApprovalBroadcastingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 11,
+      marginTop: 10,
+      borderRadius: 10,
+      backgroundColor: theme.isDark ? '#1C1B19' : '#E4E4E7',
+    },
+    stepApprovalBroadcastingText: {
+      fontSize: 13.5,
+      fontWeight: '600',
+      color: theme.isDark ? '#F2F1EE' : '#18181B',
+    },
+    stepApprovalCancelBtn: {
+      marginTop: 10,
+      paddingVertical: 6,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    vaultPromptPulseDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: '#10B981',
+    stepApprovalCancelText: {
+      fontSize: 13.5,
+      fontWeight: '600',
+      color: theme.isDark ? '#A1A1AA' : '#71717A',
     },
     cleanSubmitBtnDisabled: {
       backgroundColor: theme.isDark ? '#1C1B19' : '#E4E4E7',
