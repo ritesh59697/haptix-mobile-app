@@ -249,6 +249,14 @@ export function HaptixWalletScreen() {
     }
   }, [showReceiveModal, panYReceive])
 
+  // Synchronize spending limit threshold whenever active wallet switches
+  useEffect(() => {
+    if (activeWallet) {
+      const defaultThreshold = activeWallet.securityMode === 'vault' ? 0.0 : 0.1
+      setSpendThreshold(activeWallet.spendThreshold ?? defaultThreshold)
+    }
+  }, [activeWallet?.address, activeWallet?.spendThreshold, activeWallet?.securityMode])
+
   // Fluid pull-down gesture to dismiss Transaction Details Modal
   const panYTxDetail = useRef(new Animated.Value(0)).current
   const panResponderTxDetail = useMemo(
