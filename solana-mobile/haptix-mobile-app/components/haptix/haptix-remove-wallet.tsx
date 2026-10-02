@@ -72,6 +72,12 @@ export function RemoveWalletModalProvider({ children }: { children: React.ReactN
     }
   }
 
+  const addressLines = React.useMemo(() => {
+    if (!address) return []
+    const mid = Math.ceil(address.length / 2)
+    return [address.slice(0, mid), address.slice(mid)]
+  }, [address])
+
   const styles = createStyles(isDark)
 
   return (
@@ -122,16 +128,20 @@ export function RemoveWalletModalProvider({ children }: { children: React.ReactN
                 Signing back in asks for it, and a passkey can't hand it back.
               </Text>
 
-              <View
+              <TouchableOpacity
                 style={[
                   styles.addressBox,
                   hasCopied && styles.addressBoxCopied,
                 ]}
+                onPress={handleCopy}
+                activeOpacity={0.8}
               >
-                <Text selectable style={styles.addressText}>
-                  {address}
-                </Text>
-              </View>
+                {addressLines.map((line, idx) => (
+                  <Text key={idx} selectable style={styles.addressText}>
+                    {line}
+                  </Text>
+                ))}
+              </TouchableOpacity>
             </View>
 
             {/* Side-by-Side Action Buttons */}
@@ -272,7 +282,7 @@ const createStyles = (isDark: boolean) =>
       paddingHorizontal: 12,
     },
     addressBoxCopied: {
-      borderColor: 'rgba(90, 110, 230, 0.55)',
+      borderColor: isDark ? 'rgba(16, 185, 129, 0.50)' : 'rgba(16, 185, 129, 0.40)',
     },
     addressText: {
       fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
@@ -307,17 +317,21 @@ const createStyles = (isDark: boolean) =>
       justifyContent: 'center',
     },
     removeBtnDisabled: {
-      backgroundColor: isDark ? '#1D1D20' : '#EEEDEA',
+      backgroundColor: isDark ? 'rgba(217, 40, 74, 0.12)' : 'rgba(217, 40, 74, 0.08)',
+      borderWidth: 0.5,
+      borderColor: isDark ? 'rgba(217, 40, 74, 0.22)' : 'rgba(217, 40, 74, 0.16)',
     },
     removeBtnEnabled: {
       backgroundColor: '#D9284A',
+      borderWidth: 0.5,
+      borderColor: '#D9284A',
     },
     removeBtnText: {
       fontSize: 14,
       fontWeight: '600',
     },
     removeBtnTextDisabled: {
-      color: isDark ? '#4D4C50' : '#B0AEA8',
+      color: isDark ? 'rgba(248, 113, 113, 0.55)' : 'rgba(217, 40, 74, 0.50)',
     },
     removeBtnTextEnabled: {
       color: '#FFFFFF',
