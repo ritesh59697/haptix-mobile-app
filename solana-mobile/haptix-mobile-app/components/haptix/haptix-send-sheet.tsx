@@ -161,6 +161,7 @@ export function HaptixSendSheet({
   const [selectedToken, setSelectedToken] = useState<'SOL' | 'SKR' | 'USDC'>('SOL')
   const [showTokenMenu, setShowTokenMenu] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [sendStep, setSendStep] = useState<'idle' | 'primary' | 'secondary' | 'broadcasting'>('idle')
   const [sendErrorMsg, setSendErrorMsg] = useState('')
   const [sendRecipient, setSendRecipient] = useState('')
   const [sendAmountText, setSendAmountText] = useState('0.05')
@@ -465,10 +466,31 @@ export function HaptixSendSheet({
     }
 
     try {
-      await handleExecuteSend(() => {})
+      await handleExecuteSend((step) => {
+        setSendStep(step === 1 ? 'primary' : 'secondary')
+      })
     } catch {
       // Handled and alerted inside handleExecuteSend
+    } finally {
+      setIsSending(false)
+      setSendStep('idle')
     }
+  }
+
+  const getSendProgressText = () => {
+    if (sendStep === 'primary') {
+      return 'Authenticating Phone Passkey…'
+    }
+    if (sendStep === 'secondary') {
+      if (wallet?.securityMode === 'vault') {
+        return 'Waiting for Mac Touch ID…'
+      }
+      return 'Authenticating Backup Key…'
+    }
+    if (sendStep === 'broadcasting') {
+      return 'Confirming on Solana…'
+    }
+    return isSendQuorumRequired ? 'Authorizing 2-of-2 Quorum…' : 'Processing Transfer…'
   }
 
   // On-chain Send Transaction execution via Haptix Anchor Program & Secp256r1 Precompile
@@ -495,6 +517,7 @@ export function HaptixSendSheet({
 
     try {
       setIsSending(true)
+      setSendStep('primary')
       await Haptics.impactAsync(
         isHighRiskQuorum ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light,
       )
@@ -586,6 +609,7 @@ export function HaptixSendSheet({
 
       if (isHighRiskQuorum) {
         onStepChange(2)
+        setSendStep('secondary')
         // 2. High-Risk: 2-of-2 passkey quorum required
         const secondaryPrompt =
           activeWallet?.securityMode === 'vault'
@@ -693,6 +717,7 @@ export function HaptixSendSheet({
         txInstructions.push(precompilePrimary, transferIx)
       }
 
+      setSendStep('broadcasting')
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
       const lookupTable = await getHaptixAddressLookupTable(connection, walletPda, payer).catch(() => null)
       const { rawTx } = buildOptimalTransaction({
@@ -1540,6 +1565,23 @@ export function HaptixSendSheet({
 
               {/* ACTION BUTTON & HELPER - PINNED STICKY AT BOTTOM */}
               <View style={[styles.stickyFooter, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+                {isSending && sendStep === 'secondary' && wallet?.securityMode === 'vault' && (
+                  <View style={styles.vaultPromptCallout}>
+                    <View style={styles.vaultPromptIconCircle}>
+                      <MaterialIcons name="laptop-mac" size={17} color="#10B981" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.vaultPromptTitle}>Step 2 of 2: Hardware Quorum</Text>
+                      <Text style={styles.vaultPromptSubtitle}>
+                        Touch ID prompt sent to your Mac. Open vault.html to approve.
+                      </Text>
+                    </View>
+                    <View style={styles.vaultPromptPulse}>
+                      <View style={styles.vaultPromptPulseDot} />
+                    </View>
+                  </View>
+                )}
+
                 <TouchableOpacity
                   style={[
                     styles.cleanSubmitBtn,
@@ -1554,7 +1596,20 @@ export function HaptixSendSheet({
                   accessibilityLabel="Sign and send with passkey"
                 >
                   {isSending ? (
-                    <ActivityIndicator size="small" color="#ffffff" />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
+                      <ActivityIndicator
+                        size="small"
+                        color={theme.isDark ? '#0C0C0D' : '#FFFFFF'}
+                      />
+                      <Text
+                        style={[
+                          styles.cleanSubmitBtnText,
+                          styles.cleanSubmitBtnTextEnabled,
+                        ]}
+                      >
+                        {getSendProgressText()}
+                      </Text>
+                    </View>
                   ) : (
                     <Text
                       style={[
@@ -2049,6 +2104,52 @@ const createSendSheetStyles = (theme: ThemeTokens, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 8,
+    },
+    vaultPromptCallout: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderRadius: 12,
+      backgroundColor: theme.isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.06)',
+      borderWidth: 1,
+      borderColor: theme.isDark ? 'rgba(16, 185, 129, 0.28)' : 'rgba(16, 185, 129, 0.22)',
+      marginBottom: 10,
+    },
+    vaultPromptIconCircle: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: theme.isDark ? 'rgba(16, 185, 129, 0.16)' : 'rgba(16, 185, 129, 0.12)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    vaultPromptTitle: {
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: theme.isDark ? '#34D399' : '#059669',
+      letterSpacing: -0.1,
+    },
+    vaultPromptSubtitle: {
+      fontSize: 11.5,
+      color: theme.isDark ? '#A1A1AA' : '#52525B',
+      marginTop: 1,
+      lineHeight: 15,
+    },
+    vaultPromptPulse: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      backgroundColor: 'rgba(16, 185, 129, 0.20)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    vaultPromptPulseDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: '#10B981',
     },
     cleanSubmitBtnDisabled: {
       backgroundColor: theme.isDark ? '#1C1B19' : '#E4E4E7',

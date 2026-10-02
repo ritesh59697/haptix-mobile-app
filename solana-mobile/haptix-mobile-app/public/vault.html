@@ -652,6 +652,122 @@
     border-color: var(--border-strong);
   }
 
+  /* ---------- Signing History Section ---------- */
+  .history-card {
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    text-align: left;
+    transition: background 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+
+  .history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .history-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .history-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--text-2);
+  }
+
+  .history-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-1);
+    text-transform: uppercase;
+  }
+
+  .history-count {
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+  }
+
+  .clear-history-btn {
+    background: none;
+    border: none;
+    font-size: 11px;
+    color: var(--text-3);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.15s var(--ease);
+  }
+
+  .clear-history-btn:hover {
+    color: var(--text-1);
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 11px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    font-size: 12px;
+  }
+
+  .history-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .history-action {
+    font-weight: 600;
+    color: var(--text-1);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .history-sub {
+    font-size: 10.5px;
+    color: var(--text-3);
+    font-family: var(--font-mono);
+  }
+
+  .history-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.08);
+    padding: 3px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(16, 185, 129, 0.20);
+    flex-shrink: 0;
+  }
+
   @media (max-width: 480px) {
     .card { padding: 24px 20px; }
     .hero-amount { font-size: 32px; }
@@ -753,6 +869,22 @@
             </svg>
             <span id="enrollBtnText">Enroll Mac Touch ID</span>
           </button>
+        </div>
+
+        <!-- Hardware Signing History Section -->
+        <div id="vaultHistorySection" class="history-card" style="display:none;">
+          <div class="history-head">
+            <div class="history-title-wrap">
+              <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <span class="history-title">Touch ID Approvals</span>
+              <span class="history-count" id="historyCountBadge">0</span>
+            </div>
+            <button class="clear-history-btn" id="clearHistoryBtn" type="button" title="Clear approval log">Clear</button>
+          </div>
+          <div class="history-list" id="historyList"></div>
         </div>
 
         <div class="helper-row">
@@ -1495,6 +1627,13 @@
         authBtnLabel.textContent = 'Authorize with Touch ID';
         showState(stateApproved);
         showToast('Authorized with Touch ID');
+        recordSignatureHistory({
+          timestamp: Date.now(),
+          amountSol: 0.1018,
+          recipient: 'Hou6dzvLqK8wX9mPtNy3GvB2k7eL4dYp5',
+          actionType: 'SOL Transfer (Preview)',
+          network: 'Solana Devnet'
+        });
         setTimeout(function () {
           showState(stateIdle);
           currentPending = null;
@@ -1550,6 +1689,15 @@
         body: JSON.stringify(payload)
       }).catch(function () {});
 
+      // Record in Touch ID approval history
+      recordSignatureHistory({
+        timestamp: Date.now(),
+        amountSol: currentPending.amountSol,
+        recipient: currentPending.recipient,
+        actionType: currentPending.actionType || 'SOL Transfer',
+        network: currentPending.network || 'Solana Devnet'
+      });
+
       currentPending.signed = true;
       authBtn.classList.remove('busy');
       authBtnLabel.textContent = 'Authorize with Touch ID';
@@ -1575,6 +1723,69 @@
       authBtn.click();
     }
   });
+
+  // --- Signing History Storage & Rendering ---
+  var vaultHistorySection = document.getElementById('vaultHistorySection');
+  var historyCountBadge = document.getElementById('historyCountBadge');
+  var historyList = document.getElementById('historyList');
+  var clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+  function getSignatureHistory() {
+    try {
+      var raw = localStorage.getItem('haptix_vault_history');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveSignatureHistory(items) {
+    try {
+      localStorage.setItem('haptix_vault_history', JSON.stringify(items.slice(0, 25)));
+    } catch (e) {}
+  }
+
+  function renderHistory() {
+    if (!vaultHistorySection || !historyList) return;
+    var items = getSignatureHistory();
+    if (!items || items.length === 0) {
+      vaultHistorySection.style.display = 'none';
+      return;
+    }
+    vaultHistorySection.style.display = 'block';
+    if (historyCountBadge) historyCountBadge.textContent = items.length;
+    historyList.innerHTML = items.map(function (item) {
+      var date = new Date(item.timestamp);
+      var timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      var amtStr = item.amountSol ? (item.amountSol + ' SOL') : (item.actionType || 'Transfer');
+      var recipShort = item.recipient ? (item.recipient.slice(0, 4) + '...' + item.recipient.slice(-4)) : '';
+      return '<div class="history-item">' +
+        '<div class="history-left">' +
+          '<span class="history-action">' + amtStr + (recipShort ? (' → ' + recipShort) : '') + '</span>' +
+          '<span class="history-sub">' + timeStr + ' • ' + (item.network || 'Solana Devnet') + '</span>' +
+        '</div>' +
+        '<span class="history-badge">✓ Verified</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function recordSignatureHistory(entry) {
+    var items = getSignatureHistory();
+    items.unshift(entry);
+    saveSignatureHistory(items);
+    renderHistory();
+  }
+
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener('click', function () {
+      localStorage.removeItem('haptix_vault_history');
+      renderHistory();
+      showToast('History cleared');
+    });
+  }
+
+  // Initial render of history
+  renderHistory();
 
 })();
 </script>
