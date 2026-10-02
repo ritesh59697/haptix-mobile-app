@@ -9,8 +9,12 @@ interface PendingTx {
   id: string
   messageHex: string
   amountSol: number
+  amountUsd?: string
+  feeSol?: string
   recipient: string
   walletPda: string
+  walletName?: string
+  spendThresholdSol?: number
   timestamp: number
   status?: 'pending' | 'signed' | 'declined'
   signature?: {
@@ -21,6 +25,10 @@ interface PendingTx {
 }
 
 let currentPendingTx: PendingTx | null = null
+let lastKnownWalletInfo: { walletName: string; spendThresholdSol: number } = {
+  walletName: 'Hardware Vault 2',
+  spendThresholdSol: 0.10,
+}
 
 const server = http.createServer((req, res) => {
   // Enable CORS for web requests from vault.html on any local port/origin
@@ -51,7 +59,12 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'GET' && url.pathname === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ ok: true, hasPending: !!currentPendingTx }))
+    res.end(JSON.stringify({
+      ok: true,
+      hasPending: !!currentPendingTx,
+      walletName: lastKnownWalletInfo.walletName,
+      spendThresholdSol: lastKnownWalletInfo.spendThresholdSol,
+    }))
     return
   }
 
@@ -62,15 +75,22 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const data = JSON.parse(body)
+        if (data.walletName) lastKnownWalletInfo.walletName = data.walletName
+        if (typeof data.spendThresholdSol === 'number') lastKnownWalletInfo.spendThresholdSol = data.spendThresholdSol
+
         currentPendingTx = {
           id: Math.random().toString(36).substring(2, 10),
           messageHex: data.messageHex,
           amountSol: data.amountSol,
+          amountUsd: data.amountUsd,
+          feeSol: data.feeSol,
           recipient: data.recipient,
           walletPda: data.walletPda,
+          walletName: data.walletName || lastKnownWalletInfo.walletName,
+          spendThresholdSol: data.spendThresholdSol ?? lastKnownWalletInfo.spendThresholdSol,
           timestamp: Date.now(),
         }
-        console.log(`[Relay] New transfer queued: ${currentPendingTx.amountSol} SOL to ${currentPendingTx.recipient}`)
+        console.log(`[Relay] New transfer queued: ${currentPendingTx.amountSol} SOL (≈ $${currentPendingTx.amountUsd || '?'}) to ${currentPendingTx.recipient}`)
         try {
           exec(`osascript -e 'display notification "Transfer of ${currentPendingTx.amountSol} SOL pending Touch ID authorization" with title "Haptix Vault Quorum" sound name "Glass"'`)
           exec(`open http://localhost:8081/vault.html`)

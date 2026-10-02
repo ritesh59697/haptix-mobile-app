@@ -121,16 +121,29 @@ export async function queueVaultTransfer(params: {
   relayHost: string
   messageHex: string
   amountSol: number
+  amountUsd?: string
+  feeSol?: string
   recipient: string
   walletPda: string
+  walletName?: string
+  spendThresholdSol?: number
 }): Promise<string> {
-  const { relayHost, messageHex, amountSol, recipient, walletPda } = params
+  const { relayHost, messageHex, amountSol, amountUsd, feeSol, recipient, walletPda, walletName, spendThresholdSol } = params
   const res = await fetchWithTimeout(
     `http://${relayHost}:8082/pending-tx`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageHex, amountSol, recipient, walletPda }),
+      body: JSON.stringify({
+        messageHex,
+        amountSol,
+        amountUsd,
+        feeSol,
+        recipient,
+        walletPda,
+        walletName,
+        spendThresholdSol,
+      }),
     },
     8000,
   )

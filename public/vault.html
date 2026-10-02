@@ -290,39 +290,52 @@
   .copy-btn.copied .copy-icon { display: none; }
   .copy-btn.copied .check-icon { display: inline-flex; }
 
-  /* ---------- Micro Spec Row ---------- */
-  .spec-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+  /* ---------- Info & Details Cards ---------- */
+  .info-card, .details-card {
     border: 1px solid var(--border);
     background: var(--card-inner);
-    border-radius: var(--radius-ctrl);
-    padding: 10px 14px;
+    border-radius: 14px;
+    padding: 2px 14px;
+    margin-bottom: 14px;
   }
 
-  .spec-item {
+  .info-row, .detail-row {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
   }
 
-  .spec-item:not(:first-child) {
-    border-left: 1px solid var(--border);
-    padding-left: 14px;
+  .info-row + .info-row, .detail-row + .detail-row {
+    border-top: 1px solid var(--border);
   }
 
-  .spec-label {
-    font-size: 11px;
-    color: var(--text-3);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 500;
+  .info-label, .detail-label {
+    color: var(--text-2);
+    font-size: 13px;
+    flex-shrink: 0;
   }
 
-  .spec-val {
-    font-size: 12px;
-    font-weight: 600;
+  .info-val, .detail-val {
+    font-size: 13px;
     color: var(--text-1);
+    text-align: right;
+  }
+
+  .mono-addr {
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: right;
+    color: var(--text-1);
+    letter-spacing: -0.01em;
+    word-break: break-all;
+  }
+
+  .detail-val.mono {
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: 12px;
   }
 
   .helper-row {
@@ -352,20 +365,20 @@
   /* ---------- Approval state ---------- */
   .hero {
     text-align: center;
-    padding: 8px 0 6px;
+    padding: 4px 0 16px;
   }
 
   .hero-eyebrow {
-    font-size: 13px;
+    font-size: 12.5px;
     color: var(--text-2);
-    margin: 0 0 10px;
+    margin: 0 0 6px;
     font-weight: 500;
   }
 
   .hero-amount {
-    font-size: 38px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
     margin: 0;
     line-height: 1.15;
@@ -373,57 +386,28 @@
   }
 
   .hero-fiat {
-    font-size: 14px;
-    color: var(--text-3);
+    font-size: 13.5px;
+    color: var(--text-2);
     margin: 5px 0 0;
     font-variant-numeric: tabular-nums;
-    font-weight: 500;
+    font-weight: 400;
   }
-
-  .details {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-ctrl);
-    overflow: hidden;
-    margin: 0;
-    background: var(--card-inner);
-  }
-
-  .detail-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 14px;
-    font-size: 13px;
-  }
-
-  .detail-row + .detail-row { border-top: 1px solid var(--border); }
-
-  .detail-row dt { color: var(--text-2); margin: 0; font-weight: 400; }
-  .detail-row dd {
-    color: var(--text-1);
-    margin: 0;
-    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .detail-row dd.plain { font-family: inherit; font-size: 13px; }
 
   .auth-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     width: 100%;
     border: none;
     border-radius: var(--radius-ctrl);
     background: var(--btn-primary-bg);
     color: var(--btn-primary-text);
     font-family: inherit;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 14.5px;
+    font-weight: 500;
     letter-spacing: -0.01em;
-    padding: 14px 18px;
+    padding: 13px 18px;
     cursor: pointer;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
@@ -431,14 +415,28 @@
 
   .auth-btn:hover { opacity: 0.90; transform: translateY(-1px); }
   .auth-btn:active { transform: translateY(0) scale(0.99); }
-  .auth-btn svg { width: 19px; height: 19px; }
+  .auth-btn svg { width: 18px; height: 18px; }
   .auth-btn.busy { opacity: 0.75; cursor: default; transform: none; }
-  .auth-btn.busy .biometric-icon { animation: spin 0.9s linear infinite; }
+
+  .auth-btn-spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-top-color: #0c0c0d;
+    box-sizing: border-box;
+    animation: spin 0.9s linear infinite;
+  }
+
+  [data-theme="light"] .auth-btn-spinner {
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-top-color: #ffffff;
+  }
 
   .key-shortcut-hint {
     font-size: 11px;
-    opacity: 0.6;
-    padding: 2px 6px;
+    opacity: 0.65;
+    padding: 1px 6px;
     border-radius: 4px;
     border: 1px solid currentColor;
     margin-left: 2px;
@@ -447,11 +445,16 @@
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .decline-row { display: flex; justify-content: center; }
+  .decline-row {
+    display: flex;
+    justify-content: center;
+    padding-top: 10px;
+  }
+
   .decline-btn {
     background: none;
     border: none;
-    color: var(--text-3);
+    color: var(--text-2);
     font-size: 13px;
     font-family: inherit;
     cursor: pointer;
@@ -459,44 +462,81 @@
     border-radius: 6px;
     transition: color 0.15s var(--ease);
   }
-  .decline-btn:hover { color: var(--text-2); }
+  .decline-btn:hover { color: var(--text-1); }
 
-  /* ---------- Approved confirmation ---------- */
-  .confirm {
+  /* ---------- Approved confirmation receipt ---------- */
+  .confirm-receipt {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 12px;
-    padding: 18px 0 8px;
+    padding: 6px 0 12px;
   }
 
-  .confirm-badge {
-    width: 48px;
-    height: 48px;
+  .confirm-ring {
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    background: var(--accent-ok-bg);
-    color: var(--accent-ok);
+    background: rgba(52, 211, 153, 0.12);
+    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0.06);
     display: flex;
     align-items: center;
     justify-content: center;
+    margin: 6px auto 18px;
+    animation: cvPop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  .confirm-badge svg { width: 24px; height: 24px; }
-
-  .confirm h2 {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0;
-    letter-spacing: -0.01em;
+  .confirm-ring svg {
+    width: 28px;
+    height: 28px;
+    stroke: var(--accent-ok);
   }
 
-  .confirm p {
-    font-size: 13px;
+  .confirm-check {
+    stroke-dasharray: 26;
+    stroke-dashoffset: 26;
+    animation: cvDraw 0.4s 0.25s ease-out forwards;
+  }
+
+  @keyframes cvPop {
+    0% { transform: scale(0.6); opacity: 0; }
+    60% { transform: scale(1.06); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes cvDraw {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .confirm-eyebrow {
     color: var(--text-2);
+    font-size: 12px;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .confirm-amount {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
     margin: 0;
-    max-width: 340px;
-    line-height: 1.45;
+    color: var(--text-1);
+    line-height: 1.2;
+  }
+
+  .confirm-target {
+    color: var(--text-2);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12.5px;
+    margin: 6px 0 16px;
+  }
+
+  .confirm-note {
+    color: var(--text-2);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+    max-width: 300px;
   }
 
   /* ---------- Un-enrolled view ---------- */
@@ -804,19 +844,6 @@
       </button>
     </div>
 
-    <!-- Visual Hardware Anchor -->
-    <div class="hardware-anchor">
-      <div class="hardware-icon-box">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="3" width="20" height="14" rx="2"/>
-          <line x1="8" y1="21" x2="16" y2="21"/>
-          <line x1="12" y1="17" x2="12" y2="21"/>
-        </svg>
-      </div>
-      <h2 class="hardware-title">Apple Secure Enclave</h2>
-      <p class="hardware-subtitle">Hardware-isolated passkey for secondary transaction quorum</p>
-    </div>
-
     <div class="state-view">
 
       <!-- STATE A: Idle (Default) -->
@@ -824,6 +851,18 @@
         <div class="listen-row">
           <span class="pulse-dot" aria-hidden="true"></span>
           <span>Listening for requests from your phone</span>
+        </div>
+
+        <!-- Active Wallet & Limit Policy Card -->
+        <div class="info-card">
+          <div class="info-row">
+            <span class="info-label">Wallet</span>
+            <span class="info-val" id="idleWalletName">Hardware Vault 2</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Approves</span>
+            <span class="info-val" id="idleApprovesText">Transfers above 0.10 SOL</span>
+          </div>
         </div>
 
         <div id="enrolledKeySection">
@@ -839,22 +878,6 @@
                 <path d="M4 12.5l5 5 11-11"/>
               </svg>
             </button>
-          </div>
-        </div>
-
-        <!-- Spec Grid -->
-        <div class="spec-row">
-          <div class="spec-item">
-            <span class="spec-label">Quorum</span>
-            <span class="spec-val">2-of-2 Hardware</span>
-          </div>
-          <div class="spec-item">
-            <span class="spec-label">Trigger</span>
-            <span class="spec-val">> 0.10 SOL</span>
-          </div>
-          <div class="spec-item">
-            <span class="spec-label">Curve</span>
-            <span class="spec-val">Secp256r1</span>
           </div>
         </div>
 
@@ -899,38 +922,43 @@
       <section class="state" id="stateRequest" hidden aria-label="Approval request">
         <div class="hero">
           <p class="hero-eyebrow" id="reqActionEyebrow">Transfer requested from your phone</p>
-          <p class="hero-amount" id="reqAmount">0.1018 SOL</p>
-          <p class="hero-fiat" id="reqUsdVal">≈ $14.76 USD</p>
+          <p class="hero-amount" id="reqAmount">0.1137 SOL</p>
+          <p class="hero-fiat" id="reqUsdVal">≈ $13.54 USD</p>
         </div>
 
-        <dl class="details">
+        <div class="details-card">
           <div class="detail-row" id="reqTargetRow">
-            <dt id="reqTargetLabel">Recipient</dt>
-            <dd id="reqRecipient">Hou6dz...dYp5</dd>
+            <span class="detail-label" id="reqTargetLabel">Recipient</span>
+            <span class="detail-val mono-addr" id="reqRecipient">F2KbEr68...</span>
           </div>
           <div class="detail-row" id="reqWalletRow">
-            <dt>Wallet</dt>
-            <dd id="reqWallet" class="plain">--</dd>
+            <span class="detail-label">Wallet</span>
+            <span class="detail-val mono" id="reqWallet">--</span>
           </div>
           <div class="detail-row">
-            <dt>Network</dt>
-            <dd class="plain" id="reqNetwork">Solana Devnet</dd>
+            <span class="detail-label">Network</span>
+            <span class="detail-val" id="reqNetwork">Solana devnet</span>
+          </div>
+          <div class="detail-row" id="reqFeeRow">
+            <span class="detail-label">Estimated fee</span>
+            <span class="detail-val" id="reqFee">0.000005 SOL</span>
           </div>
           <div class="detail-row">
-            <dt>Security</dt>
-            <dd class="plain">2-of-2 Passkey Quorum</dd>
+            <span class="detail-label">Authorization</span>
+            <span class="detail-val" id="reqAuthMethod">2 passkeys</span>
           </div>
-        </dl>
+        </div>
 
         <button class="auth-btn" id="authBtn" type="button">
-          <svg class="biometric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <span class="auth-btn-spinner" id="authBtnSpinner" style="display:none;"></span>
+          <svg class="biometric-icon" id="authBtnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
             <path d="M12 3.2a8.8 8.8 0 0 0-8.8 8.8c0 1.9.4 3.2 1 4.6M12 3.2a8.8 8.8 0 0 1 8.8 8.8c0 .9-.05 1.6-.16 2.3"/>
             <path d="M7 20.3A8.75 8.75 0 0 1 3.7 14M17 20.3a8.8 8.8 0 0 0 2.9-4.2"/>
             <path d="M12 6.6a5.4 5.4 0 0 0-5.4 5.4c0 2.7.6 4.3 1.4 5.6M12 6.6a5.4 5.4 0 0 1 5.4 5.4c0 .8-.04 1.5-.13 2.1"/>
             <path d="M12 10a2 2 0 0 0-2 2c0 3-.6 4.9-1.6 6.4M12 10a2 2 0 0 1 2 2c0 1.2-.1 2.2-.27 3.1"/>
           </svg>
           <span id="authBtnLabel">Authorize with Touch ID</span>
-          <span class="key-shortcut-hint">↵</span>
+          <span class="key-shortcut-hint" id="authBtnKey">↵</span>
         </button>
 
         <div class="decline-row">
@@ -940,14 +968,16 @@
 
       <!-- STATE C: Approved confirmation -->
       <section class="state" id="stateApproved" hidden aria-label="Approved">
-        <div class="confirm">
-          <div class="confirm-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 12.5l5 5 11-11"/>
+        <div class="confirm-receipt">
+          <div class="confirm-ring">
+            <svg class="confirm-check" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12.5l4.5 4.5L19 7.5"/>
             </svg>
           </div>
-          <h2>Transfer authorized</h2>
-          <p>Signature relayed back to your phone via out-of-band channel.</p>
+          <div class="confirm-eyebrow">Approved on this Mac</div>
+          <p class="confirm-amount" id="approvedAmount">0.1137 SOL</p>
+          <p class="confirm-target" id="approvedTarget">to F2KbEr68..VVrLgK</p>
+          <p class="confirm-note">Your phone will finish sending the transfer.</p>
         </div>
       </section>
 
@@ -956,13 +986,6 @@
 
     </div>
   </main>
-
-  <!-- Discreet Bottom Toolbar -->
-  <footer class="bottom-bar">
-    <span>Relay active on port 8082</span>
-    <span>·</span>
-    <button class="sim-toggle-btn" id="previewToggleBtn" type="button">Preview Approval View</button>
-  </footer>
 </div>
 
 <!-- Modal: How dual-device signing works -->
@@ -1094,10 +1117,23 @@
   var enrollBtnText = document.getElementById('enrollBtnText');
   var authBtn = document.getElementById('authBtn');
   var authBtnLabel = document.getElementById('authBtnLabel');
+  var authBtnSpinner = document.getElementById('authBtnSpinner');
+  var authBtnIcon = document.getElementById('authBtnIcon');
+  var authBtnKey = document.getElementById('authBtnKey');
   var declineBtn = document.getElementById('declineBtn');
+  var reqActionEyebrow = document.getElementById('reqActionEyebrow');
   var reqAmount = document.getElementById('reqAmount');
   var reqUsdVal = document.getElementById('reqUsdVal');
+  var reqTargetLabel = document.getElementById('reqTargetLabel');
   var reqRecipient = document.getElementById('reqRecipient');
+  var reqWallet = document.getElementById('reqWallet');
+  var reqNetwork = document.getElementById('reqNetwork');
+  var reqFee = document.getElementById('reqFee');
+  var reqAuthMethod = document.getElementById('reqAuthMethod');
+  var approvedAmount = document.getElementById('approvedAmount');
+  var approvedTarget = document.getElementById('approvedTarget');
+  var idleWalletName = document.getElementById('idleWalletName');
+  var idleApprovesText = document.getElementById('idleApprovesText');
   var errorBox = document.getElementById('errorBox');
   var toast = document.getElementById('toast');
   var previewToggleBtn = document.getElementById('previewToggleBtn');
@@ -1109,6 +1145,14 @@
 
   var currentPending = null;
   var rawFullPubKey = '';
+
+  // Restore cached wallet name & threshold for instant render
+  try {
+    var cachedW = localStorage.getItem('haptix_last_wallet_name');
+    if (cachedW && idleWalletName) idleWalletName.textContent = cachedW;
+    var cachedT = localStorage.getItem('haptix_last_spend_threshold');
+    if (cachedT && idleApprovesText) idleApprovesText.textContent = 'Transfers above ' + cachedT + ' SOL';
+  } catch (e) {}
 
   function showToast(text) {
     toast.textContent = text;
@@ -1315,16 +1359,20 @@
           };
         }
 
+        var fiatText = tx.amountUsd ? ('≈ $' + tx.amountUsd + ' USD') : ('≈ $' + (actualAmountSol * 145).toFixed(2) + ' USD');
         return {
           ok: true,
           actionType: 'TRANSFER',
           eyebrow: 'Transfer requested from your phone',
           amountDisplay: actualAmountSol + ' SOL',
-          fiatDisplay: '≈ $' + (actualAmountSol * 145).toFixed(2) + ' USD',
+          fiatDisplay: fiatText,
           targetLabel: 'Recipient',
           targetValue: recipientBase58,
-          wallet: walletBase58,
-          network: clusterStr,
+          wallet: tx.walletName || walletBase58,
+          walletPda: walletBase58,
+          network: 'Solana devnet',
+          fee: tx.feeSol || '0.000005 SOL',
+          auth: '2 passkeys',
           nonce: nonce.toString()
         };
       }
@@ -1494,21 +1542,34 @@
     }
   }
 
+  function formatTwoLineAddress(addr) {
+    if (!addr) return '--';
+    if (addr.length >= 35) {
+      return addr.slice(0, 18) + '…<br>…' + addr.slice(-17);
+    }
+    return addr;
+  }
+
   function displayPendingRequest(tx) {
     currentPending = tx;
     if (tx.id === 'preview_sample') {
       reqActionEyebrow.textContent = 'Transfer requested from your phone';
-      reqAmount.textContent = tx.amountSol + ' SOL';
-      var usdEst = (tx.amountSol * 145).toFixed(2);
+      reqAmount.textContent = (tx.amountSol || 0.1137) + ' SOL';
+      var usdEst = tx.amountUsd || ((tx.amountSol || 0.1137) * 145).toFixed(2);
       reqUsdVal.textContent = '≈ $' + usdEst + ' USD';
       reqTargetLabel.textContent = 'Recipient';
-      reqRecipient.textContent = tx.recipient ? (tx.recipient.slice(0, 8) + '...' + tx.recipient.slice(-6)) : 'Hou6dz...dYp5';
-      reqWallet.textContent = 'PreviewWallet...';
-      reqNetwork.textContent = 'Solana Devnet';
+      var previewAddr = tx.recipient || 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK';
+      reqRecipient.innerHTML = formatTwoLineAddress(previewAddr);
+      reqWallet.textContent = 'p15oXR5W...FuTaGM';
+      reqNetwork.textContent = 'Solana devnet';
+      if (reqFee) reqFee.textContent = '0.000005 SOL';
+      if (reqAuthMethod) reqAuthMethod.textContent = '2 passkeys';
       errorBox.style.display = 'none';
       authBtn.style.opacity = '1';
       authBtn.style.pointerEvents = 'auto';
       authBtnLabel.textContent = 'Authorize with Touch ID';
+      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
       showState(stateRequest);
       return;
     }
@@ -1525,9 +1586,13 @@
       reqRecipient.textContent = 'Blocked by Security Check';
       reqWallet.textContent = 'Rejected';
       reqNetwork.textContent = 'Unknown';
+      if (reqFee) reqFee.textContent = '--';
+      if (reqAuthMethod) reqAuthMethod.textContent = '--';
       authBtn.style.opacity = '0.3';
       authBtn.style.pointerEvents = 'none';
       authBtnLabel.textContent = 'Signing Blocked';
+      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
       showState(stateRequest);
       return;
     }
@@ -1535,17 +1600,25 @@
     authBtn.style.opacity = '1';
     authBtn.style.pointerEvents = 'auto';
     authBtnLabel.textContent = 'Authorize with Touch ID';
+    if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+    if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
     reqActionEyebrow.textContent = validation.eyebrow;
     reqAmount.textContent = validation.amountDisplay;
     reqUsdVal.textContent = validation.fiatDisplay;
     reqTargetLabel.textContent = validation.targetLabel;
     var targetVal = validation.targetValue;
-    reqRecipient.textContent = targetVal.length > 20 ? (targetVal.slice(0, 8) + '...' + targetVal.slice(-6)) : targetVal;
+    reqRecipient.innerHTML = formatTwoLineAddress(targetVal);
     reqRecipient.title = targetVal;
     var walletStr = validation.wallet || '--';
-    reqWallet.textContent = walletStr.length > 20 ? (walletStr.slice(0, 8) + '...' + walletStr.slice(-6)) : walletStr;
+    if (tx.walletName) {
+      reqWallet.textContent = tx.walletName + (walletStr !== '--' && walletStr.length > 8 ? ' (' + walletStr.slice(0, 4) + '...' + walletStr.slice(-4) + ')' : '');
+    } else {
+      reqWallet.textContent = walletStr.length > 20 ? (walletStr.slice(0, 8) + '...' + walletStr.slice(-6)) : walletStr;
+    }
     reqWallet.title = walletStr;
-    reqNetwork.textContent = validation.network;
+    reqNetwork.textContent = 'Solana devnet';
+    if (reqFee) reqFee.textContent = tx.feeSol ? (tx.feeSol + ' SOL') : (validation.fee || '0.000005 SOL');
+    if (reqAuthMethod) reqAuthMethod.textContent = validation.auth || '2 passkeys';
     errorBox.style.display = 'none';
     showState(stateRequest);
   }
@@ -1555,6 +1628,19 @@
   async function pollPending() {
     // 1. URL params check
     var params = new URLSearchParams(window.location.search);
+    if (params.get('preview') === '1' || params.get('demo') === '1') {
+      if (!currentPending || currentPending.id !== 'preview_sample') {
+        displayPendingRequest({
+          id: 'preview_sample',
+          amountSol: 0.1137,
+          amountUsd: '13.54',
+          recipient: 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK',
+          messageHex: '0x1234567890abcdef'
+        });
+      }
+      return;
+    }
+
     var urlMsg = params.get('msg');
     var urlAmt = params.get('amt');
     var urlTo = params.get('to');
@@ -1580,30 +1666,49 @@
         }
       }
     } catch (e) {}
+
+    // 3. Status sync for Idle card
+    try {
+      var sRes = await fetch(relayOrigin + '/status');
+      if (sRes.ok) {
+        var sData = await sRes.json();
+        if (sData.walletInfo) {
+          if (idleWalletName && sData.walletInfo.walletName) {
+            idleWalletName.textContent = sData.walletInfo.walletName;
+          }
+          if (idleApprovesText && sData.walletInfo.spendThresholdSol) {
+            idleApprovesText.textContent = 'Transfers above ' + Number(sData.walletInfo.spendThresholdSol).toFixed(2) + ' SOL';
+          }
+        }
+      }
+    } catch (e) {}
   }
 
   setInterval(pollPending, 900);
   pollPending();
 
-  // Preview button toggle
+  // Preview button toggle (if present)
   var isPreviewing = false;
-  previewToggleBtn.addEventListener('click', function () {
-    if (!isPreviewing) {
-      displayPendingRequest({
-        id: 'preview_sample',
-        amountSol: 0.1018,
-        recipient: 'Hou6dzvLqK8wX9mPtNy3GvB2k7eL4dYp5',
-        messageHex: '0x1234567890abcdef'
-      });
-      previewToggleBtn.textContent = 'Back to Idle View';
-      isPreviewing = true;
-    } else {
-      showState(stateIdle);
-      currentPending = null;
-      previewToggleBtn.textContent = 'Preview Approval View';
-      isPreviewing = false;
-    }
-  });
+  if (previewToggleBtn) {
+    previewToggleBtn.addEventListener('click', function () {
+      if (!isPreviewing) {
+        displayPendingRequest({
+          id: 'preview_sample',
+          amountSol: 0.1137,
+          amountUsd: '13.54',
+          recipient: 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK',
+          messageHex: '0x1234567890abcdef'
+        });
+        previewToggleBtn.textContent = 'Back to Idle View';
+        isPreviewing = true;
+      } else {
+        showState(stateIdle);
+        currentPending = null;
+        previewToggleBtn.textContent = 'Preview Approval View';
+        isPreviewing = false;
+      }
+    });
+  }
 
   // Decline Handler
   declineBtn.addEventListener('click', async function () {
@@ -1621,7 +1726,7 @@
     currentPending = null;
     showState(stateIdle);
     showToast('Transfer declined on Mac');
-    if (isPreviewing) {
+    if (isPreviewing && previewToggleBtn) {
       previewToggleBtn.textContent = 'Preview Approval View';
       isPreviewing = false;
     }
@@ -1635,26 +1740,34 @@
     // If simulating in preview mode without real challenge, show simulation success
     if (currentPending.id === 'preview_sample') {
       authBtn.classList.add('busy');
-      authBtnLabel.textContent = 'Verifying with Touch ID…';
+      if (authBtnSpinner) authBtnSpinner.style.display = 'inline-block';
+      if (authBtnIcon) authBtnIcon.style.display = 'none';
+      authBtnLabel.textContent = 'Waiting for Touch ID...';
       setTimeout(function () {
         authBtn.classList.remove('busy');
+        if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+        if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
         authBtnLabel.textContent = 'Authorize with Touch ID';
+        if (approvedAmount) approvedAmount.textContent = '0.1137 SOL';
+        if (approvedTarget) approvedTarget.textContent = 'to F2KbEr68..VVrLgK';
         showState(stateApproved);
         showToast('Authorized with Touch ID');
         recordSignatureHistory({
           timestamp: Date.now(),
-          amountSol: 0.1018,
-          recipient: 'Hou6dzvLqK8wX9mPtNy3GvB2k7eL4dYp5',
+          amountSol: 0.1137,
+          recipient: 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK',
           actionType: 'SOL Transfer (Preview)',
-          network: 'Solana Devnet'
+          network: 'Solana devnet'
         });
         setTimeout(function () {
           showState(stateIdle);
           currentPending = null;
-          previewToggleBtn.textContent = 'Preview Approval View';
-          isPreviewing = false;
+          if (previewToggleBtn) {
+            previewToggleBtn.textContent = 'Preview Approval View';
+            isPreviewing = false;
+          }
         }, 3200);
-      }, 1000);
+      }, 900);
       return;
     }
 
@@ -1668,7 +1781,9 @@
     var meta = JSON.parse(vaultData);
     try {
       authBtn.classList.add('busy');
-      authBtnLabel.textContent = 'Verifying with Touch ID…';
+      if (authBtnSpinner) authBtnSpinner.style.display = 'inline-block';
+      if (authBtnIcon) authBtnIcon.style.display = 'none';
+      authBtnLabel.textContent = 'Waiting for Touch ID...';
 
       var challengeBytes = hexToBytes(currentPending.messageHex);
       var assertion = await navigator.credentials.get({
@@ -1709,12 +1824,19 @@
         amountSol: currentPending.amountSol,
         recipient: currentPending.recipient,
         actionType: currentPending.actionType || 'SOL Transfer',
-        network: currentPending.network || 'Solana Devnet'
+        network: currentPending.network || 'Solana devnet'
       });
 
       currentPending.signed = true;
       authBtn.classList.remove('busy');
+      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
       authBtnLabel.textContent = 'Authorize with Touch ID';
+      if (approvedAmount) approvedAmount.textContent = (currentPending.amountSol ? currentPending.amountSol + ' SOL' : 'Transfer Approved');
+      if (approvedTarget) {
+        var recip = currentPending.recipient || '';
+        approvedTarget.textContent = recip ? ('to ' + (recip.length > 16 ? recip.slice(0, 8) + '..' + recip.slice(-6) : recip)) : '';
+      }
       showState(stateApproved);
       showToast('Authorized in Secure Enclave');
 
@@ -1725,16 +1847,23 @@
 
     } catch (err) {
       authBtn.classList.remove('busy');
+      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
       authBtnLabel.textContent = 'Authorize with Touch ID';
       errorBox.textContent = err.message || 'Touch ID verification failed.';
       errorBox.style.display = 'block';
     }
   });
 
-  // Enter shortcut
+  // Enter and Escape keyboard shortcuts
   window.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && currentPending && !currentPending.signed && !authBtn.classList.contains('busy')) {
+      e.preventDefault();
       authBtn.click();
+    }
+    if (e.key === 'Escape' && currentPending && !authBtn.classList.contains('busy')) {
+      e.preventDefault();
+      declineBtn.click();
     }
   });
 

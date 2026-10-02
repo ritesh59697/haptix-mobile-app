@@ -659,8 +659,12 @@ export function HaptixSendSheet({
                 relayHost,
                 messageHex,
                 amountSol: amt,
+                amountUsd: solPriceUsd > 0 ? (amt * solPriceUsd).toFixed(2) : undefined,
+                feeSol: `${feeEstimate?.sol ?? SEND_NETWORK_FEE_SOL} SOL`,
                 recipient: toPubkey.toBase58(),
                 walletPda: walletPda.toBase58(),
+                walletName: activeWallet?.name || 'Hardware Vault',
+                spendThresholdSol: spendThreshold,
               })
               currentRelayTxRef.current = { relayHost, txId }
 
