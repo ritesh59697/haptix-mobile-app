@@ -168,15 +168,13 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
   const handleStartCreate = () => {
     Haptics.selectionAsync()
-    const defaultName =
-      selectedMode === 'vault'
-        ? `Hardware Vault ${wallets.length + 1}`
-        : `Everyday Account ${wallets.length + 1}`
+    setSelectedMode('everyday')
+    const defaultName = `Everyday Account ${wallets.length + 1}`
     setNewAccountName(defaultName)
     setVaultKeySource('mac')
     setMacVaultKeyHex('')
     setPrimaryKeyLabel('Device Biometrics (Primary)')
-    setSecondaryKeyLabel('Mac Touch ID (Vault Key)')
+    setSecondaryKeyLabel('Device Biometrics (Backup)')
     setGuardianAddress('')
     setShowAdvanced(false)
     setIsCreating(true)
@@ -204,18 +202,20 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
           : 'Vault Key (Security Key)'
       )
     } else {
-      setSecondaryKeyLabel('Backup Passkey')
+      setSecondaryKeyLabel('Device Biometrics (Backup)')
     }
   }
 
   const handleSelectVaultSource = (source: 'mac' | 'hardware') => {
     Haptics.selectionAsync()
     setVaultKeySource(source)
-    setSecondaryKeyLabel(
-      source === 'mac'
-        ? 'Mac Touch ID (Vault Key)'
-        : 'Vault Key (Security Key)'
-    )
+    if (selectedMode === 'vault') {
+      setSecondaryKeyLabel(
+        source === 'mac'
+          ? 'Mac Touch ID (Vault Key)'
+          : 'Vault Key (Security Key)'
+      )
+    }
   }
 
   const handleCancelCreate = () => {
@@ -936,7 +936,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       ]}
                       value={primaryKeyLabel}
                       onChangeText={setPrimaryKeyLabel}
-                      placeholder="e.g. Primary Passkey"
+                      placeholder="Device Biometrics (Primary)"
                       placeholderTextColor={theme.textMuted}
                       returnKeyType="next"
                     />
@@ -945,7 +945,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                   {/* Secondary Key Label */}
                   <View style={styles.formGroup}>
                     <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                      Passkey 2 name, backup
+                      {selectedMode === 'vault' ? 'Passkey 2 name, vault key' : 'Passkey 2 name, backup'}
                     </Text>
                     <TextInput
                       style={[
@@ -960,8 +960,8 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       onChangeText={setSecondaryKeyLabel}
                       placeholder={
                         selectedMode === 'vault'
-                          ? (vaultKeySource === 'mac' ? 'Vault Key (Hardware / Laptop)' : 'Vault Key (Security Key)')
-                          : 'Backup Passkey'
+                          ? (vaultKeySource === 'mac' ? 'Mac Touch ID (Vault Key)' : 'Vault Key (Security Key)')
+                          : 'Device Biometrics (Backup)'
                       }
                       placeholderTextColor={theme.textMuted}
                       returnKeyType="next"
@@ -970,7 +970,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                 </View>
               )}
 
-              {/* Hardware Biometric Notice */}
+              {/* Hardware Biometric / Security Notice */}
               <View
                 style={[
                   styles.biometricNoticeBox,
@@ -979,9 +979,18 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                   },
                 ]}
               >
-                <MaterialIcons name="fingerprint" size={20} color={theme.textMuted} style={{ marginTop: 2 }} />
+                <MaterialIcons
+                  name={selectedMode === 'vault' ? 'devices' : 'fingerprint'}
+                  size={20}
+                  color={theme.textMuted}
+                  style={{ marginTop: 2 }}
+                />
                 <Text style={[styles.biometricNoticeText, { color: theme.textSecondary }]}>
-                  Creating this account will prompt your fingerprint sensor to mint a hardware-backed Secp256r1 passkey inside the secure enclave.
+                  {selectedMode === 'vault'
+                    ? (vaultKeySource === 'mac'
+                        ? 'Key 1 is on this phone. Key 2 is on your Mac Touch ID and required for all sends (0 SOL limit). Survives a lost phone.'
+                        : 'Key 1 is on this phone. Key 2 is on your USB / NFC security key. Survives a lost phone.')
+                    : "Two keys held in this phone's chip. Both are required above your 0.1 SOL limit. If this phone is lost, both keys are lost and your Recovery Guardian is the only way back."}
                 </Text>
               </View>
 
