@@ -86,6 +86,12 @@ export default function RecoverySettingsScreen() {
   const [guardianDraft, setGuardianDraft] = useState('')
   const [showGuardianEditor, setShowGuardianEditor] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [guardianSuccess, setGuardianSuccess] = useState<{
+    newGuardian: string
+    previousGuardian: string | null
+    signature: string
+  } | null>(null)
+  const [copiedSig, setCopiedSig] = useState(false)
   const [guardianBusy, setGuardianBusy] = useState(false)
   const [showPolicySheet, setShowPolicySheet] = useState(false)
   const [nowSeconds, setNowSeconds] = useState(() => Math.floor(Date.now() / 1000))
@@ -466,6 +472,8 @@ export default function RecoverySettingsScreen() {
         'confirmed',
       )
 
+      const prevGuardian = onChainWallet?.guardian?.toBase58() ?? activeWallet?.guardianAddress ?? null
+
       // The record carries the guardian so a wallet that is re-initialized from this
       // device is created with the one just installed, rather than the old default.
       await updateWallet({ ...activeWallet, guardianAddress: parsed.address })
@@ -474,15 +482,11 @@ export default function RecoverySettingsScreen() {
       await refreshOnChain()
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      dialog.alert(
-        'Guardian Updated',
-        `Verified with both passkeys and set the guardian to ${ellipsify(parsed.address, 6)}.\n\n` +
-          `That address can now start a recovery and nothing else. It cannot move funds, and this device ` +
-          `no longer can \u2014 the button above will go dead unless the new guardian key is held here.\n\nTx: ${ellipsify(
-            sig,
-            8,
-          )}`,
-      )
+      setGuardianSuccess({
+        newGuardian: parsed.address,
+        previousGuardian: prevGuardian && prevGuardian !== parsed.address ? prevGuardian : null,
+        signature: sig,
+      })
     } catch (err: any) {
       console.error('[Haptix Guardian] Set error:', formatChainErrorForLog(err))
       dialog.alert(
@@ -1108,6 +1112,103 @@ export default function RecoverySettingsScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Guardian Updated Success Modal */}
+      <Modal
+        visible={guardianSuccess !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setGuardianSuccess(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setGuardianSuccess(null)}>
+          {guardianSuccess && (
+            <Pressable
+              style={styles.successSheetCard}
+              onPress={(e) => e.stopPropagation()}
+            >
+              {/* Drag Handle */}
+              <View style={styles.successHandle} />
+
+              {/* Header with Emerald Checkmark Ring */}
+              <View style={styles.successHeader}>
+                <View style={styles.successRing}>
+                  <MaterialIcons name="check" size={28} color="#5FBF7A" />
+                </View>
+
+                <Text style={styles.successLabel}>Guardian updated</Text>
+                <Text style={styles.successHeroAddress}>
+                  {ellipsify(guardianSuccess.newGuardian, 6)}
+                </Text>
+                {guardianSuccess.previousGuardian ? (
+                  <Text style={styles.successPrevious}>
+                    Changed from {ellipsify(guardianSuccess.previousGuardian, 6)}
+                  </Text>
+                ) : null}
+              </View>
+
+              {/* Detail Box */}
+              <View style={styles.successDetailBox}>
+                <View style={styles.successDetailRow}>
+                  <Text style={styles.successDetailLabel}>Approved with</Text>
+                  <Text style={styles.successDetailValue}>Both passkeys</Text>
+                </View>
+                <View style={styles.successDetailRow}>
+                  <Text style={styles.successDetailLabel}>Can</Text>
+                  <Text style={styles.successDetailValue}>Start a recovery</Text>
+                </View>
+                <View style={styles.successDetailRow}>
+                  <Text style={styles.successDetailLabel}>Cannot</Text>
+                  <Text style={styles.successDetailValue}>Move funds</Text>
+                </View>
+                <View style={styles.successDetailRowLast}>
+                  <Text style={styles.successDetailLabel}>Signature</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Clipboard.setString(guardianSuccess.signature)
+                      setCopiedSig(true)
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                      setTimeout(() => setCopiedSig(false), 2000)
+                    }}
+                    style={styles.successSigWrap}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.successSigMono}>
+                      {ellipsify(guardianSuccess.signature, 8)}
+                    </Text>
+                    <MaterialIcons
+                      name={copiedSig ? 'check' : 'content-copy'}
+                      size={13}
+                      color={copiedSig ? '#5FBF7A' : '#8A8985'}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Done Button */}
+              <TouchableOpacity
+                style={styles.successDoneBtn}
+                onPress={() => setGuardianSuccess(null)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.successDoneText}>Done</Text>
+              </TouchableOpacity>
+
+              {/* View on Solscan Button */}
+              <TouchableOpacity
+                style={styles.successExplorerBtn}
+                onPress={() => {
+                  const url = getExplorerUrl(`tx/${guardianSuccess.signature}`)
+                  Linking.openURL(url)
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="open-in-new" size={15} color={isDark ? '#8A8985' : '#6B6A64'} />
+                <Text style={styles.successExplorerText}>View on Solscan</Text>
+              </TouchableOpacity>
+            </Pressable>
+          )}
+        </Pressable>
+      </Modal>
     </View>
   )
 }
@@ -1514,5 +1615,131 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       fontSize: 14,
       fontWeight: '500',
       color: '#FFFFFF',
+    },
+    successSheetCard: {
+      width: '100%',
+      maxWidth: 340,
+      backgroundColor: isDark ? '#0C0C0D' : '#FFFFFF',
+      borderRadius: 18,
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#E6E4DE',
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 18,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 18 },
+      shadowOpacity: 0.6,
+      shadowRadius: 36,
+      elevation: 24,
+    },
+    successHandle: {
+      width: 36,
+      height: 4,
+      backgroundColor: isDark ? '#3A3A37' : '#D8D5CE',
+      borderRadius: 2,
+      alignSelf: 'center',
+      marginBottom: 20,
+    },
+    successHeader: {
+      alignItems: 'center',
+      marginBottom: 22,
+    },
+    successRing: {
+      width: 68,
+      height: 68,
+      borderRadius: 34,
+      backgroundColor: 'rgba(95, 191, 122, 0.12)',
+      borderWidth: 8,
+      borderColor: 'rgba(95, 191, 122, 0.06)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 18,
+    },
+    successLabel: {
+      fontSize: 12,
+      color: isDark ? '#8A8985' : '#6B6A64',
+      marginBottom: 6,
+    },
+    successHeroAddress: {
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+      fontSize: 22,
+      fontWeight: '600',
+      letterSpacing: -0.2,
+      color: isDark ? '#F2F1EE' : '#181714',
+    },
+    successPrevious: {
+      fontSize: 12.5,
+      color: isDark ? '#8A8985' : '#6B6A64',
+      marginTop: 6,
+    },
+    successDetailBox: {
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#E6E4DE',
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 2,
+      backgroundColor: isDark ? '#141416' : '#FAFAFA',
+      marginBottom: 16,
+    },
+    successDetailRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 11,
+      borderBottomWidth: 0.5,
+      borderBottomColor: isDark ? '#201F1D' : '#EEECE7',
+    },
+    successDetailRowLast: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: 11,
+    },
+    successDetailLabel: {
+      fontSize: 13,
+      color: isDark ? '#8A8985' : '#6B6A64',
+    },
+    successDetailValue: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: isDark ? '#F2F1EE' : '#181714',
+    },
+    successSigWrap: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    successSigMono: {
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+      fontSize: 12,
+      color: isDark ? '#F2F1EE' : '#181714',
+    },
+    successDoneBtn: {
+      backgroundColor: isDark ? '#6C8CFF' : theme.accent,
+      borderRadius: 12,
+      paddingVertical: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 8,
+    },
+    successDoneText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#0C0C0D',
+    },
+    successExplorerBtn: {
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#E6E4DE',
+      borderRadius: 12,
+      paddingVertical: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7,
+    },
+    successExplorerText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: isDark ? '#F2F1EE' : '#181714',
     },
   })
