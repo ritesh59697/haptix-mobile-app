@@ -657,7 +657,10 @@ export function HaptixSendSheet({
                   clientDataJSON: hexToBytes(sigPayload.clientDataJSONHex),
                 }
               }
-            } catch (relayErr) {
+            } catch (relayErr: any) {
+              if (relayErr?.message?.includes('declined')) {
+                throw new Error('Transfer was declined on Mac Touch ID.')
+              }
               console.warn('[Haptix Send] Vault relay connection failed:', relayErr)
             }
           }

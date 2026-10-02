@@ -1550,6 +1550,8 @@
     showState(stateRequest);
   }
 
+  var declinedTxIds = {};
+
   async function pollPending() {
     // 1. URL params check
     var params = new URLSearchParams(window.location.search);
@@ -1570,7 +1572,7 @@
       var res = await fetch(relayOrigin + '/pending-tx');
       if (res.ok) {
         var data = await res.json();
-        if (data.pending && (!currentPending || currentPending.id !== data.pending.id)) {
+        if (data.pending && !declinedTxIds[data.pending.id] && (!currentPending || currentPending.id !== data.pending.id)) {
           displayPendingRequest(data.pending);
         } else if (!data.pending && currentPending && !currentPending.signed) {
           showState(stateIdle);
@@ -1604,9 +1606,21 @@
   });
 
   // Decline Handler
-  declineBtn.addEventListener('click', function () {
+  declineBtn.addEventListener('click', async function () {
+    var declinedId = currentPending ? currentPending.id : null;
+    if (declinedId) {
+      declinedTxIds[declinedId] = true;
+      try {
+        await fetch(relayOrigin + '/decline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ txId: declinedId })
+        });
+      } catch (e) {}
+    }
     currentPending = null;
     showState(stateIdle);
+    showToast('Transfer declined on Mac');
     if (isPreviewing) {
       previewToggleBtn.textContent = 'Preview Approval View';
       isPreviewing = false;
