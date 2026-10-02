@@ -12,6 +12,7 @@ interface PendingTx {
   recipient: string
   walletPda: string
   timestamp: number
+  status?: 'pending' | 'signed' | 'declined'
   signature?: {
     signatureHex: string
     authenticatorDataHex: string
@@ -88,8 +89,13 @@ const server = http.createServer((req, res) => {
 
   // Mac checks for pending transfer: GET /pending-tx
   if (req.method === 'GET' && url.pathname === '/pending-tx') {
+    if (currentPendingTx && currentPendingTx.status !== 'declined') {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ pending: currentPendingTx }))
+      return
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ pending: currentPendingTx }))
+    res.end(JSON.stringify({ pending: null }))
     return
   }
 
@@ -124,23 +130,55 @@ const server = http.createServer((req, res) => {
   // Phone waits for signature: GET /tx-signature?id=...
   if (req.method === 'GET' && url.pathname === '/tx-signature') {
     const txId = url.searchParams.get('id')
-    if (currentPendingTx && (!txId || currentPendingTx.id === txId) && currentPendingTx.signature) {
-      const sig = currentPendingTx.signature
-      currentPendingTx = null // consumed
-      res.writeHead(200, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ ok: true, signature: sig }))
-      return
+    if (currentPendingTx && (!txId || currentPendingTx.id === txId)) {
+      if (currentPendingTx.status === 'declined') {
+        const declinedId = currentPendingTx.id
+        currentPendingTx = null // consumed
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ ok: false, declined: true, txId: declinedId, error: 'Transfer was declined on Mac Touch ID' }))
+        return
+      }
+      if (currentPendingTx.signature) {
+        const sig = currentPendingTx.signature
+        currentPendingTx = null // consumed
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ ok: true, signature: sig }))
+        return
+      }
     }
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ ok: false, waiting: true }))
     return
   }
 
-  // Reset or cancel
-  if (req.method === 'POST' && url.pathname === '/cancel') {
-    currentPendingTx = null
-    res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ ok: true }))
+  // Mac or Phone declines or cancels transfer: POST /decline or /cancel
+  if (req.method === 'POST' && (url.pathname === '/decline' || url.pathname === '/cancel')) {
+    let body = ''
+    req.on('data', (chunk) => (body += chunk))
+    req.on('end', () => {
+      try {
+        const data = body ? JSON.parse(body) : {}
+        const txId = data.txId || url.searchParams.get('id')
+        if (currentPendingTx && (!txId || currentPendingTx.id === txId)) {
+          console.log(`[Relay] Transfer ${currentPendingTx.id} marked as DECLINED by user`)
+          currentPendingTx.status = 'declined'
+          // Retain declined status briefly so phone can read it on next poll, then cleanup
+          setTimeout(() => {
+            if (currentPendingTx?.status === 'declined') {
+              currentPendingTx = null
+            }
+          }, 8000)
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ ok: true, status: 'declined' }))
+      } catch {
+        if (currentPendingTx) {
+          currentPendingTx.status = 'declined'
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ ok: true, status: 'declined' }))
+      }
+    })
     return
   }
 

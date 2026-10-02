@@ -175,8 +175,15 @@ export async function pollVaultSignature(
         if (data.ok && data.signature) {
           return data.signature as VaultSignaturePayload
         }
+        if (data.declined) {
+          throw new Error('Transfer was declined on Mac Touch ID.')
+        }
       }
-    } catch {}
+    } catch (err: any) {
+      if (err?.message?.includes('declined')) {
+        throw err
+      }
+    }
 
     await new Promise((r) => setTimeout(r, pollIntervalMs))
   }
