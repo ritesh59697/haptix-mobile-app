@@ -143,21 +143,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
     // 1. Generate Primary Passkey
     const primary = await getOrCreatePrimaryPasskey(finalName, { forceNew })
 
-    // 2. Generate Secondary Passkey (Mac Touch ID vs Security Key vs Platform)
+    // 2. Generate Secondary Passkey (Second Device vs Security Key vs Platform)
     let secondary: PasskeyInfo
     if (mode === 'vault' && options?.vaultKeySource === 'mac') {
       const cleanHex = options.macVaultKeyHex?.trim().startsWith('0x')
         ? options.macVaultKeyHex.trim().slice(2)
         : options.macVaultKeyHex?.trim() || ''
       if (!cleanHex || cleanHex.length !== 66 || (!cleanHex.startsWith('02') && !cleanHex.startsWith('03'))) {
-        throw new Error('Please enter a valid 33-byte Mac Touch ID public key hex (starts with 02 or 03).')
+        throw new Error('Please enter a valid 33-byte second device public key hex (starts with 02 or 03).')
       }
       secondary = {
         id: 'secondary',
         credentialId: 'mac_vault_' + cleanHex.slice(0, 16),
         publicKey: hexToBytes(cleanHex),
         publicKeyHex: cleanHex,
-        label: options?.secondaryLabel || 'Mac Touch ID (Vault Key)',
+        label: options?.secondaryLabel || 'Second Device (Vault Key)',
         hasBiometrics: true,
         mode: 'hardware',
         hardwareBacked: true,

@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Haptix",
+  "name": "Haptix — Solana Mobile",
   "colors": {
-    "primary": "#6C6AF3",
-    "light": "#6C6AF3",
-    "dark": "#9C93FF"
+    "primary": "#4F6BFF",
+    "light": "#4F6BFF",
+    "dark": "#6C8CFF"
   },
   "favicon": "/favicon.ico",
   "navigation": {
@@ -23,7 +23,7 @@
             ]
           },
           {
-            "group": "Solana Mobile",
+            "group": "Solana Mobile & Seeker",
             "pages": [
               "solana/architecture",
               "solana/vault-mode",
@@ -31,7 +31,7 @@
             ]
           },
           {
-            "group": "Developer SDK",
+            "group": "Autonomous AI Agents",
             "pages": [
               "sdk/overview"
             ]
@@ -43,7 +43,7 @@
       "anchors": [
         {
           "anchor": "GitHub",
-          "href": "https://github.com/ritesh59697/haptix",
+          "href": "https://github.com/ritesh59697/haptix-mobile-app",
           "icon": "github"
         },
         {
@@ -55,8 +55,8 @@
     }
   },
   "logo": {
-    "light": "/assets/haptix_logo_light.svg",
-    "dark": "/assets/haptix_logo_dark.svg"
+    "light": "/assets/logotext-light.png",
+    "dark": "/assets/logotext-dark.png"
   },
   "navbar": {
     "links": [

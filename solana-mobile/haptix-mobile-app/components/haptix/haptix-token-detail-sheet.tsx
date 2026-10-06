@@ -127,6 +127,10 @@ export function HaptixTokenDetailSheet({
     change: '+1.05%',
     changePct: 1.05,
     isPositive: true,
+    marketCap: '$70.9 B',
+    volume24h: '$1.6 B',
+    circulatingSupply: '588.1M SOL',
+    allTimeHigh: '$293.31',
   }
 
   const isPositive = activeToken.isPositive
@@ -505,25 +509,25 @@ export function HaptixTokenDetailSheet({
                 <View style={styles.statItem}>
                   <Text style={[styles.statLabel, { color: theme.textMuted }]}>Market Cap</Text>
                   <Text style={[styles.statValue, { color: theme.textPrimary }]}>
-                    {activeToken.symbol === 'SOL' ? '$54.2 B' : activeToken.symbol === 'USDC' ? '$34.1 B' : '$1.2 B'}
+                    {activeToken.marketCap || (activeToken.symbol === 'SOL' ? '$70.9 B' : '—')}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
                   <Text style={[styles.statLabel, { color: theme.textMuted }]}>24h Volume</Text>
                   <Text style={[styles.statValue, { color: theme.textPrimary }]}>
-                    {activeToken.symbol === 'SOL' ? '$3.8 B' : '$780 M'}
+                    {activeToken.volume24h || (activeToken.symbol === 'SOL' ? '$1.6 B' : '—')}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
                   <Text style={[styles.statLabel, { color: theme.textMuted }]}>Circulating Supply</Text>
                   <Text style={[styles.statValue, { color: theme.textPrimary }]}>
-                    {activeToken.symbol === 'SOL' ? '468.2M SOL' : '10.0B'}
+                    {activeToken.circulatingSupply || (activeToken.symbol === 'SOL' ? '588.1M SOL' : '—')}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
                   <Text style={[styles.statLabel, { color: theme.textMuted }]}>All-Time High</Text>
                   <Text style={[styles.statValue, { color: theme.textPrimary }]}>
-                    {activeToken.symbol === 'SOL' ? '$259.96' : '$1.00'}
+                    {activeToken.allTimeHigh || (activeToken.symbol === 'SOL' ? '$293.31' : '$1.00')}
                   </Text>
                 </View>
               </View>

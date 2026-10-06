@@ -1,60 +1,72 @@
 ---
 title: "SDK Overview"
-description: "How to use @haptix/sdk to request AI Session Keys."
+description: "How to integrate @haptix/sdk to request scoped AI agent session keys on Solana."
 ---
 
-# Haptix SDK
+# Haptix Solana SDK
 
-The `@haptix/sdk` provides a simple interface for AI agents and dApps to request and utilize autonomous **Session Keys**. 
+The `@haptix/sdk` provides a clean TypeScript interface for AI agents, trading bots, and mobile dApps to request and utilize autonomous **Session Keys** on Solana.
 
-If you are building an AI agent (e.g., using Eliza, LangChain, or a custom script) that needs to trade or interact with Web3 on behalf of a user, you should integrate the Haptix SDK to request an on-chain budget.
+If you are developing an autonomous agent (e.g. using Eliza, LangChain, or an Anchor-based bot) that executes trades or manages liquidity on Solana, the Haptix SDK allows you to request an on-chain delegated budget without asking the user for their private keys.
+
+---
 
 ## Installation
 
 Install the SDK via npm or yarn:
 
 ```bash
-npm install @haptix/sdk
+npm install @haptix/sdk @solana/web3.js
 # or
-yarn add @haptix/sdk
+yarn add @haptix/sdk @solana/web3.js
 ```
 
-## Requesting a Session Key
+---
 
-Your AI agent must first request permission from the user to operate on their behalf. The user will be prompted to biometricly approve a specific set of rules (e.g., "Allow trading up to 10 USDC per day").
+## Requesting a Scoped Session Key
+
+Your AI agent creates an ephemeral Solana keypair and requests an on-chain session from the Haptix smart wallet. The user confirms via a **2-of-2 Hardware Passkey Quorum** to authorize the bot's budget:
 
 ```typescript
-import { HaptixAgent } from '@haptix/sdk';
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { HaptixClient } from '@haptix/sdk';
 
-// Initialize the agent
-const agent = new HaptixAgent({
-  name: "My Trading Bot",
-  description: "DCA into ETH every hour",
+const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+const haptix = new HaptixClient({ connection });
+
+// Define the bot's autonomous trading policy
+const session = await haptix.requestAgentSession({
+  agentName: 'Jupiter Auto-DCA Bot',
+  walletAddress: new PublicKey('2LNt...oBXs'),
+  allowanceSol: 0.25,        // Max 0.25 SOL total budget
+  validHours: 24,            // Expires automatically in 24 hours
 });
 
-// Request a Session Key with a specific policy
-const session = await agent.requestSession({
-  maxSpend: "10", // 10 USDC
-  token: "USDC",
-  duration: 86400, // 24 hours
-});
-
-console.log("Session Key Generated:", session.address);
+console.log('Session Key Registered on Solana:', session.agentPublicKey.toBase58());
 ```
 
-## Executing Autonomous Transactions
+---
 
-Once the user approves the policy, the smart contract registers the session key. Your agent can now use this key to sign transactions, provided they stay within the policy constraints.
+## Executing Autonomous Solana Trades
+
+Once registered on-chain via the Anchor program's `grant_agent_session` instruction, the bot signs transactions using its local keypair without prompting the user:
 
 ```typescript
-// The agent attempts to buy ETH using its session key
-const txHash = await session.execute({
-  to: "0xDefiDexRouterAddress...",
-  value: "0",
-  data: "0xSwapData...", 
+// The agent executes a real trade on Solana Devnet (e.g. buying USDC via Jupiter)
+const txSignature = await session.executeTrade({
+  recipient: new PublicKey('JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4'),
+  amountSol: 0.05, // Well within the 0.25 SOL daily allowance
 });
 
-console.log("Autonomous Trade Executed:", txHash);
+console.log('Autonomous Solana Trade Executed:', txSignature);
 ```
 
-If the agent attempts to exceed the policy, the transaction will either **revert** or **escalate** to the user's phone for a biometric override, depending on the tier limits set by the user.
+---
+
+## On-Chain Policy Enforcement
+
+The Haptix Anchor program validates every trade directly on the Solana validator runtime:
+
+1. **Within Budget (≤ Allowance):** Executes immediately with zero biometric prompts.
+2. **Exceeds Budget (> Allowance):** The on-chain program **rejects** the trade. The bot must request human biometric approval to expand its budget.
+3. **Emergency Revocation:** The wallet owner can invoke `revoke_agent_session` on-chain at any time from the mobile app to immediately freeze the bot's signing permissions.

@@ -51,7 +51,6 @@ import {
   PrismDepthButton,
   DepthOutlineButton,
   CopyActionButton,
-  ThemeToggleButton,
   HoldToConfirmButton,
 } from '@/components/ui'
 import { HaptixBiometricPromptSheet } from './haptix-biometric-prompt-sheet'
@@ -444,6 +443,142 @@ export function HaptixWalletScreen() {
     [network],
   )
 
+  // The wallet PDA has to exist on-chain before the program can write to it, and
+  // `initialize_wallet` gets its own transaction rather than riding along with a
+  // passkey instruction. Each hardware passkey contributes a secp256r1 precompile
+  // carrying a full WebAuthn assertion -- authenticatorData || sha256(clientDataJSON),
+  // plus the raw clientDataJSON so the program can re-hash it -- and two of those
+  // already consume most of Solana's 1232-byte transaction limit. Returns the init
+  // signature, or null when the wallet was already live.
+  const ensureWalletInitializedOnChain = useCallback(
+    async (walletPda: PublicKey, payer: Keypair): Promise<string | null> => {
+      if (!activeWallet?.primaryPasskeyHex || !activeWallet?.secondaryPasskeyHex) return null
+
+      const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
+      if (onChain) return null
+
+      const initIx = createInitializeWalletInstruction({
+        payer: payer.publicKey,
+        walletPda,
+        primaryPasskey: new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex')),
+        secondaryPasskey: new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex')),
+        spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
+        guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey, walletPda),
+      })
+
+      const blockhash = await connection.getLatestBlockhash('confirmed')
+      const tx = new Transaction({
+        feePayer: payer.publicKey,
+        recentBlockhash: blockhash.blockhash,
+      }).add(initIx)
+      tx.sign(payer)
+
+      const sig = await connection.sendRawTransaction(tx.serialize(), {
+        skipPreflight: false,
+        preflightCommitment: 'confirmed',
+      })
+
+      await connection.confirmTransaction(
+        {
+          signature: sig,
+          blockhash: blockhash.blockhash,
+          lastValidBlockHeight: blockhash.lastValidBlockHeight,
+        },
+        'confirmed',
+      )
+
+      return sig
+    },
+    [activeWallet?.primaryPasskeyHex, activeWallet?.secondaryPasskeyHex, activeWallet?.guardianAddress, connection, spendThreshold],
+  )
+
+  // Devnet auto-funding for newly created / zero-balance accounts
+  const autoFundInProgressRef = useRef<Set<string>>(new Set())
+
+  const triggerDevnetAutoFund = useCallback(
+    async (address: string, pubkey: PublicKey) => {
+      if (network !== 'devnet') return
+      if (autoFundInProgressRef.current.has(address)) return
+
+      const storageKey = `@haptix_devnet_autofunded_${address}`
+      try {
+        const alreadyAttempted = await AsyncStorage.getItem(storageKey)
+        if (alreadyAttempted) return
+
+        autoFundInProgressRef.current.add(address)
+        await AsyncStorage.setItem(storageKey, 'pending')
+
+        let fundSig: string | null = null
+        try {
+          fundSig = await fundDevnetWallet(connection, pubkey, 0.1)
+        } catch (fundErr) {
+          try {
+            const airdropSig = await connection.requestAirdrop(pubkey, 0.1 * LAMPORTS_PER_SOL)
+            await connection.confirmTransaction(airdropSig, 'confirmed')
+            fundSig = airdropSig
+          } catch {
+            console.warn('[Haptix] Devnet auto-fund fallback airdrop failed:', fundErr)
+          }
+        }
+
+        if (fundSig) {
+          await AsyncStorage.setItem(storageKey, 'true')
+
+          // Also initialize the counterfactual wallet PDA on-chain
+          try {
+            const payer = await getFundedDevnetPayer(connection).catch(() => null)
+            if (payer) {
+              await ensureWalletInitializedOnChain(pubkey, payer).catch(() => null)
+            }
+          } catch {
+            // Ignore init failure if dev mode off or funder missing
+          }
+
+          const newTx: TransactionRecord = {
+            signature: fundSig,
+            type: 'airdrop',
+            direction: 'receive',
+            amount: 0.1,
+            tokenSymbol: 'SOL',
+            recipientOrSender: 'Devnet Starter Faucet',
+            timestamp: Date.now(),
+            status: 'confirmed',
+            securityType: 'Relayer Sponsoring',
+          }
+
+          // Persist directly to this address's stored history
+          const existingTxs = await loadTxHistory(address, 'devnet')
+          await saveTxHistory(address, [newTx, ...existingTxs], 'devnet')
+
+          if (activeWallet?.address === address) {
+            setTransactions((prev) => [newTx, ...prev])
+          }
+
+          // Refresh live balance
+          const newLamports = await connection.getBalance(pubkey).catch(() => 0.1 * LAMPORTS_PER_SOL)
+          setBalance(newLamports / LAMPORTS_PER_SOL)
+          void saveCachedBalance(address, newLamports, 'devnet')
+
+          const newState = await fetchHaptixWallet(connection, pubkey).catch(() => null)
+          if (newState) {
+            setOnChainWallet(newState)
+            setIsFrozen(newState.isFrozen)
+            setSpendThreshold(Number(newState.spendThresholdLamports) / LAMPORTS_PER_SOL)
+          }
+
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+        } else {
+          await AsyncStorage.removeItem(storageKey).catch(() => {})
+        }
+      } catch (e) {
+        console.warn('[Haptix] Devnet auto-fund error:', e)
+      } finally {
+        autoFundInProgressRef.current.delete(address)
+      }
+    },
+    [connection, network, activeWallet?.address, ensureWalletInitializedOnChain],
+  )
+
   // Fetch on-chain balance and Anchor account state from Solana Devnet
   const fetchRealBalance = useCallback(async () => {
     if (!activeWallet?.address) return
@@ -463,6 +598,9 @@ export function HaptixWalletScreen() {
           setIsFrozen(state.isFrozen)
           setSpendThreshold(Number(state.spendThresholdLamports) / LAMPORTS_PER_SOL)
         }
+        if (lamports === 0) {
+          void triggerDevnetAutoFund(activeWallet.address, pubkey)
+        }
       }
     } catch {
       setIsInitialBalanceLoaded(true)
@@ -471,7 +609,7 @@ export function HaptixWalletScreen() {
         `Could not reach the Solana ${network === 'devnet' ? 'devnet' : 'mainnet'} RPC. Balance may be out of date.`,
       )
     }
-  }, [activeWallet?.address, connection, network])
+  }, [activeWallet?.address, connection, network, triggerDevnetAutoFund])
 
   // Fetch recent transactions from Solana. Each signature is resolved to the
   // real parsed transaction so amount, direction and token symbol come from
@@ -479,7 +617,14 @@ export function HaptixWalletScreen() {
   const fetchRecentTransactions = useCallback(async () => {
     if (!activeWallet?.address) return
     try {
-      const records = await fetchOnChainTransactions(connection, new PublicKey(activeWallet.address), {
+      const pubkey = new PublicKey(activeWallet.address)
+      const signatures = await connection.getSignaturesForAddress(pubkey, { limit: 10 }).catch(() => [])
+      if (signatures.length === 0) {
+        // Prune foreign on-chain transactions if chain shows zero signatures for this address
+        setTransactions((prev) => prev.filter((tx) => tx.type === 'airdrop' || tx.recipientOrSender === 'Devnet Starter Faucet'))
+        return
+      }
+      const records = await fetchOnChainTransactions(connection, pubkey, {
         knownSignatures: parsedHistoryRef.current,
       })
       if (records.length > 0) {
@@ -522,17 +667,26 @@ export function HaptixWalletScreen() {
     }
   }, [activeWallet?.address, network])
 
+  // Track which account address & network the current `transactions` array corresponds to,
+  // preventing race conditions where switching accounts accidentally writes the previous
+  // account's history into the new account's storage.
+  const loadedTargetRef = useRef<{ address: string; network: string } | null>(null)
+
   // Hydrate persisted history so a reload does not wipe the activity list.
   // Scoped to cluster so devnet airdrops/transfers never bleed into mainnet views.
   useEffect(() => {
     const address = activeWallet?.address
-    if (!address) return
-    let cancelled = false
     // Immediately clear in-memory state on network or wallet address switch
+    loadedTargetRef.current = null
     setTransactions([])
     parsedHistoryRef.current = []
+
+    if (!address) return
+    let cancelled = false
+
     loadTxHistory(address, network).then((stored) => {
-      if (!cancelled && stored.length > 0) {
+      if (!cancelled) {
+        loadedTargetRef.current = { address, network }
         setTransactions(stored)
       }
     })
@@ -541,10 +695,18 @@ export function HaptixWalletScreen() {
     }
   }, [activeWallet?.address, network])
 
-  // Every change to the list is written back, so local-only entries survive too.
+  // Every change to the list is written back, strictly guarding that the transactions
+  // actually belong to the current address and network.
   useEffect(() => {
     const address = activeWallet?.address
-    if (!address || transactions.length === 0) return
+    if (!address) return
+    if (
+      !loadedTargetRef.current ||
+      loadedTargetRef.current.address !== address ||
+      loadedTargetRef.current.network !== network
+    ) {
+      return
+    }
     void saveTxHistory(address, transactions, network)
   }, [transactions, activeWallet?.address, network])
 
@@ -774,51 +936,7 @@ export function HaptixWalletScreen() {
     }
   }
 
-  // The wallet PDA has to exist on-chain before the program can write to it, and
-  // `initialize_wallet` gets its own transaction rather than riding along with a
-  // passkey instruction. Each hardware passkey contributes a secp256r1 precompile
-  // carrying a full WebAuthn assertion -- authenticatorData || sha256(clientDataJSON),
-  // plus the raw clientDataJSON so the program can re-hash it -- and two of those
-  // already consume most of Solana's 1232-byte transaction limit. Returns the init
-  // signature, or null when the wallet was already live.
-  const ensureWalletInitializedOnChain = async (walletPda: PublicKey, payer: Keypair): Promise<string | null> => {
-    if (!activeWallet?.primaryPasskeyHex || !activeWallet?.secondaryPasskeyHex) return null
 
-    const onChain = await fetchHaptixWallet(connection, walletPda).catch(() => null)
-    if (onChain) return null
-
-    const initIx = createInitializeWalletInstruction({
-      payer: payer.publicKey,
-      walletPda,
-      primaryPasskey: new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex')),
-      secondaryPasskey: new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex')),
-      spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-      guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey, walletPda),
-    })
-
-    const blockhash = await connection.getLatestBlockhash('confirmed')
-    const tx = new Transaction({
-      feePayer: payer.publicKey,
-      recentBlockhash: blockhash.blockhash,
-    }).add(initIx)
-    tx.sign(payer)
-
-    const sig = await connection.sendRawTransaction(tx.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: 'confirmed',
-    })
-
-    await connection.confirmTransaction(
-      {
-        signature: sig,
-        blockhash: blockhash.blockhash,
-        lastValidBlockHeight: blockhash.lastValidBlockHeight,
-      },
-      'confirmed',
-    )
-
-    return sig
-  }
 
   // Grant Scoped AI Agent Session Key on Solana Devnet (2-of-2 Passkey Quorum)
   const handleInitiateGrantSession = () => {
@@ -2484,9 +2602,6 @@ export function HaptixWalletScreen() {
         </View>
 
         <View style={styles.headerRight}>
-          {/* Quick Light/Dark Mode Switcher */}
-          <ThemeToggleButton size="compact" showLabel={false} />
-
           {/* Overflow Menu Button */}
           <TouchableOpacity
             style={[styles.headerIconBtn, styles.iconBtn]}
@@ -3165,8 +3280,9 @@ export function HaptixWalletScreen() {
                 setShowOverflowMenu(false)
                 handleCopyAddress()
               }}
+              activeOpacity={0.7}
             >
-              <MaterialIcons name="content-copy" size={18} color={theme.textSecondary} />
+              <MaterialIcons name="content-copy" size={20} color={theme.textPrimary} />
               <Text style={[styles.overflowRowText, styles.textPrimary]}>Copy wallet address</Text>
             </TouchableOpacity>
 
@@ -3176,64 +3292,12 @@ export function HaptixWalletScreen() {
               style={styles.overflowRow}
               onPress={() => {
                 setShowOverflowMenu(false)
-                Linking.openURL(
-                  `https://explorer.solana.com/address/${activeWallet?.address}?cluster=${
-                    network === 'devnet' ? 'devnet' : 'mainnet-beta'
-                  }`,
-                )
-              }}
-            >
-              <MaterialIcons name="open-in-new" size={18} color={theme.textSecondary} />
-              <Text style={[styles.overflowRowText, styles.textPrimary]}>View on Solana Explorer</Text>
-            </TouchableOpacity>
-
-            {network === 'devnet' && (
-              <>
-                <View style={[styles.overflowDivider, styles.divider]} />
-                <TouchableOpacity
-                  style={styles.overflowRow}
-                  onPress={() => {
-                    setShowOverflowMenu(false)
-                    handleRequestFaucet()
-                  }}
-                  disabled={isRequestingFaucet}
-                >
-                  {isRequestingFaucet ? (
-                    <ActivityIndicator size="small" color="#6c8cff" style={{ marginRight: 2 }} />
-                  ) : (
-                    <MaterialIcons name="water-drop" size={18} color="#6c8cff" />
-                  )}
-                  <Text style={[styles.overflowRowText, { color: '#6c8cff', fontWeight: '500' }]}>
-                    {isRequestingFaucet ? 'Requesting 0.2 SOL...' : 'Request Devnet Airdrop (+0.2 SOL)'}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-
-            <View style={[styles.overflowDivider, styles.divider]} />
-
-            <TouchableOpacity
-              style={styles.overflowRow}
-              onPress={() => {
-                setShowOverflowMenu(false)
                 router.push('/(tabs)/settings')
               }}
+              activeOpacity={0.7}
             >
-              <MaterialIcons name="settings" size={18} color={theme.textPrimary} />
-              <Text style={[styles.overflowRowText, styles.textPrimary]}>Settings & Network</Text>
-            </TouchableOpacity>
-
-            <View style={[styles.overflowDivider, styles.divider]} />
-
-            <TouchableOpacity
-              style={styles.overflowRow}
-              onPress={() => {
-                setShowOverflowMenu(false)
-                setDockTab('security')
-              }}
-            >
-              <MaterialIcons name="shield" size={18} color={theme.textPrimary} />
-              <Text style={[styles.overflowRowText, styles.textPrimary]}>Security</Text>
+              <MaterialIcons name="settings" size={20} color={theme.textPrimary} />
+              <Text style={[styles.overflowRowText, styles.textPrimary]}>Settings</Text>
             </TouchableOpacity>
 
             <View style={[styles.overflowDivider, styles.divider]} />
@@ -3244,14 +3308,22 @@ export function HaptixWalletScreen() {
                 setShowOverflowMenu(false)
                 lockWallet()
               }}
+              activeOpacity={0.7}
             >
-              <MaterialIcons name="lock" size={18} color={theme.textPrimary} />
-              <Text style={[styles.overflowRowText, styles.textPrimary]}>Lock wallet (Safe Lock)</Text>
+              <MaterialIcons name="lock-outline" size={20} color={theme.textPrimary} />
+              <Text style={[styles.overflowRowText, styles.textPrimary]}>Lock wallet</Text>
             </TouchableOpacity>
 
-
-
-            <View style={[styles.overflowDivider, styles.divider]} />
+            {/* Subtle separator gap before destructive action */}
+            <View
+              style={{
+                height: 6,
+                backgroundColor: isDark ? '#16161A' : '#F2F2F5',
+                marginHorizontal: -8,
+                marginVertical: 4,
+                borderRadius: 3,
+              }}
+            />
 
             <TouchableOpacity
               style={styles.overflowRow}
@@ -3263,8 +3335,9 @@ export function HaptixWalletScreen() {
                   router.replace('/sign-in')
                 })
               }}
+              activeOpacity={0.7}
             >
-              <MaterialIcons name="delete-outline" size={18} color={theme.roseText} />
+              <MaterialIcons name="delete-outline" size={20} color={theme.roseText} />
               <Text style={[styles.overflowRowText, { color: theme.roseText }]}>Remove from this device</Text>
             </TouchableOpacity>
           </View>

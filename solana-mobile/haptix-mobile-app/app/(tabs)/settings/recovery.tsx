@@ -19,7 +19,9 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { Buffer } from 'buffer'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import Clipboard from '@/utils/clipboard'
+const bs58: any = require('bs58')
 
 import { useAuth } from '@/components/auth/auth-provider'
 import { useCluster } from '@/components/cluster/cluster-provider'
@@ -95,6 +97,59 @@ export default function RecoverySettingsScreen() {
   const [guardianBusy, setGuardianBusy] = useState(false)
   const [showPolicySheet, setShowPolicySheet] = useState(false)
   const [nowSeconds, setNowSeconds] = useState(() => Math.floor(Date.now() / 1000))
+  const [autoGuardianKey, setAutoGuardianKey] = useState<string | null>(null)
+  const [showRevealModal, setShowRevealModal] = useState(false)
+  const [hasRevealedSecret, setHasRevealedSecret] = useState(false)
+  const [copiedPrivateKey, setCopiedPrivateKey] = useState(false)
+  const [copiedPublicAddress, setCopiedPublicAddress] = useState(false)
+  const [countdown, setCountdown] = useState(30)
+  const [hasSavedKeyChecked, setHasSavedKeyChecked] = useState(false)
+
+  // 30-second auto-hide countdown for revealed private key
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null
+    if (showRevealModal && hasRevealedSecret) {
+      timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            setHasRevealedSecret(false)
+            return 30
+          }
+          return prev - 1
+        })
+      }, 1000)
+    }
+    return () => {
+      if (timer) clearInterval(timer)
+    }
+  }, [showRevealModal, hasRevealedSecret])
+
+  useEffect(() => {
+    let cancelled = false
+    const checkAutoGuardian = async () => {
+      const guardianPubkey = onChainWallet?.guardian?.toBase58() || activeWallet?.guardianAddress
+      if (!guardianPubkey) {
+        if (!cancelled) setAutoGuardianKey(null)
+        return
+      }
+      try {
+        const storedHex = await AsyncStorage.getItem(`@haptix_auto_guardian_${guardianPubkey}`)
+        if (storedHex && !cancelled) {
+          const secretBytes = Buffer.from(storedHex, 'hex')
+          const base58Secret = bs58.encode(secretBytes)
+          setAutoGuardianKey(base58Secret)
+        } else if (!cancelled) {
+          setAutoGuardianKey(null)
+        }
+      } catch {
+        if (!cancelled) setAutoGuardianKey(null)
+      }
+    }
+    void checkAutoGuardian()
+    return () => {
+      cancelled = true
+    }
+  }, [onChainWallet?.guardian, activeWallet?.guardianAddress])
 
   const walletAddress = activeWallet?.address ?? null
 
@@ -498,9 +553,9 @@ export default function RecoverySettingsScreen() {
     }
   }
 
-  const handleSetGuardian = () => {
+  const handleSetGuardian = async () => {
     const parsed = guardianDraftParse
-    if (!parsed.address || !onChainWallet) {
+    if (!parsed.address) {
       dialog.alert('Check the guardian address', parsed.error ?? 'Enter the address that should guard this wallet.')
       return
     }
@@ -511,6 +566,32 @@ export default function RecoverySettingsScreen() {
       )
       return
     }
+
+    // If the wallet is not yet initialized on-chain, save the guardian address to the local wallet profile
+    if (!onChainWallet) {
+      if (!activeWallet) return
+      try {
+        setGuardianBusy(true)
+        await updateWallet({
+          ...activeWallet,
+          guardianAddress: parsed.address,
+        })
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+        dialog.alert(
+          'Guardian Address Saved',
+          `Your guardian address has been saved as ${ellipsify(parsed.address, 6)}. It will be registered on-chain when the wallet is initialized.`,
+        )
+        setGuardianDraft('')
+        setShowGuardianEditor(false)
+      } catch (err: any) {
+        dialog.alert('Error', err?.message || 'Failed to save guardian address.')
+      } finally {
+        setGuardianBusy(false)
+      }
+      return
+    }
+
+    // On-chain wallet: show passkey confirmation modal to execute on-chain tx
     setShowConfirmModal(true)
   }
 
@@ -541,203 +622,266 @@ export default function RecoverySettingsScreen() {
   )
 
   // Guardian Card (locked during an active recovery)
-  const renderGuardianCard = (isLocked: boolean) => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
-      <View style={styles.cardHeader}>
-        <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Guardian</Text>
-        <View
-          style={[
-            styles.tag,
-            { backgroundColor: 'transparent', borderColor: 'transparent', paddingHorizontal: 0, flexDirection: 'row', alignItems: 'center', gap: 4 },
-          ]}
-        >
-          <MaterialIcons
-            name={isGuardianConfigured ? 'check' : 'shield'}
-            size={14}
-            color={isGuardianConfigured ? theme.emeraldText : theme.textMuted}
-          />
-          <Text
-            style={[
-              styles.tagText,
-              { color: isGuardianConfigured ? theme.emeraldText : theme.textMuted, fontWeight: '400' },
-            ]}
-          >
-            {isGuardianConfigured ? 'Active' : 'Not configured'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.detailRow}>
-        <View style={{ flex: 1, paddingRight: 8 }}>
-          <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>
-            {isGuardianConfigured ? '1 guardian' : '0 guardians'}
-          </Text>
-          <Text style={[styles.detailDesc, { color: theme.textMuted }]}>
-            {isGuardianConfigured
-              ? 'Can only start a recovery, never move funds'
-              : 'Add a trusted address to protect against device loss'}
-          </Text>
-        </View>
-        <View style={{ flex: 1, alignItems: 'flex-end', paddingLeft: 8 }}>
-          <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>
-            {timelockLabel.toLowerCase()} timelock
-          </Text>
-          <Text style={[styles.detailDesc, { color: theme.textMuted, textAlign: 'right' }]}>
-            Both passkeys can cancel it
-          </Text>
-        </View>
-      </View>
-
-      <View style={[styles.guardianRow, { backgroundColor: theme.bgInput, borderColor: theme.borderDefault }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.guardianLabel, { color: theme.textMuted }]}>Guardian address</Text>
-            <Text
-              style={[
-                styles.guardianValue,
-                { color: isGuardianConfigured ? theme.textPrimary : theme.textMuted },
-              ]}
-              numberOfLines={1}
-              ellipsizeMode="middle"
-            >
-              {isGuardianConfigured && onChainWallet
-                ? ellipsify(onChainWallet.guardian.toBase58(), 6)
-                : 'None (tap below to configure)'}
-            </Text>
-          </View>
-          {isGuardianConfigured && onChainWallet ? (
-            <TouchableOpacity
-              onPress={() => {
-                Clipboard.setString(onChainWallet.guardian.toBase58())
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-              }}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              style={{ justifyContent: 'center', paddingLeft: 8 }}
-            >
-              <MaterialIcons name="content-copy" size={16} color={theme.textMuted} />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
-
-      {isLocked ? (
-        <View style={[styles.guardianToggle, { opacity: 0.45 }]}>
-          <MaterialIcons name="lock" size={14} color={theme.textMuted} />
-          <Text style={[styles.guardianToggleText, { color: theme.textMuted }]}>
-            Change guardian locked during recovery
-          </Text>
-        </View>
-      ) : onChainWallet ? (
-        <>
-          <TouchableOpacity
-            style={styles.guardianToggle}
-            onPress={() => {
-              Haptics.selectionAsync()
-              setShowGuardianEditor((prev) => !prev)
-            }}
-            disabled={guardianBusy}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.guardianToggleText, { color: theme.textSecondary }]}>
-              {showGuardianEditor ? 'Cancel' : (isGuardianConfigured ? 'Change guardian' : 'Set recovery guardian')}
-            </Text>
-            <MaterialIcons
-              name={showGuardianEditor ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-              size={18}
-              color={theme.textSecondary}
-            />
-          </TouchableOpacity>
-
-          {showGuardianEditor && (
-            <View style={[styles.guardianEditor, { borderColor: theme.borderDefault }]}>
+  const renderGuardianCard = (isLocked: boolean) => {
+    const guardianPubkey = onChainWallet?.guardian?.toBase58() || activeWallet?.guardianAddress || null
+    return (
+      <>
+        {/* Card 1: Guardian Card */}
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Guardian</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <View
                 style={[
-                  styles.guardianInputRow,
-                  { backgroundColor: theme.bgInput, borderColor: theme.borderDefault },
+                  styles.statusCircleDot,
+                  { borderColor: isGuardianConfigured ? '#5FBF7A' : '#8A8985' },
                 ]}
-              >
-                <TextInput
-                  style={[styles.guardianInput, { color: theme.textPrimary, flex: 1 }]}
-                  value={guardianDraft}
-                  onChangeText={setGuardianDraft}
-                  placeholder="Paste the new guardian's address"
-                  placeholderTextColor={theme.textMuted}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!guardianBusy}
-                />
-                {guardianDraft.length > 0 ? (
-                  <TouchableOpacity
-                    onPress={() => setGuardianDraft('')}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    accessibilityRole="button"
-                    accessibilityLabel="Clear guardian address"
-                  >
-                    <MaterialIcons name="cancel" size={18} color={theme.textMuted} />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    onPress={async () => {
-                      const text = await Clipboard.getString()
-                      if (text) setGuardianDraft(text)
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                  >
-                    <MaterialIcons name="content-paste" size={14} color={theme.accent} />
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: theme.accent }}>Paste</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
+              />
               <Text
-                style={[
-                  styles.guardianHint,
-                  {
-                    color:
-                      guardianDraft.length > 0 && !guardianDraftParse.address ? theme.roseText : theme.textMuted,
-                  },
-                ]}
+                style={{
+                  fontSize: 12,
+                  color: isGuardianConfigured ? '#5FBF7A' : '#8A8985',
+                  fontWeight: '400',
+                }}
               >
-                {guardianDraft.trim().length === 0
-                  ? 'Requires 2-of-2 passkeys. Guardian can only start recovery.'
-                  : (guardianDraftParse.error ??
-                    `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
+                {autoGuardianKey
+                  ? (isGuardianConfigured ? 'Active' : 'Set on first use')
+                  : (isGuardianConfigured ? 'Active' : 'Not configured')}
               </Text>
+            </View>
+          </View>
 
+          <View style={styles.detailRow}>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>
+                {autoGuardianKey
+                  ? '1 recovery key'
+                  : isGuardianConfigured
+                  ? '1 guardian'
+                  : '0 guardians'}
+              </Text>
+              <Text style={[styles.detailDesc, { color: theme.textMuted }]}>
+                {autoGuardianKey
+                  ? 'Created on this phone'
+                  : isGuardianConfigured
+                  ? 'Can only start a recovery, never move funds'
+                  : 'Add a trusted address to protect against device loss'}
+              </Text>
+            </View>
+            <View style={{ flex: 1, alignItems: 'flex-end', paddingLeft: 8 }}>
+              <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>
+                {timelockLabel.toLowerCase()} timelock
+              </Text>
+              <Text style={[styles.detailDesc, { color: theme.textMuted, textAlign: 'right' }]}>
+                Both passkeys can cancel it
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.guardianRow, { backgroundColor: isDark ? '#1A1A18' : theme.bgInput, borderColor: theme.borderDefault }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.guardianLabel, { color: theme.textMuted }]}>
+                  {autoGuardianKey ? 'Recovery key address' : 'Guardian address'}
+                </Text>
+                <Text
+                  style={[
+                    styles.guardianValue,
+                    { color: guardianPubkey ? theme.textPrimary : theme.textMuted },
+                  ]}
+                  numberOfLines={1}
+                  ellipsizeMode="middle"
+                >
+                  {guardianPubkey
+                    ? ellipsify(guardianPubkey, 8)
+                    : 'None (tap below to configure)'}
+                </Text>
+              </View>
+              {guardianPubkey ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    Clipboard.setString(guardianPubkey)
+                    setCopiedPublicAddress(true)
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                    setTimeout(() => setCopiedPublicAddress(false), 2000)
+                  }}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={{ justifyContent: 'center', paddingLeft: 8 }}
+                >
+                  <MaterialIcons
+                    name={copiedPublicAddress ? 'check' : 'content-copy'}
+                    size={16}
+                    color={copiedPublicAddress ? '#5FBF7A' : theme.textMuted}
+                  />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
+
+          {isLocked ? (
+            <View style={[styles.guardianToggle, { opacity: 0.45 }]}>
+              <MaterialIcons name="lock" size={14} color={theme.textMuted} />
+              <Text style={[styles.guardianToggleText, { color: theme.textMuted }]}>
+                Change guardian locked during recovery
+              </Text>
+            </View>
+          ) : (
+            <>
               <TouchableOpacity
-                style={[
-                  styles.updateGuardianBtn,
-                  guardianDraftParse.address
-                    ? { backgroundColor: '#5E81FF' }
-                    : { backgroundColor: isDark ? '#1C1C20' : '#E5E5EA' },
-                  (guardianBusy || !guardianDraftParse.address) && { opacity: guardianBusy ? 0.7 : 0.6 },
-                ]}
-                disabled={guardianBusy || !guardianDraftParse.address}
-                onPress={handleSetGuardian}
-                activeOpacity={0.85}
+                style={styles.guardianToggle}
+                onPress={() => {
+                  Haptics.selectionAsync()
+                  setShowGuardianEditor((prev) => !prev)
+                }}
+                disabled={guardianBusy}
+                accessibilityRole="button"
               >
-                {guardianBusy ? (
-                  <ActivityIndicator size="small" color={guardianDraftParse.address ? '#080C1E' : theme.textMuted} />
-                ) : (
+                <Text style={[styles.guardianToggleText, { color: theme.textSecondary }]}>
+                  {showGuardianEditor
+                    ? 'Cancel'
+                    : autoGuardianKey
+                    ? 'Use a different guardian'
+                    : isGuardianConfigured
+                    ? 'Change guardian'
+                    : 'Set recovery guardian'}
+                </Text>
+                <MaterialIcons
+                  name={showGuardianEditor ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                  size={16}
+                  color={theme.textSecondary}
+                />
+              </TouchableOpacity>
+
+              {showGuardianEditor && (
+                <View style={[styles.guardianEditor, { borderColor: theme.borderDefault }]}>
+                  <View
+                    style={[
+                      styles.guardianInputRow,
+                      { backgroundColor: theme.bgInput, borderColor: theme.borderDefault },
+                    ]}
+                  >
+                    <TextInput
+                      style={[styles.guardianInput, { color: theme.textPrimary, flex: 1 }]}
+                      value={guardianDraft}
+                      onChangeText={setGuardianDraft}
+                      placeholder="Paste the new guardian's address"
+                      placeholderTextColor={theme.textMuted}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      editable={!guardianBusy}
+                    />
+                    {guardianDraft.length > 0 ? (
+                      <TouchableOpacity
+                        onPress={() => setGuardianDraft('')}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Clear guardian address"
+                      >
+                        <MaterialIcons name="cancel" size={18} color={theme.textMuted} />
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={async () => {
+                          const text = await Clipboard.getString()
+                          if (text) setGuardianDraft(text)
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                      >
+                        <MaterialIcons name="content-paste" size={14} color={theme.accent} />
+                        <Text style={{ fontSize: 13, fontWeight: '600', color: theme.accent }}>Paste</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
                   <Text
                     style={[
-                      styles.updateGuardianBtnText,
+                      styles.guardianHint,
                       {
-                        color: guardianDraftParse.address ? '#080C1E' : (isDark ? '#71717A' : '#8E8E93'),
+                        color:
+                          guardianDraft.length > 0 && !guardianDraftParse.address ? theme.roseText : theme.textMuted,
                       },
                     ]}
                   >
-                    Update guardian
+                    {guardianDraft.length > 0 && !guardianDraftParse.address
+                      ? (guardianDraftParse.error ?? 'Enter a valid Solana address or domain.')
+                      : !onChainWallet
+                      ? (guardianDraftParse.address
+                          ? `Guardian will become ${ellipsify(guardianDraftParse.address, 6)}. It will be registered on-chain when initialized.`
+                          : 'The guardian will be officially registered on-chain when the account is deployed.')
+                      : guardianDraft.trim().length === 0
+                      ? 'Requires 2-of-2 passkeys. Guardian can only start recovery.'
+                      : (guardianDraftParse.error ??
+                        `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
                   </Text>
-                )}
-              </TouchableOpacity>
-            </View>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.updateGuardianBtn,
+                      guardianDraftParse.address
+                        ? { backgroundColor: '#6C8CFF' }
+                        : { backgroundColor: isDark ? '#1C1C20' : '#E5E5EA' },
+                      (guardianBusy || !guardianDraftParse.address) && { opacity: guardianBusy ? 0.7 : 0.6 },
+                    ]}
+                    disabled={guardianBusy || !guardianDraftParse.address}
+                    onPress={handleSetGuardian}
+                    activeOpacity={0.85}
+                  >
+                    {guardianBusy ? (
+                      <ActivityIndicator size="small" color={guardianDraftParse.address ? '#080C1E' : theme.textMuted} />
+                    ) : (
+                      <Text
+                        style={[
+                          styles.updateGuardianBtnText,
+                          {
+                            color: guardianDraftParse.address ? '#080C1E' : (isDark ? '#71717A' : '#8E8E93'),
+                          },
+                        ]}
+                      >
+                        {onChainWallet ? 'Update guardian' : 'Save guardian'}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
           )}
-        </>
-      ) : null}
-    </View>
-  )
+        </View>
+
+        {/* Card 2: Back up your recovery key */}
+        {autoGuardianKey && (
+          <View style={[styles.card, styles.backupCard, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+            <View style={styles.backupCardHeader}>
+              <View style={styles.backupIconRing}>
+                <MaterialIcons name="vpn-key" size={18} color={isDark ? '#D99A2B' : '#B45309'} />
+              </View>
+              <Text style={[styles.backupCardTitle, { color: theme.textPrimary }]}>
+                Back up your recovery key
+              </Text>
+            </View>
+            <Text style={[styles.backupCardDesc, { color: theme.textSecondary }]}>
+              This wallet's recovery key was created on this phone during setup. Save a copy in a password manager or on paper so you can rescue your funds if you lose this phone.
+            </Text>
+            <TouchableOpacity
+              style={styles.backupActionBtn}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+                setHasRevealedSecret(false)
+                setCopiedPrivateKey(false)
+                setHasSavedKeyChecked(false)
+                setCountdown(30)
+                setShowRevealModal(true)
+              }}
+              activeOpacity={0.85}
+            >
+              <MaterialIcons name="visibility" size={17} color="#0C0C0D" style={{ marginRight: 7 }} />
+              <Text style={styles.backupActionBtnText}>View recovery key</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </>
+    )
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bgApp }]}>
@@ -1209,6 +1353,178 @@ export default function RecoverySettingsScreen() {
           )}
         </Pressable>
       </Modal>
+
+      {/* Auto Guardian Reveal & Backup Modal */}
+      <Modal
+        visible={showRevealModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowRevealModal(false)
+          setHasRevealedSecret(false)
+        }}
+      >
+        <Pressable
+          style={styles.revealModalBackdrop}
+          onPress={() => {
+            setShowRevealModal(false)
+            setHasRevealedSecret(false)
+          }}
+        >
+          <Pressable style={styles.revealModalCard} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.revealHandle} />
+
+            <View style={styles.revealModalHeader}>
+              <View style={styles.revealIconRing}>
+                <MaterialIcons name="vpn-key" size={19} color={isDark ? '#D99A2B' : '#B45309'} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.revealModalTitle}>Recovery key</Text>
+                <Text style={styles.revealModalSubtitle}>Created on this phone during setup</Text>
+              </View>
+            </View>
+
+            {/* Warning Box (No truncation, full message, accessible contrast) */}
+            <View style={styles.revealWarningBox}>
+              <MaterialIcons
+                name="security"
+                size={17}
+                color={isDark ? '#E5484D' : '#DC2626'}
+                style={{ marginTop: 1, flexShrink: 0 }}
+              />
+              <Text style={styles.revealWarningText}>
+                Never share this key. Anyone who has it can start a recovery of your wallet. Store it in a password manager.
+              </Text>
+            </View>
+
+            {/* Public Address */}
+            <Text style={styles.revealSectionLabel}>Public address</Text>
+            <View style={styles.revealAddressRow}>
+              <Text style={styles.revealAddressText} numberOfLines={1} ellipsizeMode="middle">
+                {onChainWallet?.guardian.toBase58() || activeWallet?.guardianAddress || '--'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  const addr = onChainWallet?.guardian.toBase58() || activeWallet?.guardianAddress
+                  if (addr) {
+                    Clipboard.setString(addr)
+                    setCopiedPublicAddress(true)
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                    setTimeout(() => setCopiedPublicAddress(false), 2000)
+                  }
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <MaterialIcons
+                  name={copiedPublicAddress ? 'check' : 'content-copy'}
+                  size={15}
+                  color={copiedPublicAddress ? '#5FBF7A' : '#8A8985'}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Private Key Header */}
+            <View style={styles.revealSecretHeaderRow}>
+              <Text style={styles.revealSectionLabel}>Private key</Text>
+              <Text style={styles.revealCompatLabel}>Works in Phantom and Solflare</Text>
+            </View>
+
+            {/* Reveal Box */}
+            <TouchableOpacity
+              style={[
+                styles.revealSecretDashedBox,
+                hasRevealedSecret && styles.revealSecretDashedBoxRevealed,
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+                if (hasRevealedSecret) {
+                  setHasRevealedSecret(false)
+                } else {
+                  setHasRevealedSecret(true)
+                  setCountdown(30)
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              {hasRevealedSecret ? (
+                <Text style={styles.revealSecretMonoText} selectable>
+                  {autoGuardianKey}
+                </Text>
+              ) : (
+                <View style={styles.revealTapRow}>
+                  <MaterialIcons name="visibility" size={17} color={theme.textPrimary} />
+                  <Text style={styles.revealTapText}>Tap to reveal</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* Auto-hide countdown */}
+            {hasRevealedSecret ? (
+              <Text style={styles.revealCountdownText}>
+                Hides in {countdown}s
+              </Text>
+            ) : (
+              <View style={{ height: 10 }} />
+            )}
+
+            {/* Secondary Copy Button */}
+            <TouchableOpacity
+              style={styles.revealSecondaryCopyBtn}
+              onPress={() => {
+                if (autoGuardianKey) {
+                  Clipboard.setString(autoGuardianKey)
+                  setCopiedPrivateKey(true)
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+                  setTimeout(() => setCopiedPrivateKey(false), 2500)
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons
+                name={copiedPrivateKey ? 'check' : 'content-copy'}
+                size={16}
+                color={copiedPrivateKey ? '#5FBF7A' : '#8A8985'}
+                style={{ marginRight: 7 }}
+              />
+              <Text style={[styles.revealSecondaryCopyText, copiedPrivateKey && { color: '#5FBF7A' }]}>
+                {copiedPrivateKey ? 'Copied' : 'Copy private key'}
+              </Text>
+            </TouchableOpacity>
+            {copiedPrivateKey && (
+              <Text style={styles.revealClipboardNote}>
+                Paste it into your password manager, then clear your clipboard.
+              </Text>
+            )}
+
+            {/* Checkbox confirmation */}
+            <TouchableOpacity
+              style={styles.revealCheckboxRow}
+              onPress={() => {
+                Haptics.selectionAsync()
+                setHasSavedKeyChecked((prev) => !prev)
+              }}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.customCheckbox, hasSavedKeyChecked && styles.customCheckboxChecked]}>
+                {hasSavedKeyChecked && <MaterialIcons name="check" size={13} color="#0C0C0D" />}
+              </View>
+              <Text style={styles.revealCheckboxLabel}>I've saved it somewhere safe</Text>
+            </TouchableOpacity>
+
+            {/* Done Action Button */}
+            <TouchableOpacity
+              style={styles.revealDoneBtn}
+              onPress={() => {
+                setShowRevealModal(false)
+                setHasRevealedSecret(false)
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.revealDoneText}>Done</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   )
 }
@@ -1269,8 +1585,9 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       fontSize: typeScale.footnote,
     },
     card: {
-      borderWidth: 1,
-      borderRadius: radius.lg,
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#E6E4DE',
+      borderRadius: 14,
       padding: 16,
       marginBottom: 14,
     },
@@ -1281,8 +1598,8 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       marginBottom: 14,
     },
     cardHeading: {
-      fontSize: typeScale.bodyLg,
-      fontWeight: '700',
+      fontSize: 15,
+      fontWeight: '500',
       letterSpacing: -0.2,
     },
     tag: {
@@ -1298,36 +1615,39 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
     detailRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingVertical: 4,
+      gap: 14,
+      paddingVertical: 2,
+      marginBottom: 6,
     },
     detailTitle: {
-      fontSize: typeScale.bodyLg,
-      fontWeight: '600',
+      fontSize: 13.5,
+      fontWeight: '500',
     },
     detailDesc: {
-      fontSize: typeScale.footnote,
+      fontSize: 11.5,
+      lineHeight: 16,
       marginTop: 2,
     },
     guardianRow: {
-      marginTop: 14,
-      borderWidth: 1,
-      borderRadius: radius.md,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
+      marginTop: 10,
+      marginBottom: 8,
+      borderWidth: 0.5,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
     },
     guardianLabel: {
-      fontSize: typeScale.micro,
-      fontWeight: '700',
-      letterSpacing: 0.6,
+      fontSize: 11.5,
+      fontWeight: '400',
       marginBottom: 3,
     },
     guardianValue: {
-      fontSize: typeScale.body,
-      fontWeight: '600',
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+      fontSize: 12.5,
+      fontWeight: '500',
     },
     guardianNote: {
-      fontSize: typeScale.caption,
+      fontSize: 11.5,
       lineHeight: 15,
       marginTop: 4,
     },
@@ -1335,18 +1655,20 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 4,
-      paddingVertical: 10,
+      gap: 5,
+      paddingVertical: 6,
     },
     guardianToggleText: {
-      fontSize: typeScale.caption,
-      fontWeight: '600',
+      fontSize: 12.5,
+      fontWeight: '400',
+      color: isDark ? '#8A8985' : '#6B6A64',
     },
     guardianEditor: {
-      borderWidth: 1,
-      borderRadius: radius.md,
-      paddingHorizontal: 12,
-      paddingVertical: 12,
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#E6E4DE',
+      borderRadius: 12,
+      padding: 12,
+      marginTop: 4,
       marginBottom: 4,
     },
     guardianInputRow: {
@@ -1741,5 +2063,248 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       fontSize: 13,
       fontWeight: '500',
       color: isDark ? '#F2F1EE' : '#181714',
+    },
+    statusCircleDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 3.5,
+      borderWidth: 1.5,
+    },
+    backupCard: {
+      marginTop: 0,
+    },
+    backupCardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 10,
+    },
+    backupIconRing: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: 'rgba(217, 154, 43, 0.12)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backupCardTitle: {
+      fontSize: 15,
+      fontWeight: '500',
+    },
+    backupCardDesc: {
+      fontSize: 12.5,
+      lineHeight: 19,
+      marginBottom: 14,
+    },
+    backupActionBtn: {
+      backgroundColor: '#6C8CFF',
+      borderRadius: 12,
+      paddingVertical: 13,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backupActionBtnText: {
+      fontSize: 13.5,
+      fontWeight: '600',
+      color: '#0C0C0D',
+    },
+    revealModalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.72)',
+      justifyContent: 'flex-end',
+      paddingHorizontal: 0,
+    },
+    revealModalCard: {
+      backgroundColor: isDark ? '#0C0C0D' : '#FFFFFF',
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingHorizontal: 20,
+      paddingBottom: 28,
+      paddingTop: 12,
+      maxHeight: '92%',
+      width: '100%',
+      borderTopWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#E6E4DE',
+    },
+    revealHandle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: isDark ? '#3A3A37' : '#D1D5DB',
+      alignSelf: 'center',
+      marginBottom: 16,
+    },
+    revealModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 16,
+    },
+    revealIconRing: {
+      width: 38,
+      height: 38,
+      borderRadius: 10,
+      backgroundColor: 'rgba(217, 154, 43, 0.12)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    revealModalTitle: {
+      fontSize: 17,
+      fontWeight: '500',
+      color: isDark ? '#F2F1EE' : '#181714',
+      marginBottom: 2,
+    },
+    revealModalSubtitle: {
+      fontSize: 12,
+      color: isDark ? '#8A8985' : '#6B6A64',
+    },
+    revealWarningBox: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 0.5,
+      borderColor: isDark ? 'rgba(229, 72, 77, 0.35)' : 'rgba(220, 38, 38, 0.25)',
+      backgroundColor: isDark ? 'rgba(229, 72, 77, 0.10)' : 'rgba(239, 68, 68, 0.08)',
+      marginBottom: 16,
+    },
+    revealWarningText: {
+      flex: 1,
+      fontSize: 12,
+      lineHeight: 18,
+      color: isDark ? '#EBA0A3' : '#991B1B',
+      fontWeight: isDark ? '400' : '500',
+    },
+    revealSectionLabel: {
+      fontSize: 11.5,
+      color: isDark ? '#8A8985' : '#6B6A64',
+      marginBottom: 6,
+    },
+    revealAddressRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: isDark ? '#1A1A18' : '#F4F4F5',
+      borderRadius: 12,
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#E6E4DE',
+      paddingHorizontal: 12,
+      paddingVertical: 11,
+      marginBottom: 16,
+    },
+    revealAddressText: {
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+      fontSize: 12,
+      color: isDark ? '#F2F1EE' : '#181714',
+      flex: 1,
+      marginRight: 8,
+    },
+    revealSecretHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    revealCompatLabel: {
+      fontSize: 11.5,
+      color: isDark ? '#8A8985' : '#6B6A64',
+      marginBottom: 6,
+    },
+    revealSecretDashedBox: {
+      borderWidth: 0.5,
+      borderColor: isDark ? '#3A3A37' : '#D1D5DB',
+      borderStyle: 'dashed',
+      borderRadius: 12,
+      paddingVertical: 16,
+      paddingHorizontal: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 6,
+      backgroundColor: isDark ? '#141416' : '#FAFAFA',
+    },
+    revealSecretDashedBoxRevealed: {
+      borderStyle: 'solid',
+      alignItems: 'flex-start',
+    },
+    revealTapRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    revealTapText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: isDark ? '#F2F1EE' : '#181714',
+    },
+    revealSecretMonoText: {
+      fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+      fontSize: 12.5,
+      lineHeight: 18,
+      color: isDark ? '#F2F1EE' : '#181714',
+      width: '100%',
+    },
+    revealCountdownText: {
+      fontSize: 12,
+      color: isDark ? '#8A8985' : '#6B6A64',
+      marginBottom: 10,
+    },
+    revealSecondaryCopyBtn: {
+      borderWidth: 0.5,
+      borderColor: isDark ? '#2A2A28' : '#D1D5DB',
+      borderRadius: 12,
+      paddingVertical: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'transparent',
+    },
+    revealSecondaryCopyText: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: isDark ? '#F2F1EE' : '#181714',
+    },
+    revealClipboardNote: {
+      fontSize: 12,
+      lineHeight: 16,
+      color: isDark ? '#8A8985' : '#6B6A64',
+      textAlign: 'center',
+      marginTop: 8,
+    },
+    revealCheckboxRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginVertical: 16,
+    },
+    customCheckbox: {
+      width: 18,
+      height: 18,
+      borderRadius: 5,
+      borderWidth: 1.5,
+      borderColor: isDark ? '#3A3A37' : '#D1D5DB',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'transparent',
+    },
+    customCheckboxChecked: {
+      backgroundColor: '#6C8CFF',
+      borderColor: '#6C8CFF',
+    },
+    revealCheckboxLabel: {
+      fontSize: 13,
+      color: isDark ? '#F2F1EE' : '#181714',
+    },
+    revealDoneBtn: {
+      backgroundColor: '#6C8CFF',
+      borderRadius: 12,
+      paddingVertical: 13,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    revealDoneText: {
+      fontSize: 13.5,
+      fontWeight: '500',
+      color: '#0C0C0D',
     },
   })

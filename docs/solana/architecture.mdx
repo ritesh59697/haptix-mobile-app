@@ -96,3 +96,24 @@ Haptix introduces scoped autonomous delegation to Solana:
 
 - **`panic_freeze`**: Can be triggered by either the owner or the designated Guardian. Immediately freezes all outgoing transfers while leaving incoming deposits active.
 - **`unfreeze`**: Requires a 2-of-2 hardware quorum from the owner to restore spending operations.
+
+---
+
+## Gas Fee Sponsorship (Devnet Paymaster)
+
+Traditional Web3 onboarding requires users to acquire SOL before executing their first transaction. Haptix implements a gasless relayer paymaster architecture:
+
+1. **Zero-Balance Account Creation**: The Haptix relayer treasury sponsors the initial account rent and initialization fees on Solana Devnet.
+2. **Sponsored Transaction Bundles**: The user's device contributes pure cryptographic passkey signatures, while the relayer acts as fee payer, signing only the gas fee.
+3. **No Key Custody**: The fee payer key never has signer access to the wallet PDA, ensuring self-custodial guarantees remain absolute.
+
+---
+
+## Solana Seeker (SKR) Token Integration
+
+Haptix is built from the ground up for the **Solana Seeker** ecosystem:
+
+- **Seeker Genesis Allocation**: New wallets on Devnet receive an initial welcome reward of **100 SKR** to test autonomous transfers and payments.
+- **2-of-2 Quorum Escalation**: Autonomous or single-tap transfers are capped at **50 SKR** (or 0.1 SOL / 20 USDC). Any transfer above the threshold requires both primary and backup device passkeys.
+- **Native SPL Token Program Verification**: Supports both native SOL and SPL token account PDAs under program control.
+

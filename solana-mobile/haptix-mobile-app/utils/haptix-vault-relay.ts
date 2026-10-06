@@ -35,7 +35,7 @@ async function fetchWithTimeout(
 }
 
 /**
- * Returns candidate IPs/hostnames where the Haptix Mac Relay and vault.html might be running.
+ * Returns candidate IPs/hostnames where the Haptix Relay and vault.html might be running.
  */
 export function getRelayCandidateHosts(): string[] {
   const candidates: string[] = []
@@ -110,12 +110,12 @@ export async function findActiveRelayHost(): Promise<string> {
   }
 
   throw new Error(
-    'No Haptix vault relay is running on this network. On the Mac, run `npm run relay` and open vault.html before approving a send over the limit.',
+    'No Haptix vault relay is running on this network. On your second device, run `npm run relay` and open vault.html before approving a send over the limit.',
   )
 }
 
 /**
- * Submits a high-value transfer to the Mac Relay for 2-of-2 Touch ID authorization.
+ * Submits a high-value transfer to the Relay for 2-of-2 biometric authorization on the second device.
  */
 export async function queueVaultTransfer(params: {
   relayHost: string
@@ -149,7 +149,7 @@ export async function queueVaultTransfer(params: {
   )
 
   if (!res.ok) {
-    throw new Error(`Mac Relay rejected transfer request (${res.status})`)
+    throw new Error(`Vault relay rejected transfer request (${res.status})`)
   }
 
   const data = await res.json()
@@ -157,7 +157,7 @@ export async function queueVaultTransfer(params: {
 }
 
 /**
- * Polls the Mac Relay until the user touches Touch ID on Mac or timeout expires.
+ * Polls the Relay until the user approves on the second device or timeout expires.
  */
 export async function pollVaultSignature(
   relayHost: string,
@@ -193,7 +193,7 @@ export async function pollVaultSignature(
           return data.signature as VaultSignaturePayload
         }
         if (data.declined) {
-          throw new Error('Transfer was declined on Mac Touch ID.')
+          throw new Error('Transfer was declined on second device.')
         }
       }
     } catch (err: any) {
@@ -234,7 +234,7 @@ export function parseManualSignaturePayload(input: string): VaultSignaturePayloa
 }
 
 /**
- * Cancels a pending transfer on the Mac Relay.
+ * Cancels a pending transfer on the Relay.
  */
 export async function cancelVaultTransfer(relayHost: string, txId?: string): Promise<boolean> {
   try {

@@ -17,16 +17,16 @@
 
 ---
 
-## 🚀 Overview
+## Overview
 
 **Haptix** is a consumer-grade smart contract wallet designed natively for **Solana Mobile Stack (SMS)**. 
 
 Traditional mobile wallets force users to manage 12-to-24 word seed phrases or endure annoying biometric popups for every trivial transaction. Haptix eliminates seed phrases entirely by utilizing **Hardware Passkeys (Secp256r1 / P-256)** verified directly on Solana through native **instruction introspection (`Secp256r1SigVerify`)**.
 
-### 🌟 Key Innovations
+### Key Innovations
 
-- **Zero-SOL Gasless Onboarding (Sponsored Paymaster)**: Users create and initialize smart wallets on-chain with zero pre-funded SOL. The embedded paymaster sponsors creation rent and drips a welcome 0.05 SOL + 100 SKR Genesis Reward.
-- **Seeker (SKR) Token Native Integration ($10,000 Bonus Track)**: Full multi-asset support for the Solana Mobile Seeker ecosystem, including a 100 SKR genesis reward, real-time USD asset pricing, and risk-adaptive transfers (1-tap passkey for ≤ 50 SKR, 2-of-2 hardware quorum for > 50 SKR).
+- **Zero-SOL Gasless Onboarding (Sponsored Paymaster)**: Users create and initialize smart wallets on-chain with zero pre-funded SOL. The embedded paymaster sponsors creation rent and drips a welcome 0.10 SOL starter test balance.
+- **Seeker (SKR) Token Architecture Ready ($10,000 Bonus Track)**: Multi-asset spend policy engine architected for the Solana Mobile Seeker ecosystem, featuring risk-adaptive thresholds (1-tap passkey for ≤ 50 SKR, 2-of-2 hardware quorum for > 50 SKR) with 18 passing tests in our integration test suite.
 - **1-Tap Biometric Hardware Passkey**: Fast, frictionless Face ID / Touch ID authentication without seed phrases.
 - **2-of-2 Hardware Quorum**: High-value transactions or security policy updates mathematically mandate two independent hardware signatures (e.g. Phone Secure Enclave + Backup YubiKey / Mac Touch ID).
 - **Autonomous AI Agent Sessions**: Delegate scoped spending power to AI agents (e.g., automated DCA or arbitrage) with on-chain budget ceilings and time expiries—zero user interruption required.
@@ -37,7 +37,7 @@ Traditional mobile wallets force users to manage 12-to-24 word seed phrases or e
 
 ---
 
-## 🏛️ Repository Architecture
+## Repository Architecture
 
 This repository contains both the **React Native / Expo Mobile App** and the **On-Chain Anchor Solana Smart Program**:
 
@@ -81,7 +81,7 @@ haptix-mobile-app/
 
 ---
 
-## ⚡ Quick Start: Mobile App
+## Quick Start: Mobile App
 
 ### Prerequisites
 - Node.js (v18+)
@@ -113,7 +113,7 @@ npx eas-cli build -p android --profile development
 
 ---
 
-## 🔒 Quick Start: Smart Program (`haptix_program`)
+## Quick Start: Smart Program (`haptix_program`)
 
 ### Program Details (Solana Devnet)
 - **Program ID**: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`
@@ -130,7 +130,7 @@ anchor test
 
 ---
 
-## 🧪 Integration Test Suite (29 / 29 Passing)
+## Integration Test Suite (29 / 29 Passing)
 
 The repository includes a comprehensive standalone integration test suite (`tests/integration-test.ts`) that validates the complete cryptographic and on-chain pipeline:
 
@@ -176,7 +176,7 @@ The repository includes a comprehensive standalone integration test suite (`test
 
 ---
 
-## 🎨 UI & Design Principles
+## UI & Design Principles
 
 - **Pure Minimalist Monochrome**: Pitch black (`#000000`) and charcoal surfaces (`#0C0C0C`) paired with crisp white (`#FFFFFF`) and silver accents (`#A1A1AA`). Completely free of neon/cyan clutter.
 - **Physical Haptic Feedback**: Tactile responses on dock tab selection, percentage chip taps, and passkey authorization.
@@ -184,5 +184,5 @@ The repository includes a comprehensive standalone integration test suite (`test
 
 ---
 
-## 📄 License
+## License
 This project is licensed under the MIT License - see the LICENSE file for details.

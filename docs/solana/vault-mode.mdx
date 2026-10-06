@@ -86,3 +86,18 @@ To prevent an attacker with your phone from raising the limit to bypass security
 When sending funds from the main wallet screen:
 - **Under Limit**: The action button displays **"Send with Passkey (1 signature)"**.
 - **Over Limit**: The action button automatically changes to **"Send with Quorum (Requires Vault Key)"** with a security alert informing you that your secondary key will be required.
+
+---
+
+## Multi-Token Spending Limit Matrix
+
+Haptix enforces separate native on-chain limits across supported assets:
+
+| Token Asset | 1-Tap Biometric Threshold | 2-of-2 Hardware Quorum Escalation | Default Allowance |
+| :--- | :--- | :--- | :--- |
+| **SOL** (Native) | $\le 0.1\text{ SOL}$ | $> 0.1\text{ SOL}$ | 0.1 SOL |
+| **USDC** (Circle) | $\le 20\text{ USDC}$ | $> 20\text{ USDC}$ | 20 USDC |
+| **SKR** (Seeker) | $\le 50\text{ SKR}$ | $> 50\text{ SKR}$ | 50 SKR |
+
+Any transfer above these thresholds automatically triggers dual-passkey hardware verification before the transaction is constructed.
+

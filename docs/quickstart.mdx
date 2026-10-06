@@ -1,34 +1,59 @@
 ---
 title: "Quickstart Guide"
-description: "How to set up your first Haptix Smart Account and enroll passkeys."
+description: "How to set up your first Haptix Smart Account on Solana Mobile with biometric passkeys."
 ---
 
-# Getting Started
+# Getting Started on Solana Mobile
 
-Setting up Haptix is designed to be frictionless. There are no seed phrases to copy down or store. 
+Setting up a Haptix smart account is fast and completely frictionless. There are no seed phrases to write down or memorize.
 
-## 1. Install the App
+---
 
-Haptix is available as a browser extension and a mobile application.
-- **Browser Extension:** Install from the Chrome Web Store or load unpacked from the `/extension` directory.
-- **Mobile App:** Download the iOS or Android app (currently in development on Solana Devnet).
+## 1. Install Haptix Mobile
+
+Haptix is built natively for Android, the **Solana Seeker** phone, and iOS:
+
+- **Android / Seeker:** Download and install the pre-built APK from the GitHub releases or run locally with Expo.
+- **Expo Dev Client:**
+  ```bash
+  cd solana-mobile/haptix-mobile-app
+  npm install
+  npx expo start
+  ```
+
+---
 
 ## 2. Create Your Smart Account
 
-When you first open Haptix, select **Create New Wallet**.
+1. Open the Haptix app and tap **Create Smart Wallet**.
+2. **Primary Passkey Enrollment:** Authenticate with your device biometrics (Fingerprint / Face Unlock / Touch ID). This binds a NIST P-256 public key generated inside your phone's hardware security enclave directly to your wallet account.
+3. **Backup Passkey (2-of-2 Quorum):** Generate a secondary backup key (stored on-device or on a secondary FIDO2 key) to unlock high-value Vault transfers and governance settings.
 
-### Passkey Enrollment
+---
 
-Haptix requires you to set up two passkeys to establish a secure **2-of-2 Hardware Quorum**:
-1. **Primary Passkey (Device Auth):** Typically tied to your current device (e.g., your phone's Secure Enclave).
-2. **Secondary Passkey (Backup Auth):** This acts as your backup and quorum key. 
+## 3. Instant Gasless Onboarding
 
-Follow the biometric prompts (Face ID, Touch ID, etc.) to generate these keys securely on your hardware.
+You do not need to purchase or transfer SOL from an exchange before testing:
 
-## 3. Fund Your Wallet
+- **Sponsored Paymaster:** The Haptix relayer treasury sponsors your initial on-chain account initialization and rent fees on Solana Devnet.
+- **Seeker Genesis Reward:** Newly created wallets automatically receive a welcome allocation of **100 SKR** (Seeker tokens) for testing.
+- **Devnet Faucet:** Tap **Faucet** in the quick action row to request an instant **+0.1 SOL** airdrop directly to your wallet PDA.
 
-Your Smart Account address is a deterministic PDA (Program Derived Address) or CREATE2 contract address. 
-You can send assets (ETH, SOL, USDC) to this address from any exchange or other wallet. 
+---
+
+## 4. Your First Biometric Transfer
+
+1. Tap **Send** from the home screen.
+2. Enter a recipient Solana address and transfer amount:
+   - **Low-Value (≤ 0.1 SOL / 20 USDC / 50 SKR):** Confirms with a swift **1-tap biometric passkey**.
+   - **Vault Value (> Threshold):** Automatically prompts for your **Vault Key (2-of-2 Quorum)** before submitting to the Solana network.
+3. Tap **Send with Passkey** and authenticate. Your transaction is verified on-chain by Solana's native `Secp256r1SigVerify` precompile in milliseconds!
+
+---
 
 ## Next Steps
-Now that your account is funded and secured by your biometrics, you can learn about [Delegating to AI Agents](/docs/sdk/overview) or deep dive into the [Smart Account Architecture](/docs/architecture).
+
+- Explore the [Solana Mobile Architecture](/solana/architecture) to see how precompile signatures are validated.
+- Learn about the [Dual-Device Vault Mode](/solana/vault-mode) checking vs. savings security model.
+- Configure [Guardian Social Recovery](/solana/recovery) to protect your wallet against lost devices.
+- Integrate AI trading bots using the [Developer SDK](/sdk/overview).

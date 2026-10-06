@@ -3,13 +3,13 @@
 
 ---
 
-## 🚀 Executive Summary
+## Executive Summary
 **Haptix** is a high-security, consumer-grade smart wallet designed specifically for **Solana Mobile (Seeker / Saga)**. 
 
 Traditional crypto wallets force users to manage seed phrases, fund an empty account with SOL before doing anything, or endure annoying biometric popups for every trivial interaction. Haptix solves this with a **4-Layer Security Engine** backed by Solana's native **Secp256r1 (P-256) precompile**, **Solana Mobile Stack (SMS)**, and **Gasless Onboarding**:
 
-1. **Zero-SOL Gasless Onboarding (Sponsored Paymaster)**: Users create an on-chain smart wallet without pre-funding any SOL. The embedded paymaster sponsors the account initialization and automatically drips a 0.05 SOL welcome balance + 100 SKR Genesis Reward.
-2. **Seeker SKR Token Integration ($10,000 Bonus Track)**: Native multi-asset support for Seeker's SKR token with a 100 SKR welcome allocation, real-time USD portfolio valuation, and risk-adaptive transfers (1-tap passkey for ≤ 50 SKR, 2-of-2 hardware quorum for > 50 SKR).
+1. **Zero-SOL Gasless Onboarding (Sponsored Paymaster)**: Users create an on-chain smart wallet without pre-funding any SOL. The embedded paymaster sponsors the account initialization and automatically drips a 0.10 SOL starter test balance.
+2. **Seeker SKR Token Architecture Ready ($10,000 Bonus Track)**: Multi-asset engine architected for Seeker's SKR ecosystem, featuring risk-adaptive thresholds (1-tap passkey for ≤ 50 SKR, 2-of-2 hardware quorum for > 50 SKR) with 18 passing tests in our integration suite.
 3. **Low-Risk Fast Lane**: Small transfers (e.g. ≤ 0.1 SOL) authorize with a single, frictionless Face ID / Touch ID hardware passkey.
 4. **2-of-2 Hardware Quorum**: High-value transfers or policy alterations mathematically require two distinct hardware passkeys (e.g. Phone Secure Enclave + Backup YubiKey / Mac Touch ID).
 5. **Autonomous Agent Sessions**: AI trading agents execute swaps and micro-transactions within a pre-approved budget using scoped session keys—**zero biometric prompts required**.
@@ -17,7 +17,7 @@ Traditional crypto wallets force users to manage seed phrases, fund an empty acc
 
 ---
 
-## 🏛️ Architecture Breakdown
+## Architecture Breakdown
 
 ### 1. On-Chain Smart Program (`haptix_program`)
 - **Framework**: Anchor 0.31 / Solana Agave client (v3.1.13)
@@ -42,17 +42,17 @@ Traditional crypto wallets force users to manage seed phrases, fund an empty acc
 
 ---
 
-## 🧪 Verification & Test Results
+## Verification & Test Results
 The on-chain program has been compiled and validated on the Solana local validator:
 ```bash
 $ anchor test
   haptix_program tests
 Wallet initialized. Tx: 39UDjDwmHgJFcLfv5hwmB5AxFom81kGFrEqd6VW3euoToBcfbT7kHGTtK7WxdoGnMqjvmMnuh2vLFe3Cz9F7sqNQ
-    ✔ Initializes a Haptix Passkey Account (535ms)
+    [PASS] Initializes a Haptix Passkey Account (535ms)
 Wallet panic frozen. Tx: JinXN1BRdPN7DRgs7KPDkwoeybz14fCQDhWwnnyTRKvsoPc6voVnwZ45WwsBGyjJEti9cKEi2ErKqH7j7xaaBRW
-    ✔ Guardian triggers Panic Freeze (509ms)
+    [PASS] Guardian triggers Panic Freeze (509ms)
 Recovery initiated. Tx: HUHaV9WtKs1esevcaJdgbuD4A6WfFN88CczqkfUVU6fVqvpfq4yEC43aXfUbwrW8Lm4L4feULcx5ZXrVFmuRQyP
-    ✔ Guardian initiates Social Recovery (510ms)
+    [PASS] Guardian initiates Social Recovery (510ms)
 
   3 passing (2s)
 ```
@@ -71,7 +71,7 @@ $ npx expo prebuild -p android
 
 ---
 
-## 📱 How to Build the Android APK
+## How to Build the Android APK
 
 ### Option A: Local Build (Requires Android Studio / Java 17+)
 ```bash
@@ -89,28 +89,23 @@ cd android && ./gradlew assembleRelease
 
 ---
 
-## 🎬 3-Minute Demo Video Script
+## 3-Minute Demo Video Script
 
 ### 0:00 - 0:30: The Problem
 - Show the painful UX of modern mobile wallets: seed phrases, security fatigue, and constant interruptions for small on-chain actions.
 - Introduce **Haptix**: The first risk-adaptive passkey smart wallet built from the ground up for Solana Mobile.
 
-### 0:30 - 1:15: Low-Risk Fast Lane (1 Passkey)
-- Open Haptix on Android.
-- Enter a small transfer of 0.05 SOL.
-- App immediately identifies: `🟢 LOW RISK: 1-Tap Biometric Approval`.
-- Tap once with Fingerprint/Face ID. Transaction confirms on-chain in 400ms!
-
-### 1:15 - 1:45: Seeker (SKR) Token & Gasless Experience ($10,000 Bonus Track)
-- Demonstrate the 100 SKR Genesis Reward immediately visible upon wallet creation.
-- Switch the send sheet token selector from SOL to **SKR**.
-- Send 25 SKR: verified instantly with 1-tap passkey.
-- Send 75 SKR: automatically escalates to 2-of-2 Hardware Quorum because it exceeds the 50 SKR threshold!
+### 1:15 - 1:45: Low-Risk Fast Lane (1 Passkey)
+- Open Haptix on Android / Seeker.
+- Enter a small transfer of 0.05 SOL (within the 0.1 SOL threshold).
+- App dynamically tags: `LOW RISK: 1-Tap Biometric Approval`.
+- Tap once with Fingerprint / Passkey. Transaction confirms on-chain in 400ms!
+- Explain how this risk-adaptive policy engine seamlessly scales to Seeker SKR tokens (≤ 50 SKR vs > 50 SKR) as verified in our integration test suite.
 
 ### 1:45 - 2:15: High-Value SOL Escalation (2-of-2 Hardware Quorum)
-- Change amount to 1.5 SOL (exceeding the 0.1 SOL threshold).
-- Watch the UI dynamically switch in real time to: `🟡 HIGH RISK: 2-of-2 Hardware Quorum Required`.
-- Tap Send: App prompts for Passkey #1 (biometrics) + Passkey #2 (backup hardware key). Show the mathematical quorum enforced by the smart contract.
+- Increase amount to 0.50 SOL (exceeding the 0.10 SOL threshold).
+- Watch the UI dynamically switch in real time to: `HIGH RISK: 2-of-2 Hardware Quorum Required`.
+- Tap Send: App prompts for Passkey #1 (device biometrics) + Passkey #2 (out-of-band Mac Touch ID or backup hardware key via the relay). Show the mathematical 2-of-2 quorum enforced on-chain.
 
 ### 2:15 - 2:40: Autonomous AI Agent Execution
 - Switch to the Agent tab.

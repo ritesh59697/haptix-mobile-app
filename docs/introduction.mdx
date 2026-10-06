@@ -1,37 +1,49 @@
 ---
 title: "Introduction to Haptix"
-description: "A smart account architecture that balances human biometric authority with AI autonomous delegation."
+description: "Non-custodial smart contract wallet for Solana Mobile and the Seeker ecosystem, securing assets with hardware-bound WebAuthn passkeys."
 ---
 
 # Welcome to Haptix
 
-Haptix is a non-custodial smart wallet designed for a world where humans and AI agents manage assets together. 
+**Haptix** is a non-custodial smart contract wallet built specifically for **Solana Mobile** and the **Solana Seeker** phone. 
 
-Instead of relying on a fragile 12-word seed phrase, Haptix secures your assets using **WebAuthn Passkeys** backed by your device's hardware enclave (e.g., Apple Secure Enclave, Touch ID, Face ID, Windows Hello). 
+Instead of relying on fragile 12-word seed phrases stored in memory, Haptix secures assets using **WebAuthn Passkeys** backed directly by your phone's hardware security enclave (e.g., Apple Secure Enclave, Android StrongBox / Keystore, or FIDO2 hardware keys).
 
-## The Core Problem
+---
 
-Traditional wallets are designed for manual human signing. If you want an AI agent to execute a trade, you are forced to hand over your private key. If the agent makes a mistake or gets hacked, your entire wallet is drained.
+## The Problem with Traditional Solana Wallets
 
-## The Haptix Architecture
+1. **Seed Phrase Vulnerability:** A single leaked or screenshotted 12-word phrase results in an immediate total drain of the wallet.
+2. **All-or-Nothing Signing:** Everyday coffee payments require the same authority as your life savings; there is no separation between checking and vault funds.
+3. **No Autonomous Delegation:** Traditional private key wallets cannot safely delegate micro-actions to AI trading bots or automated strategies without risking 100% of wallet funds.
+4. **Device Loss = Total Loss:** If you lose a phone without a backed-up seed phrase, your assets are unrecoverable.
 
-Haptix provides a unified biometric passkey smart account architecture across two major ecosystems:
+---
 
-1. **Solana Mobile Smart Wallet**:
-   - Native **NIST P-256 (secp256r1)** WebAuthn verification powered by Solana's native precompile (`9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`).
-   - **Dual-Device Vault Mode**: Checking vs. savings model (1-tap daily passkey vs. 2-of-2 hardware key quorum for large transfers).
-   - **Timelocked Guardian Social Recovery**: Rescue lost phones without giving guardians unilateral theft power.
-   - Explore the [Solana Mobile Architecture](/solana/architecture).
+## The Haptix Architecture on Solana
 
-2. **EVM Smart Accounts (ERC-4337 v0.7)**:
-   - Account abstraction on Base Sepolia with RIP-7212 P-256 precompile.
-   - Scoped **AI Agent Session Keys** with 24-hour rolling budgets and on-chain spending firewalls.
-   - Chrome Manifest V3 extension with inpage EIP-1193 / EIP-6963 provider.
-   - Explore the [EVM Architecture](/architecture).
+Haptix solves these problems at the blockchain level using the **Anchor framework** and native **NIST P-256 (secp256r1) WebAuthn precompiles**:
 
-- **No Seed Phrases:** True hardware-enforced passkey biometrics.
-- **AI Agent Delegation:** Scoped on-chain autonomous trade policies.
-- **Dual-Device Quorum:** Phone + OneKey/YubiKey/TouchID multisig.
-- **Guardian Social Recovery:** Non-custodial lost-phone recovery.
+### 1. Off-Curve Program-Derived Addresses (PDAs)
+Every Haptix wallet is an off-curve Solana PDA governed strictly by the Haptix Anchor program (`9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`). No private key exists for the wallet address—only authorized biometric passkeys can unlock operations.
 
-Get started by checking out our [Quickstart Guide](/quickstart) or exploring the [Solana Mobile Guide](/solana/architecture).
+### 2. Dual-Device Vault Mode (Checking vs. Savings)
+* **Checking (≤ 0.1 SOL / 20 USDC / 50 SKR):** Everyday low-value transactions execute with a swift **1-tap biometric passkey**.
+* **Vault (> Threshold):** High-value transfers automatically escalate to require a **2-of-2 Hardware Passkey Quorum** (e.g., Phone + YubiKey/Touch ID).
+
+### 3. Timelocked Guardian Social Recovery
+Rescue your wallet if your phone is lost or damaged. An on-chain guardian initiates key rotation, freezing the wallet for a 24-hour dispute window. If unauthorized, the owner can veto instantly with **Keep My Keys**. Once the timelock passes, keys rotate to your new device while your wallet address and balances remain completely intact.
+
+### 4. Gasless Devnet Paymaster
+New users onboard with zero initial SOL balance. The Haptix relayer treasury sponsors account initialization and rent fees on Solana Devnet, granting **100 SKR** Seeker Genesis tokens to immediately test autonomous trades.
+
+---
+
+## Core Pillars
+
+- **Zero Seed Phrases:** Hardware enclave-enforced passkey biometrics.
+- **On-Chain Governance:** Cryptographically enforced spending limits for SOL, USDC, and SKR.
+- **AI Agent Delegation:** Scoped session keys with daily budget caps.
+- **Asymmetric Guardian Recovery:** Lost-phone rescue without giving guardians unilateral custody.
+
+Ready to test? Follow the [Quickstart Guide](/quickstart) or explore the [Solana Mobile Architecture](/solana/architecture).

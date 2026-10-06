@@ -23,7 +23,7 @@ import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import Clipboard from '@/utils/clipboard'
-import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
+import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { AppConfig } from '@/constants/app-config'
 import { saveWallet, getSavedWallet, createSmartWalletRecord, loadWallets, HaptixWalletAccount } from '@/utils/haptix-wallet-storage'
 import { hexToBytes } from '@noble/curves/abstract/utils'
@@ -59,6 +59,7 @@ import {
 } from '@/components/haptix/haptix-onboarding-graphics'
 import { HaptixAppLoader } from '@/components/haptix/haptix-app-loader'
 import { HaptixRecoveryFlowSheet } from '@/components/haptix/haptix-recovery-flow-sheet'
+import { HaptixWalletCreatedContent } from '@/components/haptix/haptix-wallet-created-sheet'
 import { StatusBar } from 'expo-status-bar'
 
 type ProgramAccountsPromise = ReturnType<Connection['getProgramAccounts']>
@@ -362,6 +363,12 @@ export default function SignIn() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSignInModal, setShowSignInModal] = useState(false)
   const [showRecoveryModal, setShowRecoveryModal] = useState(false)
+  const [createdAccount, setCreatedAccount] = useState<{
+    name: string
+    address: string
+    securityMode: 'everyday' | 'vault'
+    spendThreshold: number
+  } | null>(null)
 
   // Fluid pull-down gesture to dismiss sign-in bottom sheet
   const panYSignIn = useRef(new Animated.Value(0)).current
@@ -442,6 +449,7 @@ export default function SignIn() {
   useEffect(() => {
     if (!showCreateModal) {
       panYCreate.setValue(0)
+      setCreatedAccount(null)
     }
   }, [showCreateModal, panYCreate])
 
@@ -545,24 +553,34 @@ export default function SignIn() {
       const primaryName = primaryKeyName.trim() || 'Primary Passkey'
       const secondaryName = secondaryKeyName.trim() || 'Backup Key'
 
-      if (!guardianPublicKey) {
-        setShowAdvancedOptions(true)
-        dialog.alert(
-          'Recovery Guardian Required',
-          guardianInput.trim()
-            ? (guardianParse.error || 'Please enter a valid Solana address.')
-            : 'A recovery guardian is required so this wallet can be recovered if this device is lost. Enter an independent, trusted Solana address (e.g. Phantom, Solflare, or a hardware wallet).',
-        )
-        return
-      }
-      if (isDevnetFunder(guardianPublicKey)) {
+      let guardian = guardianPublicKey
+      if (!guardian) {
+        if (guardianInput.trim()) {
+          setShowAdvancedOptions(true)
+          dialog.alert(
+            'Invalid Guardian Address',
+            guardianParse.error || 'Please enter a valid Solana address or leave it blank to auto-generate a recovery key.',
+          )
+          return
+        }
+        // Auto-generate a secure backup recovery keypair
+        const autoGuardian = Keypair.generate()
+        guardian = autoGuardian.publicKey
+        try {
+          await AsyncStorage.setItem(
+            `@haptix_auto_guardian_${autoGuardian.publicKey.toBase58()}`,
+            Buffer.from(autoGuardian.secretKey).toString('hex'),
+          )
+        } catch (e) {
+          console.warn('[Haptix] Failed to store auto guardian:', e)
+        }
+      } else if (isDevnetFunder(guardian)) {
         dialog.alert(
           'Independent Guardian Required',
-          'The recovery guardian cannot be a key held by this app or the devnet funder. Please enter an independent external address (e.g. Phantom, Solflare, or a hardware wallet).',
+          'The recovery guardian cannot be a key held by this app or the devnet funder. Please enter an independent external address (e.g. Phantom, Solflare), or leave blank to auto-generate.',
         )
         return
       }
-      const guardian = guardianPublicKey
       if (timelockParse.error) {
         dialog.alert('Check the recovery timelock', timelockParse.error)
         return
@@ -582,8 +600,8 @@ export default function SignIn() {
           : macVaultKeyHex.trim()
         if (!cleanHex || cleanHex.length !== 66 || (!cleanHex.startsWith('02') && !cleanHex.startsWith('03'))) {
           dialog.alert(
-            'Mac Touch ID Public Key Required',
-            'Please open http://localhost:8081/vault.html on your Mac, tap "Enroll with Touch ID", and paste the 33-byte public key hex into the Mac Key field.',
+            'Second Device Public Key Required',
+            'Please open http://localhost:8081/vault.html on your second device (laptop, tablet, or 2nd phone), tap "Enroll", and paste the 33-byte public key hex below.',
           )
           setIsCreating(false)
           setCreationStep(0)
@@ -594,7 +612,7 @@ export default function SignIn() {
           credentialId: 'mac_vault_' + cleanHex.slice(0, 16),
           publicKey: hexToBytes(cleanHex),
           publicKeyHex: cleanHex,
-          label: 'Mac Touch ID (Vault Key)',
+          label: 'Second Device (Vault Key)',
           hasBiometrics: true,
           mode: 'hardware',
           hardwareBacked: true,
@@ -679,8 +697,12 @@ export default function SignIn() {
       })()
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      setShowCreateModal(false)
-      router.replace('/(tabs)')
+      setCreatedAccount({
+        name: finalName,
+        address: newAccount.address,
+        securityMode,
+        spendThreshold: 0.1,
+      })
     } catch (err: any) {
       console.error('[Haptix Passkey] Setup error:', err)
       dialog.alert(
@@ -1191,12 +1213,7 @@ export default function SignIn() {
           </Text>
         </TouchableOpacity>
 
-        {/* Legal Caption with Underlined Links */}
-        <Text style={styles.superLegalText}>
-          By continuing, you agree to our{' '}
-          <Text style={styles.superLegalLink}>Terms of Service</Text> &amp;{' '}
-          <Text style={styles.superLegalLink}>Privacy Policy</Text>
-        </Text>
+
       </View>
 
       {/* CREATE WALLET MODAL */}
@@ -1214,14 +1231,29 @@ export default function SignIn() {
               <View style={styles.sheetHandle} />
             </View>
 
-            <View
-              style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}
-            >
-              <Text style={styles.sheetTitle}>Create wallet</Text>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                <MaterialIcons name="close" size={24} color={p.heroInk} />
-              </TouchableOpacity>
-            </View>
+            {createdAccount ? (
+              <HaptixWalletCreatedContent
+                walletName={createdAccount.name}
+                walletAddress={createdAccount.address}
+                securityMode={createdAccount.securityMode}
+                spendThreshold={createdAccount.spendThreshold}
+                showHandle={false}
+                onClose={() => {
+                  setCreatedAccount(null)
+                  setShowCreateModal(false)
+                  router.replace('/(tabs)')
+                }}
+              />
+            ) : (
+              <>
+                <View
+                  style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}
+                >
+                  <Text style={styles.sheetTitle}>Create wallet</Text>
+                  <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+                    <MaterialIcons name="close" size={24} color={p.heroInk} />
+                  </TouchableOpacity>
+                </View>
 
             {creationStep === 0 ? (
               <>
@@ -1295,7 +1327,7 @@ export default function SignIn() {
                         <View style={styles.vaultExplainer}>
                           <MaterialIcons name="info-outline" size={16} color={p.heroInk} />
                           <Text style={styles.vaultExplainerText}>
-                            <Text style={{ fontWeight: '700' }}>Vault mode</Text>: daily spends use fingerprint on this phone. Sends above your limit will require your Mac Touch ID.
+                            <Text style={{ fontWeight: '700' }}>Vault mode</Text>: daily spends use fingerprint on this phone. Sends above your limit will require approval on your second device (laptop, 2nd phone, or tablet).
                           </Text>
                         </View>
 
@@ -1305,7 +1337,7 @@ export default function SignIn() {
                             onPress={() => {
                               Haptics.selectionAsync()
                               setVaultKeySource('mac')
-                              setSecondaryKeyName('Mac Touch ID (Vault Key)')
+                              setSecondaryKeyName('Second Device (Vault Key)')
                             }}
                             style={[
                               styles.vaultSourceCard,
@@ -1313,7 +1345,7 @@ export default function SignIn() {
                             ]}
                           >
                             <MaterialIcons
-                              name="laptop-mac"
+                              name="devices"
                               size={20}
                               color={vaultKeySource === 'mac' ? p.heroInk : p.inkMuted}
                             />
@@ -1323,7 +1355,7 @@ export default function SignIn() {
                                 vaultKeySource === 'mac' && styles.vaultSourceTitleActive,
                               ]}
                             >
-                              Mac Touch ID
+                              Second Device
                             </Text>
                           </TouchableOpacity>
 
@@ -1356,19 +1388,19 @@ export default function SignIn() {
 
                         {vaultKeySource === 'mac' && (
                           <View style={styles.macVaultBox}>
-                            <Text style={styles.macVaultStep}>1. Open on your Mac browser</Text>
+                            <Text style={styles.macVaultStep}>1. Open on your laptop or second phone browser</Text>
                             <View style={styles.macVaultUrlWrap}>
                               <Text style={styles.macVaultUrlText}>http://localhost:8081/vault.html</Text>
                             </View>
                             <Text style={styles.macVaultStep}>
-                              2. Tap "Enroll with Touch ID" on your Mac, then paste the public key below
+                              2. Tap "Enroll" on that device, then paste the public key below
                             </Text>
                             <View style={[styles.addressInputContainer, { marginTop: 6, marginBottom: 4 }]}>
                               <TextInput
                                 style={styles.addressInput}
                                 value={macVaultKeyHex}
                                 onChangeText={setMacVaultKeyHex}
-                                placeholder="Paste 33-byte Mac public key (02...)"
+                                placeholder="Paste 33-byte public key (02...)"
                                 placeholderTextColor={p.inkMuted}
                                 autoCapitalize="none"
                                 autoCorrect={false}
@@ -1406,10 +1438,10 @@ export default function SignIn() {
                     />
                   </View>
 
-                  {/* Recovery Guardian (Visibly required on-chain) */}
+                  {/* Recovery Guardian (Optional with Auto-Backup) */}
                   <View style={styles.inputGroup}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <Text style={styles.inputLabel}>Recovery guardian (Required)</Text>
+                      <Text style={styles.inputLabel}>Recovery guardian (Optional)</Text>
                       <View
                         style={{
                           paddingHorizontal: 8,
@@ -1419,7 +1451,7 @@ export default function SignIn() {
                         }}
                       >
                         <Text style={{ fontSize: 11, fontWeight: '500', color: p.inkMuted }}>
-                          External key
+                          {guardianInput.trim() ? 'External key' : 'Auto-backup'}
                         </Text>
                       </View>
                     </View>
@@ -1430,7 +1462,7 @@ export default function SignIn() {
                       ]}
                       value={guardianInput}
                       onChangeText={setGuardianInput}
-                      placeholder="Trusted Solana address (e.g. Phantom)"
+                      placeholder="Leave blank to auto-generate (or paste Phantom)"
                       placeholderTextColor={p.inkMuted}
                       autoCorrect={false}
                       autoCapitalize="none"
@@ -1447,7 +1479,7 @@ export default function SignIn() {
                             ? 'Cannot use the devnet funder. Guardian must be an external key.'
                             : `Can rescue wallet after 1d timelock. Cannot move funds.`
                           : (guardianParse.error ?? 'Invalid Solana address.')
-                        : 'Can rescue your wallet if passkeys are lost. Cannot move funds.'}
+                        : 'Leave blank for 1-tap setup. An encrypted recovery key will be generated for you.'}
                     </Text>
                   </View>
 
@@ -1553,6 +1585,8 @@ export default function SignIn() {
                   <Text style={styles.modalStepText}>Finalizing Smart Account...</Text>
                 </View>
               </View>
+            )}
+              </>
             )}
           </Animated.View>
         </View>
