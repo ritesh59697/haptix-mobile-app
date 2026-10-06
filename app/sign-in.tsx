@@ -587,7 +587,7 @@ export default function SignIn() {
       }
 
       // 1. Generate Primary
-      const primary = await getOrCreatePrimaryPasskey(primaryName)
+      const primary = await getOrCreatePrimaryPasskey(primaryName, { forceNew: true })
 
       setCreationStep(2)
       await new Promise((r) => setTimeout(r, 600))
@@ -620,6 +620,7 @@ export default function SignIn() {
         await bindHardwarePasskey('secondary', secondary.credentialId, secondary.publicKeyHex)
       } else {
         secondary = await getOrCreateSecondaryPasskey(secondaryName, {
+          forceNew: true,
           attachment: securityMode === 'vault' ? 'securityKey' : 'platform',
         })
       }

@@ -138,10 +138,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const isFirstWallet = wallets.length === 0
     const finalName = name?.trim() || `Account ${wallets.length + 1}`
     const mode = options?.mode || 'everyday'
-    const forceNew = !isFirstWallet
-
     // 1. Generate Primary Passkey
-    const primary = await getOrCreatePrimaryPasskey(finalName, { forceNew })
+    const primary = await getOrCreatePrimaryPasskey(finalName, { forceNew: true })
+
+    // Small pause between passkey prompts on Android so Credential Manager
+    // activity finishes dismissing before presenting the second passkey sheet.
+    await new Promise((r) => setTimeout(r, 600))
 
     // 2. Generate Secondary Passkey (Second Device vs Security Key vs Platform)
     let secondary: PasskeyInfo
@@ -165,7 +167,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       await bindHardwarePasskey('secondary', secondary.credentialId, secondary.publicKeyHex)
     } else {
       secondary = await getOrCreateSecondaryPasskey(finalName, {
-        forceNew,
+        forceNew: true,
         attachment: mode === 'vault' ? 'securityKey' : 'platform',
       })
     }

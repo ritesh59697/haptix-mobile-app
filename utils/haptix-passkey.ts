@@ -7,7 +7,7 @@ import { sha256 } from '@noble/hashes/sha2'
 import { requireOptionalNativeModule } from 'expo-modules-core'
 import * as Crypto from 'expo-crypto'
 import { AppConfig } from '@/constants/app-config'
-import { WebAuthnAssertion } from '@/utils/secp256r1-instruction'
+import { WebAuthnAssertion, assertionMatchesPublicKey } from '@/utils/secp256r1-instruction'
 
 /**
  * ============================================================================
@@ -1175,19 +1175,25 @@ async function signHardwareAssertion(id: 'primary' | 'secondary', message: Uint8
 
   const credentialId = await AsyncStorage.getItem(credentialKey(id))
   const publicKeyHex = await AsyncStorage.getItem(pubkeyKey(id))
-  if (!credentialId || !publicKeyHex) {
+  if (!publicKeyHex) {
     throw new Error(`No platform passkey is registered for the ${id} key on this device.`)
   }
 
+  // WebAuthn Discoverable Assertion:
+  // On Android Credential Manager, passing `allowCredentials` triggers the external
+  // security key modal ("USB security key / Use another device") whenever Google Play Services
+  // treats the request as a targeted roaming query rather than resident key discovery.
+  // Omitting `allowCredentials` lets Android Credential Manager query Google Password Manager
+  // directly for on-device passkeys belonging to PASSKEY_RP_ID, immediately presenting
+  // the native biometric fingerprint prompt.
   const getRequest = {
     challenge: bytesToBase64Url(message),
     rpId: PASSKEY_RP_ID,
-    allowCredentials: [{ type: 'public-key' as const, id: credentialId }],
     userVerification: 'required' as const,
     timeout: 60_000,
   }
 
-  let assertion: import('react-native-passkey').PasskeyGetResult
+  let assertion: import('react-native-passkey').PasskeyGetResult | null = null
   try {
     assertion = await Passkey.getPlatformKey(getRequest)
   } catch (platformErr: any) {
@@ -1209,12 +1215,32 @@ async function signHardwareAssertion(id: 'primary' | 'secondary', message: Uint8
     throw new Error('The authenticator returned an incomplete assertion.')
   }
 
-  return {
-    // The authenticator signs DER; the precompile wants 64-byte compact low-S.
-    signature: p256.Signature.fromDER(base64UrlToBytes(signature)).normalizeS().toCompactRawBytes(),
-    publicKey: hexToBytes(publicKeyHex),
+  const parsedAssertion: WebAuthnAssertion = {
+    signature: base64UrlToBytes(signature),
     authenticatorData: base64UrlToBytes(authenticatorData),
     clientDataJSON: base64UrlToBytes(clientDataJSON),
+  }
+
+  const expectedPubkey = hexToBytes(publicKeyHex)
+  // Verify cryptographically that this assertion signature matches the expected public key
+  if (!assertionMatchesPublicKey(parsedAssertion, expectedPubkey)) {
+    throw new Error(
+      `The passkey selected does not match this wallet's ${id === 'primary' ? 'Primary' : 'Backup'} key. Please choose the correct passkey.`,
+    )
+  }
+
+  // Auto-heal the stored credential ID from the successful assertion
+  const resolvedCredId = assertion.id || (assertion as any).rawId
+  if (resolvedCredId && resolvedCredId !== credentialId) {
+    await AsyncStorage.setItem(credentialKey(id), resolvedCredId)
+  }
+
+  return {
+    // The authenticator signs DER; the precompile wants 64-byte compact low-S.
+    signature: p256.Signature.fromDER(parsedAssertion.signature).normalizeS().toCompactRawBytes(),
+    publicKey: expectedPubkey,
+    authenticatorData: parsedAssertion.authenticatorData,
+    clientDataJSON: parsedAssertion.clientDataJSON,
   }
 }
 
@@ -1537,7 +1563,6 @@ export async function authenticatePasskey(reason: string = 'Authenticate to rest
     const getRequest = {
       challenge: bytesToBase64Url(await secureRandomBytes(32)),
       rpId: PASSKEY_RP_ID,
-      allowCredentials: [{ type: 'public-key' as const, id: credentialId }],
       userVerification: 'required' as const,
       timeout: 60_000,
     }
