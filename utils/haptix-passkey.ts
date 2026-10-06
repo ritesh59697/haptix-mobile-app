@@ -1238,27 +1238,62 @@ async function signHardwareAssertion(id: 'primary' | 'secondary', message: Uint8
   // allowing 2-of-2 hardware quorum transactions to safely serialize within Solana's
   // 1,232-byte MTU limit.
   const challengeBytes = sha256(message)
-  const getRequest = {
-    challenge: bytesToBase64Url(challengeBytes),
-    rpId: PASSKEY_RP_ID,
-    userVerification: 'required' as const,
-    timeout: 60_000,
+  let assertion: import('react-native-passkey').PasskeyGetResult | null = null
+
+  // 1. Targeted Assertion:
+  // If we have the saved credentialId for this wallet & role, pass it in allowCredentials with
+  // transports: ['internal']. This tells Android Credential Manager to directly select the
+  // matching passkey and present the biometric fingerprint prompt immediately, bypassing
+  // the multi-account "Choose a saved passkey" picker sheet.
+  if (credentialId && credentialId !== 'device_secure_storage') {
+    try {
+      const targetedRequest: any = {
+        challenge: bytesToBase64Url(challengeBytes),
+        rpId: PASSKEY_RP_ID,
+        allowCredentials: [
+          {
+            type: 'public-key',
+            id: credentialId,
+            transports: ['internal'],
+          },
+        ],
+        userVerification: 'required',
+        timeout: 60_000,
+      }
+      assertion = await Passkey.getPlatformKey(targetedRequest)
+    } catch (targetedErr: any) {
+      const errStr = String(targetedErr?.message || targetedErr)
+      if (errStr.includes('cancelled') || errStr.includes('canceled') || errStr.includes('UserCancel')) {
+        throw new Error(describePasskeyError(targetedErr, 'get'))
+      }
+      console.warn(`[Haptix Passkey] Targeted assertion failed for ${id}, falling back to discoverable:`, targetedErr)
+    }
   }
 
-  let assertion: import('react-native-passkey').PasskeyGetResult | null = null
-  try {
-    assertion = await Passkey.getPlatformKey(getRequest)
-  } catch (platformErr: any) {
-    const errStr = String(platformErr?.message || platformErr)
-    if (errStr.includes('cancelled') || errStr.includes('canceled') || errStr.includes('UserCancel')) {
-      throw new Error(describePasskeyError(platformErr, 'get'))
+  // 2. Discoverable Fallback:
+  // If targeted assertion threw or if credentialId is missing, fall back to
+  // the discoverable prompt where Android displays the saved passkey picker.
+  if (!assertion) {
+    const discoverableRequest = {
+      challenge: bytesToBase64Url(challengeBytes),
+      rpId: PASSKEY_RP_ID,
+      userVerification: 'required' as const,
+      timeout: 60_000,
     }
     try {
-      console.warn(`[Haptix Passkey] getPlatformKey failed for ${id}, trying Passkey.get fallback:`, platformErr)
-      assertion = await Passkey.get(getRequest)
-    } catch (fallbackErr) {
-      console.error(`[Haptix Passkey] Platform & fallback passkey assertion failed for ${id}:`, fallbackErr)
-      throw new Error(describePasskeyError(platformErr, 'get'))
+      assertion = await Passkey.getPlatformKey(discoverableRequest)
+    } catch (platformErr: any) {
+      const errStr = String(platformErr?.message || platformErr)
+      if (errStr.includes('cancelled') || errStr.includes('canceled') || errStr.includes('UserCancel')) {
+        throw new Error(describePasskeyError(platformErr, 'get'))
+      }
+      try {
+        console.warn(`[Haptix Passkey] getPlatformKey discoverable failed for ${id}, trying Passkey.get fallback:`, platformErr)
+        assertion = await Passkey.get(discoverableRequest)
+      } catch (fallbackErr) {
+        console.error(`[Haptix Passkey] Discoverable passkey assertion failed for ${id}:`, fallbackErr)
+        throw new Error(describePasskeyError(platformErr, 'get'))
+      }
     }
   }
 
