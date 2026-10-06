@@ -978,6 +978,9 @@ export function HaptixWalletScreen() {
       const primarySig = await signWithPasskey('primary', grantMsg, `Grant ${allowanceSol} SOL Session to Agent`)
 
       onStepChange(2)
+      // Allow Android CredentialManager to cleanly dismiss the first biometric sheet before presenting the backup key prompt
+      await new Promise((r) => setTimeout(r, 600))
+
       const secondarySig = await signWithPasskey(
         'secondary',
         grantMsg,
@@ -1144,6 +1147,7 @@ export function HaptixWalletScreen() {
         SystemProgram.programId,
       )
       const primarySig = await signWithPasskey('primary', grantMsg, 'Grant AI Agent On-Chain Session')
+      await new Promise((r) => setTimeout(r, 600))
       const secondarySig = await signWithPasskey(
         'secondary',
         grantMsg,
