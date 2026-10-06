@@ -994,27 +994,61 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                     </Text>
                   </View>
                 </View>
-                <TextInput
+                <View
                   style={[
-                    styles.inputField,
+                    styles.macKeyInputContainer,
                     {
                       backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
-                      color: theme.textPrimary,
                       borderColor:
                         guardianAddress.trim() && (!isSolanaAddress(guardianAddress.trim()) || isDevnetFunder(guardianAddress.trim()))
                           ? theme.rose
                           : (theme.isDark ? '#222226' : theme.borderDefault),
+                      marginTop: 0,
                     },
                   ]}
-                  value={guardianAddress}
-                  onChangeText={setGuardianAddress}
-                  placeholder="Leave blank to auto-generate (or paste Phantom)"
-                  placeholderTextColor={theme.textMuted}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="done"
-                  onSubmitEditing={Keyboard.dismiss}
-                />
+                >
+                  <TextInput
+                    style={[styles.macKeyInput, { color: theme.textPrimary }]}
+                    value={guardianAddress}
+                    onChangeText={setGuardianAddress}
+                    placeholder="Auto-generate or paste address"
+                    placeholderTextColor={theme.textMuted}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    multiline={false}
+                    numberOfLines={1}
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
+                  />
+                  {guardianAddress.trim() ? (
+                    <TouchableOpacity
+                      style={styles.pasteBadgeButton}
+                      onPress={() => {
+                        setGuardianAddress('')
+                        Haptics.selectionAsync()
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <MaterialIcons name="close" size={16} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.pasteBadgeButton}
+                      onPress={async () => {
+                        const text = await Clipboard.getString()
+                        if (text) {
+                          setGuardianAddress(text.trim())
+                          Haptics.selectionAsync()
+                        }
+                      }}
+                      activeOpacity={0.7}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <MaterialIcons name="content-paste" size={14} color="#6C8CFF" style={{ marginRight: 2 }} />
+                      <Text style={styles.pasteBadgeText}>Paste</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
                 <Text style={[styles.fieldHint, { color: isDevnetFunder(guardianAddress.trim()) ? theme.rose : theme.textMuted, marginTop: 4 }]}>
                   {isDevnetFunder(guardianAddress.trim())
                     ? 'Cannot use the devnet funder. Guardian must be an external key.'

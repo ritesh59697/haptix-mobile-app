@@ -23,6 +23,7 @@ import Clipboard from '@/utils/clipboard'
 import { ellipsify } from '@/utils/ellipsify'
 import { AppConfig } from '@/constants/app-config'
 import { fundDevnetWallet } from '@/utils/haptix-funder'
+import { useAppTheme } from '@/components/theme/theme-context'
 
 export interface HaptixWalletCreatedContentProps {
   walletName: string
@@ -55,6 +56,7 @@ export function HaptixWalletCreatedContent({
 }: HaptixWalletCreatedContentProps) {
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const { theme, isDark } = useAppTheme()
 
   const [copied, setCopied] = useState(false)
   const [isFunding, setIsFunding] = useState(false)
@@ -138,6 +140,11 @@ export function HaptixWalletCreatedContent({
   const thresholdSol =
     spendThreshold !== undefined ? spendThreshold : securityMode === 'vault' ? 0.0 : 0.1
 
+  const cardBg = isDark ? '#121213' : (theme.bgElevated ?? '#F6F6F8')
+  const cardBorder = isDark ? '#2a2a28' : theme.borderDefault
+  const dividerBg = isDark ? '#201f1d' : theme.borderSubtle
+  const iconBoxBg = isDark ? '#1a1a18' : (theme.isDark ? '#1a1a18' : '#E8E8ED')
+
   return (
     <ScrollView
       style={styles.scrollContainer}
@@ -149,7 +156,9 @@ export function HaptixWalletCreatedContent({
       bounces={false}
     >
       {/* Handle indicator */}
-      {showHandle && <View style={styles.handle} />}
+      {showHandle && (
+        <View style={[styles.handle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
+      )}
 
       {/* Hero Header with Animated Ring */}
       <View style={styles.header}>
@@ -159,12 +168,12 @@ export function HaptixWalletCreatedContent({
             { transform: [{ scale: ringScale }], opacity: ringOpacity },
           ]}
         >
-          <View style={styles.ringOuter}>
-            <View style={styles.ringInner}>
+          <View style={[styles.ringOuter, { backgroundColor: isDark ? 'rgba(95, 191, 122, 0.08)' : 'rgba(5, 150, 105, 0.10)' }]}>
+            <View style={[styles.ringInner, { backgroundColor: isDark ? 'rgba(95, 191, 122, 0.16)' : 'rgba(5, 150, 105, 0.18)' }]}>
               <Svg viewBox="0 0 24 24" width={30} height={30} fill="none">
                 <Path
                   d="M5 12.5L9.5 17L19 7.5"
-                  stroke="#5fbf7a"
+                  stroke={isDark ? '#5fbf7a' : '#059669'}
                   strokeWidth={2.4}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -174,57 +183,61 @@ export function HaptixWalletCreatedContent({
           </View>
         </Animated.View>
 
-        <Text style={styles.eyebrow}>Wallet created</Text>
-        <Text style={styles.heroName} numberOfLines={1}>
+        <Text style={[styles.eyebrow, { color: theme.textMuted }]}>Wallet created</Text>
+        <Text style={[styles.heroName, { color: theme.textPrimary }]} numberOfLines={1}>
           {walletName || 'Hardware Vault'}
         </Text>
-        <Text style={styles.modeSubtitle}>
+        <Text style={[styles.modeSubtitle, { color: theme.textMuted }]}>
           {securityMode === 'vault' ? 'Vault mode' : 'Everyday mode'}
         </Text>
       </View>
 
       {/* Summary Card */}
-      <View style={styles.summaryCard}>
+      <View style={[styles.summaryCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
         {/* Address Row */}
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Address</Text>
+          <Text style={[styles.summaryLabel, { color: theme.textMuted }]}>Address</Text>
           <TouchableOpacity
             style={styles.addressPill}
             onPress={handleCopyAddress}
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={styles.addressText}>
+            <Text style={[styles.addressText, { color: theme.textPrimary }]}>
               {walletAddress ? ellipsify(walletAddress, 4, '..') : '—'}
             </Text>
             <MaterialIcons
               name={copied ? 'check' : 'content-copy'}
               size={13}
-              color={copied ? '#5fbf7a' : '#8a8985'}
+              color={copied ? (isDark ? '#5fbf7a' : theme.emerald) : (isDark ? '#8a8985' : theme.textMuted)}
             />
-            {copied && <Text style={styles.copiedText}>Copied</Text>}
+            {copied && (
+              <Text style={[styles.copiedText, { color: isDark ? '#5fbf7a' : theme.emeraldText }]}>
+                Copied
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: dividerBg }]} />
 
         {/* Network Row */}
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Network</Text>
+          <Text style={[styles.summaryLabel, { color: theme.textMuted }]}>Network</Text>
           <View style={styles.networkBadge}>
-            <View style={styles.networkDot} />
-            <Text style={styles.networkText}>Solana devnet</Text>
+            <View style={[styles.networkDot, { backgroundColor: isDark ? '#5fbf7a' : theme.emerald }]} />
+            <Text style={[styles.networkText, { color: theme.textPrimary }]}>Solana devnet</Text>
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: dividerBg }]} />
 
         {/* Quorum / Spending Threshold Row */}
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel} numberOfLines={1}>
+          <Text style={[styles.summaryLabel, { color: theme.textMuted }]} numberOfLines={1}>
             Sends above {thresholdSol.toFixed(2)} SOL
           </Text>
-          <Text style={styles.quorumValue} numberOfLines={1}>
+          <Text style={[styles.quorumValue, { color: theme.textPrimary }]} numberOfLines={1}>
             {securityMode === 'vault'
               ? 'Need this phone and second device'
               : 'Need this phone and backup key'}
@@ -233,8 +246,8 @@ export function HaptixWalletCreatedContent({
       </View>
 
       {/* Next Steps Section */}
-      <Text style={styles.sectionHeading}>Next steps</Text>
-      <View style={styles.nextStepsCard}>
+      <Text style={[styles.sectionHeading, { color: theme.textMuted }]}>Next steps</Text>
+      <View style={[styles.nextStepsCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
         {/* Step 1: Devnet SOL */}
         <TouchableOpacity
           style={styles.stepRow}
@@ -242,16 +255,17 @@ export function HaptixWalletCreatedContent({
           disabled={isFunding || isFunded}
           activeOpacity={0.7}
         >
-          <View style={styles.stepIconBox}>
-            <MaterialIcons name="local-gas-station" size={17} color="#f2f1ee" />
+          <View style={[styles.stepIconBox, { backgroundColor: iconBoxBg }]}>
+            <MaterialIcons name="local-gas-station" size={17} color={isDark ? '#f2f1ee' : theme.textPrimary} />
           </View>
           <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Get devnet SOL</Text>
+            <Text style={[styles.stepTitle, { color: theme.textPrimary }]}>Get devnet SOL</Text>
             <Text
               style={[
                 styles.stepSubtitle,
-                isFunded && { color: '#5fbf7a', fontWeight: '500' },
-                isFunding && { color: '#6c8cff' },
+                { color: theme.textMuted },
+                isFunded && { color: isDark ? '#5fbf7a' : theme.emerald, fontWeight: '500' },
+                isFunding && { color: theme.accent },
               ]}
             >
               {isFunding
@@ -262,15 +276,15 @@ export function HaptixWalletCreatedContent({
             </Text>
           </View>
           {isFunding ? (
-            <ActivityIndicator size="small" color="#6c8cff" />
+            <ActivityIndicator size="small" color={theme.accent} />
           ) : isFunded ? (
-            <MaterialIcons name="check" size={18} color="#5fbf7a" />
+            <MaterialIcons name="check" size={18} color={isDark ? '#5fbf7a' : theme.emerald} />
           ) : (
-            <MaterialIcons name="chevron-right" size={20} color="#8a8985" />
+            <MaterialIcons name="chevron-right" size={20} color={isDark ? '#8a8985' : theme.textMuted} />
           )}
         </TouchableOpacity>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: dividerBg }]} />
 
         {/* Step 2: Recovery Guardian */}
         <TouchableOpacity
@@ -278,26 +292,26 @@ export function HaptixWalletCreatedContent({
           onPress={handleAddGuardian}
           activeOpacity={0.7}
         >
-          <View style={styles.stepIconBox}>
-            <MaterialIcons name="group" size={17} color="#f2f1ee" />
+          <View style={[styles.stepIconBox, { backgroundColor: iconBoxBg }]}>
+            <MaterialIcons name="group" size={17} color={isDark ? '#f2f1ee' : theme.textPrimary} />
           </View>
           <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Add a recovery guardian</Text>
-            <Text style={styles.stepSubtitle}>
+            <Text style={[styles.stepTitle, { color: theme.textPrimary }]}>Add a recovery guardian</Text>
+            <Text style={[styles.stepSubtitle, { color: theme.textMuted }]}>
               Someone who can help if you lose this device
             </Text>
           </View>
-          <MaterialIcons name="chevron-right" size={20} color="#8a8985" />
+          <MaterialIcons name="chevron-right" size={20} color={isDark ? '#8a8985' : theme.textMuted} />
         </TouchableOpacity>
       </View>
 
       {/* Primary Action Button */}
       <TouchableOpacity
-        style={styles.doneButton}
+        style={[styles.doneButton, { backgroundColor: theme.accent }]}
         onPress={handleDone}
         activeOpacity={0.85}
       >
-        <Text style={styles.doneButtonText}>Done</Text>
+        <Text style={[styles.doneButtonText, { color: '#FFFFFF' }]}>Done</Text>
       </TouchableOpacity>
     </ScrollView>
   )
@@ -315,6 +329,7 @@ export function HaptixWalletCreatedSheet({
   onClose,
   onDevnetSolFunded,
 }: HaptixWalletCreatedSheetProps) {
+  const { theme, isDark } = useAppTheme()
   const panY = useRef(new Animated.Value(0)).current
 
   const panResponder = useRef(
@@ -362,11 +377,15 @@ export function HaptixWalletCreatedSheet({
         <Animated.View
           style={[
             styles.sheetContainer,
-            { transform: [{ translateY: panY }] },
+            {
+              backgroundColor: theme.bgCard,
+              borderColor: isDark ? '#2a2a28' : theme.borderDefault,
+              transform: [{ translateY: panY }],
+            },
           ]}
         >
           <View style={styles.touchArea} {...panResponder.panHandlers}>
-            <View style={styles.handle} />
+            <View style={[styles.handle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
           </View>
 
           <HaptixWalletCreatedContent
