@@ -1464,18 +1464,51 @@ export default function SignIn() {
                         </Text>
                       </View>
                     </View>
-                    <TextInput
+                    <View
                       style={[
-                        styles.textInputField,
+                        styles.addressInputContainer,
                         guardianInput.trim() && (!guardianPublicKey || isDevnetFunder(guardianPublicKey)) ? styles.textInputFieldInvalid : null,
                       ]}
-                      value={guardianInput}
-                      onChangeText={setGuardianInput}
-                      placeholder="Leave blank to auto-generate (or paste Phantom)"
-                      placeholderTextColor={p.inkMuted}
-                      autoCorrect={false}
-                      autoCapitalize="none"
-                    />
+                    >
+                      <TextInput
+                        style={styles.addressInput}
+                        value={guardianInput}
+                        onChangeText={setGuardianInput}
+                        placeholder="Auto-generate or paste address"
+                        placeholderTextColor={p.inkMuted}
+                        autoCorrect={false}
+                        autoCapitalize="none"
+                        multiline={false}
+                        numberOfLines={1}
+                      />
+                      {guardianInput.trim() ? (
+                        <TouchableOpacity
+                          style={styles.pasteBadgeButton}
+                          onPress={() => {
+                            setGuardianInput('')
+                            Haptics.selectionAsync()
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <MaterialIcons name="close" size={16} color={p.inkMuted} />
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.pasteBadgeButton}
+                          onPress={async () => {
+                            const text = await Clipboard.getString()
+                            if (text) {
+                              setGuardianInput(text.trim())
+                              Haptics.selectionAsync()
+                            }
+                          }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <MaterialIcons name="content-paste" size={14} color="#6C8CFF" style={{ marginRight: 2 }} />
+                          <Text style={[styles.pasteBadgeText, { color: '#6C8CFF' }]}>Paste</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                     <Text
                       style={[
                         styles.inputHint,
