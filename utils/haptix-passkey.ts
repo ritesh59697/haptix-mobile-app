@@ -313,10 +313,17 @@ function compressedPubkeyHex(scalar: bigint): string {
   return bytesToHex(p256.Point.BASE.multiply(scalar).toRawBytes(true))
 }
 
+function scalarKeyForPubkey(pubkeyHex: string): string {
+  return `haptix_scalar_${pubkeyHex.toLowerCase().slice(0, 32)}`
+}
+
 async function writeScalar(id: 'primary' | 'secondary', scalar: bigint): Promise<void> {
   const store = requireSecureStore()
   const options = Platform.OS === 'ios' ? { keychainAccessible: store.WHEN_UNLOCKED_THIS_DEVICE_ONLY } : undefined
-  await store.setItemAsync(scalarKey(id), scalarToHex(scalar), options)
+  const hex = scalarToHex(scalar)
+  await store.setItemAsync(scalarKey(id), hex, options)
+  const pubkeyHex = compressedPubkeyHex(scalar)
+  await store.setItemAsync(scalarKeyForPubkey(pubkeyHex), hex, options)
 }
 
 async function readScalar(id: 'primary' | 'secondary'): Promise<bigint | null> {
@@ -324,6 +331,17 @@ async function readScalar(id: 'primary' | 'secondary'): Promise<bigint | null> {
   if (!store) return null
   try {
     const hex = await store.getItemAsync(scalarKey(id))
+    return hex ? scalarFromHex(hex) : null
+  } catch {
+    return null
+  }
+}
+
+async function readScalarForPubkey(pubkeyHex: string): Promise<bigint | null> {
+  const store = getSecureStore()
+  if (!store) return null
+  try {
+    const hex = await store.getItemAsync(scalarKeyForPubkey(pubkeyHex))
     return hex ? scalarFromHex(hex) : null
   } catch {
     return null
@@ -1124,6 +1142,40 @@ async function registerHardwarePasskey(
 }
 
 /**
+ * Creates a biometric-gated device secure storage passkey (MODE_LEGACY).
+ *
+ * For single-device Everyday Mode: keeps 2-key quorum transactions (including 140-byte
+ * agent session grants) at ~1,148 bytes, safely under Solana's 1,232-byte MTU limit.
+ * Gated behind native biometric verification on signing.
+ */
+export async function registerDevicePasskey(
+  id: 'primary' | 'secondary' = 'secondary',
+  label?: string,
+): Promise<PasskeyInfo> {
+  const scalar = scalarFromRandomBytes(await secureRandomBytes(32))
+  await writeScalar(id, scalar)
+  const publicKeyHex = compressedPubkeyHex(scalar)
+  const publicKey = hexToBytes(publicKeyHex)
+  const resolvedLabel = label || DEVICE_KEY_LABELS[id]
+
+  await AsyncStorage.setItem(pubkeyKey(id), publicKeyHex)
+  await writeMode(id, 'software')
+  // Clear any stale hardware credential ID so signing uses the software scalar
+  await AsyncStorage.removeItem(credentialKey(id))
+
+  return {
+    id,
+    credentialId: '',
+    publicKey,
+    publicKeyHex,
+    label: resolvedLabel,
+    hasBiometrics: true,
+    mode: 'software',
+    hardwareBacked: false,
+  }
+}
+
+/**
  * The platform credential this device already holds for `id`, if any.
  *
  * `getOrCreate*Passkey` only ever honoured the "get" half of its name for *software*
@@ -1346,7 +1398,9 @@ export async function bindSoftwarePasskey(
  * how a legacy wallet loses the scalar its address was derived from.
  */
 export function credentialIdForRecord(key: PasskeyInfo): string | undefined {
-  return key.mode === 'hardware' && key.credentialId ? key.credentialId : undefined
+  if (key.mode === 'hardware' && key.credentialId) return key.credentialId
+  if (key.mode === 'software') return 'device_secure_storage'
+  return undefined
 }
 
 /**
@@ -1399,14 +1453,20 @@ export async function applyWalletCredentials(wallet: {
   ]
 
   for (const { role, expected, recorded } of roles) {
-    if (recorded) {
+    if (recorded && recorded !== 'device_secure_storage') {
       await bindHardwarePasskey(role, recorded, expected)
       bound[role] = recorded
       continue
     }
 
     // Check if this device has a matching software scalar in SecureStore
-    const scalar = await readScalar(role)
+    let scalar = await readScalar(role)
+    if (!scalar || compressedPubkeyHex(scalar) !== expected) {
+      scalar = await readScalarForPubkey(expected)
+      if (scalar && compressedPubkeyHex(scalar) === expected) {
+        await writeScalar(role, scalar)
+      }
+    }
     if (scalar && compressedPubkeyHex(scalar) === expected) {
       await AsyncStorage.setItem(pubkeyKey(role), expected)
       await writeMode(role, 'software')
@@ -1491,11 +1551,15 @@ export async function getOrCreatePrimaryPasskey(
 export async function getOrCreateSecondaryPasskey(
   walletName: string = 'Haptix Wallet',
   options?: {
-    attachment?: 'platform' | 'securityKey' | 'any'
+    attachment?: 'platform' | 'securityKey' | 'any' | 'device' | 'software'
     forceNew?: boolean
   },
 ): Promise<PasskeyInfo> {
   const attachment = options?.attachment ?? 'platform'
+  if (attachment === 'device' || attachment === 'software') {
+    return await registerDevicePasskey('secondary')
+  }
+
   if (!options?.forceNew) {
     const migratedPubkey = await migrateLegacyPlaintextScalar('secondary')
     const existingPubHex = migratedPubkey ?? (await AsyncStorage.getItem(PUBKEY_KEY_SECONDARY))

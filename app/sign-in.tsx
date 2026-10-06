@@ -33,6 +33,7 @@ import {
   getDiscoverablePlatformAssertion,
   getOrCreatePrimaryPasskey,
   getOrCreateSecondaryPasskey,
+  registerDevicePasskey,
   matchLocalSoftwareKey,
   promptBiometricAuth,
   PasskeyInfo,
@@ -618,11 +619,17 @@ export default function SignIn() {
           hardwareBacked: true,
         }
         await bindHardwarePasskey('secondary', secondary.credentialId, secondary.publicKeyHex)
-      } else {
+      } else if (securityMode === 'vault') {
         secondary = await getOrCreateSecondaryPasskey(secondaryName, {
           forceNew: true,
-          attachment: securityMode === 'vault' ? 'securityKey' : 'platform',
+          attachment: 'securityKey',
         })
+      } else {
+        // Everyday Mode: Single device on phone.
+        // Primary is hardware passkey (Google Password Manager).
+        // Backup is device secure storage (Keystore encrypted, biometric-gated).
+        // Keeps 2-key quorum transactions under Solana's 1,232-byte MTU limit.
+        secondary = await registerDevicePasskey('secondary', 'Backup key (device secure storage)')
       }
 
       setCreationStep(3)

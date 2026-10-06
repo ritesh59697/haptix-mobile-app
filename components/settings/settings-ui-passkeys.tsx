@@ -25,7 +25,7 @@ export function SettingsUiPasskeys() {
   if (!activeWallet) return null
 
   const hasPrimaryBound = !!activeWallet.primaryCredentialId || !!activeWallet.primaryPasskeyHex
-  const hasBackupBound = !!activeWallet.secondaryCredentialId
+  const hasBackupBound = !!activeWallet.secondaryCredentialId || !!activeWallet.secondaryPasskeyHex
 
   const handleLinkBackupPasskey = async () => {
     if (!activeWallet.secondaryPasskeyHex) {
