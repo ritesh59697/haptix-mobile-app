@@ -1032,6 +1032,12 @@ function describePasskeyError(err: unknown, action: 'create' | 'get'): string {
         "serve .well-known/assetlinks.json with this app's signing certificate — see PASSKEY_SETUP.md."
       )
     default:
+      if (message?.includes('RP ID cannot be validated') || message?.includes('50152')) {
+        return (
+          'Android could not validate the passkey domain (haptix-passkeys.vercel.app). ' +
+          'Check your internet connection, disable any VPN/Private DNS, and restart the app.'
+        )
+      }
       return message || `${verb} failed.`
   }
 }
