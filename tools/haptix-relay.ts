@@ -92,7 +92,7 @@ const server = http.createServer((req, res) => {
         }
         console.log(`[Relay] New transfer queued: ${currentPendingTx.amountSol} SOL (≈ $${currentPendingTx.amountUsd || '?'}) to ${currentPendingTx.recipient}`)
         try {
-          exec(`osascript -e 'display notification "Transfer of ${currentPendingTx.amountSol} SOL pending Touch ID authorization" with title "Haptix Vault Quorum" sound name "Glass"'`)
+          exec(`osascript -e 'display notification "Transfer of ${currentPendingTx.amountSol} SOL pending second device approval" with title "Haptix Vault Quorum" sound name "Glass"'`)
           exec(`open http://localhost:8081/vault.html`)
         } catch (e) {
           console.warn('[Relay] Notification dispatch failed:', e)
@@ -107,7 +107,7 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  // Mac checks for pending transfer: GET /pending-tx
+  // Second device checks for pending transfer: GET /pending-tx
   if (req.method === 'GET' && url.pathname === '/pending-tx') {
     if (currentPendingTx && currentPendingTx.status !== 'declined') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
@@ -119,7 +119,7 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  // Mac submits Touch ID signature: POST /submit-signature
+  // Second device submits signature: POST /submit-signature
   if (req.method === 'POST' && url.pathname === '/submit-signature') {
     let body = ''
     req.on('data', (chunk) => (body += chunk))
@@ -136,7 +136,7 @@ const server = http.createServer((req, res) => {
           authenticatorDataHex: data.authenticatorDataHex,
           clientDataJSONHex: data.clientDataJSONHex,
         }
-        console.log(`[Relay] Received Mac Touch ID signature for tx ${currentPendingTx.id}`)
+        console.log(`[Relay] Received second device signature for tx ${currentPendingTx.id}`)
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: true }))
       } catch (err: any) {
@@ -155,7 +155,7 @@ const server = http.createServer((req, res) => {
         const declinedId = currentPendingTx.id
         currentPendingTx = null // consumed
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ ok: false, declined: true, txId: declinedId, error: 'Transfer was declined on Mac Touch ID' }))
+        res.end(JSON.stringify({ ok: false, declined: true, txId: declinedId, error: 'Transfer was declined on second device' }))
         return
       }
       if (currentPendingTx.signature) {
@@ -171,7 +171,7 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  // Mac or Phone declines or cancels transfer: POST /decline or /cancel
+  // Second device or Phone declines or cancels transfer: POST /decline or /cancel
   if (req.method === 'POST' && (url.pathname === '/decline' || url.pathname === '/cancel')) {
     let body = ''
     req.on('data', (chunk) => (body += chunk))

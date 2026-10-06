@@ -1,0 +1,2458 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Haptix Vault — Co-Signer Device</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #09090b;
+    --bg-radial: rgba(255, 255, 255, 0.035);
+    --card: #121215;
+    --card-inner: #18181c;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text-1: #f4f4f5;
+    --text-2: #a1a1aa;
+    --text-3: #71717a;
+    --key-bg: #18181c;
+    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 64px -16px rgba(0, 0, 0, 0.8), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+    --accent-ok: #34d399;
+    --accent-ok-bg: rgba(52, 211, 153, 0.12);
+    --overlay: rgba(0, 0, 0, 0.65);
+    --btn-primary-bg: #f4f4f5;
+    --btn-primary-text: #09090b;
+    --radius-card: 22px;
+    --radius-ctrl: 12px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #f5f5f7;
+    --bg-radial: rgba(0, 0, 0, 0.025);
+    --card: #ffffff;
+    --card-inner: #f8f8fa;
+    --border: rgba(0, 0, 0, 0.08);
+    --border-strong: rgba(0, 0, 0, 0.14);
+    --text-1: #09090b;
+    --text-2: #52525b;
+    --text-3: #a1a1aa;
+    --key-bg: #f4f4f5;
+    --shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 20px 48px -12px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.03);
+    --accent-ok: #059669;
+    --accent-ok-bg: rgba(16, 185, 129, 0.10);
+    --overlay: rgba(15, 23, 42, 0.35);
+    --btn-primary-bg: #09090b;
+    --btn-primary-text: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    background-image: radial-gradient(circle at 50% 28%, var(--bg-radial) 0%, transparent 72%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: var(--text-1);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
+  }
+
+  /* ---------- Top Desktop Header ---------- */
+  .desktop-header {
+    width: 100%;
+    max-width: 980px;
+    padding: 24px 32px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand-badge {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-3);
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.01em;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .relay-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-2);
+    font-weight: 500;
+  }
+
+  .relay-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
+  }
+
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 13px;
+    border-radius: 10px;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease);
+  }
+
+  .nav-btn:hover {
+    background: var(--key-bg);
+    color: var(--text-1);
+    border-color: var(--border-strong);
+  }
+
+  .nav-btn svg {
+    color: var(--text-2);
+    flex-shrink: 0;
+  }
+
+  .nav-btn:hover svg {
+    color: var(--text-1);
+  }
+
+  .stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    width: 100%;
+    max-width: 980px;
+    padding: 12px 32px 48px;
+    box-sizing: border-box;
+  }
+
+  /* ---------- Main Card ---------- */
+  .card {
+    width: 100%;
+    max-width: 980px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow);
+    padding: 32px 34px;
+    position: relative;
+    transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  }
+
+  .card.card-compact {
+    max-width: 520px;
+    padding: 30px 28px 28px;
+  }
+
+  .idle-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  .idle-col-identity {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 22px 18px;
+    text-align: center;
+    align-items: center;
+    gap: 14px;
+    box-sizing: border-box;
+  }
+
+  .identity-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .hardware-specs-strip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    width: 100%;
+  }
+
+  .spec-pill {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-3);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 7px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .idle-col-activity {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    justify-content: flex-start;
+  }
+
+  #stateRequest, #stateApproved {
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mark-img {
+    height: 24px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  [data-theme="light"] .mark-img {
+    filter: invert(1);
+  }
+
+  .mark {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    color: var(--text-1);
+  }
+
+  .brand-text h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .brand-text p {
+    font-size: 12px;
+    color: var(--text-3);
+    margin: 2px 0 0;
+    line-height: 1.2;
+  }
+
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.15s var(--ease);
+  }
+
+  .icon-btn:hover { background: var(--key-bg); color: var(--text-1); border-color: var(--border-strong); }
+  .icon-btn:active { transform: scale(0.94); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  /* ---------- Hardware Badge Visual ---------- */
+  .hardware-anchor {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 8px 0 16px;
+  }
+
+  .hardware-icon-box {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-1);
+    margin-bottom: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .hardware-title {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 4px;
+    color: var(--text-1);
+  }
+
+  .hardware-subtitle {
+    font-size: 13px;
+    color: var(--text-2);
+    margin: 0;
+    max-width: 340px;
+    line-height: 1.45;
+  }
+
+  /* ---------- State swap ---------- */
+  .state-view { position: relative; }
+
+  .state {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .state[hidden] { display: none !important; }
+
+  .state-enter {
+    animation: rise 0.32s var(--ease);
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Idle state ---------- */
+  .listen-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--text-2);
+    font-size: 13px;
+    padding: 4px 0;
+  }
+
+  .pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-2);
+    animation: breathe 2.4s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.35; transform: scale(0.95); }
+    50% { opacity: 0.95; transform: scale(1.05); }
+  }
+
+  .field-label {
+    font-size: 12px;
+    color: var(--text-3);
+    margin: 0 0 7px;
+  }
+
+  .key-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--key-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-ctrl);
+    padding: 12px 14px;
+    transition: border-color 0.15s var(--ease);
+  }
+
+  .key-row:hover {
+    border-color: var(--border-strong);
+  }
+
+  .key-value {
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: 12.5px;
+    color: var(--text-1);
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  }
+
+  .copy-btn:hover { background: var(--border); color: var(--text-1); }
+  .copy-btn svg { width: 15px; height: 15px; }
+  .copy-btn .check-icon { display: none; color: var(--accent-ok); }
+  .copy-btn.copied .copy-icon { display: none; }
+  .copy-btn.copied .check-icon { display: inline-flex; }
+
+  /* ---------- Info & Details Cards ---------- */
+  .info-card, .details-card {
+    border: 1px solid var(--border);
+    background: var(--card-inner);
+    border-radius: 14px;
+    padding: 2px 14px;
+    margin-bottom: 14px;
+  }
+
+  .info-row, .detail-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+  }
+
+  .info-row + .info-row, .detail-row + .detail-row {
+    border-top: 1px solid var(--border);
+  }
+
+  .info-label, .detail-label {
+    color: var(--text-2);
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  .info-val, .detail-val {
+    font-size: 13px;
+    color: var(--text-1);
+    text-align: right;
+  }
+
+  .mono-addr {
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: right;
+    color: var(--text-1);
+    letter-spacing: -0.01em;
+    word-break: break-all;
+  }
+
+  .detail-val.mono {
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: 12px;
+  }
+
+  .helper-row {
+    display: flex;
+    justify-content: center;
+    padding-top: 4px;
+  }
+
+  .link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--text-2);
+    font-size: 12.5px;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: color 0.15s var(--ease), background 0.15s var(--ease);
+  }
+
+  .link-btn:hover { color: var(--text-1); background: var(--key-bg); }
+  .link-btn svg { width: 14px; height: 14px; }
+
+  /* ---------- Approval state ---------- */
+  .hero {
+    text-align: center;
+    padding: 4px 0 16px;
+  }
+
+  .hero-eyebrow {
+    font-size: 12.5px;
+    color: var(--text-2);
+    margin: 0 0 6px;
+    font-weight: 500;
+  }
+
+  .hero-amount {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    margin: 0;
+    line-height: 1.15;
+    color: var(--text-1);
+  }
+
+  .hero-fiat {
+    font-size: 13.5px;
+    color: var(--text-2);
+    margin: 5px 0 0;
+    font-variant-numeric: tabular-nums;
+    font-weight: 400;
+  }
+
+  .auth-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    border: none;
+    border-radius: var(--radius-ctrl);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    padding: 13px 18px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+  }
+
+  .auth-btn:hover { opacity: 0.90; transform: translateY(-1px); }
+  .auth-btn:active { transform: translateY(0) scale(0.99); }
+  .auth-btn svg { width: 19px; height: 19px; flex-shrink: 0; }
+  .biometric-icon { width: 19px; height: 19px; flex-shrink: 0; display: inline-block; vertical-align: middle; }
+  .auth-btn.busy { opacity: 0.75; cursor: default; transform: none; }
+
+  .auth-btn-spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-top-color: #0c0c0d;
+    box-sizing: border-box;
+    animation: spin 0.9s linear infinite;
+  }
+
+  [data-theme="light"] .auth-btn-spinner {
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-top-color: #ffffff;
+  }
+
+  .key-shortcut-hint {
+    font-size: 11px;
+    opacity: 0.65;
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid currentColor;
+    margin-left: 2px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .decline-row {
+    display: flex;
+    justify-content: center;
+    padding-top: 10px;
+  }
+
+  .decline-btn {
+    background: none;
+    border: none;
+    color: var(--text-2);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color 0.15s var(--ease);
+  }
+  .decline-btn:hover { color: var(--text-1); }
+
+  /* ---------- Approved confirmation receipt ---------- */
+  .confirm-receipt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 6px 0 12px;
+  }
+
+  .confirm-ring {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(52, 211, 153, 0.12);
+    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 6px auto 18px;
+    animation: cvPop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .confirm-ring svg {
+    width: 28px;
+    height: 28px;
+    stroke: var(--accent-ok);
+  }
+
+  .confirm-check {
+    stroke-dasharray: 26;
+    stroke-dashoffset: 26;
+    animation: cvDraw 0.4s 0.25s ease-out forwards;
+  }
+
+  @keyframes cvPop {
+    0% { transform: scale(0.6); opacity: 0; }
+    60% { transform: scale(1.06); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes cvDraw {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .confirm-eyebrow {
+    color: var(--text-2);
+    font-size: 12px;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .confirm-amount {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: var(--text-1);
+    line-height: 1.2;
+  }
+
+  .confirm-target {
+    color: var(--text-2);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12.5px;
+    margin: 6px 0 16px;
+  }
+
+  .confirm-note {
+    color: var(--text-2);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+    max-width: 300px;
+  }
+
+  /* ---------- Un-enrolled view ---------- */
+  .enroll-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    padding: 8px 0;
+  }
+
+  .enroll-wrap p {
+    font-size: 13px;
+    color: var(--text-2);
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  /* ---------- Error Box ---------- */
+  .error-box {
+    display: none;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    padding: 11px 13px;
+    border-radius: var(--radius-ctrl);
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+
+
+  /* ---------- Modal ---------- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s var(--ease);
+    z-index: 100;
+  }
+
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    width: 100%;
+    max-width: 560px;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border);
+    padding: 28px 30px;
+    transform: translateY(14px) scale(0.98);
+    opacity: 0;
+    transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
+    box-sizing: border-box;
+  }
+
+  .modal-overlay.open .modal { transform: translateY(0) scale(1); opacity: 1; }
+
+  .modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 16px;
+  }
+
+  .modal-head-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .modal-tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .modal-head h2 {
+    font-size: 18px;
+    font-weight: 650;
+    margin: 0;
+    letter-spacing: -0.02em;
+    color: var(--text-1);
+    line-height: 1.25;
+  }
+
+  .modal-head-desc {
+    font-size: 12.5px;
+    color: var(--text-3);
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  .modal-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  .modal-step-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 13px 15px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+
+  .modal-step-card:hover {
+    border-color: var(--border-strong);
+  }
+
+  .modal-step-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--text-1);
+    margin-top: 1px;
+  }
+
+  .modal-step-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .modal-step-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .modal-step-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+
+  .modal-step-num {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+
+  .modal-step-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+    letter-spacing: -0.01em;
+  }
+
+  .modal-step-desc {
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.48;
+    margin: 0;
+  }
+
+  .modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 4px;
+  }
+
+  .modal-got-it-btn {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border: none;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 9px 18px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .modal-got-it-btn:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  .modal-got-it-btn:active {
+    transform: translateY(0);
+  }
+
+  /* ---------- Toast ---------- */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    background: var(--text-1);
+    color: var(--bg);
+    padding: 8px 16px;
+    border-radius: 9999px;
+    font-size: 12.5px;
+    font-weight: 500;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    opacity: 0;
+    transform: translateY(12px);
+    transition: all 0.2s var(--ease);
+    pointer-events: none;
+    z-index: 200;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ---------- Discreet Bottom Toolbar ---------- */
+  .bottom-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  .sim-toggle-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-3);
+    font-family: inherit;
+    font-size: 11.5px;
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .sim-toggle-btn:hover {
+    color: var(--text-2);
+    border-color: var(--border-strong);
+  }
+
+  /* ---------- Signing History Section ---------- */
+  .history-card {
+    margin-top: 14px;
+    padding: 14px 16px;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    text-align: left;
+    transition: background 0.3s var(--ease), border-color 0.3s var(--ease);
+  }
+
+  .history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 11px;
+  }
+
+  .history-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .history-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--text-2);
+  }
+
+  .history-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-1);
+  }
+
+  .history-count {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--bg-hover);
+    color: var(--text-2);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .clear-history-btn {
+    background: none;
+    border: none;
+    font-size: 11.5px;
+    color: var(--text-3);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.15s var(--ease);
+  }
+
+  .clear-history-btn:hover {
+    color: var(--text-1);
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .history-list::-webkit-scrollbar {
+    width: 4px;
+  }
+  .history-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .history-list::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 4px;
+  }
+
+  .history-empty {
+    padding: 24px 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+
+  .history-empty-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--card-inner);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-3);
+    margin-bottom: 2px;
+  }
+
+  .history-empty-icon svg { width: 16px; height: 16px; }
+
+  .history-empty-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    margin: 0;
+  }
+
+  .history-empty-desc {
+    font-size: 11.5px;
+    color: var(--text-3);
+    margin: 0;
+    line-height: 1.42;
+    max-width: 270px;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.12s var(--ease);
+  }
+
+  .history-item:hover {
+    background: var(--key-bg);
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+  }
+
+  .history-item:active {
+    transform: translateY(0) scale(0.995);
+  }
+
+  .history-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .history-action {
+    font-weight: 600;
+    font-size: 12.5px;
+    color: var(--text-1);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .history-recip {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--text-2);
+  }
+
+  .history-sub {
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .history-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-3);
+    font-size: 11px;
+    flex-shrink: 0;
+    transition: color 0.15s var(--ease);
+  }
+
+  .history-time {
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .history-ext-icon {
+    width: 12px;
+    height: 12px;
+    color: var(--text-3);
+    transition: transform 0.15s var(--ease), color 0.15s var(--ease);
+  }
+
+  .history-item:hover .history-right {
+    color: var(--text-1);
+  }
+
+  .history-item:hover .history-ext-icon {
+    color: var(--text-1);
+    transform: translate(1px, -1px);
+  }
+
+  @media (max-width: 768px) {
+    .desktop-header { padding: 16px 20px 8px; flex-wrap: wrap; gap: 10px; }
+    .stage { padding: 8px 16px 32px; }
+    .card { padding: 24px 20px; }
+    .idle-grid { grid-template-columns: 1fr; gap: 24px; }
+    .relay-status-pill { display: none; }
+  }
+
+  @media (max-width: 480px) {
+    .hero-amount { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="desktop-header">
+  <div class="header-left">
+    <div class="brand">
+      <img src="/haptix-logo-white.png" alt="Haptix" class="mark-img" onerror="this.style.display='none'; document.getElementById('fallbackMark').style.display='block';">
+      <svg id="fallbackMark" class="mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <rect x="2" y="2" width="28" height="28" rx="9" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M11 15.5V12a5 5 0 0 1 10 0v3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <rect x="9.5" y="15.5" width="13" height="9" rx="2.4" stroke="currentColor" stroke-width="1.6"/>
+      </svg>
+      <div class="brand-text">
+        <div class="brand-meta">
+          <h1>Haptix Vault</h1>
+          <span class="brand-badge">Co-Signer Device</span>
+        </div>
+        <p>Hardware-isolated 2-of-2 Quorum</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <div class="relay-status-pill" id="relayStatusPill">
+      <span class="relay-dot"></span>
+      <span class="relay-text">Relay Connected</span>
+    </div>
+    <button class="nav-btn" id="howItWorksBtn" type="button">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5" stroke-linecap="round"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/></svg>
+      <span>How this works</span>
+    </button>
+    <button class="icon-btn" id="themeToggle" aria-label="Toggle color theme" type="button" title="Toggle Light / Dark theme">
+      <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4.2"/>
+        <path d="M12 2.5v2.3M12 19.2v2.3M4.4 4.4l1.6 1.6M18 18l1.6 1.6M2.5 12h2.3M19.2 12h2.3M4.4 19.6l1.6-1.6M18 6l1.6-1.6"/>
+      </svg>
+      <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<div class="stage">
+  <main class="card">
+    <div class="state-view">
+
+      <!-- STATE A: Idle (Default) -->
+      <section class="state" id="stateIdle" aria-label="Ready">
+        <div class="idle-grid">
+          <!-- Left Column: Device & Key Identity -->
+          <div class="idle-col-identity">
+            <div class="identity-body">
+              <div class="hardware-anchor">
+                <div class="hardware-icon-box">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
+                </div>
+                <h2 class="hardware-title">Co-Signer Hardware Key</h2>
+                <p class="hardware-subtitle">Hardware-isolated passkey for secondary transaction quorum</p>
+              </div>
+
+              <div class="listen-row" style="margin-top: -4px;">
+                <span class="pulse-dot" aria-hidden="true"></span>
+                <span>Listening for requests from your phone</span>
+              </div>
+
+              <div id="enrolledKeySection" style="width: 100%; text-align: left;">
+                <p class="field-label">Co-signer public key</p>
+                <div class="key-row">
+                  <span class="key-value" id="pubkeyText">02...</span>
+                  <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
+                    <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
+                      <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 12.5l5 5 11-11"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- If no key enrolled yet -->
+              <div id="unEnrolledSection" class="enroll-wrap" style="display:none; width: 100%;">
+                <p>This device has not enrolled a co-signer passkey yet.</p>
+                <button class="auth-btn" id="enrollBtn" type="button">
+                  <svg class="biometric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                    <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+                    <path d="M2 12a10 10 0 0 1 18-6"/>
+                    <path d="M2 16h.01"/>
+                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                    <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
+                    <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+                    <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+                  </svg>
+                  <span id="enrollBtnText">Enroll This Device</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Hardware Telemetry Specs Strip -->
+            <div class="hardware-specs-strip">
+              <span class="spec-pill">NIST P-256</span>
+              <span class="spec-pill">Secure Hardware</span>
+              <span class="spec-pill">Solana Precompile</span>
+            </div>
+          </div>
+
+          <!-- Right Column: Vault Policy & Activity -->
+          <div class="idle-col-activity">
+            <!-- Active Wallet & Limit Policy Card -->
+            <div class="info-card">
+              <div class="info-row">
+                <span class="info-label">Wallet</span>
+                <span class="info-val" id="idleWalletName">Hardware Vault 2</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Approves</span>
+                <span class="info-val" id="idleApprovesText">Transfers above 0.10 SOL</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Network</span>
+                <span class="info-val">Solana devnet</span>
+              </div>
+            </div>
+
+            <!-- Hardware Signing History Section -->
+            <div id="vaultHistorySection" class="history-card" style="margin-top: 0;">
+              <div class="history-head">
+                <div class="history-title-wrap">
+                  <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span class="history-title">Approval History</span>
+                  <span class="history-count" id="historyCountBadge">0</span>
+                </div>
+                <button class="clear-history-btn" id="clearHistoryBtn" type="button" title="Clear approval log">Clear</button>
+              </div>
+              <div class="history-list" id="historyList"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STATE B: Approval request (Appears when transfer arrives) -->
+      <section class="state" id="stateRequest" hidden aria-label="Approval request">
+        <div class="hero">
+          <p class="hero-eyebrow" id="reqActionEyebrow">Transfer requested from your phone</p>
+          <p class="hero-amount" id="reqAmount">0.1137 SOL</p>
+          <p class="hero-fiat" id="reqUsdVal">≈ $13.54 USD</p>
+        </div>
+
+        <div class="details-card">
+          <div class="detail-row" id="reqTargetRow">
+            <span class="detail-label" id="reqTargetLabel">Recipient</span>
+            <span class="detail-val mono-addr" id="reqRecipient">F2KbEr68...</span>
+          </div>
+          <div class="detail-row" id="reqWalletRow">
+            <span class="detail-label">Wallet</span>
+            <span class="detail-val mono" id="reqWallet">--</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Network</span>
+            <span class="detail-val" id="reqNetwork">Solana devnet</span>
+          </div>
+          <div class="detail-row" id="reqFeeRow">
+            <span class="detail-label">Estimated fee</span>
+            <span class="detail-val" id="reqFee">0.000005 SOL</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Authorization</span>
+            <span class="detail-val" id="reqAuthMethod">2 passkeys</span>
+          </div>
+        </div>
+
+        <button class="auth-btn" id="authBtn" type="button">
+          <span class="auth-btn-spinner" id="authBtnSpinner" style="display:none;"></span>
+          <svg class="biometric-icon" id="authBtnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+            <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+            <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+            <path d="M2 12a10 10 0 0 1 18-6"/>
+            <path d="M2 16h.01"/>
+            <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+            <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
+            <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+            <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+          </svg>
+          <span id="authBtnLabel">Authorize with Biometrics</span>
+          <span class="key-shortcut-hint" id="authBtnKey">↵</span>
+        </button>
+
+        <div class="decline-row">
+          <button class="decline-btn" id="declineBtn" type="button">Decline</button>
+        </div>
+      </section>
+
+      <!-- STATE C: Approved confirmation -->
+      <section class="state" id="stateApproved" hidden aria-label="Approved">
+        <div class="confirm-receipt">
+          <div class="confirm-ring">
+            <svg class="confirm-check" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12.5l4.5 4.5L19 7.5"/>
+            </svg>
+          </div>
+          <div class="confirm-eyebrow">Approved on this device</div>
+          <p class="confirm-amount" id="approvedAmount">0.1137 SOL</p>
+          <p class="confirm-target" id="approvedTarget">to F2KbEr68..VVrLgK</p>
+          <p class="confirm-note">Your phone will finish sending the transfer.</p>
+        </div>
+      </section>
+
+      <!-- Error box -->
+      <div id="errorBox" class="error-box"></div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal: How dual-device signing works -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-title-wrap">
+        <span class="modal-tag">Hardware Quorum · 2-of-2 Policy</span>
+        <h2 id="modalTitle">How dual-device signing works</h2>
+        <p class="modal-head-desc">Physical security enforced by two separate cryptographic enclaves.</p>
+      </div>
+      <button class="icon-btn" id="modalClose" aria-label="Close" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-steps">
+      <div class="modal-step-card">
+        <div class="modal-step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+            <line x1="12" y1="18" x2="12.01" y2="18"/>
+          </svg>
+        </div>
+        <div class="modal-step-content">
+          <div class="modal-step-meta">
+            <span class="modal-step-num">Step 1</span>
+            <span class="modal-step-title">Mobile Phone Initiates Transfer</span>
+          </div>
+          <p class="modal-step-desc">Transfers above limit escalate to dual-device mode. Your phone signs first, but cannot broadcast without second device co-signature.</p>
+        </div>
+      </div>
+
+      <div class="modal-step-card">
+        <div class="modal-step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <div class="modal-step-content">
+          <div class="modal-step-meta">
+            <span class="modal-step-num">Step 2</span>
+            <span class="modal-step-title">Biometrics Unlock Hardware Key</span>
+          </div>
+          <p class="modal-step-desc">Your second device receives the out-of-band request. Biometric authentication authorizes an isolated P-256 private key that never leaves the hardware secure chip.</p>
+        </div>
+      </div>
+
+      <div class="modal-step-card">
+        <div class="modal-step-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <polyline points="9 12 11 14 15 10"/>
+          </svg>
+        </div>
+        <div class="modal-step-content">
+          <div class="modal-step-meta">
+            <span class="modal-step-num">Step 3</span>
+            <span class="modal-step-title">Native Solana Precompile Verification</span>
+          </div>
+          <p class="modal-step-desc">Both hardware signatures are verified atomically on-chain via Solana’s native Secp256r1 precompile without relying on centralized relays.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="modal-got-it-btn" id="modalGotItBtn" type="button">
+        <span>Got it</span>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="toast">Copied to clipboard</div>
+
+<script>
+(function () {
+  // --- Cryptographic Helpers ---
+  function bytesToHex(bytes) {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function hexToBytes(hex) {
+    const clean = hex.startsWith('0x') ? hex.slice(2) : hex;
+    const bytes = new Uint8Array(clean.length / 2);
+    for (let i = 0; i < clean.length; i += 2) {
+      bytes[i / 2] = parseInt(clean.substring(i, i + 2), 16);
+    }
+    return bytes;
+  }
+
+  function base64UrlToBytes(base64url) {
+    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice(0, (3 * base64url.length) % 4);
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function parseDerSignature(derBytes) {
+    let offset = 2;
+    if (derBytes[1] & 0x80) offset += (derBytes[1] & 0x7f);
+
+    if (derBytes[offset] !== 0x02) throw new Error("Expected 0x02 for r");
+    offset++;
+    const rLen = derBytes[offset++];
+    let r = derBytes.subarray(offset, offset + rLen);
+    offset += rLen;
+    if (r.length > 32 && r[0] === 0) r = r.subarray(1);
+    const rPadded = new Uint8Array(32);
+    rPadded.set(r, 32 - r.length);
+
+    if (derBytes[offset] !== 0x02) throw new Error("Expected 0x02 for s");
+    offset++;
+    const sLen = derBytes[offset++];
+    let s = derBytes.subarray(offset, offset + sLen);
+    if (s.length > 32 && s[0] === 0) s = s.subarray(1);
+    const sPadded = new Uint8Array(32);
+    sPadded.set(s, 32 - s.length);
+
+    const n = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551n;
+    const halfN = n / 2n;
+    let sVal = BigInt("0x" + bytesToHex(sPadded));
+    if (sVal > halfN) {
+      sVal = n - sVal;
+      const hex = sVal.toString(16).padStart(64, "0");
+      sPadded.set(hexToBytes(hex));
+    }
+
+    const compact = new Uint8Array(64);
+    compact.set(rPadded, 0);
+    compact.set(sPadded, 32);
+    return compact;
+  }
+
+  // --- Theme Handling ---
+  var root = document.documentElement;
+  var themeToggle = document.getElementById('themeToggle');
+  var sunIcon = themeToggle.querySelector('.sun-icon');
+  var moonIcon = themeToggle.querySelector('.moon-icon');
+
+  function applyThemeIcons(theme) {
+    var isDark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    sunIcon.style.display = isDark ? 'block' : 'none';
+    moonIcon.style.display = isDark ? 'none' : 'block';
+  }
+
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('haptix_vault_theme'); } catch (e) {}
+  if (!savedTheme) {
+    savedTheme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  root.setAttribute('data-theme', savedTheme);
+  applyThemeIcons(savedTheme);
+
+  themeToggle.addEventListener('click', function () {
+    var current = root.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    applyThemeIcons(next);
+    try { localStorage.setItem('haptix_vault_theme', next); } catch (e) {}
+  });
+
+  // --- DOM Elements ---
+  var stateIdle = document.getElementById('stateIdle');
+  var stateRequest = document.getElementById('stateRequest');
+  var stateApproved = document.getElementById('stateApproved');
+  var enrolledKeySection = document.getElementById('enrolledKeySection');
+  var unEnrolledSection = document.getElementById('unEnrolledSection');
+  var pubkeyText = document.getElementById('pubkeyText');
+  var copyBtn = document.getElementById('copyBtn');
+  var enrollBtn = document.getElementById('enrollBtn');
+  var enrollBtnText = document.getElementById('enrollBtnText');
+  var authBtn = document.getElementById('authBtn');
+  var authBtnLabel = document.getElementById('authBtnLabel');
+  var authBtnSpinner = document.getElementById('authBtnSpinner');
+  var authBtnIcon = document.getElementById('authBtnIcon');
+  var authBtnKey = document.getElementById('authBtnKey');
+  var declineBtn = document.getElementById('declineBtn');
+  var reqActionEyebrow = document.getElementById('reqActionEyebrow');
+  var reqAmount = document.getElementById('reqAmount');
+  var reqUsdVal = document.getElementById('reqUsdVal');
+  var reqTargetLabel = document.getElementById('reqTargetLabel');
+  var reqRecipient = document.getElementById('reqRecipient');
+  var reqWallet = document.getElementById('reqWallet');
+  var reqNetwork = document.getElementById('reqNetwork');
+  var reqFee = document.getElementById('reqFee');
+  var reqAuthMethod = document.getElementById('reqAuthMethod');
+  var approvedAmount = document.getElementById('approvedAmount');
+  var approvedTarget = document.getElementById('approvedTarget');
+  var idleWalletName = document.getElementById('idleWalletName');
+  var idleApprovesText = document.getElementById('idleApprovesText');
+  var errorBox = document.getElementById('errorBox');
+  var toast = document.getElementById('toast');
+  var previewToggleBtn = document.getElementById('previewToggleBtn');
+
+  // Modal elements
+  var overlay = document.getElementById('modalOverlay');
+  var howItWorksBtn = document.getElementById('howItWorksBtn');
+  var modalClose = document.getElementById('modalClose');
+
+  var currentPending = null;
+  var rawFullPubKey = '';
+
+  // Restore cached wallet name & threshold for instant render
+  try {
+    var cachedW = localStorage.getItem('haptix_last_wallet_name');
+    if (cachedW && idleWalletName) idleWalletName.textContent = cachedW;
+    var cachedT = localStorage.getItem('haptix_last_spend_threshold');
+    if (cachedT && idleApprovesText) idleApprovesText.textContent = 'Transfers above ' + cachedT + ' SOL';
+  } catch (e) {}
+
+  function showToast(text) {
+    toast.textContent = text;
+    toast.classList.add('show');
+    setTimeout(function () { toast.classList.remove('show'); }, 1800);
+  }
+
+  function showState(el) {
+    var card = document.querySelector('.card');
+    if (card) {
+      if (el === stateRequest || el === stateApproved) {
+        card.classList.add('card-compact');
+      } else {
+        card.classList.remove('card-compact');
+      }
+    }
+    [stateIdle, stateRequest, stateApproved].forEach(function (s) {
+      s.hidden = (s !== el);
+      s.classList.remove('state-enter');
+    });
+    void el.offsetWidth;
+    el.classList.add('state-enter');
+  }
+
+  // --- Modal Events ---
+  var modalGotItBtn = document.getElementById('modalGotItBtn');
+  howItWorksBtn.addEventListener('click', function () {
+    overlay.classList.add('open');
+  });
+  modalClose.addEventListener('click', closeModal);
+  if (modalGotItBtn) modalGotItBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal();
+  });
+  function closeModal() { overlay.classList.remove('open'); }
+
+  // --- Copy Button ---
+  copyBtn.addEventListener('click', function () {
+    if (!rawFullPubKey) return;
+    var done = function () {
+      copyBtn.classList.add('copied');
+      showToast('Public key copied');
+      setTimeout(function () { copyBtn.classList.remove('copied'); }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(rawFullPubKey).then(done).catch(done);
+    } else {
+      done();
+    }
+  });
+
+  // --- Load Stored Key ---
+  function loadStoredKey() {
+    var stored = localStorage.getItem('haptix_vault_key') || localStorage.getItem('haptix_mac_vault_key');
+    if (stored) {
+      try {
+        var parsed = JSON.parse(stored);
+        if (parsed.publicKeyHex) {
+          rawFullPubKey = parsed.publicKeyHex;
+          var hex = parsed.publicKeyHex;
+          pubkeyText.textContent = hex.length > 24 ? (hex.slice(0, 10) + '...' + hex.slice(-10)) : hex;
+          pubkeyText.title = hex;
+          enrolledKeySection.style.display = 'block';
+          unEnrolledSection.style.display = 'none';
+          return;
+        }
+      } catch (e) {}
+    }
+    enrolledKeySection.style.display = 'none';
+    unEnrolledSection.style.display = 'flex';
+  }
+  loadStoredKey();
+
+  // --- Enrollment Handler ---
+  enrollBtn.addEventListener('click', async function () {
+    errorBox.style.display = 'none';
+    if (!window.isSecureContext || !navigator.credentials) {
+      errorBox.textContent = 'Browser blocked biometrics: WebAuthn requires a Secure Context (HTTPS or localhost). Open via HTTPS tunnel or localhost.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    try {
+      enrollBtn.classList.add('busy');
+      enrollBtnText.textContent = 'Biometric Sensor Active...';
+
+      const challenge = crypto.getRandomValues(new Uint8Array(32));
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: challenge,
+          rp: {
+            name: 'Haptix Wallet Vault',
+            id: window.location.hostname || 'localhost'
+          },
+          user: {
+            id: crypto.getRandomValues(new Uint8Array(16)),
+            name: 'Second Device Vault Key',
+            displayName: 'Second Device (Haptix Vault)'
+          },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: {
+            authenticatorAttachment: 'platform',
+            userVerification: 'required',
+            residentKey: 'preferred'
+          },
+          timeout: 60000,
+          attestation: 'none'
+        }
+      });
+
+      if (!credential) throw new Error('Enclave credential creation cancelled.');
+
+      let compressedHex = '';
+      if (typeof credential.response.getPublicKey === 'function') {
+        const spki = new Uint8Array(credential.response.getPublicKey());
+        const uncompressed = spki.slice(-65);
+        if (uncompressed[0] === 0x04) {
+          const x = uncompressed.slice(1, 33);
+          const yLast = uncompressed[64];
+          const prefix = (yLast % 2 === 0) ? '02' : '03';
+          compressedHex = prefix + bytesToHex(x);
+        }
+      }
+
+      if (!compressedHex) throw new Error('Could not derive compressed public key.');
+
+      const vaultMeta = {
+        credentialId: credential.id,
+        publicKeyHex: compressedHex,
+        createdAt: Date.now()
+      };
+      localStorage.setItem('haptix_vault_key', JSON.stringify(vaultMeta));
+      localStorage.setItem('haptix_mac_vault_key', JSON.stringify(vaultMeta));
+      loadStoredKey();
+      showToast('Enrolled in Hardware Secure Chip');
+    } catch (err) {
+      errorBox.textContent = err.message || 'Biometric enrollment failed.';
+      errorBox.style.display = 'block';
+    } finally {
+      enrollBtn.classList.remove('busy');
+      enrollBtnText.textContent = 'Enroll This Device';
+    }
+  });
+
+  // --- Relay Polling & Pending Requests ---
+  var relayHost = window.location.hostname || 'localhost';
+  var relayOrigin = (window.location.port === '8082' || (!window.location.port && window.location.protocol.startsWith('http')))
+    ? window.location.origin
+    : ('http://' + relayHost + ':8082');
+
+  // Base58 alphabet for Solana addresses
+  var B58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  function bytesToBase58(bytes) {
+    var digits = [0];
+    for (var i = 0; i < bytes.length; i++) {
+      for (var j = 0; j < digits.length; j++) digits[j] <<= 8;
+      digits[0] += bytes[i];
+      var carry = 0;
+      for (var k = 0; k < digits.length; k++) {
+        digits[k] += carry;
+        carry = (digits[k] / 58) | 0;
+        digits[k] %= 58;
+      }
+      while (carry) {
+        digits.push(carry % 58);
+        carry = (carry / 58) | 0;
+      }
+    }
+    var str = '';
+    for (var p = 0; p < bytes.length && bytes[p] === 0; p++) str += '1';
+    for (var q = digits.length - 1; q >= 0; q--) str += B58_ALPHABET[digits[q]];
+    return str;
+  }
+
+  var reqActionEyebrow = document.getElementById('reqActionEyebrow');
+  var reqTargetLabel = document.getElementById('reqTargetLabel');
+  var reqWallet = document.getElementById('reqWallet');
+  var reqNetwork = document.getElementById('reqNetwork');
+
+  function decodeClusterTag(clusterSlice) {
+    var str = new TextDecoder().decode(clusterSlice).replace(/\0/g, '').trim();
+    if (str === 'mainnet') return 'Solana Mainnet';
+    if (str === 'devnet') return 'Solana Devnet';
+    return str ? ('Solana (' + str + ')') : 'Solana Devnet';
+  }
+
+  function parseAndValidateMessage(tx) {
+    if (!tx || !tx.messageHex) return { ok: false, error: 'Missing signature message payload' };
+    try {
+      var bytes = hexToBytes(tx.messageHex);
+      if (bytes.length < 16) return { ok: false, error: 'Payload too short (' + bytes.length + ' bytes)' };
+
+      var rawString = new TextDecoder().decode(bytes);
+
+      // 1. TRANSFER: (97 bytes: 9 tag + 32 wallet + 8 cluster + 8 nonce + 32 recipient + 8 amount)
+      if (rawString.startsWith('TRANSFER:')) {
+        if (bytes.length !== 97) {
+          return { ok: false, error: 'Malformed TRANSFER payload length (' + bytes.length + ' bytes, expected 97)' };
+        }
+        var walletBytes = bytes.slice(9, 41);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(41, 49));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 49, 8).getBigUint64(0, true);
+        var recipientBytes = bytes.slice(57, 89);
+        var recipientBase58 = bytesToBase58(recipientBytes);
+        var amountLamports = new DataView(bytes.buffer, bytes.byteOffset + 89, 8).getBigUint64(0, true);
+        var actualAmountSol = Number(amountLamports) / 1e9;
+
+        // Verify that JSON metadata strictly matches the binary payload being signed
+        if (tx.recipient && tx.recipient.length > 10 && !tx.recipient.includes('...')) {
+          if (tx.recipient !== recipientBase58) {
+            return {
+              ok: false,
+              error: 'SECURITY WARNING: Recipient mismatch! UI requested ' + tx.recipient + ' but signed payload is ' + recipientBase58
+            };
+          }
+        }
+        if (tx.amountSol !== undefined && Math.abs(tx.amountSol - actualAmountSol) > 0.000001) {
+          return {
+            ok: false,
+            error: 'SECURITY WARNING: Amount mismatch! UI displayed ' + tx.amountSol + ' SOL but signed payload is ' + actualAmountSol + ' SOL'
+          };
+        }
+
+        var fiatText = tx.amountUsd ? ('≈ $' + tx.amountUsd + ' USD') : ('≈ $' + (actualAmountSol * 145).toFixed(2) + ' USD');
+        return {
+          ok: true,
+          actionType: 'TRANSFER',
+          eyebrow: 'Transfer requested from your phone',
+          amountDisplay: actualAmountSol + ' SOL',
+          fiatDisplay: fiatText,
+          targetLabel: 'Recipient',
+          targetValue: recipientBase58,
+          wallet: walletBase58,
+          walletPda: walletBase58,
+          network: 'Solana devnet',
+          fee: tx.feeSol || '0.000005 SOL',
+          auth: '2 passkeys',
+          nonce: nonce.toString()
+        };
+      }
+
+      // 2. SET_GUARDIAN: (93 bytes: 13 tag + 32 wallet + 8 cluster + 8 nonce + 32 guardian)
+      if (rawString.startsWith('SET_GUARDIAN:')) {
+        if (bytes.length !== 93) {
+          return { ok: false, error: 'Malformed SET_GUARDIAN payload length (' + bytes.length + ' bytes, expected 93)' };
+        }
+        var walletBytes = bytes.slice(13, 45);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(45, 53));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 53, 8).getBigUint64(0, true);
+        var newGuardianBytes = bytes.slice(61, 93);
+        var newGuardianBase58 = bytesToBase58(newGuardianBytes);
+
+        return {
+          ok: true,
+          actionType: 'SET_GUARDIAN',
+          eyebrow: 'Guardian Rotation requested',
+          amountDisplay: 'SET GUARDIAN',
+          fiatDisplay: 'Recovery Guardian Policy Update',
+          targetLabel: 'New Guardian',
+          targetValue: newGuardianBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 3. SET_THRESHOLD: (70 bytes: 14 tag + 32 wallet + 8 cluster + 8 nonce + 8 threshold)
+      if (rawString.startsWith('SET_THRESHOLD:')) {
+        if (bytes.length !== 70) {
+          return { ok: false, error: 'Malformed SET_THRESHOLD payload length (' + bytes.length + ' bytes, expected 70)' };
+        }
+        var walletBytes = bytes.slice(14, 46);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(46, 54));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 54, 8).getBigUint64(0, true);
+        var thresholdLamports = new DataView(bytes.buffer, bytes.byteOffset + 62, 8).getBigUint64(0, true);
+        var thresholdSol = Number(thresholdLamports) / 1e9;
+
+        return {
+          ok: true,
+          actionType: 'SET_THRESHOLD',
+          eyebrow: 'Spend Limit Policy Change requested',
+          amountDisplay: thresholdSol + ' SOL',
+          fiatDisplay: 'New 1-Passkey Threshold',
+          targetLabel: 'Policy Limit',
+          targetValue: thresholdSol + ' SOL (Sends above require 2-of-2 Quorum)',
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 4. GRANT_AGENT: (140 bytes: 12 tag + 32 wallet + 8 cluster + 8 nonce + 32 agent + 8 allowance + 8 valid + 32 program)
+      if (rawString.startsWith('GRANT_AGENT:')) {
+        if (bytes.length !== 140) {
+          return { ok: false, error: 'Malformed GRANT_AGENT payload length (' + bytes.length + ' bytes, expected 140)' };
+        }
+        var walletBytes = bytes.slice(12, 44);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(44, 52));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 52, 8).getBigUint64(0, true);
+        var agentBytes = bytes.slice(60, 92);
+        var agentBase58 = bytesToBase58(agentBytes);
+        var allowanceLamports = new DataView(bytes.buffer, bytes.byteOffset + 92, 8).getBigUint64(0, true);
+        var allowanceSol = Number(allowanceLamports) / 1e9;
+        var validForSeconds = new DataView(bytes.buffer, bytes.byteOffset + 100, 8).getBigInt64(0, true);
+
+        return {
+          ok: true,
+          actionType: 'GRANT_AGENT',
+          eyebrow: 'AI Agent Authorization requested',
+          amountDisplay: allowanceSol + ' SOL Limit',
+          fiatDisplay: 'Valid for ' + Math.round(Number(validForSeconds) / 60) + ' minutes',
+          targetLabel: 'Agent Key',
+          targetValue: agentBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 5. REVOKE_AGENT: (93 bytes: 13 tag + 32 wallet + 8 cluster + 8 nonce + 32 agent)
+      if (rawString.startsWith('REVOKE_AGENT:')) {
+        if (bytes.length !== 93) {
+          return { ok: false, error: 'Malformed REVOKE_AGENT payload length (' + bytes.length + ' bytes, expected 93)' };
+        }
+        var walletBytes = bytes.slice(13, 45);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(45, 53));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 53, 8).getBigUint64(0, true);
+        var agentBytes = bytes.slice(61, 93);
+        var agentBase58 = bytesToBase58(agentBytes);
+
+        return {
+          ok: true,
+          actionType: 'REVOKE_AGENT',
+          eyebrow: 'Agent Session Revocation',
+          amountDisplay: 'REVOKE AGENT',
+          fiatDisplay: 'Immediate Access Revocation',
+          targetLabel: 'Revoked Key',
+          targetValue: agentBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 6. UNFREEZE_WALLET: (64 bytes: 16 tag + 32 wallet + 8 cluster + 8 nonce)
+      if (rawString.startsWith('UNFREEZE_WALLET:')) {
+        if (bytes.length !== 64) {
+          return { ok: false, error: 'Malformed UNFREEZE_WALLET payload length (' + bytes.length + ' bytes, expected 64)' };
+        }
+        var walletBytes = bytes.slice(16, 48);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(48, 56));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 56, 8).getBigUint64(0, true);
+
+        return {
+          ok: true,
+          actionType: 'UNFREEZE_WALLET',
+          eyebrow: 'Unlock Smart Wallet requested',
+          amountDisplay: 'UNFREEZE',
+          fiatDisplay: 'Restore 1-Passkey Spending Operations',
+          targetLabel: 'Target Wallet',
+          targetValue: walletBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // 7. CANCEL_RECOVERY: (64 bytes: 16 tag + 32 wallet + 8 cluster + 8 nonce)
+      if (rawString.startsWith('CANCEL_RECOVERY:')) {
+        if (bytes.length !== 64) {
+          return { ok: false, error: 'Malformed CANCEL_RECOVERY payload length (' + bytes.length + ' bytes, expected 64)' };
+        }
+        var walletBytes = bytes.slice(16, 48);
+        var walletBase58 = bytesToBase58(walletBytes);
+        var clusterStr = decodeClusterTag(bytes.slice(48, 56));
+        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 56, 8).getBigUint64(0, true);
+
+        return {
+          ok: true,
+          actionType: 'CANCEL_RECOVERY',
+          eyebrow: 'Veto In-Flight Recovery requested',
+          amountDisplay: 'VETO RECOVERY',
+          fiatDisplay: 'Reject Guardian Key Rotation',
+          targetLabel: 'Target Wallet',
+          targetValue: walletBase58,
+          wallet: walletBase58,
+          network: clusterStr,
+          nonce: nonce.toString()
+        };
+      }
+
+      // Unrecognized action prefix -> HARD REJECT to prevent spoofing or blind signing!
+      return {
+        ok: false,
+        error: 'SECURITY ALERT: Unrecognized or malformed authorization payload (' + bytes.length + ' bytes). Biometric signing has been blocked to prevent blind signing.'
+      };
+    } catch (e) {
+      return { ok: false, error: 'Failed to parse signed payload: ' + e.message };
+    }
+  }
+
+  function formatTwoLineAddress(addr) {
+    if (!addr) return '--';
+    if (addr.length >= 24) {
+      return addr.slice(0, 10) + '...' + addr.slice(-8);
+    }
+    return addr;
+  }
+
+  function formatFee(fee) {
+    if (!fee) return '0.000005 SOL';
+    var s = String(fee).trim();
+    if (/sol$/i.test(s)) return s;
+    return s + ' SOL';
+  }
+
+  function displayPendingRequest(tx) {
+    currentPending = tx;
+    if (tx.id === 'preview_sample') {
+      reqActionEyebrow.textContent = 'Transfer requested from your phone';
+      reqAmount.textContent = (tx.amountSol || 0.1137) + ' SOL';
+      var usdEst = tx.amountUsd || ((tx.amountSol || 0.1137) * 145).toFixed(2);
+      reqUsdVal.textContent = '≈ $' + usdEst + ' USD';
+      reqTargetLabel.textContent = 'Recipient';
+      var previewAddr = tx.recipient || 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK';
+      reqRecipient.innerHTML = formatTwoLineAddress(previewAddr);
+      reqWallet.textContent = 'p15oXR5W...FuTaGM';
+      reqNetwork.textContent = 'Solana devnet';
+      if (reqFee) reqFee.textContent = '0.000005 SOL';
+      if (reqAuthMethod) reqAuthMethod.textContent = '2 passkeys';
+      errorBox.style.display = 'none';
+      authBtn.style.opacity = '1';
+      authBtn.style.pointerEvents = 'auto';
+      authBtnLabel.textContent = 'Authorize with Biometrics';
+      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
+      showState(stateRequest);
+      return;
+    }
+
+    var validation = parseAndValidateMessage(tx);
+    if (!validation.ok) {
+      console.error('[Security Warning]', validation.error);
+      errorBox.textContent = validation.error;
+      errorBox.style.display = 'block';
+      reqActionEyebrow.textContent = 'Security Alert';
+      reqAmount.textContent = 'BLOCKED';
+      reqUsdVal.textContent = 'Untrusted Payload';
+      reqTargetLabel.textContent = 'Status';
+      reqRecipient.textContent = 'Blocked by Security Check';
+      reqWallet.textContent = 'Rejected';
+      reqNetwork.textContent = 'Unknown';
+      if (reqFee) reqFee.textContent = '--';
+      if (reqAuthMethod) reqAuthMethod.textContent = '--';
+      authBtn.style.opacity = '0.3';
+      authBtn.style.pointerEvents = 'none';
+      authBtnLabel.textContent = 'Signing Blocked';
+      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
+      showState(stateRequest);
+      return;
+    }
+
+    authBtn.style.opacity = '1';
+    authBtn.style.pointerEvents = 'auto';
+    authBtnLabel.textContent = 'Authorize with Biometrics';
+    if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+    if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
+    reqActionEyebrow.textContent = validation.eyebrow;
+    reqAmount.textContent = validation.amountDisplay;
+    reqUsdVal.textContent = validation.fiatDisplay;
+    reqTargetLabel.textContent = validation.targetLabel;
+    var targetVal = validation.targetValue;
+    reqRecipient.innerHTML = formatTwoLineAddress(targetVal);
+    reqRecipient.title = targetVal;
+    var walletStr = validation.wallet || '--';
+    if (tx.walletName) {
+      reqWallet.textContent = tx.walletName + (walletStr !== '--' && walletStr.length > 12 ? ' (' + walletStr.slice(0, 4) + '...' + walletStr.slice(-4) + ')' : '');
+    } else {
+      reqWallet.textContent = walletStr.length > 20 ? (walletStr.slice(0, 8) + '...' + walletStr.slice(-6)) : walletStr;
+    }
+    reqWallet.title = walletStr;
+    reqNetwork.textContent = 'Solana devnet';
+    if (reqFee) reqFee.textContent = formatFee(tx.feeSol || validation.fee);
+    if (reqAuthMethod) reqAuthMethod.textContent = validation.auth || '2 passkeys';
+    errorBox.style.display = 'none';
+    showState(stateRequest);
+  }
+
+  var declinedTxIds = {};
+
+  async function pollPending() {
+    // 1. URL params check
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('preview') === '1' || params.get('demo') === '1') {
+      if (!currentPending || currentPending.id !== 'preview_sample') {
+        displayPendingRequest({
+          id: 'preview_sample',
+          amountSol: 0.1137,
+          amountUsd: '13.54',
+          recipient: 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK',
+          messageHex: '0x1234567890abcdef'
+        });
+      }
+      return;
+    }
+
+    var urlMsg = params.get('msg');
+    var urlAmt = params.get('amt');
+    var urlTo = params.get('to');
+    if (urlMsg && urlAmt) {
+      displayPendingRequest({
+        messageHex: urlMsg,
+        amountSol: parseFloat(urlAmt),
+        recipient: urlTo || 'Hou6dz...dYp5'
+      });
+      return;
+    }
+
+    // 2. Local relay on 8082
+    try {
+      var res = await fetch(relayOrigin + '/pending-tx');
+      if (res.ok) {
+        var data = await res.json();
+        if (data.pending && !declinedTxIds[data.pending.id] && (!currentPending || currentPending.id !== data.pending.id)) {
+          displayPendingRequest(data.pending);
+        } else if (!data.pending && currentPending && !currentPending.signed) {
+          showState(stateIdle);
+          currentPending = null;
+        }
+      }
+    } catch (e) {}
+
+    // 3. Status sync for Idle card
+    try {
+      var sRes = await fetch(relayOrigin + '/status');
+      if (sRes.ok) {
+        var sData = await sRes.json();
+        if (sData.walletInfo) {
+          if (idleWalletName && sData.walletInfo.walletName) {
+            idleWalletName.textContent = sData.walletInfo.walletName;
+          }
+          if (idleApprovesText && sData.walletInfo.spendThresholdSol) {
+            idleApprovesText.textContent = 'Transfers above ' + Number(sData.walletInfo.spendThresholdSol).toFixed(2) + ' SOL';
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  setInterval(pollPending, 900);
+  pollPending();
+
+  // Preview button toggle (if present)
+  var isPreviewing = false;
+  if (previewToggleBtn) {
+    previewToggleBtn.addEventListener('click', function () {
+      if (!isPreviewing) {
+        displayPendingRequest({
+          id: 'preview_sample',
+          amountSol: 0.1137,
+          amountUsd: '13.54',
+          recipient: 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK',
+          messageHex: '0x1234567890abcdef'
+        });
+        previewToggleBtn.textContent = 'Back to Idle View';
+        isPreviewing = true;
+      } else {
+        showState(stateIdle);
+        currentPending = null;
+        previewToggleBtn.textContent = 'Preview Approval View';
+        isPreviewing = false;
+      }
+    });
+  }
+
+  // Decline Handler
+  declineBtn.addEventListener('click', async function () {
+    var declinedId = currentPending ? currentPending.id : null;
+    if (declinedId) {
+      declinedTxIds[declinedId] = true;
+      try {
+        await fetch(relayOrigin + '/decline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ txId: declinedId })
+        });
+      } catch (e) {}
+    }
+    currentPending = null;
+    showState(stateIdle);
+    showToast('Transfer declined');
+    if (isPreviewing && previewToggleBtn) {
+      previewToggleBtn.textContent = 'Preview Approval View';
+      isPreviewing = false;
+    }
+  });
+
+  // Biometric Signing Handler
+  authBtn.addEventListener('click', async function () {
+    if (authBtn.classList.contains('busy') || !currentPending) return;
+    errorBox.style.display = 'none';
+
+    // If simulating in preview mode without real challenge, show simulation success
+    if (currentPending.id === 'preview_sample') {
+      authBtn.classList.add('busy');
+      if (authBtnSpinner) authBtnSpinner.style.display = 'inline-block';
+      if (authBtnIcon) authBtnIcon.style.display = 'none';
+      authBtnLabel.textContent = 'Waiting for Biometrics...';
+      setTimeout(function () {
+        authBtn.classList.remove('busy');
+        if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+        if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
+        authBtnLabel.textContent = 'Authorize with Biometrics';
+        if (approvedAmount) approvedAmount.textContent = '0.1137 SOL';
+        if (approvedTarget) approvedTarget.textContent = 'to F2KbEr68...VVrLgK';
+        showState(stateApproved);
+        showToast('Authorized with Biometrics');
+        recordSignatureHistory({
+          timestamp: Date.now(),
+          amountSol: 0.1137,
+          recipient: 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK',
+          actionType: 'SOL Transfer (Preview)',
+          network: 'Solana devnet'
+        });
+        setTimeout(function () {
+          showState(stateIdle);
+          currentPending = null;
+          if (previewToggleBtn) {
+            previewToggleBtn.textContent = 'Preview Approval View';
+            isPreviewing = false;
+          }
+        }, 3200);
+      }, 900);
+      return;
+    }
+
+    var vaultData = localStorage.getItem('haptix_vault_key') || localStorage.getItem('haptix_mac_vault_key');
+    if (!vaultData) {
+      errorBox.textContent = 'No passkey enrolled on this device yet. Enroll above.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    var meta = JSON.parse(vaultData);
+    try {
+      authBtn.classList.add('busy');
+      if (authBtnSpinner) authBtnSpinner.style.display = 'inline-block';
+      if (authBtnIcon) authBtnIcon.style.display = 'none';
+      authBtnLabel.textContent = 'Waiting for Biometrics...';
+
+      var challengeBytes = hexToBytes(currentPending.messageHex);
+      var assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: challengeBytes,
+          rpId: window.location.hostname || 'localhost',
+          allowCredentials: [{
+            type: 'public-key',
+            id: base64UrlToBytes(meta.credentialId)
+          }],
+          userVerification: 'required',
+          timeout: 60000
+        }
+      });
+
+      if (!assertion) throw new Error('Biometric prompt was cancelled.');
+
+      var derSignature = new Uint8Array(assertion.response.signature);
+      var compactSig = parseDerSignature(derSignature);
+      var authData = new Uint8Array(assertion.response.authenticatorData);
+      var clientDataJSON = new Uint8Array(assertion.response.clientDataJSON);
+
+      var payload = {
+        signatureHex: bytesToHex(compactSig),
+        authenticatorDataHex: bytesToHex(authData),
+        clientDataJSONHex: bytesToHex(clientDataJSON)
+      };
+
+      await fetch(relayOrigin + '/submit-signature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(function () {});
+
+      // Record in biometric approval history
+      recordSignatureHistory({
+        timestamp: Date.now(),
+        amountSol: currentPending.amountSol,
+        recipient: currentPending.recipient,
+        actionType: currentPending.actionType || 'SOL Transfer',
+        network: currentPending.network || 'Solana devnet'
+      });
+
+      currentPending.signed = true;
+      authBtn.classList.remove('busy');
+      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
+      authBtnLabel.textContent = 'Authorize with Biometrics';
+      if (approvedAmount) approvedAmount.textContent = (currentPending.amountSol ? currentPending.amountSol + ' SOL' : 'Transfer Approved');
+      if (approvedTarget) {
+        var recip = currentPending.recipient || '';
+        approvedTarget.textContent = recip ? ('to ' + (recip.length > 16 ? recip.slice(0, 8) + '...' + recip.slice(-6) : recip)) : '';
+      }
+      showState(stateApproved);
+      showToast('Authorized with Hardware Key');
+
+      setTimeout(function () {
+        showState(stateIdle);
+        currentPending = null;
+      }, 3500);
+
+    } catch (err) {
+      authBtn.classList.remove('busy');
+      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
+      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
+      authBtnLabel.textContent = 'Authorize with Biometrics';
+      errorBox.textContent = err.message || 'Biometric verification failed.';
+      errorBox.style.display = 'block';
+    }
+  });
+
+  // Enter and Escape keyboard shortcuts
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && currentPending && !currentPending.signed && !authBtn.classList.contains('busy')) {
+      e.preventDefault();
+      authBtn.click();
+    }
+    if (e.key === 'Escape' && currentPending && !authBtn.classList.contains('busy')) {
+      e.preventDefault();
+      declineBtn.click();
+    }
+  });
+
+  // --- Signing History Storage & Rendering ---
+  var vaultHistorySection = document.getElementById('vaultHistorySection');
+  var historyCountBadge = document.getElementById('historyCountBadge');
+  var historyList = document.getElementById('historyList');
+  var clearHistoryBtn = document.getElementById('clearHistoryBtn');
+
+  function getSignatureHistory() {
+    try {
+      var raw = localStorage.getItem('haptix_vault_history');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveSignatureHistory(items) {
+    try {
+      localStorage.setItem('haptix_vault_history', JSON.stringify(items.slice(0, 25)));
+    } catch (e) {}
+  }
+
+  function renderHistory() {
+    if (!vaultHistorySection || !historyList) return;
+    var items = getSignatureHistory();
+    vaultHistorySection.style.display = 'block';
+    if (!items || items.length === 0) {
+      if (historyCountBadge) historyCountBadge.textContent = '0';
+      historyList.innerHTML = '<div class="history-empty">' +
+        '<div class="history-empty-icon">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+            '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' +
+          '</svg>' +
+        '</div>' +
+        '<p class="history-empty-title">Awaiting Out-of-Band Sign Requests</p>' +
+        '<p class="history-empty-desc">When your phone sends over your threshold, the biometric approval request and Solana verification record will appear here.</p>' +
+      '</div>';
+      return;
+    }
+    if (historyCountBadge) historyCountBadge.textContent = items.length;
+    historyList.innerHTML = items.map(function (item) {
+      var date = new Date(item.timestamp);
+      var timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      var amtStr = item.amountSol ? (item.amountSol + ' SOL') : (item.actionType || 'Transfer');
+      var recip = item.recipient || '';
+      var recipShort = recip ? (recip.slice(0, 4) + '...' + recip.slice(-4)) : '';
+      var explorerUrl = recip ? ('https://explorer.solana.com/address/' + encodeURIComponent(recip) + '?cluster=devnet') : '';
+      return '<div class="history-item" ' + (explorerUrl ? ('data-url="' + explorerUrl + '" title="View on Solana Explorer"') : '') + ' tabindex="0" role="button">' +
+        '<div class="history-left">' +
+          '<span class="history-action">' + amtStr + (recipShort ? (' → <span class="history-recip">' + recipShort + '</span>') : '') + '</span>' +
+          '<span class="history-sub">' + (item.network || 'Solana devnet') + '</span>' +
+        '</div>' +
+        '<div class="history-right">' +
+          '<span class="history-time">' + timeStr + '</span>' +
+          '<svg class="history-ext-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M7 17L17 7"/>' +
+            '<path d="M7 7h10v10"/>' +
+          '</svg>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  if (historyList) {
+    historyList.addEventListener('click', function (e) {
+      var itemEl = e.target.closest('.history-item');
+      if (itemEl && itemEl.dataset.url) {
+        window.open(itemEl.dataset.url, '_blank', 'noopener,noreferrer');
+      }
+    });
+    historyList.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        var itemEl = e.target.closest('.history-item');
+        if (itemEl && itemEl.dataset.url) {
+          e.preventDefault();
+          window.open(itemEl.dataset.url, '_blank', 'noopener,noreferrer');
+        }
+      }
+    });
+  }
+
+  function recordSignatureHistory(entry) {
+    var items = getSignatureHistory();
+    items.unshift(entry);
+    saveSignatureHistory(items);
+    renderHistory();
+  }
+
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener('click', function () {
+      localStorage.removeItem('haptix_vault_history');
+      renderHistory();
+      showToast('History cleared');
+    });
+  }
+
+  // Initial render of history
+  renderHistory();
+
+})();
+</script>
+</body>
+</html>

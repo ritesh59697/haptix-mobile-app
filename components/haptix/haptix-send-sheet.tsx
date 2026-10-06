@@ -502,7 +502,7 @@ export function HaptixSendSheet({
     }
     if (sendStep === 'secondary') {
       if (wallet?.securityMode === 'vault') {
-        return 'Waiting for Mac Touch ID…'
+        return 'Waiting for second device…'
       }
       return 'Authenticating Backup Key…'
     }
@@ -632,7 +632,7 @@ export function HaptixSendSheet({
         // 2. High-Risk: 2-of-2 passkey quorum required
         const secondaryPrompt =
           activeWallet?.securityMode === 'vault'
-            ? `Touch your Vault Key (Mac / YubiKey) to approve ${amt} SOL`
+            ? `Approve on your second device to send ${amt} SOL`
             : `Confirm with your backup key: ${amt} SOL`
 
         let secondarySig: PasskeySignature
@@ -687,7 +687,7 @@ export function HaptixSendSheet({
                 throw relayErr
               }
               if (relayErr?.message?.includes('declined')) {
-                throw new Error('Transfer was declined on Mac Touch ID.')
+                throw new Error('Transfer was declined on second device.')
               }
               console.warn('[Haptix Send] Vault relay connection failed:', relayErr)
             } finally {
@@ -715,7 +715,7 @@ export function HaptixSendSheet({
 
           if (!macSig) {
             throw new Error(
-              `Mac Touch ID authorization was not completed. Please open http://${relayHost}:8081/vault.html on your Mac and approve the transfer with Touch ID.`
+              `Second device authorization was not completed. Please open http://${relayHost}:8081/vault.html on your second device and approve the transfer.`
             )
           }
 
@@ -1090,7 +1090,7 @@ export function HaptixSendSheet({
                   </Text>
                   <Text style={styles.cleanModalSubtitle}>
                     {isSendQuorumRequired
-                      ? 'Approve on this phone and on your Mac'
+                      ? 'Approve on this phone and second device'
                       : 'Instant on-chain transfer via passkey'}
                   </Text>
                 </View>
@@ -1647,7 +1647,7 @@ export function HaptixSendSheet({
                         <View style={styles.stepApprovalRow}>
                           <View style={styles.stepApprovalLeft}>
                             <MaterialIcons
-                              name={wallet?.securityMode === 'vault' ? 'laptop-mac' : 'security'}
+                              name={wallet?.securityMode === 'vault' ? 'devices' : 'security'}
                               size={18}
                               color={
                                 sendStep === 'primary'
@@ -1661,7 +1661,7 @@ export function HaptixSendSheet({
                                 sendStep === 'primary' && styles.stepApprovalDeviceNameMuted,
                               ]}
                             >
-                              {wallet?.securityMode === 'vault' ? 'Your Mac' : 'Backup key'}
+                              {wallet?.securityMode === 'vault' ? 'Second device' : 'Backup key'}
                             </Text>
                           </View>
 
@@ -1675,7 +1675,7 @@ export function HaptixSendSheet({
                               <View style={styles.stepApprovalStatusBadge}>
                                 <ActivityIndicator size="small" color="#6C8CFF" style={{ marginRight: 6 }} />
                                 <Text style={styles.stepApprovalStatusActive}>
-                                  {wallet?.securityMode === 'vault' ? 'Waiting for Touch ID' : 'Waiting for passkey'}
+                                  {wallet?.securityMode === 'vault' ? 'Waiting for second device' : 'Waiting for passkey'}
                                 </Text>
                               </View>
                             ) : (
@@ -1691,12 +1691,12 @@ export function HaptixSendSheet({
                       </>
                     )}
 
-                    {/* Helper text when waiting for Mac */}
+                    {/* Helper text when waiting for second device */}
                     {sendStep === 'secondary' && wallet?.securityMode === 'vault' && (
                       <View style={styles.stepApprovalHelperRow}>
                         <MaterialIcons name="touch-app" size={14} color="#6C8CFF" />
                         <Text style={styles.stepApprovalHelperText}>
-                          Open Haptix Vault on your Mac and use Touch ID.
+                          Open Haptix Vault on your second device to approve.
                         </Text>
                       </View>
                     )}

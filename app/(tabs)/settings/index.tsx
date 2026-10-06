@@ -25,6 +25,7 @@ import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { HaptixAccountSwitcherSheet } from '@/components/haptix/haptix-account-switcher-sheet'
 import { HaptixNetworkModal } from '@/components/haptix/haptix-network-modal'
+import { HaptixThemeModal } from '@/components/haptix/haptix-theme-modal'
 import { HaptixPolicySheet, PolicyTopic } from '@/components/haptix/haptix-policy-sheet'
 import { HaptixTokenIcon } from '@/components/haptix/haptix-icons'
 import { useConfirmRemoveWallet } from '@/components/haptix/haptix-remove-wallet'
@@ -64,6 +65,7 @@ export default function TabSettingsScreen() {
   const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
   const [isAccountSwitcherOpen, setIsAccountSwitcherOpen] = useState(false)
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false)
+  const [isThemeModalOpen, setIsThemeModalOpen] = useState(false)
   const [hasCopied, setHasCopied] = useState(false)
   const [isRequestingFaucet, setIsRequestingFaucet] = useState(false)
   const [isBindingBackup, setIsBindingBackup] = useState(false)
@@ -91,14 +93,9 @@ export default function TabSettingsScreen() {
     setTimeout(() => setHasCopied(false), 1600)
   }
 
-  const handleToggleTheme = () => {
+  const handleOpenThemeModal = () => {
     Haptics.selectionAsync()
-    const cycle: Record<AppearanceMode, AppearanceMode> = {
-      system: 'dark',
-      dark: 'light',
-      light: 'system',
-    }
-    void setThemePreference(cycle[themePreference])
+    setIsThemeModalOpen(true)
   }
 
   const handleToggleAppearanceStyle = () => {
@@ -122,12 +119,12 @@ export default function TabSettingsScreen() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
       const walletPda = new PublicKey(activeWallet.address)
-      const sig = await fundDevnetWallet(connection, walletPda, 0.2)
+      const sig = await fundDevnetWallet(connection, walletPda, 0.1)
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       dialog.alert(
         'Airdrop Confirmed',
-        `Received +0.2 Devnet SOL for testing.\n\nSignature: ${sig.slice(0, 8)}...${sig.slice(-8)}`,
+        `Received +0.1 Devnet SOL for testing.\n\nSignature: ${sig.slice(0, 8)}...${sig.slice(-8)}`,
       )
     } catch (err) {
       console.warn('Devnet airdrop failed:', err)
@@ -327,9 +324,9 @@ export default function TabSettingsScreen() {
           </View>
         </View>
 
-        {/* SECTION 2: Settings (Rabby Style with Blue Icons & Restored Security) */}
+        {/* SECTION 2: Security & Quorum */}
         <View style={styles.sectionWrap}>
-          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Settings</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Security &amp; Quorum</Text>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* Platform passkey (primary) */}
             <TouchableOpacity
@@ -406,7 +403,7 @@ export default function TabSettingsScreen() {
               activeOpacity={0.7}
             >
               <MaterialIcons name="supervisor-account" size={20} color={theme.accent} />
-              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Guardian & Recovery</Text>
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Guardian &amp; Recovery</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
@@ -423,41 +420,17 @@ export default function TabSettingsScreen() {
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Lock wallet (Safe Lock)</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
+          </View>
+        </View>
 
-            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
-
-            {/* Devnet Paymaster */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleShowPaymasterDetails}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="local-gas-station" size={20} color={theme.accent} />
-              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Devnet Paymaster</Text>
-              <Text style={[styles.rowValue, { color: '#10B981', fontWeight: '600' }]}>Sponsored</Text>
-              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
-            </TouchableOpacity>
-
-            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
-
-            {/* Network Cluster */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleSelectCluster}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons name="hub" size={20} color={theme.accent} />
-              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Network Cluster</Text>
-              <Text style={[styles.rowValue, { color: theme.textMuted }]}>{selectedCluster.name}</Text>
-              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
-            </TouchableOpacity>
-
-            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
-
+        {/* SECTION 3: Preferences & Display */}
+        <View style={styles.sectionWrap}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Preferences</Text>
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* Theme Mode */}
             <TouchableOpacity
               style={styles.row}
-              onPress={handleToggleTheme}
+              onPress={handleOpenThemeModal}
               activeOpacity={0.7}
             >
               <MaterialIcons name="brightness-medium" size={20} color={theme.accent} />
@@ -483,6 +456,38 @@ export default function TabSettingsScreen() {
               </Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* SECTION 4: Network & Developer */}
+        <View style={styles.sectionWrap}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Network &amp; Developer</Text>
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+            {/* Network Cluster */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleSelectCluster}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="hub" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Network Cluster</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>{selectedCluster.name}</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+
+            {/* Devnet Paymaster */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={handleShowPaymasterDetails}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="local-gas-station" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Gas Fee Sponsorship</Text>
+              <Text style={[styles.rowValue, { color: '#10B981', fontWeight: '600' }]}>Sponsored</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
 
             {isDevnet && (
               <>
@@ -495,12 +500,12 @@ export default function TabSettingsScreen() {
                   activeOpacity={0.7}
                   disabled={isRequestingFaucet}
                 >
-                  <MaterialIcons name="local-gas-station" size={20} color={theme.accent} />
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Devnet Airdrop</Text>
+                  <MaterialIcons name="water-drop" size={20} color={theme.accent} />
+                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Devnet Faucet</Text>
                   {isRequestingFaucet ? (
                     <ActivityIndicator size="small" color={theme.accent} />
                   ) : (
-                    <Text style={[styles.rowValue, { color: theme.textMuted }]}>+0.2 SOL</Text>
+                    <Text style={[styles.rowValue, { color: theme.textMuted }]}>+0.1 SOL</Text>
                   )}
                   <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
                 </TouchableOpacity>
@@ -527,16 +532,15 @@ export default function TabSettingsScreen() {
           </View>
         </View>
 
-        {/* SECTION 3: About Us (Rabby Style) */}
+        {/* SECTION 5: About & Legal */}
         <View style={styles.sectionWrap}>
-          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>About Us</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>About &amp; Legal</Text>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* Current Version */}
             <View style={styles.row}>
               <MaterialIcons name="info-outline" size={20} color={theme.accent} />
-              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Current Version</Text>
-              <Text style={[styles.rowValue, { color: theme.textMuted }]}>1.0.0 (SMS)</Text>
-              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>App Version</Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>1.0.0 (Seeker Edition)</Text>
             </View>
 
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
@@ -551,7 +555,7 @@ export default function TabSettingsScreen() {
               activeOpacity={0.7}
             >
               <MaterialIcons name="code" size={20} color={theme.accent} />
-              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Source & Docs</Text>
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Source &amp; Docs</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
@@ -566,14 +570,46 @@ export default function TabSettingsScreen() {
               }}
               activeOpacity={0.7}
             >
-              <MaterialIcons name="menu-book" size={20} color={theme.accent} />
+              <MaterialIcons name="shield" size={20} color={theme.accent} />
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Security Architecture</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+
+            {/* Terms of Service */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                setPolicyTopic('terms')
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="description" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Terms of Service</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+
+            {/* Privacy Policy */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                setPolicyTopic('privacy')
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="privacy-tip" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Privacy Policy</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* SECTION 4: Standalone Device Actions (Rabby Style) */}
+        {/* SECTION 6: Standalone Device Actions */}
         <View style={styles.sectionWrap}>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* Remove Wallet from Device */}
@@ -619,6 +655,15 @@ export default function TabSettingsScreen() {
         selectedCluster={selectedCluster}
         onSelectCluster={(c) => {
           setSelectedCluster(c)
+        }}
+      />
+
+      <HaptixThemeModal
+        visible={isThemeModalOpen}
+        onClose={() => setIsThemeModalOpen(false)}
+        selectedTheme={themePreference}
+        onSelectTheme={(t) => {
+          void setThemePreference(t)
         }}
       />
     </View>
