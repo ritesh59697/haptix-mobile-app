@@ -1231,15 +1231,15 @@ async function signHardwareAssertion(id: 'primary' | 'secondary', message: Uint8
     throw new Error(`No platform passkey is registered for the ${id} key on this device.`)
   }
 
-  // WebAuthn Discoverable Assertion:
-  // On Android Credential Manager, passing `allowCredentials` triggers the external
-  // security key modal ("USB security key / Use another device") whenever Google Play Services
-  // treats the request as a targeted roaming query rather than resident key discovery.
-  // Omitting `allowCredentials` lets Android Credential Manager query Google Password Manager
-  // directly for on-device passkeys belonging to PASSKEY_RP_ID, immediately presenting
-  // the native biometric fingerprint prompt.
+  // WebAuthn Challenge Hashing:
+  // We pass sha256(message) as the 32-byte challenge. The on-chain Anchor program
+  // natively accepts clientDataJSON.challenge matching either expected_message OR
+  // sha256(expected_message). Hashing shrinks clientDataJSON by over 150 bytes per passkey,
+  // allowing 2-of-2 hardware quorum transactions to safely serialize within Solana's
+  // 1,232-byte MTU limit.
+  const challengeBytes = sha256(message)
   const getRequest = {
-    challenge: bytesToBase64Url(message),
+    challenge: bytesToBase64Url(challengeBytes),
     rpId: PASSKEY_RP_ID,
     userVerification: 'required' as const,
     timeout: 60_000,

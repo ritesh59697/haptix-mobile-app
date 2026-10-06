@@ -625,11 +625,12 @@ export default function SignIn() {
           attachment: 'securityKey',
         })
       } else {
-        // Everyday Mode: Single device on phone.
-        // Primary is hardware passkey (Google Password Manager).
-        // Backup is device secure storage (Keystore encrypted, biometric-gated).
-        // Keeps 2-key quorum transactions under Solana's 1,232-byte MTU limit.
-        secondary = await registerDevicePasskey('secondary', 'Backup key (device secure storage)')
+        // Everyday Mode: Both Primary and Backup are hardware passkeys saved in Google Password Manager!
+        // Challenge is SHA-256 hashed on-chain so 2-of-2 transactions stay safely under Solana's 1,232-byte MTU limit.
+        secondary = await getOrCreateSecondaryPasskey(secondaryName, {
+          forceNew: true,
+          attachment: 'platform',
+        })
       }
 
       setCreationStep(3)

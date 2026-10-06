@@ -159,10 +159,14 @@ pub fn verify_assertion(
         return Err(invalid());
     }
 
-    // 2. The challenge must be exactly the authorized payload.
+    // 2. The challenge must be either the raw authorized payload or its 32-byte SHA-256 hash.
+    // Hashing the challenge compresses the WebAuthn clientDataJSON by over 150 bytes,
+    // allowing dual WebAuthn passkey 2-of-2 multisig transactions to comfortably fit
+    // inside Solana's 1,232-byte MTU limit.
     let challenge = json_find_string(client_data_json, b"challenge").ok_or_else(invalid)?;
     let decoded = base64url_decode(challenge)?;
-    if decoded != expected_message {
+    let expected_hash = hash(expected_message).to_bytes();
+    if decoded != expected_message && decoded != expected_hash {
         return Err(invalid());
     }
 
@@ -620,6 +624,27 @@ mod tests {
         let cdj_eas = client_data(&b64url(&msg), "webauthn.get", &eas_origin);
         let h_eas = hash(&cdj_eas).to_bytes().to_vec();
         assert!(verify_assertion(&ad_main, &cdj_eas, &h_eas, &msg).is_ok());
+    }
+
+    #[test]
+    fn accepts_sha256_hashed_challenge() {
+        let wallet = Pubkey::new_unique();
+        let cluster = crate::constants::CLUSTER_DEVNET;
+        let mut msg = Vec::new();
+        msg.extend_from_slice(b"GRANT_AGENT:");
+        msg.extend_from_slice(wallet.as_ref());
+        msg.extend_from_slice(&cluster);
+        msg.extend_from_slice(&1u64.to_le_bytes());
+        msg.extend_from_slice(Pubkey::new_unique().as_ref());
+        msg.extend_from_slice(&100_000u64.to_le_bytes());
+        msg.extend_from_slice(&3600i64.to_le_bytes());
+        msg.extend_from_slice(Pubkey::new_unique().as_ref());
+
+        let msg_hash = hash(&msg).to_bytes();
+        let ad_prod = auth_data(RP_ID, FLAG_USER_PRESENT | FLAG_USER_VERIFIED);
+        let cdj_hashed = client_data(&b64url(&msg_hash), "webauthn.get", "https://haptix-passkeys.vercel.app");
+        let h_hashed = hash(&cdj_hashed).to_bytes().to_vec();
+        assert!(verify_assertion(&ad_prod, &cdj_hashed, &h_hashed, &msg).is_ok());
     }
 }
 
