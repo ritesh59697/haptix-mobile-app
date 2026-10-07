@@ -155,6 +155,11 @@ export function HaptixBiometricPromptSheet({
         }
       })
 
+      if (actionType === 'agent_session') {
+        onClose()
+        return
+      }
+
       setPhase('broadcasting')
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setPhase('confirmed')
