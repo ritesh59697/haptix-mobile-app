@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -34,6 +35,7 @@ import { radius, typeScale } from '@/theme/tokens'
 import { getDevnetFunderPublicKey, isDevnetFunder } from '@/utils/haptix-funder'
 import { useCluster, ClusterNetwork } from '@/components/cluster/cluster-provider'
 import { HaptixWalletCreatedContent } from '@/components/haptix/haptix-wallet-created-sheet'
+import { AppConfig } from '@/constants/app-config'
 
 interface HaptixAccountSwitcherSheetProps {
   visible: boolean
@@ -67,6 +69,17 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
   } | null>(null)
   const [vaultKeySource, setVaultKeySource] = useState<'mac' | 'hardware'>('mac')
   const [macVaultKeyHex, setMacVaultKeyHex] = useState('')
+  const [copiedVaultUrl, setCopiedVaultUrl] = useState(false)
+  const [isVaultInputFocused, setIsVaultInputFocused] = useState(false)
+
+  const cleanVaultHex = useMemo(() => {
+    const raw = macVaultKeyHex.trim()
+    return raw.startsWith('0x') ? raw.slice(2) : raw
+  }, [macVaultKeyHex])
+
+  const isValidVaultHex = useMemo(() => {
+    return cleanVaultHex.length === 66 && (cleanVaultHex.startsWith('02') || cleanVaultHex.startsWith('03'))
+  }, [cleanVaultHex])
 
   // Advanced settings state
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -334,7 +347,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
       if (!cleanHex || cleanHex.length !== 66 || (!cleanHex.startsWith('02') && !cleanHex.startsWith('03'))) {
         dialog.alert(
           'Second Device Public Key Required',
-          'Please open http://localhost:8081/vault.html on your second device (laptop, tablet, or 2nd phone), tap "Enroll", and paste the 33-byte public key hex below.',
+          `Please open ${AppConfig.vaultWebUrl} on your second device (laptop, tablet, or 2nd phone), tap "Enroll", and paste the 33-byte public key hex below.`,
           undefined,
           { status: 'warning' },
         )
@@ -871,64 +884,205 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       style={[
                         styles.macVaultBox,
                         {
-                          backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
-                          borderColor: theme.isDark ? '#222226' : theme.borderSubtle,
+                          backgroundColor: theme.isDark ? '#18181B' : '#F8FAFC',
+                          borderColor: theme.isDark ? '#27272A' : '#E2E8F0',
                         },
                       ]}
                     >
-                      <Text style={[styles.macVaultStep, { color: theme.textSecondary }]}>
-                        1. Open on your laptop or second phone browser
-                      </Text>
+                      {/* Step 1 Header */}
+                      <View style={styles.macVaultStepHeader}>
+                        <View
+                          style={[
+                            styles.macVaultStepBadge,
+                            { backgroundColor: theme.isDark ? 'rgba(79, 107, 255, 0.2)' : 'rgba(79, 107, 255, 0.12)' },
+                          ]}
+                        >
+                          <Text style={styles.macVaultStepBadgeText}>1</Text>
+                        </View>
+                        <Text style={[styles.macVaultStepTitle, { color: theme.isDark ? '#F4F4F5' : '#1E293B' }]}>
+                          Open on laptop or second phone browser
+                        </Text>
+                      </View>
+
+                      {/* Step 1 URL Box */}
                       <View
                         style={[
                           styles.macVaultUrlWrap,
                           {
-                            backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
-                            borderColor: theme.isDark ? '#222226' : theme.borderDefault,
+                            backgroundColor: theme.isDark ? '#101012' : '#FFFFFF',
+                            borderColor: theme.isDark ? '#27272F' : '#CBD5E1',
                           },
                         ]}
                       >
-                        <Text style={[styles.macVaultUrlText, { color: '#6C8CFF' }]}>
-                          http://localhost:8081/vault.html
+                        <View style={styles.macVaultUrlLeft}>
+                          <MaterialIcons name="link" size={16} color="#4F6BFF" style={{ marginRight: 6 }} />
+                          <Text
+                            style={[styles.macVaultUrlText, { color: theme.isDark ? '#93C5FD' : '#2563EB' }]}
+                            numberOfLines={1}
+                            ellipsizeMode="middle"
+                          >
+                            {AppConfig.vaultWebUrl}
+                          </Text>
+                        </View>
+                        <View style={styles.macVaultUrlActions}>
+                          <TouchableOpacity
+                            style={[
+                              styles.macVaultActionBtn,
+                              {
+                                backgroundColor: copiedVaultUrl
+                                  ? (theme.isDark ? 'rgba(16, 185, 129, 0.2)' : '#D1FAE5')
+                                  : (theme.isDark ? '#222228' : '#F1F5F9'),
+                              },
+                            ]}
+                            onPress={async () => {
+                              await Clipboard.setString(AppConfig.vaultWebUrl)
+                              setCopiedVaultUrl(true)
+                              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                              setTimeout(() => setCopiedVaultUrl(false), 2000)
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <MaterialIcons
+                              name={copiedVaultUrl ? 'check' : 'content-copy'}
+                              size={13}
+                              color={copiedVaultUrl ? '#10B981' : (theme.isDark ? '#D4D4D8' : '#475569')}
+                              style={{ marginRight: 3 }}
+                            />
+                            <Text
+                              style={[
+                                styles.macVaultActionBtnText,
+                                { color: copiedVaultUrl ? '#10B981' : (theme.isDark ? '#D4D4D8' : '#475569') },
+                              ]}
+                            >
+                              {copiedVaultUrl ? 'Copied' : 'Copy'}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.macVaultActionBtn,
+                              { backgroundColor: theme.isDark ? 'rgba(79, 107, 255, 0.16)' : '#EFF6FF' },
+                            ]}
+                            onPress={() => Linking.openURL(AppConfig.vaultWebUrl)}
+                            activeOpacity={0.7}
+                          >
+                            <MaterialIcons name="open-in-new" size={13} color="#4F6BFF" />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      {/* Step 2 Header */}
+                      <View style={[styles.macVaultStepHeader, { marginTop: 14 }]}>
+                        <View
+                          style={[
+                            styles.macVaultStepBadge,
+                            { backgroundColor: theme.isDark ? 'rgba(79, 107, 255, 0.2)' : 'rgba(79, 107, 255, 0.12)' },
+                          ]}
+                        >
+                          <Text style={styles.macVaultStepBadgeText}>2</Text>
+                        </View>
+                        <Text style={[styles.macVaultStepTitle, { color: theme.isDark ? '#F4F4F5' : '#1E293B' }]}>
+                          Tap "Enroll" on that device, then paste key below
                         </Text>
                       </View>
-                      <Text style={[styles.macVaultStep, { color: theme.textSecondary }]}>
-                        2. Tap "Enroll" on that device, then paste the public key below
-                      </Text>
+
+                      {/* Step 2 Key Input Container */}
                       <View
                         style={[
                           styles.macKeyInputContainer,
                           {
-                            backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
-                            borderColor: theme.isDark ? '#222226' : theme.borderDefault,
+                            backgroundColor: theme.isDark ? '#101012' : '#FFFFFF',
+                            borderColor: isValidVaultHex
+                              ? '#10B981'
+                              : isVaultInputFocused
+                              ? '#4F6BFF'
+                              : (theme.isDark ? '#33333E' : '#94A3B8'),
+                            borderWidth: (isVaultInputFocused || isValidVaultHex) ? 2 : 1.5,
                           },
                         ]}
                       >
                         <TextInput
-                          style={[styles.macKeyInput, { color: theme.textPrimary }]}
+                          style={[
+                            styles.macKeyInput,
+                            {
+                              color: theme.isDark ? '#FFFFFF' : '#0F172A',
+                              fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+                            },
+                          ]}
                           value={macVaultKeyHex}
                           onChangeText={setMacVaultKeyHex}
+                          onFocus={() => setIsVaultInputFocused(true)}
+                          onBlur={() => setIsVaultInputFocused(false)}
                           placeholder="Paste 33-byte public key (02...)"
-                          placeholderTextColor={theme.textMuted}
+                          placeholderTextColor={theme.isDark ? '#71717A' : '#64748B'}
                           autoCapitalize="none"
                           autoCorrect={false}
+                          multiline={false}
+                          numberOfLines={1}
+                          textAlignVertical="center"
                         />
-                        <TouchableOpacity
-                          style={styles.pasteBadgeButton}
-                          onPress={async () => {
-                            const text = await Clipboard.getString()
-                            if (text) {
-                              const clean = text.trim().startsWith('0x') ? text.trim().slice(2) : text.trim()
-                              setMacVaultKeyHex(clean)
-                              Haptics.selectionAsync()
-                            }
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <MaterialIcons name="content-paste" size={14} color="#6C8CFF" style={{ marginRight: 2 }} />
-                          <Text style={styles.pasteBadgeText}>Paste</Text>
-                        </TouchableOpacity>
+                        {cleanVaultHex.length > 0 ? (
+                          <View style={styles.keyActionRow}>
+                            {isValidVaultHex ? (
+                              <View
+                                style={[
+                                  styles.validKeyBadge,
+                                  { backgroundColor: theme.isDark ? 'rgba(16, 185, 129, 0.2)' : '#D1FAE5' },
+                                ]}
+                              >
+                                <MaterialIcons name="check" size={12} color="#10B981" />
+                                <Text style={styles.validKeyText}>Valid</Text>
+                              </View>
+                            ) : null}
+                            <TouchableOpacity
+                              style={styles.clearKeyBtn}
+                              onPress={() => {
+                                setMacVaultKeyHex('')
+                                Haptics.selectionAsync()
+                              }}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <MaterialIcons name="cancel" size={18} color={theme.isDark ? '#71717A' : '#94A3B8'} />
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <TouchableOpacity
+                            style={[
+                              styles.pasteBadgeButton,
+                              {
+                                backgroundColor: theme.isDark ? 'rgba(79, 107, 255, 0.18)' : '#EEF2FF',
+                                borderColor: theme.isDark ? 'rgba(79, 107, 255, 0.3)' : '#C7D2FE',
+                              },
+                            ]}
+                            onPress={async () => {
+                              const text = await Clipboard.getString()
+                              if (text) {
+                                const clean = text.trim().startsWith('0x') ? text.trim().slice(2) : text.trim()
+                                setMacVaultKeyHex(clean)
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                              }
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <MaterialIcons name="content-paste" size={14} color="#4F6BFF" style={{ marginRight: 3 }} />
+                            <Text style={styles.pasteBadgeText}>Paste</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
+
+                      {/* Status indicator below input */}
+                      {cleanVaultHex.length > 0 && (
+                        <View style={styles.keyStatusWrap}>
+                          {isValidVaultHex ? (
+                            <Text style={[styles.keyStatusText, { color: '#10B981' }]}>
+                              ✓ 33-byte compressed P-256 public key verified
+                            </Text>
+                          ) : (
+                            <Text style={[styles.keyStatusText, { color: '#EF4444' }]}>
+                              Must be a 66-character hex string starting with 02 or 03 ({cleanVaultHex.length}/66)
+                            </Text>
+                          )}
+                        </View>
+                      )}
                     </View>
                   ) : (
                     <View
@@ -1543,51 +1697,125 @@ const styles = StyleSheet.create({
   },
   macVaultBox: {
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 12,
+    borderRadius: 14,
+    padding: 14,
     marginTop: 10,
   },
-  macVaultStep: {
-    fontSize: 12,
-    lineHeight: 16,
-    marginBottom: 4,
+  macVaultStepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  macVaultStepBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  macVaultStepBadgeText: {
+    color: '#4F6BFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  macVaultStepTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    flex: 1,
   },
   macVaultUrlWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderWidth: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 10,
-    marginTop: 2,
+    paddingVertical: 10,
+    marginBottom: 4,
+  },
+  macVaultUrlLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
   },
   macVaultUrlText: {
     fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
+  macVaultUrlActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  macVaultActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  macVaultActionBtnText: {
+    fontSize: 11.5,
     fontWeight: '600',
   },
   macKeyInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
-    height: 48,
-    marginTop: 4,
+    height: 52,
+    marginTop: 2,
   },
   macKeyInput: {
     flex: 1,
     fontSize: 13,
-    padding: 0,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
   },
   pasteBadgeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   pasteBadgeText: {
-    color: '#6C8CFF',
-    fontSize: 12.5,
+    color: '#4F6BFF',
+    fontSize: 12,
     fontWeight: '700',
+  },
+  keyActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  validKeyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  validKeyText: {
+    color: '#10B981',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  clearKeyBtn: {
+    padding: 2,
+  },
+  keyStatusWrap: {
+    marginTop: 6,
+    paddingHorizontal: 4,
+  },
+  keyStatusText: {
+    fontSize: 11.5,
+    fontWeight: '500',
   },
 
   /* Advanced Accordion Toggle */
