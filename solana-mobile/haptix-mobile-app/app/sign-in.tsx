@@ -1494,7 +1494,7 @@ export default function SignIn() {
                                 onChangeText={setMacVaultKeyHex}
                                 onFocus={() => setIsVaultInputFocused(true)}
                                 onBlur={() => setIsVaultInputFocused(false)}
-                                placeholder="Paste 33-byte public key (02...)"
+                                placeholder="33-byte public key (02...)"
                                 placeholderTextColor={p.inkMuted}
                                 autoCapitalize="none"
                                 autoCorrect={false}
@@ -1533,9 +1533,10 @@ export default function SignIn() {
                                     }
                                   }}
                                   activeOpacity={0.7}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  accessibilityLabel="Paste public key"
                                 >
-                                  <MaterialIcons name="content-paste" size={14} color="#4F6BFF" style={{ marginRight: 3 }} />
-                                  <Text style={styles.macPasteBadgeText}>Paste</Text>
+                                  <MaterialIcons name="content-paste" size={18} color="#4F6BFF" />
                                 </TouchableOpacity>
                               )}
                             </View>
@@ -2651,21 +2652,17 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
       paddingVertical: 8,
       paddingHorizontal: 0,
+      marginRight: 8,
     },
     macPasteBadgeButton: {
-      flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       backgroundColor: isDark ? 'rgba(79, 107, 255, 0.18)' : '#EEF2FF',
       borderColor: isDark ? 'rgba(79, 107, 255, 0.3)' : '#C7D2FE',
       borderWidth: 1,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
+      width: 34,
+      height: 34,
       borderRadius: 8,
-    },
-    macPasteBadgeText: {
-      color: '#4F6BFF',
-      fontSize: 12,
-      fontWeight: '700',
     },
     keyActionRow: {
       flexDirection: 'row',

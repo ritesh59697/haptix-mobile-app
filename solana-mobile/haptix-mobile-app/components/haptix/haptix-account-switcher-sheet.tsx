@@ -1100,7 +1100,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                           onChangeText={setMacVaultKeyHex}
                           onFocus={() => setIsVaultInputFocused(true)}
                           onBlur={() => setIsVaultInputFocused(false)}
-                          placeholder="Paste 33-byte public key (02...)"
+                          placeholder="33-byte public key (02...)"
                           placeholderTextColor={theme.isDark ? '#71717A' : '#64748B'}
                           autoCapitalize="none"
                           autoCorrect={false}
@@ -1135,7 +1135,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                         ) : (
                           <TouchableOpacity
                             style={[
-                              styles.pasteBadgeButton,
+                              styles.macPasteBadgeButton,
                               {
                                 backgroundColor: theme.isDark ? 'rgba(79, 107, 255, 0.18)' : '#EEF2FF',
                                 borderColor: theme.isDark ? 'rgba(79, 107, 255, 0.3)' : '#C7D2FE',
@@ -1150,9 +1150,10 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                               }
                             }}
                             activeOpacity={0.7}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            accessibilityLabel="Paste public key"
                           >
-                            <MaterialIcons name="content-paste" size={14} color="#4F6BFF" style={{ marginRight: 3 }} />
-                            <Text style={styles.pasteBadgeText}>Paste</Text>
+                            <MaterialIcons name="content-paste" size={18} color="#4F6BFF" />
                           </TouchableOpacity>
                         )}
                       </View>
@@ -1862,6 +1863,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     paddingVertical: 8,
     paddingHorizontal: 0,
+    marginRight: 8,
+  },
+  macPasteBadgeButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   pasteBadgeButton: {
     flexDirection: 'row',
