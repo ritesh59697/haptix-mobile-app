@@ -72,6 +72,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
   const [macVaultKeyHex, setMacVaultKeyHex] = useState('')
   const [copiedVaultUrl, setCopiedVaultUrl] = useState(false)
   const [isVaultInputFocused, setIsVaultInputFocused] = useState(false)
+  const [isGuardianInputFocused, setIsGuardianInputFocused] = useState(false)
 
   const cleanVaultHex = useMemo(() => {
     const raw = macVaultKeyHex.trim()
@@ -1205,7 +1206,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                     {
                       backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
                       color: theme.textPrimary,
-                      borderColor: theme.isDark ? '#222226' : theme.borderDefault,
+                      borderColor: theme.isDark ? '#2A2A2E' : '#D1D5DB',
                     },
                   ]}
                   value={newAccountName}
@@ -1239,21 +1240,26 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                 </View>
                 <View
                   style={[
-                    styles.macKeyInputContainer,
+                    styles.guardianInputContainer,
                     {
                       backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
+                      borderWidth: isGuardianInputFocused ? 1.5 : 1,
                       borderColor:
                         guardianAddress.trim() && (!isSolanaAddress(guardianAddress.trim()) || isDevnetFunder(guardianAddress.trim()))
                           ? theme.rose
-                          : (theme.isDark ? '#222226' : theme.borderDefault),
+                          : isGuardianInputFocused
+                          ? '#4F6BFF'
+                          : (theme.isDark ? '#2A2A2E' : '#D1D5DB'),
                       marginTop: 0,
                     },
                   ]}
                 >
                   <TextInput
-                    style={[styles.macKeyInput, { color: theme.textPrimary }]}
+                    style={[styles.macKeyInput, { color: theme.textPrimary, marginRight: 8 }]}
                     value={guardianAddress}
                     onChangeText={setGuardianAddress}
+                    onFocus={() => setIsGuardianInputFocused(true)}
+                    onBlur={() => setIsGuardianInputFocused(false)}
                     placeholder="Auto-generate or paste address"
                     placeholderTextColor={theme.textMuted}
                     autoCapitalize="none"
@@ -1850,10 +1856,19 @@ const styles = StyleSheet.create({
     fontSize: 11.5,
     fontWeight: '600',
   },
+  guardianInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    height: 50,
+  },
   macKeyInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
+    borderWidth: 1,
     paddingHorizontal: 12,
     height: 52,
     marginTop: 2,

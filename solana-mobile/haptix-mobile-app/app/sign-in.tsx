@@ -468,6 +468,7 @@ export default function SignIn() {
   const [macVaultKeyHex, setMacVaultKeyHex] = useState('')
   const [copiedVaultUrl, setCopiedVaultUrl] = useState(false)
   const [isVaultInputFocused, setIsVaultInputFocused] = useState(false)
+  const [isGuardianInputFocused, setIsGuardianInputFocused] = useState(false)
 
   const cleanVaultHex = useMemo(() => {
     const raw = macVaultKeyHex.trim()
@@ -1593,6 +1594,7 @@ export default function SignIn() {
                     <View
                       style={[
                         styles.addressInputContainer,
+                        isGuardianInputFocused && { borderColor: '#4F6BFF', borderWidth: 1.5 },
                         guardianInput.trim() && (!guardianPublicKey || isDevnetFunder(guardianPublicKey)) ? styles.textInputFieldInvalid : null,
                       ]}
                     >
@@ -1600,6 +1602,8 @@ export default function SignIn() {
                         style={styles.addressInput}
                         value={guardianInput}
                         onChangeText={setGuardianInput}
+                        onFocus={() => setIsGuardianInputFocused(true)}
+                        onBlur={() => setIsGuardianInputFocused(false)}
                         placeholder="Auto-generate or paste address"
                         placeholderTextColor={p.inkMuted}
                         autoCorrect={false}
@@ -2338,9 +2342,9 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 10,
-      backgroundColor: isDark ? '#141416' : p.surfaceAlt,
-      borderWidth: 0.5,
-      borderColor: isDark ? '#2A2A28' : '#E5E7EB',
+      backgroundColor: isDark ? '#141416' : '#FFFFFF',
+      borderWidth: 1,
+      borderColor: isDark ? '#2A2A28' : '#D1D5DB',
       borderRadius: 12,
       paddingHorizontal: 12,
       height: 48,
