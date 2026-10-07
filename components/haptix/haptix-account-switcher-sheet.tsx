@@ -56,6 +56,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
   const [switchingTo, setSwitchingTo] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [creationStep, setCreationStep] = useState<0 | 1 | 2 | 3>(0)
   const [isManageMode, setIsManageMode] = useState(false)
 
   // Account creation form state
@@ -290,9 +291,11 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
   }
 
   const handleCancelCreate = () => {
+    if (creationStep > 0) return
     Haptics.selectionAsync()
     Keyboard.dismiss()
     setIsCreating(false)
+    setCreationStep(0)
     setNewAccountName('')
     setMacVaultKeyHex('')
     setShowAdvanced(false)
@@ -357,6 +360,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
     try {
       setIsSubmittingCreate(true)
+      setCreationStep(1)
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
 
       const newAccount = await createWallet(finalName, {
@@ -370,10 +374,12 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
           selectedMode === 'vault' && vaultKeySource === 'mac'
             ? (macVaultKeyHex.trim().startsWith('0x') ? macVaultKeyHex.trim().slice(2) : macVaultKeyHex.trim())
             : undefined,
+        onProgress: (step) => setCreationStep(step),
       })
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setIsCreating(false)
+      setCreationStep(0)
       setNewAccountName('')
       setMacVaultKeyHex('')
       setShowAdvanced(false)
@@ -385,6 +391,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
         spendThreshold: selectedMode === 'vault' ? 0.0 : 0.1,
       })
     } catch (err: any) {
+      setCreationStep(0)
       const msg = err?.message || ''
       if (
         msg.includes('cancelled') ||
@@ -398,6 +405,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
       })
     } finally {
       setIsSubmittingCreate(false)
+      setCreationStep(0)
     }
   }
 
@@ -444,11 +452,19 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
               <View style={styles.header}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.title, { color: theme.textPrimary }]}>
-                    {isCreating ? 'Create account' : isManageMode ? 'Manage accounts' : 'Smart Accounts'}
+                    {creationStep > 0
+                      ? 'Create wallet'
+                      : isCreating
+                      ? 'Create wallet'
+                      : isManageMode
+                      ? 'Manage accounts'
+                      : 'Smart Accounts'}
                   </Text>
                   <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-                    {isCreating
-                      ? 'Configure security, policy, and hardware keys'
+                    {creationStep > 0
+                      ? 'Registering biometric credentials on-chain...'
+                      : isCreating
+                      ? 'Choose your security model and customize passkey names.'
                       : isManageMode
                       ? 'Remove unwanted passkeys from this device'
                       : `${wallets.length} ${wallets.length === 1 ? 'account' : 'accounts'} on this device`}
@@ -487,11 +503,16 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                   <TouchableOpacity
                     style={[styles.closeBtn, { backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0' }]}
                     onPress={isCreating ? handleCancelCreate : onClose}
+                    disabled={creationStep > 0}
                     activeOpacity={0.7}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     accessibilityLabel="Close"
                   >
-                    <MaterialIcons name="close" size={18} color={theme.textPrimary} />
+                    <MaterialIcons
+                      name="close"
+                      size={18}
+                      color={creationStep > 0 ? theme.textMuted : theme.textPrimary}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -656,9 +677,76 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                 </TouchableOpacity>
               )}
             </ScrollView>
+          ) : creationStep > 0 ? (
+            /* ================================================================ */
+            /* 2. CREATION STEP PROGRESS ANIMATION                              */
+            /* ================================================================ */
+            <View style={styles.creationProgressContainer}>
+              <ActivityIndicator size="large" color="#4F6BFF" style={{ marginBottom: 28 }} />
+              <View style={styles.modalStepRow}>
+                <MaterialIcons
+                  name={creationStep > 1 ? 'check-circle' : 'radio-button-unchecked'}
+                  size={24}
+                  color={creationStep > 1 ? '#10B981' : theme.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.modalStepText,
+                    {
+                      color: creationStep > 1 ? (theme.isDark ? '#F4F4F5' : '#111827') : theme.textPrimary,
+                      fontWeight: creationStep === 1 ? '600' : '500',
+                    },
+                  ]}
+                >
+                  Creating {primaryKeyLabel.trim() || 'Primary Passkey'}...
+                </Text>
+              </View>
+              <View style={styles.modalStepRow}>
+                <MaterialIcons
+                  name={creationStep > 2 ? 'check-circle' : 'radio-button-unchecked'}
+                  size={24}
+                  color={creationStep > 2 ? '#10B981' : theme.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.modalStepText,
+                    {
+                      color: creationStep > 2
+                        ? (theme.isDark ? '#F4F4F5' : '#111827')
+                        : creationStep === 2
+                        ? theme.textPrimary
+                        : theme.textMuted,
+                      fontWeight: creationStep === 2 ? '600' : '500',
+                    },
+                  ]}
+                >
+                  {selectedMode === 'vault'
+                    ? `Pairing ${secondaryKeyLabel.trim() || (vaultKeySource === 'mac' ? 'Second Device' : 'Vault Key')} (Cross-Device)...`
+                    : `Creating ${secondaryKeyLabel.trim() || 'Backup Key'}...`}
+                </Text>
+              </View>
+              <View style={styles.modalStepRow}>
+                <MaterialIcons
+                  name={creationStep > 2 ? 'check-circle' : 'radio-button-unchecked'}
+                  size={24}
+                  color={creationStep > 2 ? '#10B981' : theme.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.modalStepText,
+                    {
+                      color: creationStep === 3 ? theme.textPrimary : theme.textMuted,
+                      fontWeight: creationStep === 3 ? '600' : '500',
+                    },
+                  ]}
+                >
+                  Finalizing Smart Account...
+                </Text>
+              </View>
+            </View>
           ) : (
             /* ================================================================ */
-            /* 2. RICH, TRANSPARENT ACCOUNT CREATION EXPERIENCE                */
+            /* 3. RICH, TRANSPARENT ACCOUNT CREATION EXPERIENCE                */
             /* ================================================================ */
             <ScrollView
               key="account-create-scroll"
@@ -1324,7 +1412,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
           )}
 
           {/* Pinned Action Footer (Always visible without scrolling) */}
-          {isCreating && (
+          {isCreating && creationStep === 0 && (
             <View
               style={[
                 styles.pinnedFooter,
@@ -1856,6 +1944,27 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12.5,
     lineHeight: 18,
+  },
+
+  /* Creation progress animation */
+  creationProgressContainer: {
+    paddingVertical: 36,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    width: '100%',
+  },
+  modalStepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    gap: 14,
+    marginBottom: 20,
+    paddingHorizontal: 16,
+  },
+  modalStepText: {
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
   },
 
   /* Form actions */

@@ -40,6 +40,7 @@ export interface AuthState {
       guardianAddress?: string
       vaultKeySource?: 'mac' | 'hardware'
       macVaultKeyHex?: string
+      onProgress?: (step: 1 | 2 | 3) => void
     },
   ) => Promise<HaptixWalletAccount>
   restoreWallet: () => Promise<HaptixWalletAccount>
@@ -134,16 +135,20 @@ export function AuthProvider({ children }: PropsWithChildren) {
       guardianAddress?: string
       vaultKeySource?: 'mac' | 'hardware'
       macVaultKeyHex?: string
+      onProgress?: (step: 1 | 2 | 3) => void
     },
   ): Promise<HaptixWalletAccount> => {
     const isFirstWallet = wallets.length === 0
     const finalName = name?.trim() || `Account ${wallets.length + 1}`
     const mode = options?.mode || 'everyday'
+
     // 1. Generate Primary Passkey
+    options?.onProgress?.(1)
     const primary = await getOrCreatePrimaryPasskey(finalName, { forceNew: true })
 
     // Small pause between passkey prompts on Android so Credential Manager
     // activity finishes dismissing before presenting the second passkey sheet.
+    options?.onProgress?.(2)
     await new Promise((r) => setTimeout(r, 600))
 
     // 2. Generate Secondary Passkey (Second Device vs Security Key vs Platform)
@@ -179,6 +184,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         attachment: 'platform',
       })
     }
+
+    // 3. Finalize Smart Account
+    options?.onProgress?.(3)
 
     const threshold =
       options?.spendThreshold !== undefined
