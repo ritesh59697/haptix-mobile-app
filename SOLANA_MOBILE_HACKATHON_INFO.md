@@ -4,7 +4,7 @@
 > **Official Hackathon Portal:** [solanamobile.radiant.nexus](https://solanamobile.radiant.nexus/)  
 > **Target Device Ecosystem:** Solana Seeker (Chapter 2), Solana Saga, & Android Solana dApp Store  
 > **Total Prize Pool:** **$135,000** (Top prize: $30,000+ & 1-on-1 with Anatoly Yakovenko)  
-> **Dates:** September 8, 2026 – **October 8, 2026** (~12 days remaining)  
+> **Dates:** September 8, 2026 – **October 8, 2026** (🚨 **FINAL 24 HOURS / DEADLINE IMMINENT**)  
 > **Winners Announcement:** Early November 2026  
 
 ---
@@ -120,23 +120,23 @@ Haptix is uniquely engineered for the exact goals of the CLOCK IN hackathon:
 ## 7. 🏁 Action Checklist Before October 8 Deadline
 
 ### Phase 1: Technical Freeze & APK Verification (Days 1–5)
-- [x] On-chain program deployed & passing tests (`haptix_program` on Devnet).
+- [x] On-chain program deployed & passing tests (`haptix_program` on Devnet: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`).
 - [x] Multi-account support integrated with unique passkey credentials.
 - [x] Zero-neon, minimalist Apple/Linear design system finalized.
-- [ ] Run release build via EAS: `npm run android:build` -> produce final `haptix-v1.0.0.apk`.
-- [ ] Test `.apk` sideload on a physical Android phone to verify biometric prompts work offline.
+- [x] Run release build via EAS: produced `haptix-wallet.apk` (131 MB) + EAS cloud receipt.
+- [ ] Test `.apk` sideload on physical Android phone to verify biometric prompts work offline.
 
 ### Phase 2: Video & Pitch Assets (Days 6–9)
-- [ ] Record a 3-minute video demo:
+- [ ] **Record 3-minute video demo** (See script in [HACKATHON_SUBMISSION.md](file:///Users/ritesh/Claude%20projects/passkey-wallet/solana-mobile/HACKATHON_SUBMISSION.md#L93-L121)):
   - `0:00 - 0:30`: The Seed Phrase & Wallet Fatigue problem on mobile.
   - `0:30 - 1:15`: Fast-lane 1-tap passkey onboarding and micro-transfer (< 0.1 SOL).
   - `1:15 - 2:00`: High-value escalation to 2-of-2 Mac Touch ID quorum via out-of-band relay.
   - `2:00 - 2:35`: Autonomous AI Agent executing trades with session keys.
   - `2:35 - 3:00`: Multi-account switcher & social guardian emergency freeze.
-- [ ] Export [PITCH_DECK.md](file:///Users/ritesh/Claude%20projects/passkey-wallet/PITCH_DECK.md) to clean PDF slides.
+- [x] Export [PITCH_DECK.md](file:///Users/ritesh/Claude%20projects/passkey-wallet/solana-mobile/SOLANA_PITCH_DECK.md) to clean PDF slides (`Haptix_Pitch_Deck.pdf`, 3.84 MB).
 
 ### Phase 3: Submission & Portal Filing (Days 10–12)
-- [ ] Host APK on GitHub Releases with direct download link.
-- [ ] Update [README.md](file:///Users/ritesh/Claude%20projects/passkey-wallet/solana-mobile/README.md) with quick-start judge testing steps.
-- [ ] Submit official form on [solanamobile.radiant.nexus](https://solanamobile.radiant.nexus).
+- [x] Host APK and Pitch Deck on [GitHub Releases v1.0.0](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.0) with direct download links.
+- [x] Update [solana-mobile/README.md](file:///Users/ritesh/Claude%20projects/passkey-wallet/solana-mobile/README.md) with quick-start judge testing steps and live badges.
+- [ ] Submit official form on [solanamobile.radiant.nexus](https://solanamobile.radiant.nexus) (Requires Demo Video URL).
 - [ ] Post public announcement on X tagging `@SolanaMobile` and `@RadiantsDAO`.
