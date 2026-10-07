@@ -1076,15 +1076,13 @@ export function HaptixWalletScreen() {
       }
       setTransactions((prev) => [newTx, ...prev])
 
-      setTimeout(() => {
-        setShowAgentSessionPrompt(false)
-        setIsGrantingSession(false)
-        setAgentGrantSuccess({
-          signature: sig,
-          allowanceSol,
-          hours,
-        })
-      }, 1100)
+      setShowAgentSessionPrompt(false)
+      setIsGrantingSession(false)
+      setAgentGrantSuccess({
+        signature: sig,
+        allowanceSol,
+        hours,
+      })
     } catch (err: any) {
       console.error('[Grant Session Error]:', formatChainErrorForLog(err))
       setIsGrantingSession(false)
