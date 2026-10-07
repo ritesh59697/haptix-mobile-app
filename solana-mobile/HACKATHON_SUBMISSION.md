@@ -83,9 +83,9 @@ cd android && ./gradlew assembleRelease
 
 ### Option B: Pre-Built Release Binary & Assets (Ready for Judges!)
 - **Official GitHub Release v1.0.0**: [https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.0](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.0)
-- **Direct APK Download Link**: [Download haptix-wallet.apk (137 MB)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.0/haptix-wallet.apk)
-- **Pitch Deck Presentation (PDF)**: [Download Haptix_Pitch_Deck.pdf (1.3 MB)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.0/Haptix_Pitch_Deck.pdf)
-- **Live EAS Cloud Build Receipt**: [https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/2229f1ae-40a9-468e-a11e-42d9aba0dd0f](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/2229f1ae-40a9-468e-a11e-42d9aba0dd0f)
+- **Direct APK Download Link**: [Download haptix-wallet.apk (98 MB)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.0/haptix-wallet.apk)
+- **Pitch Deck Presentation (PDF)**: [Download Haptix_Pitch_Deck.pdf (3.8 MB)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.0/Haptix_Pitch_Deck.pdf)
+- **Live EAS Cloud Build Receipt**: [https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/34f8ec9a-4069-4be1-94dc-3b5383a0a441](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/34f8ec9a-4069-4be1-94dc-3b5383a0a441)
 - **Local Workspace Binary**: `solana-mobile/haptix-wallet.apk` (ready for sideloading/installation)
 
 ---

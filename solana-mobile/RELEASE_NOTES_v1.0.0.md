@@ -27,6 +27,6 @@ Welcome to the initial release of **Haptix**, the consumer-grade passkey smart w
 
 ### Installation Instructions
 
-1. Download the attached `haptix-wallet.apk` (131 MB) directly onto your Android device or Solana Seeker / Saga.
+1. Download the attached `haptix-wallet.apk` (98 MB) directly onto your Android device or Solana Seeker / Saga.
 2. Tap the downloaded file to install (allow "Install from Unknown Sources" if prompted).
 3. Open **Haptix** and tap **Create Smart Wallet** to test the 1-tap biometric passkey flow.
