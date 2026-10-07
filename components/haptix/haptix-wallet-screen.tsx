@@ -116,6 +116,7 @@ import { HaptixAccountSwitcherSheet } from './haptix-account-switcher-sheet'
 import { HaptixSendSheet } from './haptix-send-sheet'
 import { HaptixTokenDetailSheet } from './haptix-token-detail-sheet'
 import { HaptixSwapSheet } from './haptix-swap-sheet'
+import { HaptixAgentTradeConfirmModal } from './haptix-agent-trade-confirm-modal'
 import { HaptixAlert } from './haptix-alert'
 import { useGuardianSigner } from '@/hooks/use-guardian-signer'
 import { AppConfig } from '@/constants/app-config'
@@ -345,6 +346,7 @@ export function HaptixWalletScreen() {
   const [customAgentAllowance, setCustomAgentAllowance] = useState('0.25')
   const [customAgentValidHours, setCustomAgentValidHours] = useState('24')
   const [agentRecipient, setAgentRecipient] = useState('')
+  const [showAgentTradeConfirm, setShowAgentTradeConfirm] = useState(false)
   const [revokingAgent, setRevokingAgent] = useState<string | null>(null)
   const [faucetSuccess, setFaucetSuccess] = useState<{ amount: number; signature: string } | null>(null)
   const [faucetCopiedSig, setFaucetCopiedSig] = useState(false)
@@ -1292,14 +1294,7 @@ export function HaptixWalletScreen() {
       return
     }
 
-    dialog.alert(
-      'Run Autonomous Agent Trade',
-      `Executes a real ${AGENT_TRADE_AMOUNT_SOL} SOL transfer to ${ellipsify(destination, 6)} on Solana Devnet, signed solely by a freshly generated agent session key — no biometric prompt at execution time.\n\nTwo passkey prompts are required up front to grant the session.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Run Trade', style: 'destructive', onPress: () => handleAgentExecute(destination) },
-      ],
-    )
+    setShowAgentTradeConfirm(true)
   }
 
   // Revokes a delegated session key on-chain. This is the only way to actually
@@ -3416,6 +3411,30 @@ export function HaptixWalletScreen() {
         securityMode={activeWallet?.securityMode}
         asModal={true}
         onAuthorize={handleExecuteGrantSession}
+      />
+
+      {/* Run Autonomous Agent Trade Confirmation Modal */}
+      <HaptixAgentTradeConfirmModal
+        visible={showAgentTradeConfirm}
+        onClose={() => setShowAgentTradeConfirm(false)}
+        onConfirm={() => {
+          setShowAgentTradeConfirm(false)
+          const destination = agentRecipient.trim()
+          if (isSolanaAddress(destination)) {
+            handleAgentExecute(destination)
+          }
+        }}
+        amountSol={AGENT_TRADE_AMOUNT_SOL}
+        destinationAddress={agentRecipient.trim()}
+        networkName={
+          selectedCluster?.network === ClusterNetwork.Mainnet
+            ? 'Solana mainnet'
+            : selectedCluster?.network === ClusterNetwork.Testnet
+              ? 'Solana testnet'
+              : 'Solana devnet'
+        }
+        allowanceSol={parseFloat(customAgentAllowance) || 0.25}
+        expiryHours={parseInt(customAgentValidHours, 10) || 24}
       />
 
       {/* Phantom-Style Token Detail Sheet */}
