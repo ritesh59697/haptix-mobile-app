@@ -20,6 +20,7 @@ import { PrismDepthButton } from '@/components/ui'
 
 const FINGERPRINT_HERO_WHITE = require('@/assets/images/fingerprint-hero-white.png')
 const FINGERPRINT_HERO_DARK = require('@/assets/images/fingerprint-hero.png')
+const FINGERPRINT_HERO_BLUE = require('@/assets/images/fingerprint-hero-blue.png')
 
 export type BiometricActionType = 'transfer' | 'agent_session' | 'policy_update'
 
@@ -224,9 +225,7 @@ export function HaptixBiometricPromptSheet({
                       ? theme.emerald
                       : phase === 'error'
                       ? theme.rose
-                      : isDark
-                      ? '#6C8CFF'
-                      : '#5A6EE6',
+                      : '#6C8CFF',
                 },
               ]}
               onPress={handleStartAuth}
@@ -239,27 +238,21 @@ export function HaptixBiometricPromptSheet({
                 style={[
                   styles.agentSensorInner,
                   {
-                    backgroundColor: isDark ? '#1C1C21' : '#F4F3F1',
+                    backgroundColor: isDark ? '#17171A' : '#F4F3F1',
                   },
                 ]}
               >
                 {phase === 'confirmed' ? (
                   <MaterialIcons name="check" size={30} color={theme.emerald} />
                 ) : phase === 'broadcasting' ? (
-                  <ActivityIndicator size="small" color={isDark ? '#6C8CFF' : '#5A6EE6'} />
+                  <ActivityIndicator size="small" color="#6C8CFF" />
                 ) : phase === 'verifying_secondary' && securityMode === 'vault' ? (
-                  <MaterialIcons name="devices" size={28} color={isDark ? '#6C8CFF' : '#5A6EE6'} />
+                  <MaterialIcons name="devices" size={28} color="#6C8CFF" />
                 ) : (
-                  <MaterialIcons
-                    name="fingerprint"
-                    size={30}
-                    color={
-                      phase === 'error'
-                        ? theme.rose
-                        : isDark
-                        ? '#6C8CFF'
-                        : '#5A6EE6'
-                    }
+                  <Image
+                    source={FINGERPRINT_HERO_BLUE}
+                    style={{ width: 34, height: 34 }}
+                    resizeMode="contain"
                   />
                 )}
               </View>
@@ -543,17 +536,17 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
       fontWeight: '600',
     },
     agentSensorRing: {
-      width: 84,
-      height: 84,
-      borderRadius: 42,
+      width: 76,
+      height: 76,
+      borderRadius: 38,
       borderWidth: 1.5,
       alignItems: 'center',
       justifyContent: 'center',
     },
     agentSensorInner: {
-      width: 62,
-      height: 62,
-      borderRadius: 31,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       alignItems: 'center',
       justifyContent: 'center',
     },
