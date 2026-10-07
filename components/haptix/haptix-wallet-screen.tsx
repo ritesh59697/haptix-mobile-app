@@ -118,6 +118,9 @@ import { HaptixTokenDetailSheet } from './haptix-token-detail-sheet'
 import { HaptixSwapSheet } from './haptix-swap-sheet'
 import { HaptixAgentTradeConfirmModal } from './haptix-agent-trade-confirm-modal'
 import { HaptixAgentSessionSuccessModal } from './haptix-agent-session-success-modal'
+import { HaptixRevokeAgentConfirmModal } from './haptix-revoke-agent-confirm-modal'
+import { HaptixRevokeAgentSuccessModal } from './haptix-revoke-agent-success-modal'
+import { HaptixAgentTradeSuccessModal } from './haptix-agent-trade-success-modal'
 import { HaptixAlert } from './haptix-alert'
 import { useGuardianSigner } from '@/hooks/use-guardian-signer'
 import { AppConfig } from '@/constants/app-config'
@@ -352,6 +355,16 @@ export function HaptixWalletScreen() {
     signature: string
     allowanceSol: number
     hours: number
+  } | null>(null)
+  const [sessionToRevoke, setSessionToRevoke] = useState<AgentSessionState | null>(null)
+  const [revokeSuccess, setRevokeSuccess] = useState<{
+    agentPubkey: string
+    signature: string
+  } | null>(null)
+  const [tradeSuccess, setTradeSuccess] = useState<{
+    amountSol: number
+    recipientAddress: string
+    tradeSig: string
   } | null>(null)
   const [revokingAgent, setRevokingAgent] = useState<string | null>(null)
   const [faucetSuccess, setFaucetSuccess] = useState<{ amount: number; signature: string } | null>(null)
@@ -1248,17 +1261,11 @@ export function HaptixWalletScreen() {
         ...prev,
       ])
 
-      dialog.alert(
-        'Autonomous Agent Trade Executed On-Chain',
-        `The agent sent ${AGENT_TRADE_AMOUNT_SOL} SOL to ${ellipsify(recipient.toBase58(), 6)}, signed by its own session key with no prompt at execution time.\nThe amount came out of its daily allowance.\n\nSession grant tx: ${ellipsify(grantSig, 8)}\nTrade tx: ${ellipsify(sig, 8)}`,
-        [
-          {
-            text: 'View on Explorer',
-            onPress: () => Linking.openURL(`https://explorer.solana.com/tx/${sig}?cluster=devnet`),
-          },
-          { text: 'Done', style: 'cancel' },
-        ],
-      )
+      setTradeSuccess({
+        amountSol: AGENT_TRADE_AMOUNT_SOL,
+        recipientAddress: recipient.toBase58(),
+        tradeSig: sig,
+      })
     } catch (err: any) {
       console.error('[Haptix Agent] Execution error:', formatChainErrorForLog(err))
       dialog.alert(
@@ -1360,17 +1367,10 @@ export function HaptixWalletScreen() {
           ...prev,
         ])
 
-        dialog.alert(
-          'Agent Session Revoked On-Chain',
-          `The program no longer accepts signatures from ${ellipsify(agentPubkey.toBase58(), 8)}.\n\nTx: ${ellipsify(sig, 8)}`,
-          [
-            {
-              text: 'View on Explorer',
-              onPress: () => Linking.openURL(`https://explorer.solana.com/tx/${sig}?cluster=devnet`),
-            },
-            { text: 'Done', style: 'default' },
-          ],
-        )
+        setRevokeSuccess({
+          agentPubkey: agentPubkey.toBase58(),
+          signature: sig,
+        })
       } catch (err: any) {
         console.error('[Haptix Agent] Revoke error:', formatChainErrorForLog(err))
         dialog.alert(
@@ -1386,23 +1386,9 @@ export function HaptixWalletScreen() {
 
   const confirmRevokeAgentSession = useCallback(
     (session: AgentSessionState) => {
-      const remaining = Number(session.allowanceLamports) / LAMPORTS_PER_SOL
-      dialog.alert(
-        'Revoke Agent Session',
-        `Removes the session key ${ellipsify(session.agentPubkey.toBase58(), 8)} from the on-chain wallet.\n\nIt can no longer spend anything, even if it still holds a valid signature. Unspent allowance: ${remaining} SOL.\n\nTwo passkey prompts are required.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Revoke',
-            style: 'destructive',
-            onPress: () => handleRevokeAgentSession(session.agentPubkey),
-          },
-        ],
-      )
+      setSessionToRevoke(session)
     },
-    // Stable identity so the memoized agent rows below are not re-rendered by a new
-    // function on every render of this screen.
-    [dialog, handleRevokeAgentSession],
+    [],
   )
 
   // Toggle the wallet lock on Solana Devnet
@@ -3432,6 +3418,47 @@ export function HaptixWalletScreen() {
         signature={agentGrantSuccess?.signature ?? ''}
         allowanceSol={agentGrantSuccess?.allowanceSol ?? 0.25}
         validHours={agentGrantSuccess?.hours ?? 24}
+        network={network}
+      />
+
+      {/* Revoke Agent Session Confirmation Modal */}
+      <HaptixRevokeAgentConfirmModal
+        visible={sessionToRevoke !== null}
+        onClose={() => setSessionToRevoke(null)}
+        onConfirm={() => {
+          if (sessionToRevoke) {
+            const pubkey = sessionToRevoke.agentPubkey
+            setSessionToRevoke(null)
+            handleRevokeAgentSession(pubkey)
+          }
+        }}
+        agentPubkey={sessionToRevoke?.agentPubkey.toBase58() ?? ''}
+        unspentSol={sessionToRevoke ? Number(sessionToRevoke.allowanceLamports) / LAMPORTS_PER_SOL : 0}
+        networkName={
+          selectedCluster?.network === ClusterNetwork.Mainnet
+            ? 'Solana mainnet'
+            : selectedCluster?.network === ClusterNetwork.Testnet
+              ? 'Solana testnet'
+              : 'Solana devnet'
+        }
+      />
+
+      {/* Revoke Agent Session Success Modal */}
+      <HaptixRevokeAgentSuccessModal
+        visible={revokeSuccess !== null}
+        onClose={() => setRevokeSuccess(null)}
+        agentPubkey={revokeSuccess?.agentPubkey ?? ''}
+        signature={revokeSuccess?.signature ?? ''}
+        network={network}
+      />
+
+      {/* Autonomous Agent Trade Success Modal */}
+      <HaptixAgentTradeSuccessModal
+        visible={tradeSuccess !== null}
+        onClose={() => setTradeSuccess(null)}
+        amountSol={tradeSuccess?.amountSol ?? AGENT_TRADE_AMOUNT_SOL}
+        recipientAddress={tradeSuccess?.recipientAddress ?? ''}
+        tradeSig={tradeSuccess?.tradeSig ?? ''}
         network={network}
       />
 
