@@ -209,83 +209,172 @@ export function HaptixBiometricPromptSheet({
 
         {/* Center Biometric Sensor Disc with soft aura */}
         <View style={styles.sensorContainer}>
-          <Animated.View
-            style={[
-              styles.sensorAura,
-              {
-                transform: [{ scale: pulseAnim }],
-                borderColor:
-                  phase === 'confirmed'
-                    ? theme.emerald
-                    : isDark
-                    ? 'rgba(255, 255, 255, 0.16)'
-                    : 'rgba(0, 0, 0, 0.08)',
-              },
-            ]}
-          />
-          <TouchableOpacity
-            style={[
-              styles.sensorDisc,
-              phase === 'confirmed' && {
-                borderColor: theme.emerald,
-                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#E6F9F0',
-              },
-              phase === 'error' && {
-                borderColor: theme.rose,
-                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
-              },
-            ]}
-            onPress={handleStartAuth}
-            disabled={isAuthenticating}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Touch sensor to authorize"
-          >
-            {phase === 'confirmed' ? (
-              <MaterialIcons name="check" size={44} color={theme.emerald} />
-            ) : phase === 'broadcasting' ? (
-              <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
-            ) : phase === 'verifying_secondary' && securityMode === 'vault' ? (
-              <MaterialIcons name="devices" size={40} color={theme.textPrimary} />
-            ) : (
-              <Image
-                source={isDark ? FINGERPRINT_HERO_WHITE : FINGERPRINT_HERO_DARK}
-                style={styles.sensorImage}
-                resizeMode="contain"
+          {actionType === 'agent_session' ? (
+            <TouchableOpacity
+              style={[
+                styles.agentSensorRing,
+                {
+                  borderColor:
+                    phase === 'confirmed'
+                      ? theme.emerald
+                      : phase === 'error'
+                      ? theme.rose
+                      : isDark
+                      ? '#6C8CFF'
+                      : '#5A6EE6',
+                },
+              ]}
+              onPress={handleStartAuth}
+              disabled={isAuthenticating}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Touch sensor to authorize"
+            >
+              <View
+                style={[
+                  styles.agentSensorInner,
+                  {
+                    backgroundColor: isDark ? '#1C1C21' : '#F4F3F1',
+                  },
+                ]}
+              >
+                {phase === 'confirmed' ? (
+                  <MaterialIcons name="check" size={30} color={theme.emerald} />
+                ) : phase === 'broadcasting' ? (
+                  <ActivityIndicator size="small" color={isDark ? '#6C8CFF' : '#5A6EE6'} />
+                ) : phase === 'verifying_secondary' && securityMode === 'vault' ? (
+                  <MaterialIcons name="devices" size={28} color={isDark ? '#6C8CFF' : '#5A6EE6'} />
+                ) : (
+                  <MaterialIcons
+                    name="fingerprint"
+                    size={30}
+                    color={
+                      phase === 'error'
+                        ? theme.rose
+                        : isDark
+                        ? '#6C8CFF'
+                        : '#5A6EE6'
+                    }
+                  />
+                )}
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <Animated.View
+                style={[
+                  styles.sensorAura,
+                  {
+                    transform: [{ scale: pulseAnim }],
+                    borderColor:
+                      phase === 'confirmed'
+                        ? theme.emerald
+                        : isDark
+                        ? 'rgba(255, 255, 255, 0.16)'
+                        : 'rgba(0, 0, 0, 0.08)',
+                  },
+                ]}
               />
-            )}
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.sensorDisc,
+                  phase === 'confirmed' && {
+                    borderColor: theme.emerald,
+                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#E6F9F0',
+                  },
+                  phase === 'error' && {
+                    borderColor: theme.rose,
+                    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.12)' : '#FEF2F2',
+                  },
+                ]}
+                onPress={handleStartAuth}
+                disabled={isAuthenticating}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel="Touch sensor to authorize"
+              >
+                {phase === 'confirmed' ? (
+                  <MaterialIcons name="check" size={44} color={theme.emerald} />
+                ) : phase === 'broadcasting' ? (
+                  <ActivityIndicator size="small" color={isDark ? '#FFFFFF' : '#000000'} />
+                ) : phase === 'verifying_secondary' && securityMode === 'vault' ? (
+                  <MaterialIcons name="devices" size={40} color={theme.textPrimary} />
+                ) : (
+                  <Image
+                    source={isDark ? FINGERPRINT_HERO_WHITE : FINGERPRINT_HERO_DARK}
+                    style={styles.sensorImage}
+                    resizeMode="contain"
+                  />
+                )}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
-        {/* Big Clean Hero Amount & Title */}
-        <View style={styles.heroTextContainer}>
-          <Text style={[styles.heroAmount, { color: theme.textPrimary }]}>{heroAmount}</Text>
-          <Text style={[styles.heroTitle, { color: theme.textSecondary }]}>{heroTitle}</Text>
-        </View>
+        {actionType === 'agent_session' ? (
+          <View style={styles.agentHeroContainer}>
+            <Text style={[styles.agentAllowanceLabel, { color: theme.textSecondary }]}>
+              Agent allowance
+            </Text>
+            <Text style={[styles.agentHeroAmount, { color: theme.textPrimary }]}>
+              {heroAmount}
+            </Text>
+            <Text style={[styles.agentDurationText, { color: theme.textSecondary }]}>
+              {`for ${agentValidHours || 24} hours`}
+            </Text>
+            <Text style={[styles.agentExplainerText, { color: theme.textSecondary }]}>
+              The agent can spend up to this amount without a biometric prompt.
+            </Text>
+            <Text style={[styles.agentExplainerText, { color: theme.textSecondary }]}>
+              Both passkeys on Solana devnet
+            </Text>
+            <Text style={[styles.agentExpectationText, { color: phase === 'error' ? theme.roseText : '#A2A09A' }]}>
+              {phase === 'verifying_primary'
+                ? 'Scanning first passkey…'
+                : phase === 'verifying_secondary'
+                ? 'Scanning second passkey…'
+                : phase === 'broadcasting'
+                ? 'Authorizing session on-chain…'
+                : phase === 'confirmed'
+                ? 'Session authorized'
+                : phase === 'error'
+                ? errorMessage || 'Verification cancelled'
+                : "You'll be asked twice, once for each passkey"}
+            </Text>
+          </View>
+        ) : (
+          <>
+            {/* Big Clean Hero Amount & Title */}
+            <View style={styles.heroTextContainer}>
+              <Text style={[styles.heroAmount, { color: theme.textPrimary }]}>{heroAmount}</Text>
+              <Text style={[styles.heroTitle, { color: theme.textSecondary }]}>{heroTitle}</Text>
+            </View>
 
-        {/* Single Subtle Subtext */}
-        <View style={styles.pillRow}>
-          <Text style={[{ color: theme.textMuted, fontSize: 12 }]}>
-            {isQuorumRequired ? 'Both passkeys · Solana devnet' : 'Hardware passkey · Solana devnet'}
-          </Text>
-        </View>
+            {/* Single Subtle Subtext */}
+            <View style={styles.pillRow}>
+              <Text style={[{ color: theme.textMuted, fontSize: 12 }]}>
+                {isQuorumRequired ? 'Both passkeys · Solana devnet' : 'Hardware passkey · Solana devnet'}
+              </Text>
+            </View>
 
-        {/* Dynamic 1-Line Status Helper */}
-        <Text style={[styles.statusText, { color: phase === 'error' ? theme.roseText : theme.textMuted }]}>
-          {phase === 'verifying_primary'
-            ? 'Scanning fingerprint…'
-            : phase === 'verifying_secondary'
-            ? currentStep === 2 && securityMode === 'vault'
-              ? 'Approve on second device…'
-              : 'Confirm with backup key…'
-            : phase === 'broadcasting'
-            ? 'Submitting to Solana…'
-            : phase === 'confirmed'
-            ? 'Confirmed on-chain'
-            : phase === 'error'
-            ? errorMessage || 'Verification cancelled'
-            : 'Touch sensor or tap below'}
-        </Text>
+            {/* Dynamic 1-Line Status Helper */}
+            <Text style={[styles.statusText, { color: phase === 'error' ? theme.roseText : theme.textMuted }]}>
+              {phase === 'verifying_primary'
+                ? 'Scanning fingerprint…'
+                : phase === 'verifying_secondary'
+                ? currentStep === 2 && securityMode === 'vault'
+                  ? 'Approve on second device…'
+                  : 'Confirm with backup key…'
+                : phase === 'broadcasting'
+                ? 'Submitting to Solana…'
+                : phase === 'confirmed'
+                ? 'Confirmed on-chain'
+                : phase === 'error'
+                ? errorMessage || 'Verification cancelled'
+                : 'Touch sensor or tap below'}
+            </Text>
+          </>
+        )}
 
         {/* Single Clean Action Button */}
         {phase !== 'confirmed' && (
@@ -296,6 +385,8 @@ export function HaptixBiometricPromptSheet({
                   ? 'Verifying…'
                   : phase === 'error'
                   ? 'Try Again'
+                  : actionType === 'agent_session'
+                  ? 'Approve with both keys'
                   : isQuorumRequired
                   ? 'Authorize (2 Passkeys)'
                   : 'Authorize'
@@ -445,5 +536,53 @@ const createStyles = (theme: ThemeTokens, isDark: boolean) =>
     cancelText: {
       fontSize: typeScale.body,
       fontWeight: '600',
+    },
+    agentSensorRing: {
+      width: 84,
+      height: 84,
+      borderRadius: 42,
+      borderWidth: 1.5,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    agentSensorInner: {
+      width: 62,
+      height: 62,
+      borderRadius: 31,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    agentHeroContainer: {
+      alignItems: 'center',
+      marginBottom: 2,
+      width: '100%',
+    },
+    agentAllowanceLabel: {
+      fontSize: 12,
+      marginBottom: 6,
+      textAlign: 'center',
+    },
+    agentHeroAmount: {
+      fontSize: 30,
+      fontWeight: '600',
+      letterSpacing: -0.3,
+      textAlign: 'center',
+    },
+    agentDurationText: {
+      fontSize: 13,
+      marginTop: 2,
+      marginBottom: 12,
+      textAlign: 'center',
+    },
+    agentExplainerText: {
+      fontSize: 12.5,
+      lineHeight: 18,
+      textAlign: 'center',
+    },
+    agentExpectationText: {
+      fontSize: 12,
+      marginTop: 14,
+      marginBottom: 16,
+      textAlign: 'center',
     },
   })

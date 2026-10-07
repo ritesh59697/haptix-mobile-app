@@ -117,6 +117,7 @@ import { HaptixSendSheet } from './haptix-send-sheet'
 import { HaptixTokenDetailSheet } from './haptix-token-detail-sheet'
 import { HaptixSwapSheet } from './haptix-swap-sheet'
 import { HaptixAgentTradeConfirmModal } from './haptix-agent-trade-confirm-modal'
+import { HaptixAgentSessionSuccessModal } from './haptix-agent-session-success-modal'
 import { HaptixAlert } from './haptix-alert'
 import { useGuardianSigner } from '@/hooks/use-guardian-signer'
 import { AppConfig } from '@/constants/app-config'
@@ -347,6 +348,11 @@ export function HaptixWalletScreen() {
   const [customAgentValidHours, setCustomAgentValidHours] = useState('24')
   const [agentRecipient, setAgentRecipient] = useState('')
   const [showAgentTradeConfirm, setShowAgentTradeConfirm] = useState(false)
+  const [agentGrantSuccess, setAgentGrantSuccess] = useState<{
+    signature: string
+    allowanceSol: number
+    hours: number
+  } | null>(null)
   const [revokingAgent, setRevokingAgent] = useState<string | null>(null)
   const [faucetSuccess, setFaucetSuccess] = useState<{ amount: number; signature: string } | null>(null)
   const [faucetCopiedSig, setFaucetCopiedSig] = useState(false)
@@ -1060,29 +1066,11 @@ export function HaptixWalletScreen() {
       setTimeout(() => {
         setShowAgentSessionPrompt(false)
         setIsGrantingSession(false)
-
-        dialog.alert(
-          'Agent Session Granted On-Chain',
-          `Authorized session key on Anchor with ${allowanceSol} SOL allowance.\nValid for: ${hours} hours\n\nSignature: ${ellipsify(sig, 8)}`,
-          [
-            {
-              text: 'Copy Link',
-              onPress: () => {
-                const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-                Clipboard.setString(`https://solscan.io/tx/${sig}${clusterParam}`)
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-              },
-            },
-            {
-              text: 'View on Solscan',
-              onPress: () => {
-                const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-                Linking.openURL(`https://solscan.io/tx/${sig}${clusterParam}`)
-              },
-            },
-            { text: 'Done', style: 'default' },
-          ],
-        )
+        setAgentGrantSuccess({
+          signature: sig,
+          allowanceSol,
+          hours,
+        })
       }, 1100)
     } catch (err: any) {
       console.error('[Grant Session Error]:', formatChainErrorForLog(err))
@@ -3435,6 +3423,16 @@ export function HaptixWalletScreen() {
         }
         allowanceSol={parseFloat(customAgentAllowance) || 0.25}
         expiryHours={parseInt(customAgentValidHours, 10) || 24}
+      />
+
+      {/* Agent Session Granted On-Chain Success Modal */}
+      <HaptixAgentSessionSuccessModal
+        visible={agentGrantSuccess !== null}
+        onClose={() => setAgentGrantSuccess(null)}
+        signature={agentGrantSuccess?.signature ?? ''}
+        allowanceSol={agentGrantSuccess?.allowanceSol ?? 0.25}
+        validHours={agentGrantSuccess?.hours ?? 24}
+        network={network}
       />
 
       {/* Phantom-Style Token Detail Sheet */}
