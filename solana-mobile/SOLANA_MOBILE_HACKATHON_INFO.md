@@ -123,7 +123,7 @@ Haptix is uniquely engineered for the exact goals of the CLOCK IN hackathon:
 - [x] On-chain program deployed & passing tests (`haptix_program` on Devnet: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`).
 - [x] Multi-account support integrated with unique passkey credentials.
 - [x] Zero-neon, minimalist Apple/Linear design system finalized.
-- [x] Run release build via EAS: produced `haptix-wallet.apk` (98 MB) + EAS cloud receipt (`34f8ec9a`).
+- [x] Run release build via EAS: produced `haptix-wallet.apk` (98 MB) + EAS cloud receipt (`fabae648`).
 - [ ] Test `.apk` sideload on physical Android phone to verify biometric prompts work offline.
 
 ### Phase 2: Video & Pitch Assets (Days 6–9)
