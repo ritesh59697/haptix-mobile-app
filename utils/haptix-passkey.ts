@@ -8,6 +8,7 @@ import { requireOptionalNativeModule } from 'expo-modules-core'
 import * as Crypto from 'expo-crypto'
 import { AppConfig } from '@/constants/app-config'
 import { WebAuthnAssertion, assertionMatchesPublicKey } from '@/utils/secp256r1-instruction'
+import { getSavedWallet, saveWallet } from './haptix-wallet-storage'
 
 /**
  * ============================================================================
@@ -1224,15 +1225,46 @@ async function getRegisteredHardwarePasskey(id: 'primary' | 'secondary'): Promis
  * `authenticatorData`; both are converted to the compact low-S form and the
  * assertion layout the on-chain verifier expects.
  */
-async function signHardwareAssertion(id: 'primary' | 'secondary', message: Uint8Array): Promise<PasskeySignature> {
+async function signHardwareAssertion(
+  id: 'primary' | 'secondary',
+  message: Uint8Array,
+  options?: {
+    credentialId?: string
+    publicKeyHex?: string
+  },
+): Promise<PasskeySignature> {
   const mod = getPasskeyModule()
   if (!mod || !isPlatformPasskeySupported()) {
     throw new Error('Platform passkeys are not available in this build.')
   }
   const { Passkey } = mod
 
-  const credentialId = await AsyncStorage.getItem(credentialKey(id))
-  const publicKeyHex = await AsyncStorage.getItem(pubkeyKey(id))
+  // 1. Resolve target credential ID and public key:
+  // First priority: caller options (e.g. from activeWallet)
+  // Second priority: active wallet from persistent storage
+  // Third priority: AsyncStorage role slots
+  let credentialId = options?.credentialId
+  let publicKeyHex = options?.publicKeyHex
+
+  if (!credentialId || !publicKeyHex) {
+    const activeWallet = await getSavedWallet().catch(() => null)
+    if (activeWallet) {
+      if (!credentialId) {
+        credentialId = id === 'primary' ? activeWallet.primaryCredentialId : activeWallet.secondaryCredentialId
+      }
+      if (!publicKeyHex) {
+        publicKeyHex = id === 'primary' ? activeWallet.primaryPasskeyHex : activeWallet.secondaryPasskeyHex
+      }
+    }
+  }
+
+  if (!credentialId) {
+    credentialId = (await AsyncStorage.getItem(credentialKey(id))) ?? undefined
+  }
+  if (!publicKeyHex) {
+    publicKeyHex = (await AsyncStorage.getItem(pubkeyKey(id))) ?? undefined
+  }
+
   if (!publicKeyHex) {
     throw new Error(`No platform passkey is registered for the ${id} key on this device.`)
   }
@@ -1247,10 +1279,12 @@ async function signHardwareAssertion(id: 'primary' | 'secondary', message: Uint8
   let assertion: import('react-native-passkey').PasskeyGetResult | null = null
 
   // 1. Targeted Assertion:
-  // If we have the saved credentialId for this wallet & role, pass it in allowCredentials with
-  // transports: ['internal']. This tells Android Credential Manager to directly select the
-  // matching passkey and present the biometric fingerprint prompt immediately, bypassing
-  // the multi-account "Choose a saved passkey" picker sheet.
+  // When allowCredentials includes the exact credentialId for this wallet, Android Credential
+  // Manager targets that key directly and presents the biometric fingerprint prompt immediately,
+  // completely bypassing the multi-account "Choose a saved passkey" picker sheet.
+  // Note: We deliberately do NOT restrict transports to ['internal'], because Google Password
+  // Manager passkeys are cloud-synced, and specifying 'internal' causes Android Credential
+  // Manager to fail matching and fall back to the multi-key picker.
   if (credentialId && credentialId !== 'device_secure_storage') {
     try {
       const targetedRequest: any = {
@@ -1260,7 +1294,6 @@ async function signHardwareAssertion(id: 'primary' | 'secondary', message: Uint8
           {
             type: 'public-key',
             id: credentialId,
-            transports: ['internal'],
           },
         ],
         userVerification: 'required',
@@ -1324,8 +1357,17 @@ async function signHardwareAssertion(id: 'primary' | 'secondary', message: Uint8
 
   // Auto-heal the stored credential ID from the successful assertion
   const resolvedCredId = assertion.id || (assertion as any).rawId
-  if (resolvedCredId && resolvedCredId !== credentialId) {
+  if (resolvedCredId) {
     await AsyncStorage.setItem(credentialKey(id), resolvedCredId)
+    const active = await getSavedWallet().catch(() => null)
+    if (active) {
+      const currentId = id === 'primary' ? active.primaryCredentialId : active.secondaryCredentialId
+      if (currentId !== resolvedCredId) {
+        if (id === 'primary') active.primaryCredentialId = resolvedCredId
+        else active.secondaryCredentialId = resolvedCredId
+        await saveWallet(active)
+      }
+    }
   }
 
   return {
@@ -1767,6 +1809,11 @@ export async function authenticatePasskey(reason: string = 'Authenticate to rest
 import { verifyWysiwysPayload, WysiwysVerificationOptions } from './haptix-wysiwys'
 export { verifyWysiwysPayload, WysiwysVerificationOptions }
 
+export interface SignPasskeyOptions extends WysiwysVerificationOptions {
+  credentialId?: string
+  expectedPublicKeyHex?: string
+}
+
 /**
  * Signs a payload with the requested passkey, after a biometric check.
  *
@@ -1776,15 +1823,24 @@ export { verifyWysiwysPayload, WysiwysVerificationOptions }
  * region so the on-chain verifier can check it.
  */
 export async function signWithPasskey(
-  passkeyId: 'primary' | 'secondary',
+  passkeyId: 'primary' | 'secondary' = 'primary',
   message: Uint8Array,
   promptReason: string = 'Authorize on-chain transaction',
-  wysiwysOptions?: WysiwysVerificationOptions,
+  options?: SignPasskeyOptions,
 ): Promise<PasskeySignature> {
   // WYSIWYS verification: refuse to prompt biometrics or sign unknown payloads
-  verifyWysiwysPayload(message, wysiwysOptions)
+  verifyWysiwysPayload(message, options)
 
-  const publicKeyHex = await AsyncStorage.getItem(pubkeyKey(passkeyId))
+  let publicKeyHex = options?.expectedPublicKeyHex
+  if (!publicKeyHex) {
+    const active = await getSavedWallet().catch(() => null)
+    if (active) {
+      publicKeyHex = passkeyId === 'primary' ? active.primaryPasskeyHex : active.secondaryPasskeyHex
+    }
+  }
+  if (!publicKeyHex) {
+    publicKeyHex = (await AsyncStorage.getItem(pubkeyKey(passkeyId))) ?? undefined
+  }
   if (!publicKeyHex) {
     throw new Error(`No registered passkey found for ${passkeyId}. Please create or restore your wallet first.`)
   }
@@ -1794,7 +1850,10 @@ export async function signWithPasskey(
   // is no biometric prompt here on purpose — the authenticator enforces user
   // verification itself, and prompting first would show two identical sheets.
   if (Platform.OS !== 'web' && (await readMode(passkeyId)) === 'hardware') {
-    return await signHardwareAssertion(passkeyId, message)
+    return await signHardwareAssertion(passkeyId, message, {
+      credentialId: options?.credentialId,
+      publicKeyHex,
+    })
   }
 
   const publicKey = hexToBytes(publicKeyHex)
