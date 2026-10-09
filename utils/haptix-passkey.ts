@@ -1278,61 +1278,35 @@ async function signHardwareAssertion(
   const challengeBytes = sha256(message)
   let assertion: import('react-native-passkey').PasskeyGetResult | null = null
 
-  // 1. Targeted Assertion:
-  // When allowCredentials includes the exact credentialId for this wallet, Android Credential
-  // Manager targets that key directly and presents the biometric fingerprint prompt immediately,
-  // completely bypassing the multi-account "Choose a saved passkey" picker sheet.
-  // Note: We deliberately do NOT restrict transports to ['internal'], because Google Password
-  // Manager passkeys are cloud-synced, and specifying 'internal' causes Android Credential
-  // Manager to fail matching and fall back to the multi-key picker.
-  if (credentialId && credentialId !== 'device_secure_storage') {
-    try {
-      const targetedRequest: any = {
-        challenge: bytesToBase64Url(challengeBytes),
-        rpId: PASSKEY_RP_ID,
-        allowCredentials: [
-          {
-            type: 'public-key',
-            id: credentialId,
-          },
-        ],
-        userVerification: 'required',
-        timeout: 60_000,
-      }
-      assertion = await Passkey.getPlatformKey(targetedRequest)
-    } catch (targetedErr: any) {
-      const errStr = String(targetedErr?.message || targetedErr)
-      if (errStr.includes('cancelled') || errStr.includes('canceled') || errStr.includes('UserCancel')) {
-        throw new Error(describePasskeyError(targetedErr, 'get'))
-      }
-      console.warn(`[Haptix Passkey] Targeted assertion failed for ${id}, falling back to discoverable:`, targetedErr)
-    }
+  // WebAuthn Assertion:
+  // We use discoverable resident credentials scoped to PASSKEY_RP_ID ('haptix-passkeys.vercel.app').
+  // On Android Credential Manager, omitting allowCredentials allows Google Password Manager
+  // to directly recognize saved passkeys on this device.
+  // - If 1 passkey exists for this domain, Android presents the biometric fingerprint prompt directly.
+  // - If multiple passkeys exist (e.g. from prior test wallets), Android presents the saved
+  //   passkeys sheet so the user can choose their wallet's key.
+  // Crucially, this avoids passing an unindexed credentialId that causes Android Credential
+  // Manager to mistakenly conclude the passkey is on an external device ("USB security key / Use another device").
+  const getRequest = {
+    challenge: bytesToBase64Url(challengeBytes),
+    rpId: PASSKEY_RP_ID,
+    userVerification: 'required' as const,
+    timeout: 60_000,
   }
 
-  // 2. Discoverable Fallback:
-  // If targeted assertion threw or if credentialId is missing, fall back to
-  // the discoverable prompt where Android displays the saved passkey picker.
-  if (!assertion) {
-    const discoverableRequest = {
-      challenge: bytesToBase64Url(challengeBytes),
-      rpId: PASSKEY_RP_ID,
-      userVerification: 'required' as const,
-      timeout: 60_000,
+  try {
+    assertion = await Passkey.getPlatformKey(getRequest)
+  } catch (platformErr: any) {
+    const errStr = String(platformErr?.message || platformErr)
+    if (errStr.includes('cancelled') || errStr.includes('canceled') || errStr.includes('UserCancel')) {
+      throw new Error(describePasskeyError(platformErr, 'get'))
     }
     try {
-      assertion = await Passkey.getPlatformKey(discoverableRequest)
-    } catch (platformErr: any) {
-      const errStr = String(platformErr?.message || platformErr)
-      if (errStr.includes('cancelled') || errStr.includes('canceled') || errStr.includes('UserCancel')) {
-        throw new Error(describePasskeyError(platformErr, 'get'))
-      }
-      try {
-        console.warn(`[Haptix Passkey] getPlatformKey discoverable failed for ${id}, trying Passkey.get fallback:`, platformErr)
-        assertion = await Passkey.get(discoverableRequest)
-      } catch (fallbackErr) {
-        console.error(`[Haptix Passkey] Discoverable passkey assertion failed for ${id}:`, fallbackErr)
-        throw new Error(describePasskeyError(platformErr, 'get'))
-      }
+      console.warn(`[Haptix Passkey] getPlatformKey failed for ${id}, trying Passkey.get fallback:`, platformErr)
+      assertion = await Passkey.get(getRequest)
+    } catch (fallbackErr) {
+      console.error(`[Haptix Passkey] Discoverable passkey assertion failed for ${id}:`, fallbackErr)
+      throw new Error(describePasskeyError(platformErr, 'get'))
     }
   }
 
