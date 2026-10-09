@@ -446,6 +446,60 @@
   .copy-btn.copied .copy-icon { display: none; }
   .copy-btn.copied .check-icon { display: inline-flex; }
 
+  /* ---------- Key Actions & Health Controls ---------- */
+  .key-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .key-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.15s var(--ease);
+  }
+
+  .key-action-btn:hover {
+    background: var(--key-bg);
+    color: var(--text-1);
+    border-color: var(--border-strong);
+  }
+
+  .key-action-btn:active {
+    transform: scale(0.97);
+  }
+
+  .key-action-btn.danger:hover {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.08);
+  }
+
+  .key-action-btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .key-help-note {
+    font-size: 11.5px;
+    color: var(--text-3);
+    margin: 8px 0 0;
+    line-height: 1.45;
+  }
+
   /* ---------- Info & Details Cards ---------- */
   .info-card, .details-card {
     border: 1px solid var(--border);
@@ -1247,7 +1301,10 @@
               </div>
 
               <div id="enrolledKeySection" style="width: 100%; text-align: left;">
-                <p class="field-label">Co-signer public key</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
+                  <p class="field-label" style="margin: 0;">Co-signer public key</p>
+                  <span id="keyVerifiedBadge" style="display: none; font-size: 11px; color: #10b981; font-weight: 600; background: rgba(16, 185, 129, 0.12); padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.25);">✓ Verified in Hardware</span>
+                </div>
                 <div class="key-row">
                   <span class="key-value" id="pubkeyText">02...</span>
                   <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
@@ -1260,6 +1317,31 @@
                     </svg>
                   </button>
                 </div>
+
+                <!-- Co-Signer Key Health & Lifecycle Actions -->
+                <div class="key-actions-row">
+                  <button class="key-action-btn" id="verifyKeyBtn" type="button" title="Test if this passkey is still present in your hardware keystore">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      <path d="M9 12l2 2 4-4"/>
+                    </svg>
+                    <span id="verifyKeyText">Verify in Hardware</span>
+                  </button>
+                  <button class="key-action-btn" id="reEnrollBtn" type="button" title="Create a new passkey to replace this one">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                    <span>Re-enroll Key</span>
+                  </button>
+                  <button class="key-action-btn danger" id="removeKeyBtn" type="button" title="Remove this key from browser storage">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    <span>Remove</span>
+                  </button>
+                </div>
+                <p class="key-help-note">If you deleted this passkey from your device settings, tap <strong>Verify</strong> to test it or <strong>Re-enroll</strong> to generate a fresh key.</p>
               </div>
 
               <!-- If no key enrolled yet -->
@@ -1667,7 +1749,21 @@
     }
   });
 
-  // --- Load Stored Key ---
+  // --- Load Stored Key & Key Health Controls ---
+  var verifyKeyBtn = document.getElementById('verifyKeyBtn');
+  var verifyKeyText = document.getElementById('verifyKeyText');
+  var keyVerifiedBadge = document.getElementById('keyVerifiedBadge');
+  var reEnrollBtn = document.getElementById('reEnrollBtn');
+  var removeKeyBtn = document.getElementById('removeKeyBtn');
+
+  function clearStoredKey() {
+    localStorage.removeItem('haptix_vault_key');
+    localStorage.removeItem('haptix_mac_vault_key');
+    rawFullPubKey = '';
+    if (keyVerifiedBadge) keyVerifiedBadge.style.display = 'none';
+    loadStoredKey();
+  }
+
   function loadStoredKey() {
     var stored = localStorage.getItem('haptix_vault_key') || localStorage.getItem('haptix_mac_vault_key');
     if (stored) {
@@ -1684,10 +1780,108 @@
         }
       } catch (e) {}
     }
+    rawFullPubKey = '';
+    if (keyVerifiedBadge) keyVerifiedBadge.style.display = 'none';
     enrolledKeySection.style.display = 'none';
     unEnrolledSection.style.display = 'flex';
   }
   loadStoredKey();
+
+  // --- Key Action Handlers (Re-enroll, Verify, Remove) ---
+  if (removeKeyBtn) {
+    removeKeyBtn.addEventListener('click', function () {
+      if (confirm('Remove this co-signer key from this device? You will be able to enroll a fresh passkey.')) {
+        clearStoredKey();
+        showToast('Stored key removed');
+      }
+    });
+  }
+
+  if (reEnrollBtn) {
+    reEnrollBtn.addEventListener('click', function () {
+      if (confirm('Re-enroll a new hardware passkey? This will replace the current co-signer key on this device.')) {
+        clearStoredKey();
+        if (enrollBtn) enrollBtn.click();
+      }
+    });
+  }
+
+  if (verifyKeyBtn) {
+    verifyKeyBtn.addEventListener('click', async function () {
+      var stored = localStorage.getItem('haptix_vault_key') || localStorage.getItem('haptix_mac_vault_key');
+      if (!stored) {
+        loadStoredKey();
+        return;
+      }
+      var meta;
+      try {
+        meta = JSON.parse(stored);
+      } catch (e) {
+        clearStoredKey();
+        return;
+      }
+
+      if (!meta.credentialId) {
+        showToast('⚠️ No credential ID saved. Please re-enroll.');
+        clearStoredKey();
+        return;
+      }
+
+      try {
+        verifyKeyBtn.classList.add('busy');
+        verifyKeyText.textContent = 'Checking sensor...';
+        errorBox.style.display = 'none';
+
+        var challengeBytes = crypto.getRandomValues(new Uint8Array(32));
+        var assertion = await navigator.credentials.get({
+          publicKey: {
+            challenge: challengeBytes,
+            rpId: window.location.hostname || 'localhost',
+            allowCredentials: [{
+              type: 'public-key',
+              id: base64UrlToBytes(meta.credentialId)
+            }],
+            userVerification: 'required',
+            timeout: 30000
+          }
+        });
+
+        if (assertion) {
+          if (keyVerifiedBadge) keyVerifiedBadge.style.display = 'inline-block';
+          showToast('✓ Hardware passkey verified and active!');
+        }
+      } catch (err) {
+        console.warn('Verification result:', err);
+        if (err.name === 'AbortError') {
+          showToast('Verification cancelled');
+          return;
+        }
+
+        var isNotFoundError = (
+          err.name === 'NotAllowedError' ||
+          err.name === 'NotFoundError' ||
+          (err.message && (
+            err.message.toLowerCase().includes('no credentials') ||
+            err.message.toLowerCase().includes('not found') ||
+            err.message.toLowerCase().includes('no passkey') ||
+            err.message.toLowerCase().includes('excluded')
+          ))
+        );
+
+        if (isNotFoundError) {
+          clearStoredKey();
+          errorBox.innerHTML = '<strong>Passkey not found in hardware storage!</strong> It was deleted from your phone/computer settings. Your stale key has been removed. Please enroll a fresh passkey below.';
+          errorBox.style.display = 'block';
+          showToast('⚠️ Passkey was deleted from device. Stale key removed.');
+        } else {
+          showToast('Verification note: ' + (err.message || 'Key check ended'));
+        }
+      } finally {
+        verifyKeyBtn.classList.remove('busy');
+        verifyKeyText.textContent = 'Verify in Hardware';
+      }
+    });
+  }
 
   // --- Enrollment Handler ---
   enrollBtn.addEventListener('click', async function () {
@@ -2337,8 +2531,32 @@
       if (authBtnSpinner) authBtnSpinner.style.display = 'none';
       if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
       authBtnLabel.textContent = 'Authorize with Biometrics';
-      errorBox.textContent = err.message || 'Biometric verification failed.';
-      errorBox.style.display = 'block';
+
+      var isNotFound = (
+        err.name === 'NotAllowedError' ||
+        err.name === 'NotFoundError' ||
+        (err.message && (
+          err.message.toLowerCase().includes('no credentials') ||
+          err.message.toLowerCase().includes('not found') ||
+          err.message.toLowerCase().includes('no passkey')
+        ))
+      );
+
+      if (isNotFound) {
+        errorBox.innerHTML = '<strong>Passkey not found in device storage!</strong> It was deleted from your phone or password manager. <a href="#" id="errorResetLink" style="color:#ef4444; text-decoration:underline; font-weight:600; margin-left:4px;">Reset & Re-enroll</a>';
+        errorBox.style.display = 'block';
+        var resetLink = document.getElementById('errorResetLink');
+        if (resetLink) {
+          resetLink.onclick = function (e) {
+            e.preventDefault();
+            clearStoredKey();
+            showState(stateIdle);
+          };
+        }
+      } else {
+        errorBox.textContent = err.message || 'Biometric verification failed.';
+        errorBox.style.display = 'block';
+      }
     }
   });
 
