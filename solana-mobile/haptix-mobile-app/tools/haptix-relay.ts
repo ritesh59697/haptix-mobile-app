@@ -24,17 +24,28 @@ interface PendingTx {
   }
 }
 
-let currentPendingTx: PendingTx | null = null
-let lastKnownWalletInfo: { walletName: string; spendThresholdSol: number } = {
-  walletName: 'Hardware Vault 2',
-  spendThresholdSol: 0.10,
-}
+// Multi-tenant: Map by ID and by walletPda so multiple users never collide
+const pendingById = new Map<string, PendingTx>()
+const pendingByWallet = new Map<string, PendingTx>()
+
+// Periodic TTL cleanup (10 min expiration)
+setInterval(() => {
+  const now = Date.now()
+  for (const [id, tx] of pendingById.entries()) {
+    if (now - tx.timestamp > 10 * 60 * 1000) {
+      pendingById.delete(id)
+      if (tx.walletPda && pendingByWallet.get(tx.walletPda)?.id === id) {
+        pendingByWallet.delete(tx.walletPda)
+      }
+    }
+  }
+}, 30000)
 
 const server = http.createServer((req, res) => {
-  // Enable CORS for web requests from vault.html on any local port/origin
+  // Full CORS headers for any web origin (Vercel, localhost, local IP)
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204)
@@ -57,13 +68,15 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // Health check
   if (req.method === 'GET' && url.pathname === '/status') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({
       ok: true,
-      hasPending: !!currentPendingTx,
-      walletName: lastKnownWalletInfo.walletName,
-      spendThresholdSol: lastKnownWalletInfo.spendThresholdSol,
+      service: 'Haptix Cloud Relay',
+      activePending: pendingById.size,
+      uptimeSec: Math.round(process.uptime()),
+      timestamp: Date.now(),
     }))
     return
   }
@@ -75,30 +88,37 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const data = JSON.parse(body)
-        if (data.walletName) lastKnownWalletInfo.walletName = data.walletName
-        if (typeof data.spendThresholdSol === 'number') lastKnownWalletInfo.spendThresholdSol = data.spendThresholdSol
-
-        currentPendingTx = {
-          id: Math.random().toString(36).substring(2, 10),
+        const txId = (data.id && typeof data.id === 'string') ? data.id : Math.random().toString(36).substring(2, 10)
+        
+        const tx: PendingTx = {
+          id: txId,
           messageHex: data.messageHex,
-          amountSol: data.amountSol,
+          amountSol: Number(data.amountSol) || 0,
           amountUsd: data.amountUsd,
           feeSol: data.feeSol,
           recipient: data.recipient,
-          walletPda: data.walletPda,
-          walletName: data.walletName || lastKnownWalletInfo.walletName,
-          spendThresholdSol: data.spendThresholdSol ?? lastKnownWalletInfo.spendThresholdSol,
+          walletPda: data.walletPda || '',
+          walletName: data.walletName || 'Hardware Vault',
+          spendThresholdSol: data.spendThresholdSol,
           timestamp: Date.now(),
+          status: 'pending',
         }
-        console.log(`[Relay] New transfer queued: ${currentPendingTx.amountSol} SOL (≈ $${currentPendingTx.amountUsd || '?'}) to ${currentPendingTx.recipient}`)
-        try {
-          exec(`osascript -e 'display notification "Transfer of ${currentPendingTx.amountSol} SOL pending second device approval" with title "Haptix Vault Quorum" sound name "Glass"'`)
-          exec(`open http://localhost:8081/vault.html`)
-        } catch (e) {
-          console.warn('[Relay] Notification dispatch failed:', e)
+
+        pendingById.set(txId, tx)
+        if (tx.walletPda) {
+          pendingByWallet.set(tx.walletPda, tx)
         }
+
+        console.log(`[Relay] New transfer queued: ${tx.amountSol} SOL to ${tx.recipient} (wallet: ${tx.walletPda || 'any'}, id: ${txId})`)
+
+        if (process.platform === 'darwin') {
+          try {
+            exec(`osascript -e 'display notification "Transfer of ${tx.amountSol} SOL pending second device approval" with title "Haptix Vault Quorum" sound name "Glass"'`)
+          } catch {}
+        }
+
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ ok: true, txId: currentPendingTx.id }))
+        res.end(JSON.stringify({ ok: true, txId }))
       } catch (err: any) {
         res.writeHead(400, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: err.message }))
@@ -107,13 +127,33 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  // Second device checks for pending transfer: GET /pending-tx
+  // Second device checks for pending transfer: GET /pending-tx?wallet=...&id=...
   if (req.method === 'GET' && url.pathname === '/pending-tx') {
-    if (currentPendingTx && currentPendingTx.status !== 'declined') {
+    const wallet = url.searchParams.get('wallet')
+    const id = url.searchParams.get('id')
+    let targetTx: PendingTx | undefined
+
+    if (id) {
+      targetTx = pendingById.get(id)
+    } else if (wallet) {
+      targetTx = pendingByWallet.get(wallet)
+    } else {
+      // Fallback: latest active transfer
+      let latest: PendingTx | undefined
+      for (const tx of pendingById.values()) {
+        if (tx.status !== 'declined' && (!latest || tx.timestamp > latest.timestamp)) {
+          latest = tx
+        }
+      }
+      targetTx = latest
+    }
+
+    if (targetTx && targetTx.status !== 'declined') {
       res.writeHead(200, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ pending: currentPendingTx }))
+      res.end(JSON.stringify({ pending: targetTx }))
       return
     }
+
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ pending: null }))
     return
@@ -126,19 +166,36 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const data = JSON.parse(body)
-        if (!currentPendingTx) {
+        const txId = data.txId
+        const wallet = data.walletPda
+        let targetTx = (txId ? pendingById.get(txId) : undefined) || (wallet ? pendingByWallet.get(wallet) : undefined)
+
+        if (!targetTx) {
+          // Look for any pending tx without signature
+          for (const tx of pendingById.values()) {
+            if (!tx.signature && tx.status === 'pending') {
+              targetTx = tx
+              break
+            }
+          }
+        }
+
+        if (!targetTx) {
           res.writeHead(404, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: 'No active transfer pending' }))
+          res.end(JSON.stringify({ error: 'No active transfer pending for this request' }))
           return
         }
-        currentPendingTx.signature = {
+
+        targetTx.signature = {
           signatureHex: data.signatureHex,
           authenticatorDataHex: data.authenticatorDataHex,
           clientDataJSONHex: data.clientDataJSONHex,
         }
-        console.log(`[Relay] Received second device signature for tx ${currentPendingTx.id}`)
+        targetTx.status = 'signed'
+        console.log(`[Relay] Received second device signature for tx ${targetTx.id} (wallet: ${targetTx.walletPda || 'any'})`)
+
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ ok: true }))
+        res.end(JSON.stringify({ ok: true, txId: targetTx.id }))
       } catch (err: any) {
         res.writeHead(400, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: err.message }))
@@ -147,31 +204,37 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  // Phone waits for signature: GET /tx-signature?id=...
+  // Phone waits for signature: GET /tx-signature?id=...&wallet=...
   if (req.method === 'GET' && url.pathname === '/tx-signature') {
     const txId = url.searchParams.get('id')
-    if (currentPendingTx && (!txId || currentPendingTx.id === txId)) {
-      if (currentPendingTx.status === 'declined') {
-        const declinedId = currentPendingTx.id
-        currentPendingTx = null // consumed
+    const wallet = url.searchParams.get('wallet')
+    let targetTx = (txId ? pendingById.get(txId) : undefined) || (wallet ? pendingByWallet.get(wallet) : undefined)
+
+    if (targetTx) {
+      if (targetTx.status === 'declined') {
+        const declinedId = targetTx.id
+        pendingById.delete(declinedId)
+        if (targetTx.walletPda) pendingByWallet.delete(targetTx.walletPda)
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: false, declined: true, txId: declinedId, error: 'Transfer was declined on second device' }))
         return
       }
-      if (currentPendingTx.signature) {
-        const sig = currentPendingTx.signature
-        currentPendingTx = null // consumed
+      if (targetTx.signature) {
+        const sig = targetTx.signature
+        pendingById.delete(targetTx.id)
+        if (targetTx.walletPda) pendingByWallet.delete(targetTx.walletPda)
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: true, signature: sig }))
         return
       }
     }
+
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ ok: false, waiting: true }))
     return
   }
 
-  // Second device or Phone declines or cancels transfer: POST /decline or /cancel
+  // Decline or Cancel: POST /decline or /cancel
   if (req.method === 'POST' && (url.pathname === '/decline' || url.pathname === '/cancel')) {
     let body = ''
     req.on('data', (chunk) => (body += chunk))
@@ -179,22 +242,22 @@ const server = http.createServer((req, res) => {
       try {
         const data = body ? JSON.parse(body) : {}
         const txId = data.txId || url.searchParams.get('id')
-        if (currentPendingTx && (!txId || currentPendingTx.id === txId)) {
-          console.log(`[Relay] Transfer ${currentPendingTx.id} marked as DECLINED by user`)
-          currentPendingTx.status = 'declined'
-          // Retain declined status briefly so phone can read it on next poll, then cleanup
+        const wallet = data.walletPda || url.searchParams.get('wallet')
+        let targetTx = (txId ? pendingById.get(txId) : undefined) || (wallet ? pendingByWallet.get(wallet) : undefined)
+
+        if (targetTx) {
+          console.log(`[Relay] Transfer ${targetTx.id} marked as DECLINED`)
+          targetTx.status = 'declined'
           setTimeout(() => {
-            if (currentPendingTx?.status === 'declined') {
-              currentPendingTx = null
+            if (targetTx) {
+              pendingById.delete(targetTx.id)
+              if (targetTx.walletPda) pendingByWallet.delete(targetTx.walletPda)
             }
-          }, 8000)
+          }, 10000)
         }
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: true, status: 'declined' }))
       } catch {
-        if (currentPendingTx) {
-          currentPendingTx.status = 'declined'
-        }
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: true, status: 'declined' }))
       }
@@ -202,34 +265,12 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  res.writeHead(404)
-  res.end('Not found')
+  res.writeHead(404, { 'Content-Type': 'application/json' })
+  res.end(JSON.stringify({ error: 'Endpoint not found' }))
 })
 
-const PORT = 8082
+// Cloud platforms (Render, Railway, Heroku, Fly) inject PORT via environment variables
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8082
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`[Haptix Relay] Listening on http://localhost:${PORT}/vault.html and on local network.`)
-})
-
-// Also serve vault.html on port 8081 if free, ensuring origin 'http://localhost:8081' matches on-chain Devnet policy
-const staticServer8081 = http.createServer((req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
-  if (url.pathname === '/' || url.pathname === '/vault.html' || url.pathname === '/vault') {
-    if (fs.existsSync(VAULT_HTML_PATH)) {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-      res.end(fs.readFileSync(VAULT_HTML_PATH, 'utf-8'))
-      return
-    }
-  }
-  res.writeHead(404)
-  res.end('Not found')
-})
-
-staticServer8081.listen(8081, '0.0.0.0', () => {
-  console.log(`[Haptix Vault] Serving vault.html on http://localhost:8081/vault.html`)
-}).on('error', (err: any) => {
-  if (err.code === 'EADDRINUSE') {
-    console.log(`[Haptix Vault] Port 8081 in use (e.g. Metro bundler). Relay active on :${PORT}.`)
-  }
+  console.log(`[Haptix Cloud Relay] Listening on 0.0.0.0:${PORT}`)
 })

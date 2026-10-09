@@ -14,7 +14,9 @@
     "demo": "node scripts/demo-flow.mjs",
     "demo:agent": "node scripts/execute-autonomous-agent.mjs",
     "demo:reject": "node scripts/test-policy-violation.mjs",
-    "test:e2e": "node test/e2e-playwright.mjs"
+    "test:e2e": "node test/e2e-playwright.mjs",
+    "relay": "node solana-mobile/haptix-mobile-app/tools/haptix-relay.js",
+    "start:relay": "node solana-mobile/haptix-mobile-app/tools/haptix-relay.js"
   },
   "devDependencies": {
     "playwright": "^1.63.0"

@@ -9,6 +9,13 @@ export class AppConfig {
   static vaultWebUrl = 'https://haptix-passkeys.vercel.app/vault.html'
 
   /**
+   * Hosted Cloud Relay service for cross-device Hardware Vault (2-of-2 multisig) signing.
+   * Can be overridden by setting EXPO_PUBLIC_HAPTIX_RELAY_URL.
+   */
+  static vaultRelayUrl =
+    process.env.EXPO_PUBLIC_HAPTIX_RELAY_URL || 'https://haptix-relay.onrender.com'
+
+  /**
    * Development-only escape hatches: client-side Devnet fee sponsorship and the
    * treasury-funded faucet drip.
    *

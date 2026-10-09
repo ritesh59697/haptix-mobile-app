@@ -115,6 +115,12 @@ npx expo start
 npx eas-cli build -p android --profile development
 ```
 
+### 5. Dual-Device Vault Cloud Relay (2-of-2 Multisig)
+For production cross-device signing, the mobile app connects to the hosted cloud relay over HTTPS:
+- **Local Dev:** `npm run relay` (listens on `0.0.0.0:8082`)
+- **Production Cloud:** See [DEPLOY_RELAY.md](file:///Users/ritesh/Claude%20projects/passkey-wallet/solana-mobile/haptix-mobile-app/DEPLOY_RELAY.md) for 1-click Render / Railway deployment.
+- **Web Co-Signer Portal:** [https://haptix-passkeys.vercel.app/vault.html](https://haptix-passkeys.vercel.app/vault.html)
+
 ---
 
 ## Quick Start: Smart Program (`haptix_program`)

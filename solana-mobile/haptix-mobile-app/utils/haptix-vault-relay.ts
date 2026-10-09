@@ -1,5 +1,6 @@
 import { NativeModules, Platform } from 'react-native'
 import Constants from 'expo-constants'
+import { AppConfig } from '@/constants/app-config'
 
 export interface VaultSignaturePayload {
   signatureHex: string
@@ -8,6 +9,22 @@ export interface VaultSignaturePayload {
 }
 
 let cachedRelayHost: string | null = null
+
+/**
+ * Normalizes any host or URL into a complete endpoint URL.
+ * Handles HTTPS cloud URLs, http:// domains, or raw IPs on port 8082.
+ */
+export function buildRelayUrl(relayHostOrUrl: string, endpointPath: string): string {
+  const cleanPath = endpointPath.startsWith('/') ? endpointPath : `/${endpointPath}`
+  const target = (relayHostOrUrl || '').trim()
+  if (!target) {
+    return `http://localhost:8082${cleanPath}`
+  }
+  if (target.startsWith('http://') || target.startsWith('https://')) {
+    return `${target.replace(/\/+$/, '')}${cleanPath}`
+  }
+  return `http://${target}:8082${cleanPath}`
+}
 
 /**
  * Robust fetch with timeout using standard AbortController (safe for React Native Hermes).
@@ -35,7 +52,7 @@ async function fetchWithTimeout(
 }
 
 /**
- * Returns candidate IPs/hostnames where the Haptix Relay and vault.html might be running.
+ * Returns candidate local IPs/hostnames where a local Haptix Relay might be running during dev.
  */
 export function getRelayCandidateHosts(): string[] {
   const candidates: string[] = []
@@ -71,7 +88,7 @@ export function getRelayCandidateHosts(): string[] {
     }
   } catch {}
 
-  // Android emulator alias & loopback. A guessed LAN address is not a relay.
+  // Android emulator alias & loopback
   if (Platform.OS === 'android') {
     candidates.push('10.0.2.2')
   }
@@ -83,24 +100,43 @@ export function getRelayCandidateHosts(): string[] {
 }
 
 /**
- * Quickly tests candidate hosts to find which one is actively responding on port 8082.
+ * Finds an active relay: first tests the production cloud relay, then falls back to local candidates.
  */
 export async function findActiveRelayHost(): Promise<string> {
+  // 1. Check cached active relay if already validated
   if (cachedRelayHost) {
     try {
-      const check = await fetchWithTimeout(`http://${cachedRelayHost}:8082/status`, {}, 1500)
+      const checkUrl = buildRelayUrl(cachedRelayHost, '/status')
+      const check = await fetchWithTimeout(checkUrl, {}, 1500)
       if (check.ok) return cachedRelayHost
     } catch {
       cachedRelayHost = null
     }
   }
 
+  // 2. Check the production Hosted Cloud Relay from AppConfig first
+  if (AppConfig.vaultRelayUrl) {
+    try {
+      const cloudStatusUrl = buildRelayUrl(AppConfig.vaultRelayUrl, '/status')
+      const cloudRes = await fetchWithTimeout(cloudStatusUrl, {}, 2500)
+      if (cloudRes.ok) {
+        const data = await cloudRes.json().catch(() => ({}))
+        if (data.ok) {
+          cachedRelayHost = AppConfig.vaultRelayUrl
+          return AppConfig.vaultRelayUrl
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Fallback: check local network candidates (for local development)
   const candidates = getRelayCandidateHosts()
   for (const host of candidates) {
     try {
-      const res = await fetchWithTimeout(`http://${host}:8082/status`, {}, 1500)
+      const localUrl = buildRelayUrl(host, '/status')
+      const res = await fetchWithTimeout(localUrl, {}, 1200)
       if (res.ok) {
-        const data = await res.json()
+        const data = await res.json().catch(() => ({}))
         if (data.ok) {
           cachedRelayHost = host
           return host
@@ -109,8 +145,13 @@ export async function findActiveRelayHost(): Promise<string> {
     } catch {}
   }
 
+  // 4. If Cloud relay is defined, return it as default target even if cold/starting
+  if (AppConfig.vaultRelayUrl) {
+    return AppConfig.vaultRelayUrl
+  }
+
   throw new Error(
-    'No Haptix vault relay is running on this network. On your second device, run `npm run relay` and open vault.html before approving a send over the limit.',
+    'Haptix Vault Relay is offline or unreachable. Please check your internet connection or use manual signature approval.',
   )
 }
 
@@ -129,8 +170,9 @@ export async function queueVaultTransfer(params: {
   spendThresholdSol?: number
 }): Promise<string> {
   const { relayHost, messageHex, amountSol, amountUsd, feeSol, recipient, walletPda, walletName, spendThresholdSol } = params
+  const targetUrl = buildRelayUrl(relayHost, '/pending-tx')
   const res = await fetchWithTimeout(
-    `http://${relayHost}:8082/pending-tx`,
+    targetUrl,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -163,6 +205,7 @@ export async function pollVaultSignature(
   relayHost: string,
   txId: string,
   options?: {
+    walletPda?: string
     timeoutMs?: number
     pollIntervalMs?: number
     onTick?: (secondsRemaining: number) => void
@@ -172,6 +215,7 @@ export async function pollVaultSignature(
   const timeoutMs = options?.timeoutMs ?? 75000
   const pollIntervalMs = options?.pollIntervalMs ?? 900
   const startTime = Date.now()
+  const walletParam = options?.walletPda ? `&wallet=${encodeURIComponent(options.walletPda)}` : ''
 
   while (Date.now() - startTime < timeoutMs) {
     const elapsed = Date.now() - startTime
@@ -182,11 +226,8 @@ export async function pollVaultSignature(
     }
 
     try {
-      const res = await fetchWithTimeout(
-        `http://${relayHost}:8082/tx-signature?id=${txId || ''}`,
-        {},
-        2500,
-      )
+      const pollUrl = buildRelayUrl(relayHost, `/tx-signature?id=${txId || ''}${walletParam}`)
+      const res = await fetchWithTimeout(pollUrl, {}, 2500)
       if (res.ok) {
         const data = await res.json()
         if (data.ok && data.signature) {
@@ -236,14 +277,19 @@ export function parseManualSignaturePayload(input: string): VaultSignaturePayloa
 /**
  * Cancels a pending transfer on the Relay.
  */
-export async function cancelVaultTransfer(relayHost: string, txId?: string): Promise<boolean> {
+export async function cancelVaultTransfer(
+  relayHost: string,
+  txId?: string,
+  walletPda?: string,
+): Promise<boolean> {
   try {
+    const cancelUrl = buildRelayUrl(relayHost, '/cancel')
     const res = await fetchWithTimeout(
-      `http://${relayHost}:8082/cancel`,
+      cancelUrl,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ txId: txId || '' }),
+        body: JSON.stringify({ txId: txId || '', walletPda: walletPda || '' }),
       },
       3000,
     )

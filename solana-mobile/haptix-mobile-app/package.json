@@ -18,7 +18,8 @@
     "test:recovery": "npx -y tsx tests/recovery-devnet.test.ts",
     "web": "expo start --web",
     "guardian": "npx -y tsx tools/haptix-guardian.ts",
-    "relay": "npx -y tsx tools/haptix-relay.ts"
+    "relay": "npx -y tsx tools/haptix-relay.ts",
+    "start:relay": "node tools/haptix-relay.js"
   },
   "displayName": "Haptix",
   "description": "Next-Gen Passkey Smart Wallet for Solana Mobile with hardware-enforced 2-of-2 multisig, on-chain spending limits, and session keys.",
