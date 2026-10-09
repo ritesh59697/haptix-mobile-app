@@ -571,7 +571,12 @@ export function HaptixSendSheet({
         'primary',
         message,
         `Authorize ${amt} SOL transfer to ${ellipsify(toPubkey.toBase58(), 4)}`,
-        { expectedRecipient: toPubkey.toBase58(), expectedAmountLamports: amountLamports },
+        {
+          expectedRecipient: toPubkey.toBase58(),
+          expectedAmountLamports: amountLamports,
+          credentialId: activeWallet?.primaryCredentialId,
+          expectedPublicKeyHex: activeWallet?.primaryPasskeyHex,
+        },
       )
 
       const precompilePrimary = createSecp256r1Instruction({
@@ -730,6 +735,8 @@ export function HaptixSendSheet({
           secondarySig = await signWithPasskey('secondary', message, secondaryPrompt, {
             expectedRecipient: toPubkey.toBase58(),
             expectedAmountLamports: amountLamports,
+            credentialId: activeWallet?.secondaryCredentialId,
+            expectedPublicKeyHex: activeWallet?.secondaryPasskeyHex,
           })
         }
 
