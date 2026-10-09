@@ -69,8 +69,12 @@ const server = http.createServer((req, res) => {
   }
 
   // Health check
-  if (req.method === 'GET' && url.pathname === '/status') {
+  if ((req.method === 'GET' || req.method === 'HEAD') && (url.pathname === '/status' || url.pathname === '/health')) {
     res.writeHead(200, { 'Content-Type': 'application/json' })
+    if (req.method === 'HEAD') {
+      res.end()
+      return
+    }
     res.end(JSON.stringify({
       ok: true,
       service: 'Haptix Cloud Relay',
