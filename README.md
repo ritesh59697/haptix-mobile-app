@@ -14,7 +14,24 @@
 [![Tests](https://img.shields.io/badge/Tests-146%20Passing-brightgreen?style=flat)](tests/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+<br />
+
+**[📲 Download Release APK (v1.0.0)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.0/haptix-wallet.apk)** &bull; **[🚀 EAS Build Console](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/fabae648-84e5-4d44-8bb5-0df29c98b641)** &bull; **[📦 GitHub Release v1.0.0](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.0)** &bull; **[⚡ Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
+
 </div>
+
+---
+
+## 📱 Latest Standalone APK (v1.0.0)
+
+| Attribute | Verified Value |
+| :--- | :--- |
+| **Release Tag** | [`v1.0.0`](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.0) |
+| **Direct APK Binary** | [**haptix-wallet.apk (97.7 MB)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.0/haptix-wallet.apk) |
+| **EAS Build ID** | `fabae648-84e5-4d44-8bb5-0df29c98b641` |
+| **EAS Build Console** | [View Build Logs on Expo.dev](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/fabae648-84e5-4d44-8bb5-0df29c98b641) |
+| **Passkey UX** | Auto-targeted active wallet passkey (Zero-picker direct fingerprint prompt) |
+| **Cloud Relay** | [https://haptix-relay.onrender.com](https://haptix-relay.onrender.com) (24/7 UptimeRobot monitored) |
 
 ---
 
