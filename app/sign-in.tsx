@@ -196,6 +196,7 @@ function BackupKeyDialogContent({ spendLimitSol, isDark, textPrimary, textSecond
   const rowDivider = isDark ? '#201F1D' : '#ECECEE'
   const mutedText = isDark ? '#8A8985' : textSecondary
   const bodyText = isDark ? '#F2F1EE' : textPrimary
+  const isZeroThreshold = Number(spendLimitSol) === 0
 
   return (
     <View style={{ gap: 10, marginTop: 4, marginBottom: 2 }}>
@@ -234,11 +235,11 @@ function BackupKeyDialogContent({ spendLimitSol, isDark, textPrimary, textSecond
             <MaterialIcons name="check" size={13} color="#5FBF7A" />
           </View>
           <Text style={{ fontSize: 13, fontWeight: '500', color: bodyText }}>
-            Primary key added
+            Primary key added (This phone)
           </Text>
         </View>
 
-        {/* Row 2: Backup key */}
+        {/* Row 2: Backup / Co-signer key */}
         <View
           style={{
             flexDirection: 'row',
@@ -253,11 +254,20 @@ function BackupKeyDialogContent({ spendLimitSol, isDark, textPrimary, textSecond
               height: 20,
               borderRadius: 10,
               borderWidth: 1.5,
-              borderColor: isDark ? '#3A3A37' : '#C7C7CC',
+              borderColor: isZeroThreshold ? '#4F6BFF' : isDark ? '#3A3A37' : '#C7C7CC',
+              backgroundColor: isZeroThreshold ? 'rgba(79, 107, 255, 0.12)' : 'transparent',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-          />
-          <Text style={{ flex: 1, fontSize: 13, color: mutedText }}>Backup key</Text>
-          <Text style={{ fontSize: 12, color: mutedText }}>Not added yet</Text>
+          >
+            {isZeroThreshold && <MaterialIcons name="devices" size={12} color="#4F6BFF" />}
+          </View>
+          <Text style={{ flex: 1, fontSize: 13, color: isZeroThreshold ? bodyText : mutedText }}>
+            {isZeroThreshold ? 'Co-signer key' : 'Backup key'}
+          </Text>
+          <Text style={{ fontSize: 12, color: isZeroThreshold ? '#4F6BFF' : mutedText }}>
+            {isZeroThreshold ? 'Second device (Laptop)' : 'Not added yet'}
+          </Text>
         </View>
       </View>
 
@@ -272,41 +282,81 @@ function BackupKeyDialogContent({ spendLimitSol, isDark, textPrimary, textSecond
           paddingVertical: 2,
         }}
       >
-        {/* Row 1: One key */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            gap: 12,
-            paddingVertical: 11,
-            borderBottomWidth: 1,
-            borderBottomColor: rowDivider,
-          }}
-        >
-          <Text style={{ width: 68, fontSize: 13, color: mutedText, fontWeight: '500' }}>
-            One key
-          </Text>
-          <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
-            Send up to {spendLimitSol} SOL
-          </Text>
-        </View>
+        {isZeroThreshold ? (
+          <>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 12,
+                paddingVertical: 11,
+                borderBottomWidth: 1,
+                borderBottomColor: rowDivider,
+              }}
+            >
+              <Text style={{ width: 85, fontSize: 13, color: mutedText, fontWeight: '500' }}>
+                This phone
+              </Text>
+              <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
+                Initiates transfers & signs with primary passkey
+              </Text>
+            </View>
 
-        {/* Row 2: Both keys */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-start',
-            gap: 12,
-            paddingVertical: 11,
-          }}
-        >
-          <Text style={{ width: 68, fontSize: 13, color: mutedText, fontWeight: '500' }}>
-            Both keys
-          </Text>
-          <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
-            Larger sends, unlocking the wallet, and cancelling a recovery
-          </Text>
-        </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 12,
+                paddingVertical: 11,
+              }}
+            >
+              <Text style={{ width: 85, fontSize: 13, color: mutedText, fontWeight: '500' }}>
+                Second device
+              </Text>
+              <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
+                Approves transactions via Web Vault (Touch ID / Hardware passkey)
+              </Text>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* Row 1: One key */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 12,
+                paddingVertical: 11,
+                borderBottomWidth: 1,
+                borderBottomColor: rowDivider,
+              }}
+            >
+              <Text style={{ width: 68, fontSize: 13, color: mutedText, fontWeight: '500' }}>
+                One key
+              </Text>
+              <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
+                Send up to {spendLimitSol} SOL
+              </Text>
+            </View>
+
+            {/* Row 2: Both keys */}
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 12,
+                paddingVertical: 11,
+              }}
+            >
+              <Text style={{ width: 68, fontSize: 13, color: mutedText, fontWeight: '500' }}>
+                Both keys
+              </Text>
+              <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
+                Larger sends, unlocking the wallet, and cancelling a recovery
+              </Text>
+            </View>
+          </>
+        )}
       </View>
     </View>
   )
@@ -336,13 +386,19 @@ export default function SignIn() {
         settled = true
         resolve(value)
       }
+      const isZeroThreshold = Number(spendLimit) === 0
       dialog.alert(
-        'Add the backup key?',
+        isZeroThreshold ? 'Dual-Device Hardware Vault' : 'Add the backup key?',
         undefined,
-        [
-          { text: 'Add backup key', style: 'default', onPress: () => finish(true) },
-          { text: 'Not now', style: 'plain', onPress: () => finish(false) },
-        ],
+        isZeroThreshold
+          ? [
+              { text: 'Log in as Vault (Second device)', style: 'default', onPress: () => finish(false) },
+              { text: 'Add local backup key instead', style: 'plain', onPress: () => finish(true) },
+            ]
+          : [
+              { text: 'Add backup key', style: 'default', onPress: () => finish(true) },
+              { text: 'Not now', style: 'plain', onPress: () => finish(false) },
+            ],
         {
           cancelable: true,
           onDismiss: () => finish(false),
@@ -860,16 +916,19 @@ export default function SignIn() {
 
         await bindHardwarePasskey(matchedRole, picked.credentialId, matchedKeyHex!)
 
+        const spendThresholdSol = Number(onchainState.spendThresholdLamports) / LAMPORTS_PER_SOL
+        const isVault = matchedRole === 'primary' && (!onchainState.secondaryPasskey || spendThresholdSol === 0)
         const restored = await createSmartWalletRecord({
-          name: 'My Haptix Wallet',
+          name: isVault ? 'Hardware Vault' : 'Personal Smart Wallet',
           primaryPasskeyHex: Buffer.from(onchainState.primaryPasskey).toString('hex'),
           secondaryPasskeyHex: Buffer.from(onchainState.secondaryPasskey).toString('hex'),
           primaryCredentialId: matchedRole === 'primary' ? picked.credentialId : undefined,
           secondaryCredentialId: matchedRole === 'secondary' ? picked.credentialId : undefined,
-          primaryLabel: 'Platform passkey (primary)',
-          secondaryLabel: 'Platform passkey (backup)',
-          spendThreshold: Number(onchainState.spendThresholdLamports) / LAMPORTS_PER_SOL,
+          primaryLabel: 'Primary passkey (Phone)',
+          secondaryLabel: isVault ? 'Co-signer key (Second device)' : 'Platform passkey (backup)',
+          spendThreshold: spendThresholdSol,
           network: 'devnet',
+          securityMode: isVault ? 'vault' : 'everyday',
         })
         restored.address = matchedPda.toBase58()
         restored.isInitializedOnChain = true
@@ -1040,16 +1099,18 @@ export default function SignIn() {
         }
       }
 
+      const isVault = !bound.secondary || Number(spendLimitSol) === 0
       const restored = await createSmartWalletRecord({
-        name: 'My Haptix Wallet',
+        name: isVault ? 'Hardware Vault' : 'Personal Smart Wallet',
         primaryPasskeyHex: Buffer.from(onChainKeys.primary).toString('hex'),
         secondaryPasskeyHex: Buffer.from(onChainKeys.secondary).toString('hex'),
         primaryCredentialId: bound.primary,
         secondaryCredentialId: bound.secondary,
-        primaryLabel: 'Primary passkey',
-        secondaryLabel: 'Backup quorum passkey',
-        spendThreshold: Number(onchainState.spendThresholdLamports) / LAMPORTS_PER_SOL,
+        primaryLabel: 'Primary passkey (Phone)',
+        secondaryLabel: isVault ? 'Co-signer key (Second device)' : 'Backup quorum passkey',
+        spendThreshold: spendLimitSol,
         network: 'devnet',
+        securityMode: isVault ? 'vault' : 'everyday',
       })
       restored.address = targetAddress
       restored.isInitializedOnChain = true
