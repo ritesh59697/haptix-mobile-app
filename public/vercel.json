@@ -6,13 +6,28 @@
         { "key": "Content-Type", "value": "application/json" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/pending-tx",
+      "destination": "https://haptix-relay.onrender.com/pending-tx"
     },
     {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" }
-      ]
+      "source": "/submit-signature",
+      "destination": "https://haptix-relay.onrender.com/submit-signature"
+    },
+    {
+      "source": "/status",
+      "destination": "https://haptix-relay.onrender.com/status"
+    },
+    {
+      "source": "/decline",
+      "destination": "https://haptix-relay.onrender.com/decline"
+    },
+    {
+      "source": "/tx-signature",
+      "destination": "https://haptix-relay.onrender.com/tx-signature"
     }
   ]
 }
