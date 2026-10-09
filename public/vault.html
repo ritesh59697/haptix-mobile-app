@@ -1954,10 +1954,21 @@
   });
 
   // --- Relay Polling & Pending Requests ---
+  var DEFAULT_CLOUD_RELAY = 'https://haptix-relay.onrender.com';
+  var relayUrlParams = new URLSearchParams(window.location.search);
+  var customRelay = relayUrlParams.get('relay') || localStorage.getItem('haptix_custom_relay');
+
   var relayHost = window.location.hostname || 'localhost';
-  var relayOrigin = (window.location.port === '8082' || (!window.location.port && window.location.protocol.startsWith('http')))
-    ? window.location.origin
-    : ('http://' + relayHost + ':8082');
+  var relayOrigin = '';
+
+  if (customRelay) {
+    relayOrigin = customRelay.replace(/\/+$/, '');
+  } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    relayOrigin = (window.location.port === '8082') ? window.location.origin : ('http://' + relayHost + ':8082');
+  } else {
+    // Hosted public web (e.g. Vercel) routes to hosted cloud relay
+    relayOrigin = DEFAULT_CLOUD_RELAY;
+  }
 
   // Base58 alphabet for Solana addresses
   var B58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -2488,10 +2499,19 @@
       var clientDataJSON = new Uint8Array(assertion.response.clientDataJSON);
 
       var payload = {
+        txId: currentPending.id,
+        walletPda: currentPending.walletPda || '',
         signatureHex: bytesToHex(compactSig),
         authenticatorDataHex: bytesToHex(authData),
         clientDataJSONHex: bytesToHex(clientDataJSON)
       };
+
+      // Also copy to clipboard for convenient out-of-band manual transfer
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(JSON.stringify(payload));
+        }
+      } catch (clipErr) {}
 
       await fetch(relayOrigin + '/submit-signature', {
         method: 'POST',

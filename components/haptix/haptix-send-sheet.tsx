@@ -56,6 +56,7 @@ import { getFundedDevnetPayer } from '@/utils/haptix-funder'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { TransactionRecord } from '@/utils/haptix-tx-history'
 import { HaptixWalletAccount } from '@/utils/haptix-wallet-storage'
+import { AppConfig } from '@/constants/app-config'
 import {
   createExecuteTransferInstruction,
   createInitializeWalletInstruction,
@@ -638,7 +639,10 @@ export function HaptixSendSheet({
         let secondarySig: PasskeySignature
         if (activeWallet?.securityMode === 'vault') {
           let macSig: PasskeySignature | null = null
-          const relayHost = await findActiveRelayHost()
+          const relayHost = await findActiveRelayHost().catch((e) => {
+            console.warn('[Haptix Send] Vault relay discovery fallback:', e?.message)
+            return null
+          })
           const messageHex = Buffer.from(message).toString('hex')
 
           // Check if clipboard already has a valid signature code (from vault.html)
@@ -653,7 +657,7 @@ export function HaptixSendSheet({
             }
           }
 
-          if (!macSig) {
+          if (!macSig && relayHost) {
             try {
               const txId = await queueVaultTransfer({
                 relayHost,
@@ -669,6 +673,7 @@ export function HaptixSendSheet({
               currentRelayTxRef.current = { relayHost, txId }
 
               const sigPayload = await pollVaultSignature(relayHost, txId, {
+                walletPda: walletPda.toBase58(),
                 timeoutMs: 80000,
                 pollIntervalMs: 800,
                 isAborted: () => sendAbortRef.current,
@@ -714,8 +719,9 @@ export function HaptixSendSheet({
           }
 
           if (!macSig) {
+            const vaultUrl = AppConfig.vaultWebUrl
             throw new Error(
-              `Second device authorization was not completed. Please open http://${relayHost}:8081/vault.html on your second device and approve the transfer.`
+              `Second device authorization was not completed. Please open ${vaultUrl} on your second device and tap "Authorize with Biometrics".`,
             )
           }
 
