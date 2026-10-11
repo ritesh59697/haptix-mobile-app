@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import * as Haptics from 'expo-haptics'
 import { PublicKey } from '@solana/web3.js'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -572,6 +573,22 @@ export default function TabSettingsScreen() {
             >
               <MaterialIcons name="code" size={20} color={theme.accent} />
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Source Code</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+
+            {/* Follow on X (Twitter) */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                Linking.openURL('https://x.com/HaptixWalllet')
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="twitter" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>X / Twitter (@HaptixWalllet)</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
