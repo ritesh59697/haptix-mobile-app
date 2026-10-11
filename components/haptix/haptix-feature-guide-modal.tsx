@@ -9,10 +9,12 @@ import {
   Animated,
   Platform,
   Pressable,
-  StatusBar,
+  StatusBar as RNStatusBar,
 } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import * as Haptics from 'expo-haptics'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -158,7 +160,7 @@ export function HaptixFeatureGuideModal({
       id: 'two-keys',
       title: 'Big sends need two keys',
       subtitle:
-        "Choose your limit. Anything above it needs a second key, so a stolen phone can't empty your wallet.",
+        "Choose your limit. Anything above it needs a second key. Keep it on another device and a stolen phone can't empty your wallet.",
       renderVisual: (palette) => (
         <View
           style={[
@@ -198,11 +200,11 @@ export function HaptixFeatureGuideModal({
             </Text>
             <View style={styles.specRightWrap}>
               <MaterialIcons name="fingerprint" size={16} color={palette.textCard} />
-              <MaterialIcons
-                name="laptop"
+              <MaterialCommunityIcons
+                name="key-outline"
                 size={16}
                 color={palette.textCard}
-                style={{ marginLeft: -2 }}
+                style={{ marginLeft: -1 }}
               />
               <Text style={[styles.specRightText, { color: palette.textCard }]}>
                 Both keys
@@ -214,9 +216,9 @@ export function HaptixFeatureGuideModal({
     },
     {
       id: 'recovery',
-      title: 'Lose your phone, keep your wallet',
+      title: "A lost phone isn't the end",
       subtitle:
-        'A guardian you choose can start a recovery. They can never move your funds.',
+        'Name a guardian or save your recovery key. A guardian can start a recovery, but can never move your funds.',
       renderVisual: (palette) => (
         <View
           style={[
@@ -295,7 +297,7 @@ export function HaptixFeatureGuideModal({
                 { backgroundColor: palette.iconBoxBg },
               ]}
             >
-              <MaterialIcons name="smart-toy" size={17} color={palette.textPrimary} />
+              <MaterialCommunityIcons name="robot-outline" size={18} color={palette.textPrimary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -319,7 +321,7 @@ export function HaptixFeatureGuideModal({
                 { backgroundColor: palette.iconBoxBg },
               ]}
             >
-              <MaterialIcons name="star" size={17} color={palette.textPrimary} />
+              <MaterialCommunityIcons name="star-outline" size={18} color={palette.textPrimary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text
@@ -331,7 +333,7 @@ export function HaptixFeatureGuideModal({
                 Seeker ready
               </Text>
               <Text style={[styles.featureSubtitleText, { color: palette.textSecondary }]}>
-                Genesis rewards, and devnet fees covered
+                Genesis rewards and free devnet fees
               </Text>
             </View>
           </View>
@@ -346,6 +348,7 @@ export function HaptixFeatureGuideModal({
       setCurrentIndex(0)
       fadeAnim.setValue(1)
       slideAnim.setValue(0)
+      RNStatusBar.setBarStyle('dark-content', true)
     }
   }, [visible, fadeAnim, slideAnim])
 
@@ -429,7 +432,7 @@ export function HaptixFeatureGuideModal({
       onRequestClose={handleDismiss}
       statusBarTranslucent={Platform.OS === 'android'}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={p.containerBg} />
+      <StatusBar style="dark" backgroundColor={p.containerBg} />
       <View
         style={[
           styles.fullScreenPage,

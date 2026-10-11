@@ -1250,7 +1250,7 @@ export default function SignIn() {
       ]}
       resizeMode="cover"
     >
-      <StatusBar style="light" />
+      <StatusBar style={showGuideModal ? 'dark' : 'light'} />
 
       {/* 1. TOP BAR: Haptix Logo Text in Left Corner + How it Works pill on Right */}
       <View style={styles.topBrandRow}>
