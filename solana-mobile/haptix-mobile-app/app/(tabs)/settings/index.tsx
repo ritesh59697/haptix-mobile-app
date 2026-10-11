@@ -545,7 +545,23 @@ export default function TabSettingsScreen() {
 
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
-            {/* Follow Us / GitHub */}
+            {/* Official Documentation */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                Linking.openURL('https://haptix-docs.mintlify.app')
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="menu-book" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Documentation</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+
+            {/* Source Code / GitHub */}
             <TouchableOpacity
               style={styles.row}
               onPress={() => {
@@ -555,7 +571,7 @@ export default function TabSettingsScreen() {
               activeOpacity={0.7}
             >
               <MaterialIcons name="code" size={20} color={theme.accent} />
-              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Source &amp; Docs</Text>
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Source Code</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
