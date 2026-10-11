@@ -2,7 +2,6 @@ import '../polyfill'
 import { PortalHost } from '@rn-primitives/portal'
 import { useFonts } from 'expo-font'
 import { Stack , useSegments, useRouter } from 'expo-router'
-import { StatusBar } from 'expo-status-bar'
 import 'react-native-reanimated'
 import { AppErrorBoundary } from '@/components/app-error-boundary'
 import { AppProviders } from '@/components/app-providers'
@@ -58,7 +57,6 @@ function RootLayoutInner() {
       <AppProviders>
         <AppSplashController fontsLoaded={loaded} />
         <RootNavigator />
-        <StatusBar style="auto" />
       </AppProviders>
       <PortalHost />
     </View>
