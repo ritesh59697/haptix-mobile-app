@@ -24,6 +24,7 @@ import { ellipsify } from '@/utils/ellipsify'
 import { AppConfig } from '@/constants/app-config'
 import { fundDevnetWallet } from '@/utils/haptix-funder'
 import { useAppTheme } from '@/components/theme/theme-context'
+import { HaptixFeatureGuideModal } from '@/components/haptix/haptix-feature-guide-modal'
 
 export interface HaptixWalletCreatedContentProps {
   walletName: string
@@ -61,6 +62,7 @@ export function HaptixWalletCreatedContent({
   const [copied, setCopied] = useState(false)
   const [isFunding, setIsFunding] = useState(false)
   const [isFunded, setIsFunded] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
   const autoFundAttemptedRef = useRef(false)
 
   // Spring animation for checkmark ring
@@ -303,6 +305,29 @@ export function HaptixWalletCreatedContent({
           </View>
           <MaterialIcons name="chevron-right" size={20} color={isDark ? '#8a8985' : theme.textMuted} />
         </TouchableOpacity>
+
+        <View style={[styles.divider, { backgroundColor: dividerBg }]} />
+
+        {/* Step 3: Feature Guide */}
+        <TouchableOpacity
+          style={styles.stepRow}
+          onPress={() => {
+            void Haptics.selectionAsync()
+            setShowGuide(true)
+          }}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.stepIconBox, { backgroundColor: iconBoxBg }]}>
+            <MaterialIcons name="auto-awesome" size={17} color={isDark ? '#f2f1ee' : theme.textPrimary} />
+          </View>
+          <View style={styles.stepContent}>
+            <Text style={[styles.stepTitle, { color: theme.textPrimary }]}>How Haptix works</Text>
+            <Text style={[styles.stepSubtitle, { color: theme.textMuted }]}>
+              Explore 100% self-custody, 1-tap signing &amp; AI agents
+            </Text>
+          </View>
+          <MaterialIcons name="chevron-right" size={20} color={isDark ? '#8a8985' : theme.textMuted} />
+        </TouchableOpacity>
       </View>
 
       {/* Primary Action Button */}
@@ -313,6 +338,12 @@ export function HaptixWalletCreatedContent({
       >
         <Text style={[styles.doneButtonText, { color: '#FFFFFF' }]}>Done</Text>
       </TouchableOpacity>
+
+      <HaptixFeatureGuideModal
+        visible={showGuide}
+        onClose={() => setShowGuide(false)}
+        persistDismissal={false}
+      />
     </ScrollView>
   )
 }
