@@ -9,6 +9,7 @@ import {
   Animated,
   Platform,
   Pressable,
+  StatusBar,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -423,25 +424,22 @@ export function HaptixFeatureGuideModal({
   return (
     <Modal
       visible={visible}
-      animationType="fade"
-      transparent={true}
+      animationType="slide"
+      transparent={false}
       onRequestClose={handleDismiss}
-      statusBarTranslucent={true}
+      statusBarTranslucent={Platform.OS === 'android'}
     >
-      <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={handleDismiss} />
-
-        <View
-          style={[
-            styles.cardContainer,
-            {
-              backgroundColor: p.containerBg,
-              borderColor: p.containerBorder,
-              paddingTop: Math.max(insets.top + 10, 20),
-              paddingBottom: Math.max(insets.bottom + 14, 24),
-            },
-          ]}
-        >
+      <StatusBar barStyle="dark-content" backgroundColor={p.containerBg} />
+      <View
+        style={[
+          styles.fullScreenPage,
+          {
+            backgroundColor: p.containerBg,
+            paddingTop: Math.max(insets.top + 8, 20),
+            paddingBottom: Math.max(insets.bottom + 12, 24),
+          },
+        ]}
+      >
           {/* 1. TOP BAR: Progress indicator pills & Skip */}
           <View style={styles.topBar}>
             <View style={styles.pillsRow}>
@@ -549,71 +547,48 @@ export function HaptixFeatureGuideModal({
             </View>
           </View>
         </View>
-      </View>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  cardContainer: {
-    borderRadius: 22,
-    borderWidth: 0.5,
-    paddingHorizontal: 20,
-    width: '100%',
-    maxWidth: 360,
-    minHeight: 610,
-    justifyContent: 'space-between',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.12,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 28,
-  },
-  pillsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  pill: {
-    height: 4,
-    borderRadius: 2,
-  },
-  skipText: {
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  bodySection: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 18,
-  },
-  visualWrapper: {
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    width: '100%',
-  },
+    fullScreenPage: {
+      flex: 1,
+      paddingHorizontal: 22,
+      justifyContent: 'space-between',
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      height: 32,
+    },
+    pillsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    pill: {
+      height: 4,
+      borderRadius: 2,
+    },
+    skipText: {
+      fontSize: 13.5,
+      fontWeight: '500',
+    },
+    bodySection: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 14,
+    },
+    visualWrapper: {
+      height: 210, // Fixed 210px visual area so headline starts at same height on every slide
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 18,
+      width: '100%',
+    },
   slideTitle: {
     fontSize: 24,
     fontWeight: '600',
