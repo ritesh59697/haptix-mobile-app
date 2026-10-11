@@ -12,7 +12,6 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import * as Haptics from 'expo-haptics'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -25,7 +24,73 @@ interface GuideSlide {
   id: string
   title: string
   subtitle: string
-  renderVisual: () => React.ReactNode
+  renderVisual: (palette: GuidePalette) => React.ReactNode
+}
+
+interface GuidePalette {
+  containerBg: string
+  containerBorder: string
+  textPrimary: string
+  textSecondary: string
+  textCard: string
+  accent: string
+  cardBg: string
+  cardBorder: string
+  cardDivider: string
+  pillActive: string
+  pillInactive: string
+  iconBoxBg: string
+  backBtnBg: string
+  backBtnBorder: string
+  primaryBtnBg: string
+  primaryBtnText: string
+  signInLink: string
+  numberBadgeBorder: string
+  numberBadgeText: string
+}
+
+const lightPalette: GuidePalette = {
+  containerBg: '#fbfaf8',
+  containerBorder: '#e6e4de',
+  textPrimary: '#181714',
+  textSecondary: '#6b6a64',
+  textCard: '#4a4944',
+  accent: '#5a6ee6',
+  cardBg: '#ffffff',
+  cardBorder: '#e6e4de',
+  cardDivider: '#eeece7',
+  pillActive: '#5a6ee6',
+  pillInactive: '#dcd9d2',
+  iconBoxBg: '#f1f0ec',
+  backBtnBg: '#ffffff',
+  backBtnBorder: '#e0ddd6',
+  primaryBtnBg: '#5a6ee6',
+  primaryBtnText: '#ffffff',
+  signInLink: '#5a6ee6',
+  numberBadgeBorder: '#5a6ee6',
+  numberBadgeText: '#5a6ee6',
+}
+
+const darkPalette: GuidePalette = {
+  containerBg: '#09090b',
+  containerBorder: '#2a2a28',
+  textPrimary: '#f2f1ee',
+  textSecondary: '#8a8985',
+  textCard: '#b4b3ae',
+  accent: '#6c8cff',
+  cardBg: '#101012',
+  cardBorder: '#2a2a28',
+  cardDivider: '#202024',
+  pillActive: '#6c8cff',
+  pillInactive: '#2a2a2e',
+  iconBoxBg: '#17171a',
+  backBtnBg: '#101012',
+  backBtnBorder: '#2a2a28',
+  primaryBtnBg: '#6c8cff',
+  primaryBtnText: '#0c0c0d',
+  signInLink: '#6c8cff',
+  numberBadgeBorder: '#6c8cff',
+  numberBadgeText: '#6c8cff',
 }
 
 export interface HaptixFeatureGuideModalProps {
@@ -38,6 +103,11 @@ export interface HaptixFeatureGuideModalProps {
    * Default: true
    */
   persistDismissal?: boolean
+  /**
+   * If true, forces Claude's warm off-white light mode design (#fbfaf8 with #5a6ee6).
+   * Default: true
+   */
+  forceLight?: boolean
 }
 
 export function HaptixFeatureGuideModal({
@@ -46,10 +116,14 @@ export function HaptixFeatureGuideModal({
   onCreateWallet,
   onSignIn,
   persistDismissal = true,
+  forceLight = true,
 }: HaptixFeatureGuideModalProps) {
   const insets = useSafeAreaInsets()
   const { isDark } = useAppTheme()
   const [currentIndex, setCurrentIndex] = useState(0)
+
+  // Use light mode palette as requested by user
+  const p = forceLight ? lightPalette : isDark ? darkPalette : lightPalette
 
   // Fade & slide animation when changing steps
   const fadeAnim = useRef(new Animated.Value(1)).current
@@ -60,11 +134,21 @@ export function HaptixFeatureGuideModal({
       id: 'seedless',
       title: 'No seed phrase to lose',
       subtitle:
-        "Your fingerprint unlocks your wallet. The key stays in your phone's hardware secure chip and never leaves it — 100% self-custodial.",
-      renderVisual: () => (
-        <View style={styles.slide1OuterCircle}>
-          <View style={styles.slide1InnerCircle}>
-            <MaterialIcons name="fingerprint" size={38} color="#6c8cff" />
+        "Your fingerprint unlocks your wallet. The key stays in your phone's secure chip and never leaves it.",
+      renderVisual: (palette) => (
+        <View
+          style={[
+            styles.slide1OuterCircle,
+            { borderColor: palette.accent },
+          ]}
+        >
+          <View
+            style={[
+              styles.slide1InnerCircle,
+              { backgroundColor: palette.iconBoxBg },
+            ]}
+          >
+            <MaterialIcons name="fingerprint" size={36} color={palette.accent} />
           </View>
         </View>
       ),
@@ -74,22 +158,54 @@ export function HaptixFeatureGuideModal({
       title: 'Big sends need two keys',
       subtitle:
         "Choose your limit. Anything above it needs a second key, so a stolen phone can't empty your wallet.",
-      renderVisual: () => (
-        <View style={styles.specCard}>
+      renderVisual: (palette) => (
+        <View
+          style={[
+            styles.specCard,
+            {
+              backgroundColor: palette.cardBg,
+              borderColor: palette.cardBorder,
+              maxWidth: 275,
+            },
+          ]}
+        >
           <View style={styles.specRow}>
-            <Text style={styles.specMonoText}>0.05 SOL</Text>
+            <Text
+              style={[
+                styles.specMonoText,
+                { color: palette.textPrimary },
+              ]}
+            >
+              0.05 SOL
+            </Text>
             <View style={styles.specRightWrap}>
-              <MaterialIcons name="fingerprint" size={17} color="#b4b3ae" />
-              <Text style={styles.specRightText}>One fingerprint</Text>
+              <MaterialIcons name="fingerprint" size={16} color={palette.textCard} />
+              <Text style={[styles.specRightText, { color: palette.textCard }]}>
+                One fingerprint
+              </Text>
             </View>
           </View>
-          <View style={styles.specDivider} />
+          <View style={[styles.specDivider, { backgroundColor: palette.cardDivider }]} />
           <View style={styles.specRow}>
-            <Text style={styles.specMonoText}>1 SOL</Text>
+            <Text
+              style={[
+                styles.specMonoText,
+                { color: palette.textPrimary },
+              ]}
+            >
+              1 SOL
+            </Text>
             <View style={styles.specRightWrap}>
-              <MaterialIcons name="fingerprint" size={17} color="#b4b3ae" />
-              <MaterialIcons name="laptop" size={17} color="#b4b3ae" style={{ marginLeft: -2 }} />
-              <Text style={styles.specRightText}>Both keys</Text>
+              <MaterialIcons name="fingerprint" size={16} color={palette.textCard} />
+              <MaterialIcons
+                name="laptop"
+                size={16}
+                color={palette.textCard}
+                style={{ marginLeft: -2 }}
+              />
+              <Text style={[styles.specRightText, { color: palette.textCard }]}>
+                Both keys
+              </Text>
             </View>
           </View>
         </View>
@@ -100,55 +216,122 @@ export function HaptixFeatureGuideModal({
       title: 'Lose your phone, keep your wallet',
       subtitle:
         'A guardian you choose can start a recovery. They can never move your funds.',
-      renderVisual: () => (
-        <View style={[styles.specCard, { maxWidth: 310 }]}>
+      renderVisual: (palette) => (
+        <View
+          style={[
+            styles.specCard,
+            {
+              backgroundColor: palette.cardBg,
+              borderColor: palette.cardBorder,
+              maxWidth: 295,
+            },
+          ]}
+        >
           <View style={styles.specRow}>
-            <View style={styles.stepNumCircle}>
-              <Text style={styles.stepNumText}>1</Text>
+            <View
+              style={[
+                styles.stepNumCircle,
+                { borderColor: palette.numberBadgeBorder },
+              ]}
+            >
+              <Text style={[styles.stepNumText, { color: palette.numberBadgeText }]}>1</Text>
             </View>
-            <Text style={styles.stepDescText}>Your guardian starts a recovery</Text>
+            <Text style={[styles.stepDescText, { color: palette.textPrimary }]}>
+              Your guardian starts a recovery
+            </Text>
           </View>
-          <View style={styles.specDivider} />
+          <View style={[styles.specDivider, { backgroundColor: palette.cardDivider }]} />
           <View style={styles.specRow}>
-            <View style={styles.stepNumCircle}>
-              <Text style={styles.stepNumText}>2</Text>
+            <View
+              style={[
+                styles.stepNumCircle,
+                { borderColor: palette.numberBadgeBorder },
+              ]}
+            >
+              <Text style={[styles.stepNumText, { color: palette.numberBadgeText }]}>2</Text>
             </View>
-            <Text style={styles.stepDescText}>You have 24 hours to cancel it</Text>
+            <Text style={[styles.stepDescText, { color: palette.textPrimary }]}>
+              You have 24 hours to cancel it
+            </Text>
           </View>
-          <View style={styles.specDivider} />
+          <View style={[styles.specDivider, { backgroundColor: palette.cardDivider }]} />
           <View style={styles.specRow}>
-            <View style={styles.stepNumCircle}>
-              <Text style={styles.stepNumText}>3</Text>
+            <View
+              style={[
+                styles.stepNumCircle,
+                { borderColor: palette.numberBadgeBorder },
+              ]}
+            >
+              <Text style={[styles.stepNumText, { color: palette.numberBadgeText }]}>3</Text>
             </View>
-            <Text style={styles.stepDescText}>Your new phone takes over</Text>
+            <Text style={[styles.stepDescText, { color: palette.textPrimary }]}>
+              Your new phone takes over
+            </Text>
           </View>
         </View>
       ),
     },
     {
-      id: 'ai-seeker',
-      title: 'Autonomous AI & Seeker ready',
+      id: 'ai-agents',
+      title: 'Agents trade within limits',
       subtitle:
-        'Delegate bounded trading budgets to AI agents without approving every swap. Natively built for Solana Mobile Stack & Seeker (SKR).',
-      renderVisual: () => (
-        <View style={[styles.specCard, { maxWidth: 310 }]}>
+        'Give an AI agent a small budget for a set time, so it can trade without you approving every swap.',
+      renderVisual: (palette) => (
+        <View
+          style={[
+            styles.specCard,
+            {
+              backgroundColor: palette.cardBg,
+              borderColor: palette.cardBorder,
+              maxWidth: 295,
+            },
+          ]}
+        >
           <View style={styles.specRow}>
-            <View style={styles.stepNumCircle}>
-              <MaterialIcons name="smart-toy" size={12} color="#6c8cff" />
+            <View
+              style={[
+                styles.iconTileBox,
+                { backgroundColor: palette.iconBoxBg },
+              ]}
+            >
+              <MaterialIcons name="smart-toy" size={17} color={palette.textPrimary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.featureTitleText}>AI Session Keys</Text>
-              <Text style={styles.featureSubtitleText}>Bounded budget & timelocked trades</Text>
+              <Text
+                style={[
+                  styles.featureTitleText,
+                  { color: palette.textPrimary },
+                ]}
+              >
+                AI agents
+              </Text>
+              <Text style={[styles.featureSubtitleText, { color: palette.textSecondary }]}>
+                A budget and time limit you set
+              </Text>
             </View>
           </View>
-          <View style={styles.specDivider} />
+          <View style={[styles.specDivider, { backgroundColor: palette.cardDivider }]} />
           <View style={styles.specRow}>
-            <View style={styles.stepNumCircle}>
-              <MaterialIcons name="stars" size={12} color="#6c8cff" />
+            <View
+              style={[
+                styles.iconTileBox,
+                { backgroundColor: palette.iconBoxBg },
+              ]}
+            >
+              <MaterialIcons name="star" size={17} color={palette.textPrimary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.featureTitleText}>Seeker (SKR) Ready</Text>
-              <Text style={styles.featureSubtitleText}>Genesis rewards & gasless Devnet sponsor</Text>
+              <Text
+                style={[
+                  styles.featureTitleText,
+                  { color: palette.textPrimary },
+                ]}
+              >
+                Seeker ready
+              </Text>
+              <Text style={[styles.featureSubtitleText, { color: palette.textSecondary }]}>
+                Genesis rewards, and devnet fees covered
+              </Text>
             </View>
           </View>
         </View>
@@ -170,26 +353,26 @@ export function HaptixFeatureGuideModal({
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 100,
+        duration: 90,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
-        toValue: newIndex > currentIndex ? -12 : 12,
-        duration: 100,
+        toValue: newIndex > currentIndex ? -10 : 10,
+        duration: 90,
         useNativeDriver: true,
       }),
     ]).start(() => {
       setCurrentIndex(newIndex)
-      slideAnim.setValue(newIndex > currentIndex ? 12 : -12)
+      slideAnim.setValue(newIndex > currentIndex ? 10 : -10)
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 180,
+          duration: 160,
           useNativeDriver: true,
         }),
         Animated.timing(slideAnim, {
           toValue: 0,
-          duration: 180,
+          duration: 160,
           useNativeDriver: true,
         }),
       ]).start()
@@ -252,6 +435,8 @@ export function HaptixFeatureGuideModal({
           style={[
             styles.cardContainer,
             {
+              backgroundColor: p.containerBg,
+              borderColor: p.containerBorder,
               paddingTop: Math.max(insets.top + 10, 20),
               paddingBottom: Math.max(insets.bottom + 14, 24),
             },
@@ -267,7 +452,8 @@ export function HaptixFeatureGuideModal({
                     styles.pill,
                     {
                       width: idx === currentIndex ? 26 : 12,
-                      backgroundColor: idx === currentIndex ? '#6c8cff' : '#2a2a2e',
+                      backgroundColor:
+                        idx === currentIndex ? p.pillActive : p.pillInactive,
                     },
                   ]}
                 />
@@ -280,7 +466,7 @@ export function HaptixFeatureGuideModal({
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.skipText}>Skip</Text>
+                <Text style={[styles.skipText, { color: p.textSecondary }]}>Skip</Text>
               </TouchableOpacity>
             ) : (
               <View style={{ width: 32 }} />
@@ -297,14 +483,18 @@ export function HaptixFeatureGuideModal({
               },
             ]}
           >
-            {/* Visual element */}
-            <View style={styles.visualWrapper}>{activeSlide.renderVisual()}</View>
+            {/* Visual element (fixed height so typography never shifts) */}
+            <View style={styles.visualWrapper}>{activeSlide.renderVisual(p)}</View>
 
             {/* Title */}
-            <Text style={styles.slideTitle}>{activeSlide.title}</Text>
+            <Text style={[styles.slideTitle, { color: p.textPrimary }]}>
+              {activeSlide.title}
+            </Text>
 
             {/* Subtitle */}
-            <Text style={styles.slideSubtitle}>{activeSlide.subtitle}</Text>
+            <Text style={[styles.slideSubtitle, { color: p.textSecondary }]}>
+              {activeSlide.subtitle}
+            </Text>
           </Animated.View>
 
           {/* 3. FOOTER ACTIONS: Back button + Next / Create button */}
@@ -313,23 +503,33 @@ export function HaptixFeatureGuideModal({
               {currentIndex > 0 ? (
                 <TouchableOpacity
                   onPress={handlePrev}
-                  style={styles.backButton}
+                  style={[
+                    styles.backButton,
+                    {
+                      backgroundColor: p.backBtnBg,
+                      borderColor: p.backBtnBorder,
+                    },
+                  ]}
                   activeOpacity={0.7}
                 >
-                  <MaterialIcons name="arrow-back" size={18} color="#f2f1ee" />
+                  <MaterialIcons name="arrow-back" size={18} color={p.textPrimary} />
                 </TouchableOpacity>
               ) : null}
 
               <TouchableOpacity
                 onPress={handleNext}
-                style={[styles.primaryButton, currentIndex === 0 && { width: '100%' }]}
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: p.primaryBtnBg },
+                  currentIndex === 0 && { width: '100%' },
+                ]}
                 activeOpacity={0.85}
               >
-                <Text style={styles.primaryButtonText}>
+                <Text style={[styles.primaryButtonText, { color: p.primaryBtnText }]}>
                   {isLast ? 'Create wallet' : 'Next'}
                 </Text>
                 {!isLast && (
-                  <MaterialIcons name="arrow-forward" size={17} color="#0c0c0d" />
+                  <MaterialIcons name="arrow-forward" size={17} color={p.primaryBtnText} />
                 )}
               </TouchableOpacity>
             </View>
@@ -338,9 +538,11 @@ export function HaptixFeatureGuideModal({
             <View style={styles.subFooterWrap}>
               {isLast ? (
                 <TouchableOpacity onPress={handleSignIn} activeOpacity={0.7}>
-                  <Text style={styles.subFooterText}>
+                  <Text style={[styles.subFooterText, { color: p.textSecondary }]}>
                     Already have a wallet?{' '}
-                    <Text style={styles.signInLinkText}>Sign in</Text>
+                    <Text style={[styles.signInLinkText, { color: p.signInLink }]}>
+                      Sign in
+                    </Text>
                   </Text>
                 </TouchableOpacity>
               ) : null}
@@ -355,21 +557,30 @@ export function HaptixFeatureGuideModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.78)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
   },
   cardContainer: {
-    backgroundColor: '#09090b',
     borderRadius: 22,
     borderWidth: 0.5,
-    borderColor: '#2a2a28',
     paddingHorizontal: 20,
     width: '100%',
     maxWidth: 360,
-    minHeight: 590,
+    minHeight: 610,
     justifyContent: 'space-between',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.12,
+        shadowRadius: 24,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   topBar: {
     flexDirection: 'row',
@@ -387,7 +598,6 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   skipText: {
-    color: '#8a8985',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -395,13 +605,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 14,
+    paddingVertical: 18,
   },
   visualWrapper: {
-    minHeight: 180,
+    height: 200,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
     width: '100%',
   },
   slideTitle: {
@@ -409,14 +619,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.4,
     lineHeight: 30,
-    color: '#f2f1ee',
     textAlign: 'center',
     maxWidth: 290,
     marginBottom: 10,
   },
   slideSubtitle: {
     fontSize: 13.5,
-    color: '#8a8985',
     lineHeight: 21,
     textAlign: 'center',
     maxWidth: 290,
@@ -427,7 +635,6 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 1.5,
-    borderColor: '#6c8cff',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -435,20 +642,16 @@ const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: '#17171a',
     alignItems: 'center',
     justifyContent: 'center',
   },
   // Slide 2 & 3 Spec Card
   specCard: {
     borderWidth: 0.5,
-    borderColor: '#2a2a28',
     borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 2,
-    backgroundColor: '#101012',
     width: '100%',
-    maxWidth: 275,
   },
   specRow: {
     flexDirection: 'row',
@@ -461,7 +664,6 @@ const styles = StyleSheet.create({
     fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }),
     fontSize: 13,
     fontWeight: '500',
-    color: '#f2f1ee',
   },
   specRightWrap: {
     flexDirection: 'row',
@@ -470,12 +672,10 @@ const styles = StyleSheet.create({
   },
   specRightText: {
     fontSize: 13,
-    color: '#b4b3ae',
     fontWeight: '400',
   },
   specDivider: {
     height: 0.5,
-    backgroundColor: '#202024',
   },
   // Slide 3 Step circle
   stepNumCircle: {
@@ -483,30 +683,36 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: '#6c8cff',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 10,
     flexShrink: 0,
   },
   stepNumText: {
-    color: '#6c8cff',
     fontSize: 11,
     fontWeight: '500',
   },
   stepDescText: {
     fontSize: 13,
-    color: '#f2f1ee',
     fontWeight: '400',
     flex: 1,
   },
+  // Slide 4 Tile box
+  iconTileBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    flexShrink: 0,
+  },
   featureTitleText: {
     fontSize: 13,
-    color: '#f2f1ee',
     fontWeight: '500',
   },
   featureSubtitleText: {
-    fontSize: 11,
-    color: '#8a8985',
+    fontSize: 11.5,
     marginTop: 1,
   },
   // Footer
@@ -523,7 +729,6 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderWidth: 0.5,
-    borderColor: '#2a2a28',
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -533,14 +738,12 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     borderRadius: 14,
-    backgroundColor: '#6c8cff',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
   primaryButtonText: {
-    color: '#0c0c0d',
     fontWeight: '500',
     fontSize: 14.5,
   },
@@ -551,11 +754,9 @@ const styles = StyleSheet.create({
     minHeight: 20,
   },
   subFooterText: {
-    color: '#8a8985',
     fontSize: 13,
   },
   signInLinkText: {
-    color: '#6c8cff',
     fontWeight: '500',
   },
 })
