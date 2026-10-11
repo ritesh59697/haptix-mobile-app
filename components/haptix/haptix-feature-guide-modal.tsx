@@ -5,46 +5,34 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Dimensions,
   Animated,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
   Platform,
+  Pressable,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import * as Haptics from 'expo-haptics'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import Svg, { Path, Circle, Rect, Defs, LinearGradient, Stop } from 'react-native-svg'
 import { useAppTheme } from '@/components/theme/theme-context'
 
 export const HAPTIX_GUIDE_STORAGE_KEY = '@haptix_has_seen_guide_v1'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
-interface GuideBullet {
-  icon: keyof typeof MaterialIcons.glyphMap
-  label: string
-  detail: string
-}
-
 interface GuideSlide {
   id: string
-  badge: string
-  badgeColor: string
-  badgeBg: string
   title: string
-  highlight: string
   subtitle: string
-  bullets: GuideBullet[]
-  renderVisual: (isDark: boolean) => React.ReactNode
+  renderVisual: () => React.ReactNode
 }
 
 export interface HaptixFeatureGuideModalProps {
   visible: boolean
   onClose: () => void
+  onCreateWallet?: () => void
+  onSignIn?: () => void
   /**
    * If true, saves the "has seen guide" flag to AsyncStorage upon close.
    * Default: true
@@ -55,40 +43,158 @@ export interface HaptixFeatureGuideModalProps {
 export function HaptixFeatureGuideModal({
   visible,
   onClose,
+  onCreateWallet,
+  onSignIn,
   persistDismissal = true,
 }: HaptixFeatureGuideModalProps) {
   const insets = useSafeAreaInsets()
-  const { theme, isDark } = useAppTheme()
+  const { isDark } = useAppTheme()
   const [currentIndex, setCurrentIndex] = useState(0)
-  const scrollRef = useRef<ScrollView>(null)
 
-  // Animated glow opacity
-  const pulseAnim = useRef(new Animated.Value(0.4)).current
+  // Fade & slide animation when changing steps
+  const fadeAnim = useRef(new Animated.Value(1)).current
+  const slideAnim = useRef(new Animated.Value(0)).current
 
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 0.8,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 0.4,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start()
-  }, [pulseAnim])
+  const slides: GuideSlide[] = [
+    {
+      id: 'seedless',
+      title: 'No seed phrase to lose',
+      subtitle:
+        "Your fingerprint unlocks your wallet. The key stays in your phone's hardware secure chip and never leaves it — 100% self-custodial.",
+      renderVisual: () => (
+        <View style={styles.slide1OuterCircle}>
+          <View style={styles.slide1InnerCircle}>
+            <MaterialIcons name="fingerprint" size={38} color="#6c8cff" />
+          </View>
+        </View>
+      ),
+    },
+    {
+      id: 'two-keys',
+      title: 'Big sends need two keys',
+      subtitle:
+        "Choose your limit. Anything above it needs a second key, so a stolen phone can't empty your wallet.",
+      renderVisual: () => (
+        <View style={styles.specCard}>
+          <View style={styles.specRow}>
+            <Text style={styles.specMonoText}>0.05 SOL</Text>
+            <View style={styles.specRightWrap}>
+              <MaterialIcons name="fingerprint" size={17} color="#b4b3ae" />
+              <Text style={styles.specRightText}>One fingerprint</Text>
+            </View>
+          </View>
+          <View style={styles.specDivider} />
+          <View style={styles.specRow}>
+            <Text style={styles.specMonoText}>1 SOL</Text>
+            <View style={styles.specRightWrap}>
+              <MaterialIcons name="fingerprint" size={17} color="#b4b3ae" />
+              <MaterialIcons name="laptop" size={17} color="#b4b3ae" style={{ marginLeft: -2 }} />
+              <Text style={styles.specRightText}>Both keys</Text>
+            </View>
+          </View>
+        </View>
+      ),
+    },
+    {
+      id: 'recovery',
+      title: 'Lose your phone, keep your wallet',
+      subtitle:
+        'A guardian you choose can start a recovery. They can never move your funds.',
+      renderVisual: () => (
+        <View style={[styles.specCard, { maxWidth: 310 }]}>
+          <View style={styles.specRow}>
+            <View style={styles.stepNumCircle}>
+              <Text style={styles.stepNumText}>1</Text>
+            </View>
+            <Text style={styles.stepDescText}>Your guardian starts a recovery</Text>
+          </View>
+          <View style={styles.specDivider} />
+          <View style={styles.specRow}>
+            <View style={styles.stepNumCircle}>
+              <Text style={styles.stepNumText}>2</Text>
+            </View>
+            <Text style={styles.stepDescText}>You have 24 hours to cancel it</Text>
+          </View>
+          <View style={styles.specDivider} />
+          <View style={styles.specRow}>
+            <View style={styles.stepNumCircle}>
+              <Text style={styles.stepNumText}>3</Text>
+            </View>
+            <Text style={styles.stepDescText}>Your new phone takes over</Text>
+          </View>
+        </View>
+      ),
+    },
+    {
+      id: 'ai-seeker',
+      title: 'Autonomous AI & Seeker ready',
+      subtitle:
+        'Delegate bounded trading budgets to AI agents without approving every swap. Natively built for Solana Mobile Stack & Seeker (SKR).',
+      renderVisual: () => (
+        <View style={[styles.specCard, { maxWidth: 310 }]}>
+          <View style={styles.specRow}>
+            <View style={styles.stepNumCircle}>
+              <MaterialIcons name="smart-toy" size={12} color="#6c8cff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.featureTitleText}>AI Session Keys</Text>
+              <Text style={styles.featureSubtitleText}>Bounded budget & timelocked trades</Text>
+            </View>
+          </View>
+          <View style={styles.specDivider} />
+          <View style={styles.specRow}>
+            <View style={styles.stepNumCircle}>
+              <MaterialIcons name="stars" size={12} color="#6c8cff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.featureTitleText}>Seeker (SKR) Ready</Text>
+              <Text style={styles.featureSubtitleText}>Genesis rewards & gasless Devnet sponsor</Text>
+            </View>
+          </View>
+        </View>
+      ),
+    },
+  ]
 
   // Reset index whenever opened
   useEffect(() => {
     if (visible) {
       setCurrentIndex(0)
-      scrollRef.current?.scrollTo({ x: 0, animated: false })
+      fadeAnim.setValue(1)
+      slideAnim.setValue(0)
     }
-  }, [visible])
+  }, [visible, fadeAnim, slideAnim])
+
+  const transitionToSlide = (newIndex: number) => {
+    void Haptics.selectionAsync()
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: newIndex > currentIndex ? -12 : 12,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setCurrentIndex(newIndex)
+      slideAnim.setValue(newIndex > currentIndex ? 12 : -12)
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]).start()
+    })
+  }
 
   const handleDismiss = async () => {
     if (persistDismissal) {
@@ -98,264 +204,37 @@ export function HaptixFeatureGuideModal({
         console.warn('[Haptix] Failed to save guide dismissal flag', err)
       }
     }
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     onClose()
   }
 
   const handleNext = () => {
     if (currentIndex < slides.length - 1) {
-      const nextIndex = currentIndex + 1
-      scrollRef.current?.scrollTo({ x: nextIndex * SCREEN_WIDTH, animated: true })
-      setCurrentIndex(nextIndex)
-      void Haptics.selectionAsync()
+      transitionToSlide(currentIndex + 1)
     } else {
-      void handleDismiss()
+      if (onCreateWallet) {
+        void handleDismiss()
+        onCreateWallet()
+      } else {
+        void handleDismiss()
+      }
     }
   }
 
   const handlePrev = () => {
     if (currentIndex > 0) {
-      const prevIndex = currentIndex - 1
-      scrollRef.current?.scrollTo({ x: prevIndex * SCREEN_WIDTH, animated: true })
-      setCurrentIndex(prevIndex)
-      void Haptics.selectionAsync()
+      transitionToSlide(currentIndex - 1)
     }
   }
 
-  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetX = e.nativeEvent.contentOffset.x
-    const newIndex = Math.round(offsetX / SCREEN_WIDTH)
-    if (newIndex !== currentIndex && newIndex >= 0 && newIndex < slides.length) {
-      setCurrentIndex(newIndex)
-      void Haptics.selectionAsync()
+  const handleSignIn = () => {
+    void handleDismiss()
+    if (onSignIn) {
+      onSignIn()
     }
   }
 
-  const slides: GuideSlide[] = [
-    {
-      id: 'self-custody',
-      badge: 'Zero-Custody Architecture',
-      badgeColor: '#10B981',
-      badgeBg: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5',
-      title: 'Seedless & 100%',
-      highlight: 'Self-Custodial',
-      subtitle:
-        'No 24-word seed phrases to write down or lose. Private keys never leave your phone’s hardware enclave (Android StrongBox) — zero server custody.',
-      bullets: [
-        {
-          icon: 'security',
-          label: '100% Self-Custodial',
-          detail: 'Haptix never holds or controls your funds or keys',
-        },
-        {
-          icon: 'phonelink-lock',
-          label: 'Hardware StrongBox',
-          detail: 'Passkey is physically generated in phone hardware',
-        },
-        {
-          icon: 'verified',
-          label: 'On-Chain Introspection',
-          detail: 'Solana native Secp256r1 precompile verification',
-        },
-      ],
-      renderVisual: () => (
-        <View style={styles.visualContainer}>
-          <Svg width={120} height={120} viewBox="0 0 120 120" fill="none">
-            <Defs>
-              <LinearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#10B981" stopOpacity="0.8" />
-                <Stop offset="100%" stopColor="#059669" stopOpacity="0.2" />
-              </LinearGradient>
-            </Defs>
-            <Circle cx="60" cy="60" r="54" fill="rgba(16, 185, 129, 0.08)" />
-            <Circle cx="60" cy="60" r="42" fill="url(#shieldGrad)" />
-            {/* Shield outline */}
-            <Path
-              d="M60 26L84 37V61C84 75.5 73.8 88.8 60 92C46.2 88.8 36 75.5 36 61V37L60 26Z"
-              stroke="#10B981"
-              strokeWidth="2.5"
-              strokeLinejoin="round"
-            />
-            {/* Lock in center */}
-            <Rect x="51" y="55" width="18" height="15" rx="3" fill="#FFFFFF" />
-            <Path
-              d="M55 55V49C55 46.2 57.2 44 60 44C62.8 44 65 46.2 65 49V55"
-              stroke="#FFFFFF"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-            />
-            <Circle cx="60" cy="62" r="1.5" fill="#059669" />
-          </Svg>
-        </View>
-      ),
-    },
-    {
-      id: 'biometrics',
-      badge: 'Sub-Second Execution',
-      badgeColor: '#6366F1',
-      badgeBg: isDark ? 'rgba(99, 102, 241, 0.12)' : '#EEF2FF',
-      title: '1-Tap Biometric',
-      highlight: 'Passkey Speed',
-      subtitle:
-        'Sign transactions in ~400ms using your fingerprint or Face ID. Zero seed phrase popups, zero seed vulnerability, seamless mobile feel.',
-      bullets: [
-        {
-          icon: 'fingerprint',
-          label: 'Sub-Second Signing',
-          detail: 'Biometric authorization verified in ~400 milliseconds',
-        },
-        {
-          icon: 'bolt',
-          label: 'Solana Mobile Stack Native',
-          detail: 'Built directly for Android Keystore and Solana Seeker',
-        },
-        {
-          icon: 'check-circle',
-          label: 'WYSIWYS Cryptography',
-          detail: 'What You See Is What You Sign recipient validation',
-        },
-      ],
-      renderVisual: () => (
-        <View style={styles.visualContainer}>
-          <Svg width={120} height={120} viewBox="0 0 120 120" fill="none">
-            <Defs>
-              <LinearGradient id="fingerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#6366F1" stopOpacity="0.8" />
-                <Stop offset="100%" stopColor="#4F46E5" stopOpacity="0.2" />
-              </LinearGradient>
-            </Defs>
-            <Circle cx="60" cy="60" r="54" fill="rgba(99, 102, 241, 0.08)" />
-            <Circle cx="60" cy="60" r="42" fill="url(#fingerGrad)" />
-            {/* Fingerprint concentric curves */}
-            <Path
-              d="M60 40C48.9 40 40 48.9 40 60C40 65.5 42.2 70.5 45.9 74.1"
-              stroke="#FFFFFF"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-            <Path
-              d="M74.1 74.1C77.8 70.5 80 65.5 80 60C80 48.9 71.1 40 60 40"
-              stroke="#FFFFFF"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-            <Path
-              d="M60 48C53.4 48 48 53.4 48 60C48 66.6 53.4 72 60 72"
-              stroke="#A5B4FC"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-            <Path
-              d="M60 56C57.8 56 56 57.8 56 60C56 64 60 67 60 67"
-              stroke="#FFFFFF"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-            <Circle cx="60" cy="60" r="3" fill="#6366F1" />
-          </Svg>
-        </View>
-      ),
-    },
-    {
-      id: 'adaptive-security',
-      badge: 'Mathematical Protection',
-      badgeColor: '#F59E0B',
-      badgeBg: isDark ? 'rgba(245, 158, 11, 0.12)' : '#FEF3C7',
-      title: 'Risk-Adaptive',
-      highlight: 'Spending Quorum',
-      subtitle:
-        'Low-risk transfers (≤ 0.1 SOL) confirm with 1 tap. High-risk amounts (> 0.1 SOL) enforce a mathematical 2-of-2 hardware quorum across devices.',
-      bullets: [
-        {
-          icon: 'speed',
-          label: 'Low-Risk Fast Lane',
-          detail: '1-tap biometric passkey for everyday micro-spends',
-        },
-        {
-          icon: 'devices',
-          label: '2-of-2 Hardware Quorum',
-          detail: 'Requires Phone + Mac/Backup passkey for large spends',
-        },
-        {
-          icon: 'lock',
-          label: 'Circuit Breaker & Panic',
-          detail: '1-tap on-chain freeze and 24h timelocked recovery',
-        },
-      ],
-      renderVisual: () => (
-        <View style={styles.visualContainer}>
-          <Svg width={120} height={120} viewBox="0 0 120 120" fill="none">
-            <Defs>
-              <LinearGradient id="quorumGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#F59E0B" stopOpacity="0.8" />
-                <Stop offset="100%" stopColor="#D97706" stopOpacity="0.2" />
-              </LinearGradient>
-            </Defs>
-            <Circle cx="60" cy="60" r="54" fill="rgba(245, 158, 11, 0.08)" />
-            <Circle cx="60" cy="60" r="42" fill="url(#quorumGrad)" />
-            {/* Device 1 (Phone) */}
-            <Rect x="42" y="44" width="16" height="28" rx="3" stroke="#FFFFFF" strokeWidth="2" fill="none" />
-            <Circle cx="50" cy="67" r="1.5" fill="#FFFFFF" />
-            {/* Device 2 (Laptop/Hardware) */}
-            <Rect x="64" y="48" width="22" height="18" rx="2" stroke="#FDE68A" strokeWidth="2" fill="none" />
-            <Path d="M60 68H90" stroke="#FDE68A" strokeWidth="2" strokeLinecap="round" />
-            {/* Plus sign linking them */}
-            <Path d="M60 55V61M57 58H63" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
-          </Svg>
-        </View>
-      ),
-    },
-    {
-      id: 'ai-agents',
-      badge: 'Solana Mobile & Seeker',
-      badgeColor: '#3B82F6',
-      badgeBg: isDark ? 'rgba(59, 130, 246, 0.12)' : '#EFF6FF',
-      title: 'Autonomous AI &',
-      highlight: 'Seeker Ready',
-      subtitle:
-        'Delegate bounded trading budgets to AI agents (Jupiter Auto-DCA) without signing every swap. Natively integrated with Solana Seeker (SKR) tokens.',
-      bullets: [
-        {
-          icon: 'smart-toy',
-          label: 'AI Session Keys',
-          detail: 'Temporary, budget-constrained trading authority',
-        },
-        {
-          icon: 'stars',
-          label: 'Seeker (SKR) Rewards',
-          detail: '100 SKR welcome allocation & dynamic token rules',
-        },
-        {
-          icon: 'local-gas-station',
-          label: 'Gasless Paymaster',
-          detail: 'Devnet account rent and gas sponsored automatically',
-        },
-      ],
-      renderVisual: () => (
-        <View style={styles.visualContainer}>
-          <Svg width={120} height={120} viewBox="0 0 120 120" fill="none">
-            <Defs>
-              <LinearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#3B82F6" stopOpacity="0.8" />
-                <Stop offset="100%" stopColor="#2563EB" stopOpacity="0.2" />
-              </LinearGradient>
-            </Defs>
-            <Circle cx="60" cy="60" r="54" fill="rgba(59, 130, 246, 0.08)" />
-            <Circle cx="60" cy="60" r="42" fill="url(#aiGrad)" />
-            {/* Robot Head */}
-            <Rect x="44" y="45" width="32" height="26" rx="6" stroke="#FFFFFF" strokeWidth="2.2" fill="none" />
-            <Circle cx="53" cy="56" r="3" fill="#60A5FA" />
-            <Circle cx="67" cy="56" r="3" fill="#60A5FA" />
-            <Path d="M54 65H66" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" />
-            {/* Antenna */}
-            <Path d="M60 45V37" stroke="#60A5FA" strokeWidth="2" strokeLinecap="round" />
-            <Circle cx="60" cy="35" r="2.5" fill="#60A5FA" />
-          </Svg>
-        </View>
-      ),
-    },
-  ]
-
+  const isLast = currentIndex === slides.length - 1
   const activeSlide = slides[currentIndex]
 
   return (
@@ -367,212 +246,105 @@ export function HaptixFeatureGuideModal({
       statusBarTranslucent={true}
     >
       <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleDismiss} />
+
         <View
           style={[
-            styles.modalContainer,
+            styles.cardContainer,
             {
-              backgroundColor: isDark ? '#09090C' : '#FFFFFF',
-              borderColor: isDark ? '#1F1F24' : '#E2E8F0',
-              paddingTop: Math.max(insets.top + 8, 24),
-              paddingBottom: Math.max(insets.bottom + 12, 24),
+              paddingTop: Math.max(insets.top + 10, 20),
+              paddingBottom: Math.max(insets.bottom + 14, 24),
             },
           ]}
         >
-          {/* Top Bar: Progress Pills & Skip */}
+          {/* 1. TOP BAR: Progress indicator pills & Skip */}
           <View style={styles.topBar}>
             <View style={styles.pillsRow}>
-              {slides.map((slide, idx) => (
+              {slides.map((_, idx) => (
                 <View
-                  key={slide.id}
+                  key={idx}
                   style={[
-                    styles.pillIndicator,
+                    styles.pill,
                     {
-                      backgroundColor:
-                        idx === currentIndex
-                          ? activeSlide.badgeColor
-                          : idx < currentIndex
-                          ? isDark
-                            ? 'rgba(255, 255, 255, 0.4)'
-                            : '#94A3B8'
-                          : isDark
-                          ? '#1C1C22'
-                          : '#E2E8F0',
-                      width: idx === currentIndex ? 24 : 8,
+                      width: idx === currentIndex ? 26 : 12,
+                      backgroundColor: idx === currentIndex ? '#6c8cff' : '#2a2a2e',
                     },
                   ]}
                 />
               ))}
             </View>
 
-            <TouchableOpacity
-              onPress={handleDismiss}
-              style={styles.skipButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.skipText, { color: isDark ? '#71717A' : '#64748B' }]}>
-                Skip
-              </Text>
-              <MaterialIcons
-                name="close"
-                size={18}
-                color={isDark ? '#71717A' : '#64748B'}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Horizontal Slide ScrollView */}
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={handleScrollEnd}
-            style={styles.carouselScroll}
-          >
-            {slides.map((slide) => (
-              <View key={slide.id} style={styles.slidePage}>
-                {/* Visual Graphic */}
-                {slide.renderVisual(isDark)}
-
-                {/* Badge Chip */}
-                <View style={[styles.badgeChip, { backgroundColor: slide.badgeBg }]}>
-                  <View style={[styles.badgeDot, { backgroundColor: slide.badgeColor }]} />
-                  <Text style={[styles.badgeText, { color: slide.badgeColor }]}>
-                    {slide.badge}
-                  </Text>
-                </View>
-
-                {/* Headlines */}
-                <Text style={[styles.slideTitle, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>
-                  {slide.title}{' '}
-                  <Text style={{ color: slide.badgeColor }}>{slide.highlight}</Text>
-                </Text>
-
-                <Text style={[styles.slideSubtitle, { color: isDark ? '#A1A1AA' : '#475569' }]}>
-                  {slide.subtitle}
-                </Text>
-
-                {/* Feature Bullet Cards */}
-                <View style={styles.bulletList}>
-                  {slide.bullets.map((bullet, bIdx) => (
-                    <View
-                      key={bIdx}
-                      style={[
-                        styles.bulletCard,
-                        {
-                          backgroundColor: isDark ? '#121217' : '#F8FAFC',
-                          borderColor: isDark ? '#1E1E24' : '#E2E8F0',
-                        },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.bulletIconBox,
-                          {
-                            backgroundColor: isDark
-                              ? 'rgba(255, 255, 255, 0.05)'
-                              : '#EEF2FF',
-                          },
-                        ]}
-                      >
-                        <MaterialIcons
-                          name={bullet.icon}
-                          size={18}
-                          color={slide.badgeColor}
-                        />
-                      </View>
-                      <View style={styles.bulletTextBox}>
-                        <Text
-                          style={[
-                            styles.bulletLabel,
-                            { color: isDark ? '#F4F4F5' : '#0F172A' },
-                          ]}
-                        >
-                          {bullet.label}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.bulletDetail,
-                            { color: isDark ? '#71717A' : '#64748B' },
-                          ]}
-                        >
-                          {bullet.detail}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-
-          {/* Bottom Action Footer */}
-          <View style={styles.bottomFooter}>
-            {currentIndex > 0 ? (
+            {!isLast ? (
               <TouchableOpacity
-                onPress={handlePrev}
-                style={[
-                  styles.prevButton,
-                  {
-                    backgroundColor: isDark ? '#18181B' : '#F1F5F9',
-                    borderColor: isDark ? '#27272A' : '#E2E8F0',
-                  },
-                ]}
+                onPress={handleDismiss}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 activeOpacity={0.7}
               >
-                <MaterialIcons
-                  name="arrow-back"
-                  size={18}
-                  color={isDark ? '#E4E4E7' : '#0F172A'}
-                />
+                <Text style={styles.skipText}>Skip</Text>
               </TouchableOpacity>
             ) : (
-              <View style={{ width: 48 }} />
+              <View style={{ width: 32 }} />
             )}
+          </View>
 
-            <TouchableOpacity
-              onPress={handleNext}
-              style={[
-                styles.primaryNextButton,
-                {
-                  backgroundColor:
-                    currentIndex === slides.length - 1
-                      ? activeSlide.badgeColor
-                      : isDark
-                      ? '#FFFFFF'
-                      : '#0F172A',
-                },
-              ]}
-              activeOpacity={0.85}
-            >
-              <Text
-                style={[
-                  styles.primaryNextText,
-                  {
-                    color:
-                      currentIndex === slides.length - 1
-                        ? '#FFFFFF'
-                        : isDark
-                        ? '#000000'
-                        : '#FFFFFF',
-                  },
-                ]}
+          {/* 2. BODY CONTENT: Animated Visual + Title + Subtitle */}
+          <Animated.View
+            style={[
+              styles.bodySection,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateX: slideAnim }],
+              },
+            ]}
+          >
+            {/* Visual element */}
+            <View style={styles.visualWrapper}>{activeSlide.renderVisual()}</View>
+
+            {/* Title */}
+            <Text style={styles.slideTitle}>{activeSlide.title}</Text>
+
+            {/* Subtitle */}
+            <Text style={styles.slideSubtitle}>{activeSlide.subtitle}</Text>
+          </Animated.View>
+
+          {/* 3. FOOTER ACTIONS: Back button + Next / Create button */}
+          <View style={styles.footerSection}>
+            <View style={styles.buttonRow}>
+              {currentIndex > 0 ? (
+                <TouchableOpacity
+                  onPress={handlePrev}
+                  style={styles.backButton}
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="arrow-back" size={18} color="#f2f1ee" />
+                </TouchableOpacity>
+              ) : null}
+
+              <TouchableOpacity
+                onPress={handleNext}
+                style={[styles.primaryButton, currentIndex === 0 && { width: '100%' }]}
+                activeOpacity={0.85}
               >
-                {currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}
-              </Text>
-              <MaterialIcons
-                name={currentIndex === slides.length - 1 ? 'check' : 'arrow-forward'}
-                size={18}
-                color={
-                  currentIndex === slides.length - 1
-                    ? '#FFFFFF'
-                    : isDark
-                    ? '#000000'
-                    : '#FFFFFF'
-                }
-              />
-            </TouchableOpacity>
+                <Text style={styles.primaryButtonText}>
+                  {isLast ? 'Create wallet' : 'Next'}
+                </Text>
+                {!isLast && (
+                  <MaterialIcons name="arrow-forward" size={17} color="#0c0c0d" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Sub-footer on last slide: "Already have a wallet? Sign in" */}
+            <View style={styles.subFooterWrap}>
+              {isLast ? (
+                <TouchableOpacity onPress={handleSignIn} activeOpacity={0.7}>
+                  <Text style={styles.subFooterText}>
+                    Already have a wallet?{' '}
+                    <Text style={styles.signInLinkText}>Sign in</Text>
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </View>
         </View>
       </View>
@@ -583,148 +355,207 @@ export function HaptixFeatureGuideModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.82)',
+    backgroundColor: 'rgba(0, 0, 0, 0.78)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
-  modalContainer: {
-    flex: 1,
-    borderWidth: 0,
+  cardContainer: {
+    backgroundColor: '#09090b',
+    borderRadius: 22,
+    borderWidth: 0.5,
+    borderColor: '#2a2a28',
+    paddingHorizontal: 20,
+    width: '100%',
+    maxWidth: 360,
+    minHeight: 590,
     justifyContent: 'space-between',
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 6,
+    height: 28,
   },
   pillsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  pillIndicator: {
-    height: 6,
-    borderRadius: 3,
-  },
-  skipButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+  pill: {
+    height: 4,
+    borderRadius: 2,
   },
   skipText: {
+    color: '#8a8985',
     fontSize: 13,
     fontWeight: '500',
   },
-  carouselScroll: {
+  bodySection: {
     flex: 1,
-  },
-  slidePage: {
-    width: SCREEN_WIDTH,
-    paddingHorizontal: 24,
-    alignItems: 'center',
     justifyContent: 'center',
-  },
-  visualContainer: {
-    marginBottom: 16,
     alignItems: 'center',
+    paddingVertical: 14,
+  },
+  visualWrapper: {
+    minHeight: 180,
     justifyContent: 'center',
-  },
-  badgeChip: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  badgeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  badgeText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    marginBottom: 20,
+    width: '100%',
   },
   slideTitle: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 24,
+    fontWeight: '600',
+    letterSpacing: -0.4,
+    lineHeight: 30,
+    color: '#f2f1ee',
     textAlign: 'center',
-    letterSpacing: -0.6,
-    marginBottom: 8,
+    maxWidth: 290,
+    marginBottom: 10,
   },
   slideSubtitle: {
     fontSize: 13.5,
-    lineHeight: 19,
+    color: '#8a8985',
+    lineHeight: 21,
     textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 6,
+    maxWidth: 290,
   },
-  bulletList: {
-    width: '100%',
-    gap: 8,
-  },
-  bulletCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 0.5,
-    gap: 12,
-  },
-  bulletIconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+  // Slide 1 Visual
+  slide1OuterCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 1.5,
+    borderColor: '#6c8cff',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bulletTextBox: {
-    flex: 1,
+  slide1InnerCircle: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: '#17171a',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  bulletLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 1,
+  // Slide 2 & 3 Spec Card
+  specCard: {
+    borderWidth: 0.5,
+    borderColor: '#2a2a28',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 2,
+    backgroundColor: '#101012',
+    width: '100%',
+    maxWidth: 275,
   },
-  bulletDetail: {
-    fontSize: 11.5,
-    lineHeight: 15,
-  },
-  bottomFooter: {
+  specRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 12,
+    paddingVertical: 12,
     gap: 12,
   },
-  prevButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  specMonoText: {
+    fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }),
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#f2f1ee',
+  },
+  specRightWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  specRightText: {
+    fontSize: 13,
+    color: '#b4b3ae',
+    fontWeight: '400',
+  },
+  specDivider: {
+    height: 0.5,
+    backgroundColor: '#202024',
+  },
+  // Slide 3 Step circle
+  stepNumCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 1,
+    borderColor: '#6c8cff',
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  primaryNextButton: {
+  stepNumText: {
+    color: '#6c8cff',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  stepDescText: {
+    fontSize: 13,
+    color: '#f2f1ee',
+    fontWeight: '400',
     flex: 1,
-    height: 48,
-    borderRadius: 24,
+  },
+  featureTitleText: {
+    fontSize: 13,
+    color: '#f2f1ee',
+    fontWeight: '500',
+  },
+  featureSubtitleText: {
+    fontSize: 11,
+    color: '#8a8985',
+    marginTop: 1,
+  },
+  // Footer
+  footerSection: {
+    width: '100%',
+    paddingTop: 10,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  backButton: {
+    width: 50,
+    height: 50,
+    borderWidth: 0.5,
+    borderColor: '#2a2a28',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  primaryButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: '#6c8cff',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  primaryNextText: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+  primaryButtonText: {
+    color: '#0c0c0d',
+    fontWeight: '500',
+    fontSize: 14.5,
+  },
+  subFooterWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+    minHeight: 20,
+  },
+  subFooterText: {
+    color: '#8a8985',
+    fontSize: 13,
+  },
+  signInLinkText: {
+    color: '#6c8cff',
+    fontWeight: '500',
   },
 })

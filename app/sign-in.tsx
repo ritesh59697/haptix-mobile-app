@@ -2133,6 +2133,14 @@ export default function SignIn() {
       <HaptixFeatureGuideModal
         visible={showGuideModal}
         onClose={() => setShowGuideModal(false)}
+        onCreateWallet={() => {
+          setShowGuideModal(false)
+          setShowCreateModal(true)
+        }}
+        onSignIn={() => {
+          setShowGuideModal(false)
+          openSignInSheet()
+        }}
       />
     </ImageBackground>
   )
