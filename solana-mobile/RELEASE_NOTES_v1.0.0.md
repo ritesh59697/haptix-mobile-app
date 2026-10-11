@@ -27,8 +27,8 @@ Welcome to the initial release of **Haptix**, the consumer-grade passkey smart w
 
 ### Verified EAS Production Build Receipt
 
-- **Build ID**: `fabae648-84e5-4d44-8bb5-0df29c98b641`
-- **EAS Console**: [expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/fabae648-84e5-4d44-8bb5-0df29c98b641](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/fabae648-84e5-4d44-8bb5-0df29c98b641)
+- **Build ID**: `6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a`
+- **EAS Console**: [expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a)
 - **APK Binary Size**: 97.7 MB (`haptix-wallet.apk`)
 - **Passkey Enhancement**: Auto-targets active wallet passkey; bypasses Credential Manager multi-account chooser dialog for 1-tap instant biometric sign.
 - **Relay Infrastructure**: [https://haptix-relay.onrender.com](https://haptix-relay.onrender.com) (24/7 UptimeRobot monitored, zero cold-start delay).
