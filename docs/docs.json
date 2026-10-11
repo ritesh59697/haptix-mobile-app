@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Haptix — Solana Mobile",
+  "name": "Haptix \u2014 Solana Mobile",
   "colors": {
     "primary": "#4F6BFF",
     "light": "#4F6BFF",
@@ -47,9 +47,9 @@
           "icon": "github"
         },
         {
-          "anchor": "Twitter",
-          "href": "https://twitter.com/haptix",
-          "icon": "twitter"
+          "anchor": "X (Twitter)",
+          "href": "https://x.com/HaptixWalllet",
+          "icon": "x-twitter"
         }
       ]
     }
@@ -73,8 +73,8 @@
   },
   "footer": {
     "socials": {
-      "twitter": "https://twitter.com/haptix",
-      "github": "https://github.com/ritesh59697/haptix"
+      "x": "https://x.com/HaptixWalllet",
+      "github": "https://github.com/ritesh59697/haptix-mobile-app"
     }
   }
 }

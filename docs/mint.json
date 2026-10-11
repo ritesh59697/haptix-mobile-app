@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "name": "Haptix — Solana Mobile",
+  "name": "Haptix \u2014 Solana Mobile",
   "colors": {
     "primary": "#4F6BFF",
     "light": "#4F6BFF",
@@ -28,9 +28,9 @@
       "url": "https://github.com/ritesh59697/haptix-mobile-app"
     },
     {
-      "name": "Twitter",
-      "icon": "twitter",
-      "url": "https://twitter.com/haptix"
+      "name": "X (Twitter)",
+      "icon": "x-twitter",
+      "url": "https://x.com/HaptixWalllet"
     }
   ],
   "navigation": [
@@ -58,7 +58,7 @@
     }
   ],
   "footerSocials": {
-    "twitter": "https://twitter.com/haptix",
-    "github": "https://github.com/ritesh59697/haptix"
+    "x": "https://x.com/HaptixWalllet",
+    "github": "https://github.com/ritesh59697/haptix-mobile-app"
   }
 }
