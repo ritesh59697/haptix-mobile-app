@@ -29,7 +29,7 @@ Welcome to the initial release of **Haptix**, the consumer-grade passkey smart w
 
 - **Build ID**: `6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a`
 - **EAS Console**: [expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a)
-- **APK Binary Size**: 97.7 MB (`haptix-wallet.apk`)
+- **APK Binary Size**: 96.6 MB (`haptix-wallet.apk`)
 - **Passkey Enhancement**: Auto-targets active wallet passkey; bypasses Credential Manager multi-account chooser dialog for 1-tap instant biometric sign.
 - **Relay Infrastructure**: [https://haptix-relay.onrender.com](https://haptix-relay.onrender.com) (24/7 UptimeRobot monitored, zero cold-start delay).
 
@@ -37,7 +37,7 @@ Welcome to the initial release of **Haptix**, the consumer-grade passkey smart w
 
 ### Installation Instructions
 
-1. Download the attached `haptix-wallet.apk` (97.7 MB) directly onto your Android device or Solana Seeker / Saga.
+1. Download the attached `haptix-wallet.apk` (96.6 MB) directly onto your Android device or Solana Seeker / Saga.
 2. Tap the downloaded file to install (allow "Install from Unknown Sources" if prompted).
 3. Open **Haptix** and tap **Create Smart Wallet** to test the 1-tap biometric passkey flow.
 
