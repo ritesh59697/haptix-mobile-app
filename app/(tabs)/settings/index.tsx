@@ -28,6 +28,7 @@ import { HaptixAccountSwitcherSheet } from '@/components/haptix/haptix-account-s
 import { HaptixNetworkModal } from '@/components/haptix/haptix-network-modal'
 import { HaptixThemeModal } from '@/components/haptix/haptix-theme-modal'
 import { HaptixPolicySheet, PolicyTopic } from '@/components/haptix/haptix-policy-sheet'
+import { HaptixFeatureGuideModal } from '@/components/haptix/haptix-feature-guide-modal'
 import { HaptixTokenIcon } from '@/components/haptix/haptix-icons'
 import { useConfirmRemoveWallet } from '@/components/haptix/haptix-remove-wallet'
 import { bindHardwarePasskey, deletePasskeys, getDiscoverablePlatformAssertion } from '@/utils/haptix-passkey'
@@ -70,6 +71,7 @@ export default function TabSettingsScreen() {
   const [hasCopied, setHasCopied] = useState(false)
   const [isRequestingFaucet, setIsRequestingFaucet] = useState(false)
   const [isBindingBackup, setIsBindingBackup] = useState(false)
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false)
 
   const isDevnet = selectedCluster.network === ClusterNetwork.Devnet
   const hasBackupBound = !!activeWallet?.secondaryCredentialId
@@ -544,6 +546,20 @@ export default function TabSettingsScreen() {
               <Text style={[styles.rowValue, { color: theme.textMuted }]}>1.0.0 (Seeker Edition)</Text>
             </View>
 
+            {/* App & Feature Walkthrough */}
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => {
+                Haptics.selectionAsync()
+                setIsGuideModalOpen(true)
+              }}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons name="auto-awesome" size={20} color={theme.accent} />
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Feature Guide &amp; Walkthrough</Text>
+              <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
             {/* Official Documentation */}
@@ -698,6 +714,12 @@ export default function TabSettingsScreen() {
         onSelectTheme={(t) => {
           void setThemePreference(t)
         }}
+      />
+
+      <HaptixFeatureGuideModal
+        visible={isGuideModalOpen}
+        onClose={() => setIsGuideModalOpen(false)}
+        persistDismissal={false}
       />
     </View>
   )

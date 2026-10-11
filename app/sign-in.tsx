@@ -62,6 +62,7 @@ import {
 import { HaptixAppLoader } from '@/components/haptix/haptix-app-loader'
 import { HaptixRecoveryFlowSheet } from '@/components/haptix/haptix-recovery-flow-sheet'
 import { HaptixWalletCreatedContent } from '@/components/haptix/haptix-wallet-created-sheet'
+import { HaptixFeatureGuideModal, HAPTIX_GUIDE_STORAGE_KEY } from '@/components/haptix/haptix-feature-guide-modal'
 import { StatusBar } from 'expo-status-bar'
 
 type ProgramAccountsPromise = ReturnType<Connection['getProgramAccounts']>
@@ -421,12 +422,28 @@ export default function SignIn() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSignInModal, setShowSignInModal] = useState(false)
   const [showRecoveryModal, setShowRecoveryModal] = useState(false)
+  const [showGuideModal, setShowGuideModal] = useState(false)
   const [createdAccount, setCreatedAccount] = useState<{
     name: string
     address: string
     securityMode: 'everyday' | 'vault'
     spendThreshold: number
   } | null>(null)
+
+  // Auto-launch guide once for brand new users
+  useEffect(() => {
+    async function checkGuide() {
+      try {
+        const seen = await AsyncStorage.getItem(HAPTIX_GUIDE_STORAGE_KEY)
+        if (!seen) {
+          setShowGuideModal(true)
+        }
+      } catch {}
+    }
+    if (!isLoading && !activeWallet) {
+      void checkGuide()
+    }
+  }, [isLoading, activeWallet])
 
   // Fluid pull-down gesture to dismiss sign-in bottom sheet
   const panYSignIn = useRef(new Animated.Value(0)).current
@@ -1235,9 +1252,20 @@ export default function SignIn() {
     >
       <StatusBar style="light" />
 
-      {/* 1. TOP BAR: Haptix Logo Text in Left Corner */}
+      {/* 1. TOP BAR: Haptix Logo Text in Left Corner + How it Works pill on Right */}
       <View style={styles.topBrandRow}>
         <HaptixLogoText height={26} />
+        <TouchableOpacity
+          style={styles.guideTopPill}
+          onPress={() => {
+            void Haptics.selectionAsync()
+            setShowGuideModal(true)
+          }}
+          activeOpacity={0.8}
+        >
+          <MaterialIcons name="auto-awesome" size={13} color="#60A5FA" />
+          <Text style={styles.guideTopPillText}>How it works</Text>
+        </TouchableOpacity>
       </View>
 
       {/* 2. MIDDLE SECTION: Clean Hero Headline + Value Proposition */}
@@ -2100,6 +2128,12 @@ export default function SignIn() {
           router.replace('/(tabs)')
         }}
       />
+
+      {/* FEATURE WALKTHROUGH & SLIDES */}
+      <HaptixFeatureGuideModal
+        visible={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
+      />
     </ImageBackground>
   )
 }
@@ -2115,9 +2149,26 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
     topBrandRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'flex-start',
+      justifyContent: 'space-between',
       marginTop: 4,
       marginBottom: 8,
+    },
+    guideTopPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 16,
+      backgroundColor: 'rgba(96, 165, 250, 0.12)',
+      borderWidth: 1,
+      borderColor: 'rgba(96, 165, 250, 0.28)',
+    },
+    guideTopPillText: {
+      fontSize: 12.5,
+      fontWeight: '600',
+      color: '#93C5FD',
+      letterSpacing: -0.1,
     },
     superMiddleSection: {
       flex: 1,
