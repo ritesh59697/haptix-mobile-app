@@ -15,20 +15,20 @@
 
 <br />
 
-**[Live Docs](https://haptix-docs.mintlify.app)** &bull; **[X Community](https://x.com/HaptixWalllet)** &bull; **[Download Release APK (v1.0.0)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.0/haptix-wallet.apk)** &bull; **[EAS Build Console](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a)** &bull; **[GitHub Release v1.0.0](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.0)** &bull; **[Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
+**[Live Docs](https://haptix-docs.mintlify.app)** &bull; **[X Community](https://x.com/HaptixWalllet)** &bull; **[Download Release APK (v1.0.1)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk)** &bull; **[EAS Build Console](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/da754004-963e-4d77-bbae-45c4ac1f5a98)** &bull; **[GitHub Release v1.0.1](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1)** &bull; **[Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
 
 </div>
 
 ---
 
-## Latest Standalone APK (v1.0.0)
+## Latest Standalone APK (v1.0.1)
 
 | Attribute | Verified Value |
 | :--- | :--- |
-| **Release Tag** | [`v1.0.0`](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.0) |
-| **Direct APK Binary** | [**haptix-wallet.apk (97.7 MB)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.0/haptix-wallet.apk) |
-| **EAS Build ID** | `6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a` |
-| **EAS Build Console** | [View Build Logs on Expo.dev](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a) |
+| **Release Tag** | [`v1.0.1`](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1) |
+| **Direct APK Binary** | [**haptix-wallet.apk**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk) |
+| **EAS Build ID** | `da754004-963e-4d77-bbae-45c4ac1f5a98` |
+| **EAS Build Console** | [View Build Logs on Expo.dev](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/da754004-963e-4d77-bbae-45c4ac1f5a98) |
 | **Passkey UX** | Auto-targeted active wallet passkey (Zero-picker direct fingerprint prompt) |
 | **Cloud Relay** | [https://haptix-relay.onrender.com](https://haptix-relay.onrender.com) (24/7 UptimeRobot monitored) |
 
