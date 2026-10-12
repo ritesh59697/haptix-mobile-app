@@ -8,7 +8,7 @@ import {
   sendAndConfirmTransaction,
 } from '@solana/web3.js'
 import { AppConfig } from '@/constants/app-config'
-import { lamportsToSol } from '@/utils/lamports-to-sol'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 /**
  * Devnet fee sponsorship for local demos.
@@ -96,6 +96,11 @@ export async function getFundedDevnetPayer(_connection?: Connection, _minSol: nu
   return cachedFunder
 }
 
+export interface FundWalletOptions {
+  maxBalanceCheck?: number
+  enforceCooldown?: boolean
+}
+
 /**
  * Directly fund a smart wallet PDA with Devnet SOL from the local funder wallet.
  */
@@ -103,33 +108,84 @@ export async function fundDevnetWallet(
   connection: Connection,
   walletPda: PublicKey,
   amountSol: number = 0.2,
+  options?: FundWalletOptions,
 ): Promise<string> {
-  const payer = await getFundedDevnetPayer(connection)
-  const lamports = BigInt(Math.round(amountSol * LAMPORTS_PER_SOL))
-
-  // Describe a drained funder in words. Submitting anyway produced
-  // `Transfer: insufficient lamports 91721040, need 200000000` inside a simulation
-  // dump, which is the amount the funder had at that moment and says nothing about
-  // what to do next.
-  const available = await connection.getBalance(payer.publicKey)
-  if (BigInt(available) < lamports) {
-    throw new Error(
-      `The Devnet funder ${payer.publicKey.toBase58()} holds ${lamportsToSol(available).toFixed(4)} SOL ` +
-        `but this request needs ${amountSol.toFixed(2)}. Top the funder up from a Devnet faucet and retry.`,
-    )
+  // 0. Max balance check: prevent hoarding if wallet already has ample test funds
+  if (options?.maxBalanceCheck !== undefined) {
+    try {
+      const currentLamports = await connection.getBalance(walletPda)
+      const currentSol = currentLamports / LAMPORTS_PER_SOL
+      if (currentSol >= options.maxBalanceCheck) {
+        throw new Error(
+          `Your wallet already holds ${currentSol.toFixed(3)} SOL. This is plenty of test SOL to test transfers, swaps, and 2-of-2 Vault quorums!`,
+        )
+      }
+    } catch (balErr: any) {
+      if (balErr?.message?.includes('already holds')) throw balErr
+    }
   }
 
-  const tx = new Transaction().add(
-    SystemProgram.transfer({
-      fromPubkey: payer.publicKey,
-      toPubkey: walletPda,
-      lamports,
-    }),
-  )
-  const sig = await sendAndConfirmTransaction(connection, tx, [payer], {
-    commitment: 'confirmed',
-  })
-  return sig
+  // 0.1 Cooldown check: prevent rapid spam clicking
+  if (options?.enforceCooldown) {
+    const cooldownKey = `@haptix_faucet_cooldown_${walletPda.toBase58()}`
+    const lastTimestampStr = await AsyncStorage.getItem(cooldownKey).catch(() => null)
+    if (lastTimestampStr) {
+      const elapsed = Date.now() - Number(lastTimestampStr)
+      if (elapsed < 10_000) {
+        const remaining = Math.ceil((10_000 - elapsed) / 1000)
+        throw new Error(`Faucet cooldown active. Please wait ${remaining}s before requesting more Devnet SOL.`)
+      }
+    }
+    await AsyncStorage.setItem(cooldownKey, Date.now().toString()).catch(() => {})
+  }
+
+  // 1. Try local funder keypair sponsorship first
+  try {
+    const payer = await getFundedDevnetPayer(connection)
+    const lamports = BigInt(Math.round(amountSol * LAMPORTS_PER_SOL))
+    const available = await connection.getBalance(payer.publicKey)
+
+    if (BigInt(available) >= lamports) {
+      const tx = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: payer.publicKey,
+          toPubkey: walletPda,
+          lamports,
+        }),
+      )
+      const sig = await sendAndConfirmTransaction(connection, tx, [payer], {
+        commitment: 'confirmed',
+      })
+      return sig
+    }
+  } catch (funderErr: any) {
+    if (funderErr?.message?.includes('already holds') || funderErr?.message?.includes('cooldown active')) {
+      throw funderErr
+    }
+    console.warn('[Funder]: Local sponsor unavailable, falling back to cluster airdrop...', funderErr)
+  }
+
+  // 2. Fallback to cluster requestAirdrop
+  try {
+    const lamports = Math.round(amountSol * LAMPORTS_PER_SOL)
+    const airdropSig = await connection.requestAirdrop(walletPda, lamports)
+    const latestBlockhash = await connection.getLatestBlockhash()
+    await connection.confirmTransaction(
+      {
+        signature: airdropSig,
+        ...latestBlockhash,
+      },
+      'confirmed',
+    )
+    return airdropSig
+  } catch (airdropErr: any) {
+    if (airdropErr?.message?.includes('already holds') || airdropErr?.message?.includes('cooldown active')) {
+      throw airdropErr
+    }
+    throw new Error(
+      `Could not fund Devnet account: ${airdropErr?.message || 'Devnet rate limit reached'}. Please request free SOL from https://faucet.solana.com/`,
+    )
+  }
 }
 
 export async function airdropToWalletPda(

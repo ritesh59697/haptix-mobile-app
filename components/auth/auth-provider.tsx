@@ -191,9 +191,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const threshold =
       options?.spendThreshold !== undefined
         ? options.spendThreshold
-        : mode === 'vault'
-          ? 0.0
-          : 0.1
+        : 0.1
 
     const created = await createSmartWalletRecord({
       name: finalName,

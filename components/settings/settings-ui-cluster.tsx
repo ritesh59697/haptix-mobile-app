@@ -10,6 +10,7 @@ import { useAuth } from '@/components/auth/auth-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { fundDevnetWallet } from '@/utils/haptix-funder'
+import { setString as copyToClipboard } from '@/utils/clipboard'
 
 /**
  * Network section body. Rows only — the settings screen owns the card and heading.
@@ -35,17 +36,62 @@ export function SettingsUiCluster() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
       const walletPda = new PublicKey(activeWallet.address)
-      const sig = await fundDevnetWallet(connection, walletPda, 0.2)
+      const sig = await fundDevnetWallet(connection, walletPda, 0.2, {
+        maxBalanceCheck: 0.5,
+        enforceCooldown: true,
+      })
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       dialog.alert(
         'Airdrop Confirmed',
         `Received +0.2 Devnet SOL for testing.\n\nSignature: ${sig.slice(0, 8)}...${sig.slice(-8)}`,
       )
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Devnet airdrop failed:', err)
+      const msg = err?.message || ''
+
+      if (msg.includes('already holds')) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+        dialog.alert('Test Balance Plentiful', msg, undefined, { status: 'neutral' })
+        return
+      }
+
+      if (msg.includes('cooldown active')) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+        dialog.alert('Faucet Cooldown Active', msg, undefined, { status: 'warning' })
+        return
+      }
+
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-      dialog.alert('Faucet Failed', 'Could not complete Devnet airdrop. Please try again shortly.')
+      dialog.alert(
+        'Devnet Faucet Unavailable',
+        'The in-app sponsorship faucet is temporarily busy or rate-limited. You can request free SOL directly from the official Solana Devnet Web Faucet.',
+        [
+          {
+            text: 'Copy Address',
+            onPress: () => {
+              if (activeWallet?.address) {
+                copyToClipboard(activeWallet.address)
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+              }
+            },
+          },
+          {
+            text: 'Open Solana Faucet',
+            onPress: () => {
+              if (activeWallet?.address) {
+                copyToClipboard(activeWallet.address)
+              }
+              Linking.openURL('https://faucet.solana.com/').catch(() => {})
+            },
+          },
+          {
+            text: 'Dismiss',
+            style: 'cancel',
+          },
+        ],
+        { status: 'warning' },
+      )
     } finally {
       setIsRequestingFaucet(false)
     }

@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useEffect } from 'react'
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Animated, PanResponder } from 'react-native'
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Animated, PanResponder, Linking } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
@@ -7,6 +7,14 @@ import { useAppTheme } from '@/components/theme/theme-context'
 import { radius, typeScale } from '@/theme/tokens'
 
 export type PolicyTopic = 'agents' | 'security' | 'recovery' | 'terms' | 'privacy'
+
+export const TOPIC_DOC_URLS: Record<PolicyTopic, string> = {
+  agents: 'https://haptix-docs.mintlify.app/solana/vault-mode',
+  security: 'https://haptix-docs.mintlify.app/architecture',
+  recovery: 'https://haptix-docs.mintlify.app/solana/recovery',
+  terms: 'https://haptix-docs.mintlify.app/terms',
+  privacy: 'https://haptix-docs.mintlify.app/privacy',
+}
 
 interface PolicyRow {
   term: string
@@ -471,6 +479,26 @@ export function HaptixPolicySheet({ topic, threshold = 0.1, onClose }: HaptixPol
               </View>
             ))}
 
+            {topic && TOPIC_DOC_URLS[topic] ? (
+              <TouchableOpacity
+                style={[
+                  styles.webDocsBtn,
+                  {
+                    borderColor: theme.borderDefault,
+                    backgroundColor: theme.accentLight,
+                  },
+                ]}
+                onPress={() => {
+                  Haptics.selectionAsync().catch(() => {})
+                  void Linking.openURL(TOPIC_DOC_URLS[topic])
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="open-in-new" size={16} color={theme.textPrimary} />
+                <Text style={[styles.webDocsBtnText, { color: theme.textPrimary }]}>View Documentation on Web</Text>
+              </TouchableOpacity>
+            ) : null}
+
             <TouchableOpacity
               style={[styles.doneBtn, { backgroundColor: theme.accent }]}
               onPress={onClose}
@@ -582,6 +610,21 @@ const styles = StyleSheet.create({
   doneBtnText: {
     fontSize: typeScale.title,
     fontWeight: '700',
+  },
+  webDocsBtn: {
+    marginTop: 22,
+    marginBottom: 4,
+    height: 46,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  webDocsBtnText: {
+    fontSize: typeScale.body,
+    fontWeight: '600',
   },
   policyLink: {
     flexDirection: 'row',
