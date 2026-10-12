@@ -1437,9 +1437,7 @@
   }
 
   .history-item:focus-visible,
-  .device-fold summary:focus-visible,
   .key-action-btn:focus-visible,
-  .device-remove:focus-visible,
   .nav-btn:focus-visible,
   .auth-btn:focus-visible,
   .clear-history-btn:focus-visible,
@@ -1491,56 +1489,25 @@
     font-size: 13px;
   }
 
-  .device-fold {
-    margin-top: 6px;
+  .device-panel {
+    margin-top: 22px;
+    padding-top: 16px;
     border-top: 1px solid var(--border);
     text-align: left;
   }
 
-  .device-fold summary {
-    list-style: none;
-    cursor: pointer;
+  .device-panel-head {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
-    padding: 14px 2px;
-    font-size: 13px;
+    margin-bottom: 8px;
   }
 
-  .device-fold summary::-webkit-details-marker { display: none; }
-
-  .device-fold-label {
+  .device-panel-label {
     color: var(--text-1);
+    font-size: 13px;
     font-weight: 500;
-    flex-shrink: 0;
-  }
-
-  .device-fold-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    margin-left: auto;
-  }
-
-  .device-fold-meta .key-value {
-    color: var(--text-3);
-    font-size: 12px;
-  }
-
-  .device-chevron {
-    width: 7px;
-    height: 7px;
-    border-right: 1.5px solid var(--text-3);
-    border-bottom: 1.5px solid var(--text-3);
-    transform: rotate(45deg);
-    flex-shrink: 0;
-    margin-top: -2px;
-  }
-
-  .device-fold[open] .device-chevron {
-    transform: rotate(-135deg);
-    margin-top: 3px;
   }
 
   .key-verified {
@@ -1554,30 +1521,15 @@
     white-space: nowrap;
   }
 
-  .device-body {
-    padding: 0 2px 8px;
-  }
-
   .device-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    margin-top: 10px;
   }
 
-  .device-remove {
-    display: inline-flex;
-    margin-top: 12px;
-    padding: 4px 0;
-    background: none;
-    border: none;
-    color: var(--text-3);
-    font-family: inherit;
-    font-size: 12.5px;
-    cursor: pointer;
-  }
-
-  .device-remove:hover {
-    color: var(--relay-down);
+  .device-actions + .device-actions {
+    margin-top: 8px;
   }
 
   .key-help-note {
@@ -1780,6 +1732,35 @@
       </button>
     </div>
 
+    <section class="device-panel" id="enrolledKeySection" style="display:none">
+      <div class="device-panel-head">
+        <span class="device-panel-label">This device</span>
+        <span class="key-verified" id="keyVerifiedBadge" style="display:none;">Verified</span>
+      </div>
+      <div class="key-row">
+        <span class="key-value" id="pubkeyText">02...</span>
+        <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
+          <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
+            <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 12.5l5 5 11-11"/>
+          </svg>
+        </button>
+      </div>
+      <div class="device-actions">
+        <button class="key-action-btn" id="verifyKeyBtn" type="button">
+          <span id="verifyKeyText">Test this key</span>
+        </button>
+        <button class="key-action-btn" id="reEnrollBtn" type="button">Re-enroll</button>
+      </div>
+      <div class="device-actions">
+        <button class="key-action-btn danger" id="removeKeyBtn" type="button">Remove</button>
+      </div>
+      <p class="key-help-note">Test checks that the passkey is still on this Mac. Re-enroll replaces it.</p>
+    </section>
+
     <div id="vaultHistorySection" class="history-card">
       <div class="history-head">
         <div class="history-title-wrap">
@@ -1790,38 +1771,6 @@
       </div>
       <div class="history-list" id="historyList"></div>
     </div>
-
-    <details class="device-fold" id="enrolledKeySection" style="display:none">
-      <summary>
-        <span class="device-fold-label">This device</span>
-        <span class="device-fold-meta">
-          <span class="key-verified" id="keyVerifiedBadge" style="display:none;">Verified</span>
-          <span class="key-value" id="pubkeyText">02...</span>
-          <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
-            <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
-              <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 12.5l5 5 11-11"/>
-            </svg>
-          </button>
-          <span class="device-chevron" aria-hidden="true"></span>
-        </span>
-      </summary>
-      <div class="device-body">
-        <div class="device-actions">
-          <button class="key-action-btn" id="verifyKeyBtn" type="button">
-            <span id="verifyKeyText">Test this key</span>
-          </button>
-          <button class="key-action-btn" id="reEnrollBtn" type="button">
-            <span>Re-enroll</span>
-          </button>
-        </div>
-        <button class="device-remove" id="removeKeyBtn" type="button">Remove key</button>
-        <p class="key-help-note">Test checks that the passkey is still on this Mac. Re-enroll replaces it.</p>
-      </div>
-    </details>
   </main>
 </div>
 
