@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![Haptix Banner](haptix-mobile-app/assets/images/splash-icon.png)
-
 **Seedless. Biometric-Secured. Agent-Ready.**  
 *Built for the Solana Mobile Ecosystem (Saga / Chapter 2)*
 
@@ -13,7 +11,6 @@
 [![Secp256r1](https://img.shields.io/badge/Cryptography-Secp256r1%20%2F%20P--256-blue?style=flat)](https://docs.solana.com)
 [![Documentation](https://img.shields.io/badge/Docs-Mintlify-4F6BFF?style=flat&logo=gitbook&logoColor=white)](https://haptix-docs.mintlify.app)
 [![Twitter](https://img.shields.io/badge/X-@HaptixWalllet-black?style=flat&logo=x)](https://x.com/HaptixWalllet)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 <br />
 
@@ -23,7 +20,7 @@
 
 ---
 
-## 📱 Latest Standalone APK (v1.0.0)
+## Latest Standalone APK (v1.0.0)
 
 | Attribute | Verified Value |
 | :--- | :--- |
@@ -209,5 +206,4 @@ The repository includes a comprehensive standalone integration test suite (`test
 
 ---
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+Built by [Ritesh](https://x.com/Ritesh5969)
