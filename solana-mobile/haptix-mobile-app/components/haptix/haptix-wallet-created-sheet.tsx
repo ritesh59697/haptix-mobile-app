@@ -140,7 +140,7 @@ export function HaptixWalletCreatedContent({
   }
 
   const thresholdSol =
-    spendThreshold !== undefined ? spendThreshold : securityMode === 'vault' ? 0.0 : 0.1
+    spendThreshold !== undefined ? spendThreshold : 0.1
 
   const cardBg = isDark ? '#121213' : (theme.bgElevated ?? '#F6F6F8')
   const cardBorder = isDark ? '#2a2a28' : theme.borderDefault

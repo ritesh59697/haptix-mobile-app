@@ -256,10 +256,10 @@ export function HaptixWalletScreen() {
   // Synchronize spending limit threshold whenever active wallet switches
   useEffect(() => {
     if (activeWallet) {
-      const defaultThreshold = activeWallet.securityMode === 'vault' ? 0.0 : 0.1
+      const defaultThreshold = 0.1
       setSpendThreshold(activeWallet.spendThreshold ?? defaultThreshold)
     }
-  }, [activeWallet?.address, activeWallet?.spendThreshold, activeWallet?.securityMode])
+  }, [activeWallet])
 
   // Fluid pull-down gesture to dismiss Transaction Details Modal
   const panYTxDetail = useRef(new Animated.Value(0)).current
@@ -797,7 +797,10 @@ export function HaptixWalletScreen() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
       const walletPda = new PublicKey(activeWallet.address)
-      const sig = await fundDevnetWallet(connection, walletPda, 0.2)
+      const sig = await fundDevnetWallet(connection, walletPda, 0.2, {
+        maxBalanceCheck: 0.5,
+        enforceCooldown: true,
+      })
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       await fetchRealBalance()
@@ -818,7 +821,50 @@ export function HaptixWalletScreen() {
       setFaucetSuccess({ amount: 0.2, signature: sig })
     } catch (err: any) {
       console.error('[Faucet Error]:', formatChainErrorForLog(err))
-      dialog.alert('Faucet Request Failed', describeChainError(err, 'Could not fund this account on Devnet.'))
+      const msg = err?.message || ''
+
+      if (msg.includes('already holds')) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+        dialog.alert('Test Balance Plentiful', msg, undefined, { status: 'neutral' })
+        return
+      }
+
+      if (msg.includes('cooldown active')) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+        dialog.alert('Faucet Cooldown Active', msg, undefined, { status: 'warning' })
+        return
+      }
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      dialog.alert(
+        'Devnet Faucet Unavailable',
+        'The in-app sponsorship faucet is temporarily busy or rate-limited. You can request free SOL directly from the official Solana Devnet Web Faucet.',
+        [
+          {
+            text: 'Copy Address',
+            onPress: () => {
+              if (activeWallet?.address) {
+                Clipboard.setString(activeWallet.address)
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+              }
+            },
+          },
+          {
+            text: 'Open Solana Faucet',
+            onPress: () => {
+              if (activeWallet?.address) {
+                Clipboard.setString(activeWallet.address)
+              }
+              Linking.openURL('https://faucet.solana.com/').catch(() => {})
+            },
+          },
+          {
+            text: 'Dismiss',
+            style: 'cancel',
+          },
+        ],
+        { status: 'warning' },
+      )
     } finally {
       setIsRequestingFaucet(false)
     }

@@ -1,0 +1,60 @@
+---
+title: "Privacy Policy"
+description: "How Haptix protects user privacy: zero telemetry, zero analytics, zero data collection."
+---
+
+# Privacy Policy
+
+**Last Updated:** September 2026
+
+## 1. Overview
+
+Haptix is a non-custodial Web3 smart contract wallet for Solana Mobile and browser clients powered by hardware-bound WebAuthn passkeys (NIST P-256). We respect your privacy and are committed to protecting your personal information.
+
+---
+
+## 2. Information We Collect
+
+**Haptix collects ZERO personal data, analytics, or telemetry.**
+
+- **No Personal Identifiers:** We do not collect names, email addresses, phone numbers, IP addresses, or device locations.
+- **No Keystroke or Activity Tracking:** We do not track your browsing history or your interactions on decentralized apps.
+- **No Private Keys or Biometric Data:** Passkey private keys are generated and stored exclusively within your device's physical hardware enclave (Apple Secure Enclave, Android Keystore / Titan M2, Windows Hello, YubiKey). Biometric data (fingerprint or facial scan) **never leaves your device** and is never accessible to Haptix, smart contracts, or any backend server.
+
+---
+
+## 3. Local Storage Usage
+
+The Haptix client stores strictly operational preferences locally on your physical device:
+
+- Enrolled public keys (P-256 raw 64-byte public key coordinates $x, y$)
+- Configured smart account addresses (PDAs)
+- Network preferences (e.g., Solana Devnet, Mainnet)
+- Session token thresholds and spending policy configurations
+- Cached transaction receipts for your personal inspection
+
+This data remains stored locally on your device and is never uploaded to any centralized server.
+
+---
+
+## 4. Network Requests & Third Parties
+
+When you initiate an on-chain operation or view account balances, the client communicates directly with:
+
+- **Public Blockchain RPC Providers:** To read account balances and broadcast signed transactions directly to Solana validators or public paymaster nodes.
+- **Public Decentralized Oracles / Price APIs:** To fetch token exchange rates (e.g., Pyth Network, Jupiter Price API).
+
+These requests do not contain any personally identifiable information.
+
+---
+
+## 5. Security of Your Data
+
+Haptix is non-custodial. All operations are governed directly by open-source Anchor smart contracts deployed on the Solana blockchain. You maintain complete, mathematical ownership over your account.
+
+---
+
+## 6. Open Source & Verifiability
+
+The entire source code of Haptix is open source and available for public audit at:
+[https://github.com/ritesh59697/haptix-mobile-app](https://github.com/ritesh59697/haptix-mobile-app)

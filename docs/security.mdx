@@ -1,0 +1,97 @@
+---
+title: "Security Architecture"
+description: "In-depth cryptographic security specifications, 2-of-2 hardware quorums, and Solana runtime verification."
+---
+
+# Security Architecture & Cryptographic Verification
+
+The standard pattern in crypto is storing a single Ed25519 private key in memory or persistent storage. If malicious software or an attacker gains device access, 100% of wallet funds are at risk.
+
+Haptix replaces private key storage with an **on-chain Anchor smart account architecture** where signing rights are bound to hardware security enclaves using NIST P-256 (secp256r1) WebAuthn credentials.
+
+---
+
+## The 4-Layer Solana Authority Model
+
+```text
+                     HAPTIX SMART WALLET PDA
+                                │
+        ┌───────────────────────┴───────────────────────┐
+        │                                               │
+   HUMAN AUTHORITY                               AGENT AUTHORITY
+        │                                               │
+  Device Passkeys                               Scoped Session Keys
+  (NIST P-256 WebAuthn)                         (Ed25519 / Curve25519)
+        │                                               │
+        └───────────────────────┬───────────────────────┘
+                                ↓
+                 ON-CHAIN ANCHOR POLICY ENGINE
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        ↓                       ↓                       ↓
+   TIER 1: ALLOW          TIER 2: ESCALATE        TIER 3: REVERT
+ (Single Biometric)      (2-of-2 Quorum)         (Breaches Policy)
+        │                       │                       │
+        ↓                       ↓                       ↓
+  ≤ Spending Limit         > Spending Limit        Over Hard Cap /
+   Executes 1-Tap         Requires Phone +         Frozen on-chain
+                          Secondary Key
+```
+
+---
+
+## On-Chain Cryptographic Verification
+
+Solana validator nodes natively execute WebAuthn verification via the **Secp256r1 Precompile**:
+
+* **Precompile Program ID**: `Secp256r1SigVerify1111111111111111111111111`
+* **On-Chain Anchor Program**: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`
+
+### Solana Atomic Transaction Bundle
+
+Every transfer is structured as an atomic instruction bundle executed in the exact same Solana slot:
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│                      SOLANA ATOMIC TRANSACTION                         │
+│                                                                        │
+│  [Instruction 0: Secp256r1SigVerify Precompile]                        │
+│   ├── Compact P-256 Signature (64B: r + s enforcing canonical low-S)   │
+│   ├── Compressed Public Key (33B SEC1: 0x02 / 0x03)                    │
+│   └── 40-Byte Payload [Recipient (32B) | Amount Lamports (8B LE)]      │
+│                                                                        │
+│  [Instruction 1: Haptix Anchor Program (execute_transfer)]              │
+│   ├── Introspects solana_program::sysvar::instructions                 │
+│   ├── Verifies precompile validated exact public key & message         │
+│   ├── Validates caller authority & on-chain spending threshold         │
+│   └── Signs and transfers funds via PDA seeds                          │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 3 Core Security Invariants
+
+### 1. Instructions Sysvar Introspection
+The Haptix Anchor program inspects the Solana `sysvar::instructions` account directly in memory to confirm that `Secp256r1SigVerify` succeeded at index `0` within the exact same transaction. A signature verified in a previous transaction or different block cannot be replayed.
+
+### 2. Strict Payload Binding
+The precompile message must match the exact 40-byte sequence `[Recipient (32B) | Amount (8B LE)]` expected by the Anchor transfer handler. Any tampering with recipient address or amount causes immediate instruction revert.
+
+### 3. Canonical Low-S Enforcement
+To guarantee signature immutability, all P-256 signatures must satisfy $s \le n/2$. High-$S$ signatures emitted by certain Android authenticators are normalized ($s' = n - s$) before submission to the Solana runtime.
+
+---
+
+## Program-Derived Address (PDA) Invariance
+
+Every Haptix wallet is an off-curve Program Derived Address:
+
+```typescript
+const [walletPda, bump] = PublicKey.findProgramAddressSync(
+  [Buffer.from("haptix_wallet"), walletSeed.toBuffer()],
+  HAPTIX_PROGRAM_ID
+);
+```
+
+Because the address is an off-curve PDA, **no private key exists that can drain the wallet**. Only the Anchor program can execute transfers, strictly governed by your verified biometric passkeys and spending limit rules.

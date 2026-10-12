@@ -39,7 +39,8 @@
       "pages": [
         "introduction",
         "quickstart",
-        "architecture"
+        "architecture",
+        "security"
       ]
     },
     {
@@ -54,6 +55,13 @@
       "group": "Autonomous AI Agents",
       "pages": [
         "sdk/overview"
+      ]
+    },
+    {
+      "group": "Legal & Security",
+      "pages": [
+        "terms",
+        "privacy"
       ]
     }
   ],

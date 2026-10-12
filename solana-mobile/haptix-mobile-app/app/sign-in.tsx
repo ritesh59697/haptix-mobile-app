@@ -19,6 +19,7 @@ import {
   PanResponder,
   Platform,
   Linking,
+  StatusBar as RNStatusBar,
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -537,7 +538,7 @@ export default function SignIn() {
   const [secondaryKeyName, setSecondaryKeyName] = useState('Backup Key')
   const [guardianInput, setGuardianInput] = useState('')
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
-  const [vaultKeySource, setVaultKeySource] = useState<'mac' | 'hardware'>('mac')
+  const [vaultKeySource] = useState<'mac'>('mac')
   const [macVaultKeyHex, setMacVaultKeyHex] = useState('')
   const [copiedVaultUrl, setCopiedVaultUrl] = useState(false)
   const [isVaultInputFocused, setIsVaultInputFocused] = useState(false)
@@ -567,7 +568,6 @@ export default function SignIn() {
   const [isSigningIn, setIsSigningIn] = useState(false)
   const [restoreAddress, setRestoreAddress] = useState('')
   const [showAddressInput, setShowAddressInput] = useState(false)
-  const [isEditingAddress, setIsEditingAddress] = useState(false)
   const [savedWallets, setSavedWallets] = useState<HaptixWalletAccount[]>([])
   const [showGuardianLookup, setShowGuardianLookup] = useState(false)
   const [guardianLookupInput, setGuardianLookupInput] = useState('')
@@ -674,7 +674,7 @@ export default function SignIn() {
       }
 
       // 1. Generate Primary
-      const primary = await getOrCreatePrimaryPasskey(primaryName, { forceNew: true })
+      const primary = await getOrCreatePrimaryPasskey(finalName, { forceNew: true })
 
       setCreationStep(2)
       await new Promise((r) => setTimeout(r, 600))
@@ -706,14 +706,14 @@ export default function SignIn() {
         }
         await bindHardwarePasskey('secondary', secondary.credentialId, secondary.publicKeyHex)
       } else if (securityMode === 'vault') {
-        secondary = await getOrCreateSecondaryPasskey(secondaryName, {
+        secondary = await getOrCreateSecondaryPasskey(finalName, {
           forceNew: true,
           attachment: 'securityKey',
         })
       } else {
         // Everyday Mode: Both Primary and Backup are hardware passkeys saved in Google Password Manager!
         // Challenge is SHA-256 hashed on-chain so 2-of-2 transactions stay safely under Solana's 1,232-byte MTU limit.
-        secondary = await getOrCreateSecondaryPasskey(secondaryName, {
+        secondary = await getOrCreateSecondaryPasskey(finalName, {
           forceNew: true,
           attachment: 'platform',
         })
@@ -744,8 +744,8 @@ export default function SignIn() {
         // `credentialIdForRecord`.
         primaryCredentialId: credentialIdForRecord(primary),
         secondaryCredentialId: credentialIdForRecord(secondary),
-        primaryLabel: primary.label,
-        secondaryLabel: secondary.label,
+        primaryLabel: primaryName || primary.label,
+        secondaryLabel: secondaryName || secondary.label,
         guardianAddress: guardian.toBase58(),
         spendThreshold: 0.1,
         network: 'devnet',
@@ -868,6 +868,41 @@ export default function SignIn() {
         let matchedPda: PublicKey | null = null
         let matchedKeyHex: string | null = null
         let matchedRole: 'primary' | 'secondary' = 'primary'
+
+        // 0. Instant Device-Local Fast Path: Check if this device already has the wallet for this passkey
+        const cachedWalletJson = await AsyncStorage.getItem(`@haptix_passkey_wallet_${picked.credentialId}`).catch(() => null)
+        if (cachedWalletJson) {
+          try {
+            const cachedWallet: HaptixWalletAccount = JSON.parse(cachedWalletJson)
+            const primaryBytes = hexToBytes(cachedWallet.primaryPasskeyHex)
+            const secondaryBytes = cachedWallet.secondaryPasskeyHex ? hexToBytes(cachedWallet.secondaryPasskeyHex) : null
+
+            let roleMatched: 'primary' | 'secondary' | null = null
+            if (preparedAssertionMatchesPublicKey(prepared, primaryBytes)) {
+              roleMatched = 'primary'
+            } else if (secondaryBytes && preparedAssertionMatchesPublicKey(prepared, secondaryBytes)) {
+              roleMatched = 'secondary'
+            }
+
+            if (roleMatched) {
+              const boundKeyHex = roleMatched === 'primary' ? cachedWallet.primaryPasskeyHex : cachedWallet.secondaryPasskeyHex
+              await bindHardwarePasskey(roleMatched, picked.credentialId, boundKeyHex)
+              const updatedWallet: HaptixWalletAccount = {
+                ...cachedWallet,
+                primaryCredentialId: roleMatched === 'primary' ? picked.credentialId : cachedWallet.primaryCredentialId,
+                secondaryCredentialId: roleMatched === 'secondary' ? picked.credentialId : cachedWallet.secondaryCredentialId,
+              }
+              await saveWallet(updatedWallet)
+              await updateWallet(updatedWallet)
+              await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+              setShowSignInModal(false)
+              router.replace('/(tabs)')
+              return
+            }
+          } catch (fastErr) {
+            console.warn('[Sign In] Fast cached wallet restore failed, falling through:', fastErr)
+          }
+        }
 
         // 1. Instant Fast Path: If this credential ID was mapped on this device previously, verify directly!
         const cachedPdaStr = await AsyncStorage.getItem(`@haptix_passkey_pda_${picked.credentialId}`).catch(() => null)
@@ -1159,7 +1194,6 @@ export default function SignIn() {
       const parsed = parseRecipientInput(text ?? '')
       if (!parsed.address) return null
       setRestoreAddress((text ?? '').trim())
-      setIsEditingAddress(false)
       return parsed.address
     } catch {
       return null
@@ -1181,8 +1215,7 @@ export default function SignIn() {
    */
   const openSignInSheet = async () => {
     setShowSignInModal(true)
-    setIsEditingAddress(false)
-    setShowAddressInput(true)
+    setShowAddressInput(false)
     const wallets = await loadWallets().catch(() => [])
     setSavedWallets(wallets)
     const saved = await getSavedWallet().catch(() => null)
@@ -1222,7 +1255,6 @@ export default function SignIn() {
       }
       const foundAddress = accounts[0].pubkey.toBase58()
       setRestoreAddress(foundAddress)
-      setIsEditingAddress(false)
       setShowAddressInput(true)
       setShowGuardianLookup(false)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
@@ -1246,7 +1278,14 @@ export default function SignIn() {
       source={ONBOARDING_BG}
       style={[
         styles.heroContainer,
-        { paddingTop: Math.max(insets.top + 8, 28), paddingBottom: Math.max(insets.bottom + 12, 24) },
+        {
+          paddingTop:
+            Math.max(
+              insets.top,
+              Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 0) : 0
+            ) + 16,
+          paddingBottom: Math.max(insets.bottom + 12, 24),
+        },
       ]}
       resizeMode="cover"
     >
@@ -1261,9 +1300,10 @@ export default function SignIn() {
             void Haptics.selectionAsync()
             setShowGuideModal(true)
           }}
-          activeOpacity={0.8}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          activeOpacity={0.75}
         >
-          <MaterialIcons name="auto-awesome" size={13} color="#60A5FA" />
+          <MaterialIcons name="auto-awesome" size={13.5} color="#93C5FD" />
           <Text style={styles.guideTopPillText}>How it works</Text>
         </TouchableOpacity>
       </View>
@@ -1429,7 +1469,7 @@ export default function SignIn() {
                         >
                           Vault mode
                         </Text>
-                        <Text style={styles.modeCardDesc}>Key 2 on laptop or OneKey</Text>
+                        <Text style={styles.modeCardDesc}>Key 2 on laptop or second device</Text>
                       </TouchableOpacity>
                     </View>
 
@@ -1443,58 +1483,28 @@ export default function SignIn() {
                         </View>
 
                         <Text style={[styles.inputLabel, { marginTop: 14, marginBottom: 6 }]}>Vault key device</Text>
-                        <View style={{ flexDirection: 'row', gap: 8 }}>
-                          <TouchableOpacity
-                            onPress={() => {
-                              Haptics.selectionAsync()
-                              setVaultKeySource('mac')
-                              setSecondaryKeyName('Second Device (Vault Key)')
-                            }}
+                        <View style={{ flexDirection: 'row' }}>
+                          <View
                             style={[
                               styles.vaultSourceCard,
-                              vaultKeySource === 'mac' && styles.vaultSourceCardActive,
+                              styles.vaultSourceCardActive,
+                              { flex: 1 },
                             ]}
                           >
                             <MaterialIcons
                               name="devices"
                               size={20}
-                              color={vaultKeySource === 'mac' ? p.heroInk : p.inkMuted}
+                              color={p.heroInk}
                             />
                             <Text
                               style={[
                                 styles.vaultSourceTitle,
-                                vaultKeySource === 'mac' && styles.vaultSourceTitleActive,
+                                styles.vaultSourceTitleActive,
                               ]}
                             >
-                              Second Device
+                              Second Device (Laptop, Mac, or 2nd Phone)
                             </Text>
-                          </TouchableOpacity>
-
-                          <TouchableOpacity
-                            onPress={() => {
-                              Haptics.selectionAsync()
-                              setVaultKeySource('hardware')
-                              setSecondaryKeyName('Vault Key (Security Key)')
-                            }}
-                            style={[
-                              styles.vaultSourceCard,
-                              vaultKeySource === 'hardware' && styles.vaultSourceCardActive,
-                            ]}
-                          >
-                            <MaterialIcons
-                              name="usb"
-                              size={20}
-                              color={vaultKeySource === 'hardware' ? p.heroInk : p.inkMuted}
-                            />
-                            <Text
-                              style={[
-                                styles.vaultSourceTitle,
-                                vaultKeySource === 'hardware' && styles.vaultSourceTitleActive,
-                              ]}
-                            >
-                              USB / NFC key
-                            </Text>
-                          </TouchableOpacity>
+                          </View>
                         </View>
 
                         {vaultKeySource === 'mac' && (
@@ -1566,7 +1576,7 @@ export default function SignIn() {
                                 <Text style={styles.macVaultStepBadgeText}>2</Text>
                               </View>
                               <Text style={styles.macVaultStepTitle}>
-                                Tap "Enroll" on that device, then paste key below
+                                Tap &quot;Enroll&quot; on that device, then paste key below
                               </Text>
                             </View>
 
@@ -1880,19 +1890,30 @@ export default function SignIn() {
 
             <ScrollView
               style={{ flexShrink: 1 }}
-              contentContainerStyle={{ paddingBottom: 12 }}
+              contentContainerStyle={{ paddingBottom: 16 }}
               showsVerticalScrollIndicator={false}
             >
-              <View style={styles.heroBiometricRing}>
-                <View style={styles.heroBiometricInnerCircle}>
-                  <Image
-                    source={FINGERPRINT_HERO_BLUE}
-                    style={{ width: 34, height: 34 }}
-                    resizeMode="contain"
-                  />
+              {/* PASSKEY HERO CARD */}
+              <TouchableOpacity
+                style={styles.heroPasskeyCard}
+                onPress={handleSignInWithPasskey}
+                disabled={isSigningIn}
+                activeOpacity={0.8}
+              >
+                <View style={styles.heroBiometricRing}>
+                  <View style={styles.heroBiometricInnerCircle}>
+                    <Image
+                      source={FINGERPRINT_HERO_BLUE}
+                      style={{ width: 36, height: 36 }}
+                      resizeMode="contain"
+                    />
+                  </View>
                 </View>
-              </View>
-              <Text style={styles.sheetDesc}>Authenticate with your biometric passkey</Text>
+                <Text style={styles.heroPasskeyTitle}>Passkey Sign In</Text>
+                <Text style={styles.heroPasskeySubtitle}>
+                  Instant biometric unlock. No seed phrase or address needed.
+                </Text>
+              </TouchableOpacity>
 
               {/* SAVED WALLETS ON THIS DEVICE */}
               {savedWallets.length > 0 && (
@@ -1910,7 +1931,6 @@ export default function SignIn() {
                         onPress={() => {
                           Haptics.selectionAsync()
                           setRestoreAddress(w.address)
-                          setIsEditingAddress(false)
                         }}
                         activeOpacity={0.8}
                       >
@@ -1931,144 +1951,26 @@ export default function SignIn() {
                 </View>
               )}
 
-              {/* ADDRESS AREA - Fixed min-height area swapping between Input & Wallet Found */}
-              <View style={styles.addressAreaWrap}>
-                <Text style={styles.addressAreaLabel}>Wallet address</Text>
+              {/* TARGET ADDRESS PILL (if manually entered or found via guardian) */}
+              {restoreParse.address && savedWallets.length === 0 && (
+                <View style={styles.activeTargetAddressPill}>
+                  <MaterialIcons name="lock-outline" size={13} color="#6C8CFF" />
+                  <Text style={styles.activeTargetAddressText}>
+                    Target: {ellipsify(restoreParse.address, 6)}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Haptics.selectionAsync()
+                      setRestoreAddress('')
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <MaterialIcons name="cancel" size={15} color="#8A8985" />
+                  </TouchableOpacity>
+                </View>
+              )}
 
-                {restoreParse.address && !isEditingAddress ? (
-                  /* STATE B: WALLET FOUND ROW */
-                  <View style={styles.walletFoundCard}>
-                    <View style={styles.walletFoundLeft}>
-                      <View style={styles.walletFoundBadge}>
-                        <MaterialIcons name="check" size={16} color="#5FBF7A" />
-                      </View>
-                      <View>
-                        <Text style={styles.walletFoundSubtitle}>Wallet found</Text>
-                        <Text style={styles.walletFoundAddress}>
-                          {ellipsify(restoreParse.address, 6)}
-                        </Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => {
-                        Haptics.selectionAsync()
-                        setIsEditingAddress(true)
-                      }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.walletFoundChangeText}>Change</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  /* STATE A: EMPTY / EDITING INPUT */
-                  <View>
-                    <View style={styles.addressInputContainer}>
-                      <TextInput
-                        style={styles.addressInput}
-                        value={restoreAddress}
-                        onChangeText={setRestoreAddress}
-                        placeholder="Paste Solana smart wallet address"
-                        placeholderTextColor="#5F5E5A"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                      {restoreAddress.length > 0 ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          {restoreParse.address ? (
-                            <TouchableOpacity
-                              onPress={() => {
-                                Haptics.selectionAsync()
-                                setIsEditingAddress(false)
-                              }}
-                              style={styles.doneBadgeButton}
-                            >
-                              <Text style={styles.doneBadgeText}>Done</Text>
-                            </TouchableOpacity>
-                          ) : null}
-                          <TouchableOpacity
-                            onPress={() => {
-                              setRestoreAddress('')
-                              setIsEditingAddress(true)
-                              Haptics.selectionAsync().catch(() => {})
-                            }}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          >
-                            <MaterialIcons name="cancel" size={18} color="#8A8985" />
-                          </TouchableOpacity>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          style={styles.pasteBadgeButton}
-                          onPress={async () => {
-                            const addr = await fillFromClipboard()
-                            if (addr) {
-                              Haptics.selectionAsync()
-                              setIsEditingAddress(false)
-                            }
-                          }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          activeOpacity={0.7}
-                        >
-                          <MaterialIcons name="content-paste" size={14} color="#6C8CFF" />
-                          <Text style={styles.pasteBadgeText}>Paste</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-
-                    {/* FORGOT ADDRESS: GUARDIAN SEARCH */}
-                    <TouchableOpacity
-                      style={styles.guardianSearchToggle}
-                      onPress={() => {
-                        Haptics.selectionAsync()
-                        setShowGuardianLookup((prev) => !prev)
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <MaterialIcons name="search" size={14} color="#8A8985" />
-                      <Text style={styles.guardianSearchToggleText}>
-                        {showGuardianLookup ? 'Hide guardian lookup' : 'Forgot address? Search on-chain by guardian'}
-                      </Text>
-                      <MaterialIcons
-                        name={showGuardianLookup ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                        size={14}
-                        color="#8A8985"
-                      />
-                    </TouchableOpacity>
-
-                    {showGuardianLookup && (
-                      <View style={styles.guardianSearchBox}>
-                        <Text style={styles.guardianSearchHelp}>
-                          Enter your guardian's Solana address, for example your Phantom or a friend's wallet, to find your smart wallet.
-                        </Text>
-                        <View style={[styles.addressInputContainer, { marginTop: 10, marginBottom: 10, height: 46 }]}>
-                          <TextInput
-                            style={styles.addressInput}
-                            value={guardianLookupInput}
-                            onChangeText={setGuardianLookupInput}
-                            placeholder="Guardian Solana address"
-                            placeholderTextColor="#5F5E5A"
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                          />
-                        </View>
-                        <TouchableOpacity
-                          style={[styles.guardianSearchBtn, isSearchingGuardian && { opacity: 0.7 }]}
-                          onPress={handleSearchByGuardian}
-                          disabled={isSearchingGuardian || !guardianLookupInput.trim()}
-                        >
-                          {isSearchingGuardian ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                          ) : (
-                            <Text style={styles.guardianSearchBtnText}>Find my wallet on-chain</Text>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                  </View>
-                )}
-              </View>
-
+              {/* PRIMARY ACTION BUTTON */}
               <TouchableOpacity
                 style={[styles.primaryAccentButton, isSigningIn && { opacity: 0.8 }]}
                 onPress={handleSignInWithPasskey}
@@ -2079,11 +1981,125 @@ export default function SignIn() {
                   <ActivityIndicator color="#0C0C0D" />
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <TablerFingerprintIcon size={18} color="#0C0C0D" strokeWidth={2.2} />
-                    <Text style={styles.primaryAccentButtonText}>Sign in with biometrics</Text>
+                    <TablerFingerprintIcon size={19} color="#0C0C0D" strokeWidth={2.2} />
+                    <Text style={styles.primaryAccentButtonText}>Sign in with Passkey</Text>
                   </View>
                 )}
               </TouchableOpacity>
+
+              {/* ADVANCED / MANUAL RECOVERY TOGGLE */}
+              <TouchableOpacity
+                style={styles.signInManualOptionsToggle}
+                onPress={() => {
+                  Haptics.selectionAsync()
+                  setShowAddressInput((prev) => !prev)
+                }}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="tune" size={14} color="#8A8985" />
+                <Text style={styles.signInManualOptionsToggleText}>
+                  {showAddressInput ? 'Hide manual recovery options' : 'Enter address manually or use guardian'}
+                </Text>
+                <MaterialIcons
+                  name={showAddressInput ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                  size={16}
+                  color="#8A8985"
+                />
+              </TouchableOpacity>
+
+              {/* EXPANDED MANUAL & GUARDIAN OPTIONS */}
+              {showAddressInput && (
+                <View style={styles.manualOptionsContainer}>
+                  <Text style={styles.manualInputLabel}>Wallet Address (Optional)</Text>
+                  <View style={styles.addressInputContainer}>
+                    <TextInput
+                      style={styles.addressInput}
+                      value={restoreAddress}
+                      onChangeText={setRestoreAddress}
+                      placeholder="Paste Solana smart wallet address"
+                      placeholderTextColor="#5F5E5A"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    {restoreAddress.length > 0 ? (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setRestoreAddress('')
+                          Haptics.selectionAsync().catch(() => {})
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <MaterialIcons name="cancel" size={18} color="#8A8985" />
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.pasteBadgeButton}
+                        onPress={async () => {
+                          const addr = await fillFromClipboard()
+                          if (addr) {
+                            Haptics.selectionAsync()
+                          }
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        activeOpacity={0.7}
+                      >
+                        <MaterialIcons name="content-paste" size={14} color="#6C8CFF" />
+                        <Text style={styles.pasteBadgeText}>Paste</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                  {/* FORGOT ADDRESS: GUARDIAN SEARCH */}
+                  <TouchableOpacity
+                    style={[styles.guardianSearchToggle, { marginTop: 12 }]}
+                    onPress={() => {
+                      Haptics.selectionAsync()
+                      setShowGuardianLookup((prev) => !prev)
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <MaterialIcons name="security" size={14} color="#8A8985" />
+                    <Text style={styles.guardianSearchToggleText}>
+                      {showGuardianLookup ? 'Hide guardian lookup' : 'Forgot address? Search on-chain by guardian'}
+                    </Text>
+                    <MaterialIcons
+                      name={showGuardianLookup ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                      size={14}
+                      color="#8A8985"
+                    />
+                  </TouchableOpacity>
+
+                  {showGuardianLookup && (
+                    <View style={styles.guardianSearchBox}>
+                      <Text style={styles.guardianSearchHelp}>
+                        Enter your guardian&apos;s Solana address, for example your Phantom or a friend&apos;s wallet, to find your smart wallet.
+                      </Text>
+                      <View style={[styles.addressInputContainer, { marginTop: 10, marginBottom: 10, height: 46 }]}>
+                        <TextInput
+                          style={styles.addressInput}
+                          value={guardianLookupInput}
+                          onChangeText={setGuardianLookupInput}
+                          placeholder="Guardian Solana address"
+                          placeholderTextColor="#5F5E5A"
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                        />
+                      </View>
+                      <TouchableOpacity
+                        style={[styles.guardianSearchBtn, isSearchingGuardian && { opacity: 0.7 }]}
+                        onPress={handleSearchByGuardian}
+                        disabled={isSearchingGuardian || !guardianLookupInput.trim()}
+                      >
+                        {isSearchingGuardian ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Text style={styles.guardianSearchBtnText}>Find my wallet on-chain</Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
             </ScrollView>
           </Animated.View>
         </View>
@@ -2158,25 +2174,30 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginTop: 4,
-      marginBottom: 8,
+      marginTop: 2,
+      marginBottom: 12,
     },
     guideTopPill: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 5,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 16,
-      backgroundColor: 'rgba(96, 165, 250, 0.12)',
+      gap: 6,
+      paddingHorizontal: 13,
+      paddingVertical: 7,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: 'rgba(255, 255, 255, 0.08)',
       borderWidth: 1,
-      borderColor: 'rgba(96, 165, 250, 0.28)',
+      borderColor: 'rgba(255, 255, 255, 0.16)',
+      shadowColor: '#60A5FA',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
     },
     guideTopPillText: {
       fontSize: 12.5,
       fontWeight: '600',
-      color: '#93C5FD',
-      letterSpacing: -0.1,
+      color: '#F1F5F9',
+      letterSpacing: -0.2,
     },
     superMiddleSection: {
       flex: 1,
@@ -2357,60 +2378,78 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       letterSpacing: -0.2,
     },
     primaryDarkButtonText: { color: isDark ? '#000000' : '#FFFFFF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
-    addressAreaWrap: {
-      minHeight: 104,
-      marginBottom: 16,
+    heroPasskeyCard: {
+      alignItems: 'center',
+      paddingVertical: 18,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(108, 140, 255, 0.04)',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(108, 140, 255, 0.12)',
+      marginBottom: 12,
     },
-    addressAreaLabel: {
-      color: '#8A8985',
-      fontSize: 11.5,
-      marginBottom: 6,
+    heroPasskeyTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: p.heroInk,
+      marginTop: 8,
+      marginBottom: 4,
+      letterSpacing: -0.2,
     },
-    walletFoundCard: {
+    heroPasskeySubtitle: {
+      fontSize: 13,
+      color: p.inkSecondary,
+      textAlign: 'center',
+      lineHeight: 18,
+      paddingHorizontal: 8,
+    },
+    signInManualOptionsToggle: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: isDark ? '#141416' : '#FFFFFF',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 12,
+      marginTop: 6,
+    },
+    signInManualOptionsToggleText: {
+      fontSize: 12.5,
+      color: '#8A8985',
+      fontWeight: '500',
+    },
+    manualOptionsContainer: {
+      marginTop: 4,
+      marginBottom: 12,
+      padding: 14,
+      borderRadius: 14,
+      backgroundColor: isDark ? '#141416' : '#F9FAFB',
       borderWidth: 0.5,
       borderColor: isDark ? '#2A2A28' : '#E5E7EB',
-      borderRadius: 12,
-      paddingVertical: 10,
-      paddingHorizontal: 12,
     },
-    walletFoundLeft: {
+    manualInputLabel: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: '#8A8985',
+      marginBottom: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    activeTargetAddressPill: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
-      flex: 1,
-    },
-    walletFoundBadge: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      backgroundColor: 'rgba(95, 191, 122, 0.12)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      flexShrink: 0,
-    },
-    walletFoundSubtitle: {
-      fontSize: 11.5,
-      color: '#8A8985',
-      marginBottom: 2,
-    },
-    walletFoundAddress: {
-      fontSize: 13,
-      fontWeight: '500',
-      color: isDark ? '#F2F1EE' : '#181714',
-      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    },
-    walletFoundChangeBtn: {
+      alignSelf: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
       paddingVertical: 6,
-      paddingHorizontal: 10,
+      borderRadius: 14,
+      backgroundColor: isDark ? 'rgba(108, 140, 255, 0.12)' : 'rgba(108, 140, 255, 0.08)',
+      marginTop: 4,
+      marginBottom: 8,
     },
-    walletFoundChangeText: {
-      fontSize: 13,
-      fontWeight: '500',
+    activeTargetAddressText: {
+      fontSize: 12,
       color: '#6C8CFF',
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+      fontWeight: '600',
     },
     doneBadgeButton: {
       paddingHorizontal: 8,

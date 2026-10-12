@@ -27,9 +27,8 @@ import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { HaptixAccountSwitcherSheet } from '@/components/haptix/haptix-account-switcher-sheet'
 import { HaptixNetworkModal } from '@/components/haptix/haptix-network-modal'
 import { HaptixThemeModal } from '@/components/haptix/haptix-theme-modal'
-import { HaptixPolicySheet, PolicyTopic } from '@/components/haptix/haptix-policy-sheet'
 import { HaptixFeatureGuideModal } from '@/components/haptix/haptix-feature-guide-modal'
-import { HaptixTokenIcon } from '@/components/haptix/haptix-icons'
+import { HaptixPolicySheet, PolicyTopic } from '@/components/haptix/haptix-policy-sheet'
 import { useConfirmRemoveWallet } from '@/components/haptix/haptix-remove-wallet'
 import { bindHardwarePasskey, deletePasskeys, getDiscoverablePlatformAssertion } from '@/utils/haptix-passkey'
 import { matchWebAuthnAssertion } from '@/utils/secp256r1-instruction'
@@ -64,7 +63,6 @@ export default function TabSettingsScreen() {
   const { selectedCluster, clusters, setSelectedCluster, connection, getExplorerUrl } = useCluster()
   const confirmRemoveWallet = useConfirmRemoveWallet()
 
-  const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
   const [isAccountSwitcherOpen, setIsAccountSwitcherOpen] = useState(false)
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false)
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false)
@@ -72,6 +70,7 @@ export default function TabSettingsScreen() {
   const [isRequestingFaucet, setIsRequestingFaucet] = useState(false)
   const [isBindingBackup, setIsBindingBackup] = useState(false)
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false)
+  const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
 
   const isDevnet = selectedCluster.network === ClusterNetwork.Devnet
   const hasBackupBound = !!activeWallet?.secondaryCredentialId
@@ -122,17 +121,62 @@ export default function TabSettingsScreen() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
       const walletPda = new PublicKey(activeWallet.address)
-      const sig = await fundDevnetWallet(connection, walletPda, 0.1)
+      const sig = await fundDevnetWallet(connection, walletPda, 0.2, {
+        maxBalanceCheck: 0.5,
+        enforceCooldown: true,
+      })
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       dialog.alert(
         'Airdrop Confirmed',
-        `Received +0.1 Devnet SOL for testing.\n\nSignature: ${sig.slice(0, 8)}...${sig.slice(-8)}`,
+        `Received +0.2 Devnet SOL for testing.\n\nSignature: ${sig.slice(0, 8)}...${sig.slice(-8)}`,
       )
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Devnet airdrop failed:', err)
+      const msg = err?.message || ''
+
+      if (msg.includes('already holds')) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+        dialog.alert('Test Balance Plentiful', msg, undefined, { status: 'neutral' })
+        return
+      }
+
+      if (msg.includes('cooldown active')) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+        dialog.alert('Faucet Cooldown Active', msg, undefined, { status: 'warning' })
+        return
+      }
+
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-      dialog.alert('Faucet Failed', 'Could not complete Devnet airdrop. Please try again shortly.')
+      dialog.alert(
+        'Devnet Faucet Unavailable',
+        'The in-app sponsorship faucet is temporarily busy or rate-limited. You can request free SOL directly from the official Solana Devnet Web Faucet.',
+        [
+          {
+            text: 'Copy Address',
+            onPress: () => {
+              if (activeWallet?.address) {
+                copyToClipboard(activeWallet.address)
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+              }
+            },
+          },
+          {
+            text: 'Open Solana Faucet',
+            onPress: () => {
+              if (activeWallet?.address) {
+                copyToClipboard(activeWallet.address)
+              }
+              Linking.openURL('https://faucet.solana.com/').catch(() => {})
+            },
+          },
+          {
+            text: 'Dismiss',
+            style: 'cancel',
+          },
+        ],
+        { status: 'warning' },
+      )
     } finally {
       setIsRequestingFaucet(false)
     }
@@ -358,19 +402,17 @@ export default function TabSettingsScreen() {
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Platform passkey (backup)</Text>
               {isBindingBackup ? (
                 <ActivityIndicator size="small" color={theme.accent} style={styles.rowSpinner} />
-              ) : (
-                <Text
-                  style={[
-                    styles.rowValue,
-                    { color: hasBackupBound ? theme.textMuted : theme.emeraldText },
-                  ]}
-                >
-                  {hasBackupBound
-                    ? activeWallet?.secondaryPasskeyHex
-                      ? `Active · ${ellipsify(activeWallet.secondaryPasskeyHex, 4)}`
-                      : 'Active'
-                    : 'Link Key'}
+              ) : hasBackupBound ? (
+                <Text style={[styles.rowValue, { color: theme.textMuted }]}>
+                  {activeWallet?.secondaryPasskeyHex
+                    ? `Active · ${ellipsify(activeWallet.secondaryPasskeyHex, 4)}`
+                    : 'Active'}
                 </Text>
+              ) : (
+                <View style={styles.linkKeyHighlightChip}>
+                  <MaterialIcons name="add" size={13} color="#FFFFFF" style={{ marginRight: 2 }} />
+                  <Text style={styles.linkKeyHighlightText}>Link Key</Text>
+                </View>
               )}
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
@@ -614,7 +656,7 @@ export default function TabSettingsScreen() {
             <TouchableOpacity
               style={styles.row}
               onPress={() => {
-                Haptics.selectionAsync()
+                void Haptics.selectionAsync()
                 setPolicyTopic('security')
               }}
               activeOpacity={0.7}
@@ -630,7 +672,7 @@ export default function TabSettingsScreen() {
             <TouchableOpacity
               style={styles.row}
               onPress={() => {
-                Haptics.selectionAsync()
+                void Haptics.selectionAsync()
                 setPolicyTopic('terms')
               }}
               activeOpacity={0.7}
@@ -646,7 +688,7 @@ export default function TabSettingsScreen() {
             <TouchableOpacity
               style={styles.row}
               onPress={() => {
-                Haptics.selectionAsync()
+                void Haptics.selectionAsync()
                 setPolicyTopic('privacy')
               }}
               activeOpacity={0.7}
@@ -686,12 +728,6 @@ export default function TabSettingsScreen() {
         </View>
       </ScrollView>
 
-      <HaptixPolicySheet
-        topic={policyTopic}
-        threshold={activeWallet?.spendThreshold ?? 0.1}
-        onClose={() => setPolicyTopic(null)}
-      />
-
       <HaptixAccountSwitcherSheet
         visible={isAccountSwitcherOpen}
         onClose={() => setIsAccountSwitcherOpen(false)}
@@ -720,6 +756,12 @@ export default function TabSettingsScreen() {
         visible={isGuideModalOpen}
         onClose={() => setIsGuideModalOpen(false)}
         persistDismissal={false}
+      />
+
+      <HaptixPolicySheet
+        topic={policyTopic}
+        threshold={activeWallet?.spendThreshold ?? 0.1}
+        onClose={() => setPolicyTopic(null)}
       />
     </View>
   )
@@ -789,6 +831,26 @@ const styles = StyleSheet.create({
   },
   rowSpinner: {
     marginRight: 4,
+  },
+  linkKeyHighlightChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#10B981',
+    paddingHorizontal: 10,
+    paddingVertical: 4.5,
+    borderRadius: 12,
+    marginRight: 2,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  linkKeyHighlightText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

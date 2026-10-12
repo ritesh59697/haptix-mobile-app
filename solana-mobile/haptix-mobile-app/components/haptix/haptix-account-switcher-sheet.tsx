@@ -36,6 +36,7 @@ import { getDevnetFunderPublicKey, isDevnetFunder } from '@/utils/haptix-funder'
 import { useCluster, ClusterNetwork } from '@/components/cluster/cluster-provider'
 import { HaptixWalletCreatedContent } from '@/components/haptix/haptix-wallet-created-sheet'
 import { AppConfig } from '@/constants/app-config'
+import { authenticateAndDiscoverPasskeyWallet } from '@/utils/haptix-passkey-recovery'
 
 interface HaptixAccountSwitcherSheetProps {
   visible: boolean
@@ -47,7 +48,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
   const insets = useSafeAreaInsets()
   const { theme } = useAppTheme()
   const dialog = useHaptixDialog()
-  const { activeWallet, wallets, switchWallet, createWallet, removeAccount } = useAuth()
+  const { activeWallet, wallets, switchWallet, createWallet, removeAccount, updateWallet } = useAuth()
   const { selectedCluster } = useCluster()
   const network = selectedCluster?.network === ClusterNetwork.Mainnet ? 'mainnet' : 'devnet'
 
@@ -56,6 +57,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
   const [switchingTo, setSwitchingTo] = useState<string | null>(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [isSigningInExisting, setIsSigningInExisting] = useState(false)
   const [creationStep, setCreationStep] = useState<0 | 1 | 2 | 3>(0)
   const [isManageMode, setIsManageMode] = useState(false)
 
@@ -201,6 +203,16 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
   }
 
   const handleStartCreate = () => {
+    if (wallets.length >= 5) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+      dialog.alert(
+        'Account Limit Reached',
+        'This device has reached the maximum of 5 smart accounts to conserve test resources. Please remove an account first to create a new one.',
+        undefined,
+        { status: 'warning' },
+      )
+      return
+    }
     Haptics.selectionAsync()
     setIsManageMode(false)
     setSelectedMode('everyday')
@@ -216,6 +228,66 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
     setTimeout(() => {
       createScrollRef.current?.scrollTo({ y: 0, animated: false })
     }, 30)
+  }
+
+  const handleStartSignIn = async () => {
+    if (isSigningInExisting) return
+    try {
+      setIsSigningInExisting(true)
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+      const restored = await authenticateAndDiscoverPasskeyWallet({
+        rpcUrl: AppConfig.devnetRpcUrl,
+      })
+
+      const wasAlreadyActive = activeWallet?.address === restored.address
+      const wasAlreadyInList = wallets.some((w) => w.address === restored.address)
+
+      await updateWallet(restored)
+      if (!wasAlreadyActive) {
+        await switchWallet(restored.address)
+      }
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      onClose()
+
+      if (wasAlreadyActive) {
+        dialog.alert(
+          'Already Active',
+          `"${restored.name || 'This wallet'}" (${ellipsify(restored.address, 6)}) is already your active account. Biometric passkey verified!`,
+          undefined,
+          { status: 'success' },
+        )
+      } else if (wasAlreadyInList) {
+        dialog.alert(
+          'Switched Account',
+          `Switched to "${restored.name || 'Smart Wallet'}" (${ellipsify(restored.address, 6)}). This account was already on your device.`,
+          undefined,
+          { status: 'success' },
+        )
+      } else {
+        dialog.alert(
+          'Account Linked',
+          `Successfully signed in to ${restored.name || 'Smart Wallet'} (${ellipsify(restored.address, 6)})!`,
+          undefined,
+          { status: 'success' },
+        )
+      }
+    } catch (err: any) {
+      const msg = err?.message || ''
+      if (
+        msg.includes('cancelled') ||
+        msg.includes('Cancelled') ||
+        msg.includes('dismissed') ||
+        msg.includes('user cancelled')
+      ) {
+        return
+      }
+      dialog.alert(
+        'Passkey Sign In',
+        msg || 'Could not find an on-chain smart wallet matching this biometric passkey.',
+      )
+    } finally {
+      setIsSigningInExisting(false)
+    }
   }
 
   const handlePromptRemove = (wallet: (typeof wallets)[0]) => {
@@ -278,18 +350,6 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
     }
   }
 
-  const handleSelectVaultSource = (source: 'mac' | 'hardware') => {
-    Haptics.selectionAsync()
-    setVaultKeySource(source)
-    if (selectedMode === 'vault') {
-      setSecondaryKeyLabel(
-        source === 'mac'
-          ? 'Second Device (Vault Key)'
-          : 'Vault Key (Security Key)'
-      )
-    }
-  }
-
   const handleCancelCreate = () => {
     if (creationStep > 0) return
     Haptics.selectionAsync()
@@ -306,6 +366,17 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
   const handleConfirmCreate = async () => {
     Keyboard.dismiss()
+
+    if (wallets.length >= 5) {
+      dialog.alert(
+        'Account Limit Reached',
+        'This device has reached the maximum of 5 smart accounts to conserve test resources. Please remove an account first to create a new one.',
+        undefined,
+        { status: 'warning' },
+      )
+      return
+    }
+
     const finalName =
       newAccountName.trim() ||
       (selectedMode === 'vault' ? 'Hardware Vault' : 'Everyday Account')
@@ -365,7 +436,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
       const newAccount = await createWallet(finalName, {
         mode: selectedMode,
-        spendThreshold: selectedMode === 'vault' ? 0.0 : 0.1,
+        spendThreshold: 0.1,
         primaryLabel: primaryKeyLabel.trim() || undefined,
         secondaryLabel: secondaryKeyLabel.trim() || undefined,
         guardianAddress: parsedGuardian.toBase58(),
@@ -388,7 +459,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
         name: finalName,
         address: newAccount.address,
         securityMode: selectedMode,
-        spendThreshold: selectedMode === 'vault' ? 0.0 : 0.1,
+        spendThreshold: 0.1,
       })
     } catch (err: any) {
       setCreationStep(0)
@@ -676,6 +747,45 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       </View>
                     </TouchableOpacity>
                   )}
+
+                  {/* Sign In to Existing Account Trigger */}
+                  {!isManageMode && (
+                    <TouchableOpacity
+                      style={[
+                        styles.addAccountBtn,
+                        {
+                          backgroundColor: theme.isDark ? '#1C1C1E' : '#EFEFF0',
+                          marginTop: 10,
+                        },
+                      ]}
+                      onPress={handleStartSignIn}
+                      activeOpacity={0.75}
+                      disabled={isSigningInExisting}
+                    >
+                      <View
+                        style={[
+                          styles.addAccountIconBox,
+                          { backgroundColor: theme.isDark ? '#26262A' : '#E0E0E6' },
+                        ]}
+                      >
+                        {isSigningInExisting ? (
+                          <ActivityIndicator size="small" color={theme.accent} />
+                        ) : (
+                          <MaterialIcons name="vpn-key" size={19} color={theme.accent} />
+                        )}
+                      </View>
+                      <View style={styles.addAccountTextGroup}>
+                        <Text style={[styles.addAccountTitle, { color: theme.textPrimary }]}>
+                          Sign In to Existing Account
+                        </Text>
+                        <Text style={[styles.addAccountSubtitle, { color: theme.textMuted }]}>
+                          {isSigningInExisting
+                            ? 'Scanning biometric passkeys...'
+                            : 'Restore another wallet with your passkey'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 </ScrollView>
               ) : creationStep > 0 ? (
                 /* ================================================================ */
@@ -898,73 +1008,34 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                         Vault key device
                       </Text>
                       <View style={styles.vaultDeviceRow}>
-                        <TouchableOpacity
-                          onPress={() => handleSelectVaultSource('mac')}
+                        <View
                           style={[
                             styles.vaultDeviceCard,
                             {
-                              backgroundColor:
-                                vaultKeySource === 'mac'
-                                  ? (theme.isDark ? '#1C1C1E' : '#FFFFFF')
-                                  : (theme.isDark ? '#141416' : '#F5F5F7'),
-                              borderColor:
-                                vaultKeySource === 'mac' ? '#4F6BFF' : (theme.isDark ? '#222226' : theme.borderSubtle),
-                              borderWidth: vaultKeySource === 'mac' ? 1.5 : 1,
+                              flex: 1,
+                              backgroundColor: theme.isDark ? '#1C1C1E' : '#FFFFFF',
+                              borderColor: '#4F6BFF',
+                              borderWidth: 1.5,
                             },
                           ]}
-                          activeOpacity={0.8}
                         >
                           <MaterialIcons
                             name="devices"
                             size={19}
-                            color={vaultKeySource === 'mac' ? '#4F6BFF' : theme.textMuted}
+                            color="#4F6BFF"
                           />
                           <Text
                             style={[
                               styles.vaultDeviceText,
                               {
-                                color: vaultKeySource === 'mac' ? '#4F6BFF' : theme.textPrimary,
-                                fontWeight: vaultKeySource === 'mac' ? '700' : '600',
+                                color: '#4F6BFF',
+                                fontWeight: '700',
                               },
                             ]}
                           >
-                            Second Device
+                            Second Device (Laptop, Mac, or 2nd Phone)
                           </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                          onPress={() => handleSelectVaultSource('hardware')}
-                          style={[
-                            styles.vaultDeviceCard,
-                            {
-                              backgroundColor:
-                                vaultKeySource === 'hardware'
-                                  ? (theme.isDark ? '#1C1C1E' : '#FFFFFF')
-                                  : (theme.isDark ? '#141416' : '#F5F5F7'),
-                              borderColor:
-                                vaultKeySource === 'hardware' ? '#4F6BFF' : (theme.isDark ? '#222226' : theme.borderSubtle),
-                              borderWidth: vaultKeySource === 'hardware' ? 1.5 : 1,
-                            },
-                          ]}
-                          activeOpacity={0.8}
-                        >
-                          <MaterialIcons
-                            name="usb"
-                            size={19}
-                            color={vaultKeySource === 'hardware' ? '#4F6BFF' : theme.textMuted}
-                          />
-                          <Text
-                            style={[
-                              styles.vaultDeviceText,
-                              {
-                                color: vaultKeySource === 'hardware' ? '#4F6BFF' : theme.textPrimary,
-                                fontWeight: vaultKeySource === 'hardware' ? '700' : '600',
-                              },
-                            ]}
-                          >
-                            USB / NFC key
-                          </Text>
-                        </TouchableOpacity>
+                        </View>
                       </View>
 
                       {vaultKeySource === 'mac' ? (
@@ -1069,7 +1140,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                               <Text style={styles.macVaultStepBadgeText}>2</Text>
                             </View>
                             <Text style={[styles.macVaultStepTitle, { color: theme.isDark ? '#F4F4F5' : '#1E293B' }]}>
-                              Tap "Enroll" on that device, then paste key below
+                              Tap &quot;Enroll&quot; on that device, then paste key below
                             </Text>
                           </View>
 

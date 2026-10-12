@@ -1071,7 +1071,11 @@ async function registerHardwarePasskey(
 
   const roleName = id === 'primary' ? 'Primary' : 'Backup'
   const roleDisplay = id === 'primary' ? 'Primary Key' : 'Backup Key'
-  const cleanWalletName = walletName.trim() || 'Haptix Wallet'
+  const rawName = walletName.trim()
+  const cleanWalletName =
+    rawName && rawName !== 'Primary Passkey' && rawName !== 'Backup Key'
+      ? rawName
+      : 'Haptix Wallet'
   // Make user.name and user.displayName unique per wallet & key role to prevent
   // Google Password Manager / Android Credential Manager from colliding multiple keys
   // under the identical username 'Haptix Wallet'.
