@@ -5,13 +5,13 @@
 <title>Haptix — Pitch Deck</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Serif&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600&family=Instrument+Serif&display=swap" rel="stylesheet">
 <style>
   @page { size: 1920px 1080px; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
-    background: #09090b;
-    color: #f4f4f5;
+    background: #f4f4f1;
+    color: #1c1c1c;
     font-family: "Instrument Sans", sans-serif;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -20,7 +20,7 @@
   .slide {
     width: 1920px;
     height: 1080px;
-    background: #09090b;
+    background: #f4f4f1;
     position: relative;
     overflow: hidden;
     page-break-after: always;
@@ -37,55 +37,50 @@
     font-size: 14px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #71717a;
+    color: #6f6f6a;
   }
-  .top b { color: #a1a1aa; font-weight: 500; }
   h1 {
     font-family: "Instrument Serif", serif;
     font-weight: 400;
     letter-spacing: -0.03em;
     line-height: 0.96;
-    color: #fff;
+    color: #161616;
   }
-  .muted { color: #a1a1aa; }
-  .dim { color: #71717a; }
-  .blue { color: #8ba4ff; }
 
-  /* Cover */
   .cover {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 500px;
+    grid-template-columns: minmax(0, 1fr) 480px;
     grid-template-rows: auto 1fr;
-    column-gap: 40px;
-    padding: 56px 72px 0 88px;
+    column-gap: 28px;
+    padding: 56px 64px 48px 88px;
   }
   .cover .top { grid-column: 1 / -1; }
   .cover-copy {
     align-self: center;
-    padding-bottom: 88px;
+    padding-bottom: 36px;
     max-width: 920px;
   }
-  .cover h1 { font-size: 148px; margin-top: 64px; }
+  .cover h1 { font-size: 140px; margin-top: 36px; }
   .lede {
     margin-top: 28px;
     font-size: 32px;
     line-height: 1.25;
-    color: #e4e4e7;
+    color: #1c1c1c;
     max-width: 16em;
   }
   .deck {
     margin-top: 18px;
     font-size: 22px;
     line-height: 1.45;
-    color: #a1a1aa;
+    color: #4a4a46;
     max-width: 26em;
   }
   .facts {
     display: flex;
     gap: 36px;
-    margin-top: 56px;
+    margin-top: 52px;
     padding-top: 28px;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(22,22,22,0.12);
   }
   .facts div { max-width: 220px; }
   .facts strong {
@@ -95,164 +90,24 @@
     letter-spacing: -0.02em;
     margin-bottom: 6px;
   }
-  .facts span { font-size: 15px; line-height: 1.4; color: #71717a; }
+  .facts span { font-size: 15px; line-height: 1.4; color: #5e5e58; }
 
-  /* Phone */
   .phone-col {
     align-self: end;
     justify-self: center;
-    margin-bottom: -28px;
   }
-  .phone {
-    width: 420px;
-    height: 860px;
-    background-color: #000000;
-    border-radius: 48px 48px 0 0;
-    padding: 22px 22px 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16);
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  .phone-screen {
-    flex: 1;
-    background-color: #000000;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  .status {
-    display: flex;
-    justify-content: space-between;
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 12px;
-    color: #d4d4d8;
-    padding: 4px 8px 16px;
-  }
-  .wallet-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 4px;
-  }
-  .who { display: flex; align-items: center; gap: 10px; }
-  .who img { width: 28px; height: 28px; object-fit: contain; }
-  .who strong { font-size: 16px; font-weight: 600; }
-  .addr {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 12px;
-    color: #a1a1aa;
-    background: #141416;
-    border-radius: 999px;
-    padding: 6px 10px;
-  }
-  .bal {
-    padding: 36px 4px 8px;
-  }
-  .bal em {
-    font-style: normal;
-    font-family: "Instrument Serif", serif;
-    font-size: 72px;
-    letter-spacing: -0.04em;
-    line-height: 0.9;
-  }
-  .bal small {
+  .shot {
+    width: 430px;
+    height: auto;
     display: block;
-    margin-top: 10px;
-    color: #71717a;
-    font-size: 14px;
+    border-radius: 36px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.7) inset,
+      0 24px 48px rgba(28, 27, 22, 0.16),
+      0 0 0 1px rgba(22,22,22,0.08);
   }
-  .actions {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin: 28px 0 22px;
-  }
-  .actions div {
-    background: #141416;
-    border-radius: 16px;
-    padding: 14px 0 12px;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 500;
-  }
-  .actions svg { display: block; margin: 0 auto 8px; }
-  .asset, .tx {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 4px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    font-size: 15px;
-  }
-  .asset b, .tx b { font-weight: 500; }
-  .tx span { color: #71717a; font-size: 13px; }
-  .sol-dot {
-    width: 28px; height: 28px; border-radius: 50%;
-    background: linear-gradient(160deg, #14f195, #9945ff);
-    margin-right: 10px;
-  }
-  .row-l { display: flex; align-items: center; }
-  .dock {
-    margin-top: auto;
-    display: flex;
-    justify-content: space-between;
-    padding: 16px 12px 28px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    font-size: 11px;
-    color: #71717a;
-  }
-  .dock .on { color: #fff; }
+  .product .shot { width: 400px; }
 
-  /* Send sheet phone */
-  .sheet-phone .phone-screen { padding-bottom: 0; }
-  .sheet-bg { padding: 8px 6px 0; opacity: 0.45; }
-  .sheet {
-    margin-top: auto;
-    background: #111113;
-    border-radius: 28px 28px 0 0;
-    padding: 14px 22px 36px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-  }
-  .grab {
-    width: 42px; height: 4px; border-radius: 4px;
-    background: #3f3f46; margin: 0 auto 22px;
-  }
-  .sheet h3 {
-    font-family: "Instrument Serif", serif;
-    font-size: 40px;
-    font-weight: 400;
-    letter-spacing: -0.03em;
-  }
-  .sheet .to {
-    margin-top: 8px;
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 13px;
-    color: #a1a1aa;
-  }
-  .warn {
-    margin: 22px 0;
-    padding-top: 18px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    font-size: 16px;
-    line-height: 1.4;
-    color: #e4e4e7;
-  }
-  .hold {
-    background: #6c8cff;
-    color: #0b1020;
-    text-align: center;
-    font-weight: 600;
-    font-size: 16px;
-    border-radius: 14px;
-    padding: 16px;
-  }
-
-  /* Problem */
   .prob h1 { font-size: 72px; max-width: 16em; margin: 36px 0 28px; }
   .rows { flex: 1; display: flex; flex-direction: column; }
   .row {
@@ -261,41 +116,34 @@
     grid-template-columns: 88px 420px 1fr;
     gap: 24px;
     align-items: center;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(22,22,22,0.12);
   }
   .row .n {
     font-family: "IBM Plex Mono", monospace;
     font-size: 15px;
-    color: #71717a;
+    color: #6f6f6a;
   }
-  .row h2 {
-    font-size: 32px;
-    font-weight: 500;
-    letter-spacing: -0.03em;
-  }
-  .row p { font-size: 22px; line-height: 1.4; color: #a1a1aa; max-width: 28em; }
+  .row h2 { font-size: 32px; font-weight: 500; letter-spacing: -0.03em; }
+  .row p { font-size: 22px; line-height: 1.4; color: #3f3f3b; max-width: 28em; }
 
-  /* Product */
-  .split { flex: 1; display: grid; grid-template-columns: 1fr 460px; gap: 48px; min-height: 0; }
-  .split h1 { font-size: 78px; max-width: 10em; margin-top: 28px; }
-  .halves { margin-top: 48px; display: flex; flex-direction: column; }
+  .split { flex: 1; display: grid; grid-template-columns: 1fr 440px; gap: 36px; min-height: 0; }
+  .split h1 { font-size: 76px; max-width: 10em; margin-top: 28px; }
+  .halves { margin-top: 40px; display: flex; flex-direction: column; }
   .half {
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding: 28px 0 32px;
+    border-top: 1px solid rgba(22,22,22,0.12);
+    padding: 26px 0 30px;
   }
-  .half .k {
+  .half .k, .col .k, .cell .k {
     font-family: "IBM Plex Mono", monospace;
     font-size: 14px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #8ba4ff;
-    margin-bottom: 10px;
+    color: #2f4ecf;
   }
-  .half h2 { font-size: 36px; font-weight: 500; letter-spacing: -0.03em; margin-bottom: 8px; }
-  .half p { font-size: 20px; line-height: 1.4; color: #a1a1aa; max-width: 28em; }
-  .product .phone-col { align-self: end; margin-bottom: -56px; }
+  .half h2 { font-size: 36px; font-weight: 500; letter-spacing: -0.03em; margin: 8px 0; }
+  .half p { font-size: 20px; line-height: 1.4; color: #3f3f3b; max-width: 28em; }
+  .product .phone-col { align-self: center; }
 
-  /* Rule */
   .rule h1 { font-size: 68px; max-width: 16em; margin: 36px 0 8px; }
   .cols {
     flex: 1;
@@ -308,16 +156,10 @@
     flex-direction: column;
     justify-content: center;
     padding: 32px 36px 8px 0;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(22,22,22,0.12);
   }
-  .col + .col { padding-left: 36px; border-left: 1px solid rgba(255,255,255,0.1); }
-  .col .k {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 14px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #71717a;
-  }
+  .col + .col { padding-left: 36px; border-left: 1px solid rgba(22,22,22,0.12); }
+  .col .k { color: #6f6f6a; }
   .col h2 {
     font-family: "Instrument Serif", serif;
     font-weight: 400;
@@ -325,17 +167,16 @@
     letter-spacing: -0.03em;
     margin: 14px 0 20px;
   }
-  .col p { font-size: 20px; line-height: 1.45; color: #a1a1aa; max-width: 18em; }
+  .col p { font-size: 20px; line-height: 1.45; color: #3f3f3b; max-width: 18em; }
 
-  /* Proof */
   .proof h1 { font-size: 68px; margin: 32px 0 28px; }
   .pid {
     font-family: "IBM Plex Mono", monospace;
     font-size: 32px;
     letter-spacing: -0.03em;
-    color: #fff;
+    color: #161616;
     padding-bottom: 22px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(22,22,22,0.12);
   }
   .pid small {
     display: block;
@@ -343,7 +184,7 @@
     font-family: "Instrument Sans", sans-serif;
     font-size: 18px;
     letter-spacing: 0;
-    color: #71717a;
+    color: #6f6f6a;
   }
   .grid4 {
     flex: 1;
@@ -355,45 +196,37 @@
     padding: 36px 32px 0 0;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
   }
-  .cell + .cell { padding-left: 32px; border-left: 1px solid rgba(255,255,255,0.1); }
-  .cell .k {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: #71717a;
-  }
-  .cell h2 { font-size: 28px; font-weight: 500; letter-spacing: -0.03em; margin: 16px 0 12px; }
-  .cell p { font-size: 17px; line-height: 1.45; color: #a1a1aa; }
+  .cell + .cell { padding-left: 32px; border-left: 1px solid rgba(22,22,22,0.12); }
+  .cell .k { color: #6f6f6a; font-size: 13px; }
+  .cell h2 { font-size: 28px; font-weight: 500; letter-spacing: -0.03em; margin: 14px 0 12px; }
+  .cell p { font-size: 17px; line-height: 1.45; color: #3f3f3b; }
   .cmd {
     margin-top: 20px;
     font-family: "IBM Plex Mono", monospace;
     font-size: 18px;
-    color: #e4e4e7;
-    background: #111113;
+    color: #f4f4f1;
+    background: #1c1c1c;
     border-radius: 12px;
     padding: 18px 22px;
   }
-  .cmd span { color: #71717a; }
+  .cmd span { color: #a3a39c; }
 
-  /* Close */
   .close { justify-content: space-between; }
   .close h1 { font-size: 92px; max-width: 14em; margin-top: 48px; }
   .close-bottom {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(22,22,22,0.12);
     padding-top: 28px;
   }
   .close-bottom .url {
     font-family: "IBM Plex Mono", monospace;
     font-size: 22px;
-    color: #fff;
+    color: #161616;
   }
-  .close-bottom .who2 { text-align: right; font-size: 18px; color: #a1a1aa; line-height: 1.5; }
+  .close-bottom .who2 { text-align: right; font-size: 18px; color: #4a4a46; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -403,7 +236,7 @@
   <div class="cover-copy">
     <h1>Haptix</h1>
     <p class="lede">A seedless wallet for Solana Seeker.</p>
-    <p class="deck">Small sends use the fingerprint. Anything over 0.1 SOL also needs the Mac.</p>
+    <p class="deck">Small sends use the fingerprint. Anything over 0.1 SOL also needs a second device.</p>
     <div class="facts">
       <div>
         <strong>No seed phrase</strong>
@@ -420,48 +253,7 @@
     </div>
   </div>
   <div class="phone-col">
-    <div class="phone">
-      <div class="phone-screen">
-        <div class="status"><span>9:41</span><span>Seeker</span></div>
-        <div class="wallet-head">
-          <div class="who">
-            <img src="haptix-mobile-app/assets/images/haptix-logo-white.png" alt="" style="background:#000">
-            <strong>Personal</strong>
-          </div>
-          <div class="addr">Hk7p…4nQe</div>
-        </div>
-        <div class="bal">
-          <em>1.24</em>
-          <small>SOL · limit 0.1, then the Mac signs</small>
-        </div>
-        <div class="actions">
-          <div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"><path d="M12 19V5M12 5l-5 5M12 5l5 5"/></svg>
-            Send
-          </div>
-          <div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>
-            Receive
-          </div>
-          <div>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7"><path d="M7 7h11M18 7l-3-3M18 7l-3 3M17 17H6M6 17l3-3M6 17l3 3"/></svg>
-            Swap
-          </div>
-        </div>
-        <div class="asset">
-          <div class="row-l"><div class="sol-dot"></div><b>Solana</b></div>
-          <b>1.24 SOL</b>
-        </div>
-        <div class="tx"><div><b>Transfer SOL</b><br><span>Under the limit · fingerprint</span></div><span>−0.04</span></div>
-        <div class="tx"><div><b>Agent auto-trade</b><br><span>Inside the session ceiling</span></div><span>−0.02</span></div>
-        <div class="dock">
-          <span class="on">Wallet</span>
-          <span>Agents</span>
-          <span>Activity</span>
-          <span>Security</span>
-        </div>
-      </div>
-    </div>
+    <img class="shot" src="deck-images/wallet-home.jpg" alt="Haptix wallet home. Hardware Vault 2 on Solana devnet, 0.2 SOL.">
   </div>
 </section>
 
@@ -490,7 +282,7 @@
 <section class="slide product">
   <div class="top"><span>The product</span><span>03</span></div>
   <div class="split">
-    <div style="display:flex; flex-direction:column;">
+    <div>
       <h1>The amount picks the signer.</h1>
       <div class="halves">
         <div class="half">
@@ -500,29 +292,13 @@
         </div>
         <div class="half">
           <div class="k">Over 0.1 SOL</div>
-          <h2>The Mac signs too.</h2>
-          <p>The phone approves, then the paired Mac approves with Touch ID. The two keys never meet.</p>
+          <h2>The second device signs too.</h2>
+          <p>This send is 0.15 SOL. The phone has already approved. It is waiting on Haptix Vault.</p>
         </div>
       </div>
     </div>
     <div class="phone-col">
-      <div class="phone sheet-phone">
-        <div class="phone-screen">
-          <div class="status"><span>9:41</span><span>Seeker</span></div>
-          <div class="sheet-bg">
-            <div class="who"><img src="haptix-mobile-app/assets/images/haptix-logo-white.png" alt="" style="width:24px;height:24px;background:#000"><strong>Personal</strong></div>
-            <div class="bal"><em style="font-size:56px">1.24</em></div>
-          </div>
-          <div class="sheet">
-            <div class="grab"></div>
-            <div class="k" style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8ba4ff;">Over your limit</div>
-            <h3>Send 0.50 SOL</h3>
-            <div class="to">To 7xKXt3…a91F</div>
-            <p class="warn">This is over 0.1 SOL. Approve on this phone, then on your Mac.</p>
-            <div class="hold">Approve on this phone</div>
-          </div>
-        </div>
-      </div>
+      <img class="shot" src="deck-images/send-quorum.jpg" alt="Send 0.15 SOL. This phone is approved. Waiting for the second device.">
     </div>
   </div>
 </section>
@@ -597,7 +373,7 @@
 
 <section class="slide close">
   <div class="top"><span>Haptix</span><span>06</span></div>
-  <h1>The fingerprint signs the small ones.<br>The Mac signs the rest.</h1>
+  <h1>The fingerprint signs the small ones.<br>The second device signs the rest.</h1>
   <div class="close-bottom">
     <div class="url">github.com/ritesh59697/haptix-mobile-app</div>
     <div class="who2">Ritesh · @Ritesh5969<br>Solana Mobile Hackathon</div>
