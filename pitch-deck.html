@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Haptix — Pitch Deck (Solana Mobile Hackathon)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  @page {
+    size: 1920px 1080px;
+    margin: 0;
+  }
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  html, body {
+    width: 1920px;
+    background: #000000;
+    color: #EDEDED;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Slide Base - Pitch Black OLED with single subtle royal blue rim light */
+  .slide {
+    width: 1920px;
+    height: 1080px;
+    padding: 68px 96px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-after: always;
+    position: relative;
+    background-color: #000000;
+    background-image: 
+      radial-gradient(ellipse 90% 45% at 50% -12%, rgba(108, 140, 255, 0.08) 0%, transparent 65%),
+      linear-gradient(180deg, #020204 0%, #000000 100%);
+    overflow: hidden;
+  }
+
+  /* Architectural Hairline Dot Matrix Grid */
+  .slide::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 36px 36px;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  /* Subtle outer hairline frame */
+  .slide::after {
+    content: "";
+    position: absolute;
+    inset: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 20px;
+    pointer-events: none;
+  }
+  
+  /* Header styling */
+  .slide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    z-index: 2;
+  }
+  .slide-kicker-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .slide-index {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: #6C8CFF;
+    background: rgba(108, 140, 255, 0.08);
+    border: 1px solid rgba(108, 140, 255, 0.22);
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+  .slide-category {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: #71717A;
+    text-transform: uppercase;
+  }
+  .slide-title {
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: #FFFFFF;
+    line-height: 1.15;
+  }
+  .slide-title span {
+    color: #A1A1AA;
+    font-weight: 700;
+  }
+  .slide-title span.accent-text {
+    color: #6C8CFF;
+  }
+  .slide-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 999px;
+    background: #0C0C0E;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #D4D4D8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #00C076;
+    box-shadow: 0 0 8px rgba(0, 192, 118, 0.6);
+  }
+
+  /* Body & Grids */
+  .slide-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: 28px 0;
+    position: relative;
+    z-index: 2;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+
+  /* Precision Hardware Cards */
+  .card {
+    background: #090A0D;
+    border: 1px solid #1C1D24;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 20px 40px rgba(0, 0, 0, 0.7);
+    border-radius: 18px;
+    padding: 32px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card-highlight {
+    background: #0B0D14;
+    border: 1px solid rgba(108, 140, 255, 0.32);
+    box-shadow: inset 0 1px 0 rgba(108, 140, 255, 0.22), 0 20px 40px rgba(0, 0, 0, 0.8);
+  }
+  .card-emerald {
+    background: #080D0B;
+    border: 1px solid rgba(0, 192, 118, 0.26);
+    box-shadow: inset 0 1px 0 rgba(0, 192, 118, 0.16), 0 20px 40px rgba(0, 0, 0, 0.8);
+  }
+  .card-danger {
+    background: #0D080A;
+    border: 1px solid rgba(244, 63, 94, 0.22);
+    box-shadow: inset 0 1px 0 rgba(244, 63, 94, 0.14), 0 20px 40px rgba(0, 0, 0, 0.8);
+  }
+  .card-title {
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #FFFFFF;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .card-desc {
+    font-size: 15px;
+    line-height: 1.65;
+    color: #A1A1AA;
+  }
+  .card-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+  .badge-red {
+    background: rgba(244, 63, 94, 0.1);
+    color: #FB7185;
+    border: 1px solid rgba(244, 63, 94, 0.25);
+  }
+  .badge-green {
+    background: rgba(0, 192, 118, 0.1);
+    color: #00C076;
+    border: 1px solid rgba(0, 192, 118, 0.25);
+  }
+  .badge-blue {
+    background: rgba(108, 140, 255, 0.1);
+    color: #8BA8FF;
+    border: 1px solid rgba(108, 140, 255, 0.25);
+  }
+  .badge-neutral {
+    background: #141418;
+    color: #D4D4D8;
+    border: 1px solid #27272A;
+  }
+
+  /* Metrics / Numbers - Pure White with Optical Contrast */
+  .big-metric {
+    font-size: 64px;
+    font-weight: 800;
+    letter-spacing: -0.045em;
+    line-height: 1;
+    margin-bottom: 8px;
+    color: #FFFFFF;
+  }
+  .metric-green {
+    color: #00C076;
+  }
+  .metric-blue {
+    color: #6C8CFF;
+  }
+
+  /* Footer */
+  .slide-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 18px;
+    font-size: 13px;
+    color: #71717A;
+    position: relative;
+    z-index: 2;
+  }
+  .footer-links {
+    display: flex;
+    gap: 24px;
+  }
+  .footer-links span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #A1A1AA;
+  }
+
+  /* Tables */
+  table.comp-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 15px;
+    background: #090A0D;
+    border: 1px solid #1C1D24;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  table.comp-table th {
+    background: #0D0E13;
+    padding: 16px 24px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #71717A;
+    border-bottom: 1px solid #1C1D24;
+  }
+  table.comp-table td {
+    padding: 15px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: #A1A1AA;
+  }
+  table.comp-table tr:last-child td {
+    border-bottom: none;
+  }
+  table.comp-table th.col-haptix, table.comp-table td.col-haptix {
+    background: #0D101A;
+    color: #FFFFFF;
+    font-weight: 600;
+    border-left: 1px solid rgba(108, 140, 255, 0.25);
+    border-right: 1px solid rgba(108, 140, 255, 0.25);
+  }
+  table.comp-table th.col-haptix {
+    color: #8BA8FF;
+    font-weight: 800;
+  }
+
+  .mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Code box */
+  .code-terminal {
+    background: #060709;
+    border: 1px solid #181920;
+    border-radius: 14px;
+    padding: 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #D4D4D8;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8);
+  }
+  .terminal-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+  .term-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+  }
+
+  /* Cover hero styling */
+  .cover-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 100%;
+    position: relative;
+    z-index: 2;
+  }
+  .cover-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #0B0D14;
+    border: 1px solid rgba(108, 140, 255, 0.25);
+    padding: 7px 18px;
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8BA8FF;
+    margin-bottom: 32px;
+    letter-spacing: 0.04em;
+  }
+  .cover-brand {
+    font-size: 96px;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    color: #FFFFFF;
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+  .cover-subtitle {
+    font-size: 24px;
+    font-weight: 500;
+    color: #A1A1AA;
+    max-width: 980px;
+    line-height: 1.5;
+    margin-bottom: 44px;
+  }
+  .cover-chips {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .cover-chip {
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: #0A0B0E;
+    border: 1px solid #1C1D24;
+    font-size: 14px;
+    font-weight: 600;
+    color: #EDEDED;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: COVER -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="slide-kicker-row">
+      <span class="slide-index">SOLANA MOBILE</span>
+      <span class="slide-category">The 3rd Solana Mobile Hackathon</span>
+    </div>
+    <div class="slide-tag">
+      <span class="status-dot"></span> Verified on Solana Devnet
+    </div>
+  </div>
+
+  <div class="cover-container">
+    <div class="cover-pill">
+      <span>BUILT NATIVELY FOR SOLANA SEEKER & SAGA</span>
+    </div>
+    <div class="cover-brand">HAPTIX</div>
+    <div class="cover-subtitle">
+      The Biometric Hardware Enclave Smart Wallet for Solana Mobile.<br>
+      <span style="color: #FFFFFF; font-weight: 600;">Zero Seed Phrases. Risk-Adaptive Quorum. Autonomous AI Sessions.</span>
+    </div>
+    <div class="cover-chips">
+      <div class="cover-chip"><span style="color: #6C8CFF;">&bull;</span> Secp256r1 P-256 Native Precompile</div>
+      <div class="cover-chip"><span style="color: #00C076;">&bull;</span> 2-of-2 Hardware Quorum (Phone + Mac Touch ID)</div>
+      <div class="cover-chip"><span style="color: #FBBF24;">&bull;</span> Autonomous AI Agent Session Keys</div>
+      <div class="cover-chip"><span style="color: #8BA8FF;">&bull;</span> Seeker SKR Token Architecture Ready</div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>Built by Ritesh (@Ritesh5969) &bull; Solana Mobile Stack (SMS)</span>
+    <div class="footer-links">
+      <span>Program ID: 9wC1ok8d4P...Zbke</span>
+      <span>Slide 01 / 10</span>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: THE PROBLEM -->
+<div class="slide">
+  <div class="slide-header">
+    <div>
+      <div class="slide-kicker-row">
+        <span class="slide-index">02</span>
+        <span class="slide-category">Problem Statement</span>
+      </div>
+      <div class="slide-title">Mobile Web3 Is Trapped Between <span class="accent-text">Friction & Vulnerability</span></div>
+    </div>
+    <div class="slide-tag">Current Ecosystem Pain</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="grid-3">
+      <div class="card card-danger">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <span class="card-badge badge-red">Critical Churn #1</span>
+            <span class="mono" style="font-size: 11px; color: #FB7185;">12-24 Words</span>
+          </div>
+          <div class="card-title">Seed Phrase Fragility</div>
+          <div class="card-desc">
+            Writing words on paper remains the worst onboarding UX in modern software. Lose the paper, lose everything. Leak the backup, funds are drained with zero recovery mechanism.
+          </div>
+        </div>
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); font-size: 13px; color: #FB7185; font-weight: 600;">
+          &bull; 65%+ user drop-off during phrase confirmation.
+        </div>
+      </div>
+
+      <div class="card card-danger">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <span class="card-badge badge-red">Security Fatigue</span>
+            <span class="mono" style="font-size: 11px; color: #FB7185;">All-or-Nothing</span>
+          </div>
+          <div class="card-title">Biometric Prompt Fatigue</div>
+          <div class="card-desc">
+            Current mobile wallets demand the exact same biometric popup for a $0.05 micro-swap as a $25,000 transfer. Frequent interruptions cause users to blind-sign malicious drains.
+          </div>
+        </div>
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); font-size: 13px; color: #FB7185; font-weight: 600;">
+          &bull; Zero risk differentiation for high vs low value actions.
+        </div>
+      </div>
+
+      <div class="card card-danger">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <span class="card-badge badge-red">AI Agent Dilemma</span>
+            <span class="mono" style="font-size: 11px; color: #FB7185;">Unconstrained</span>
+          </div>
+          <div class="card-title">The Unbounded Agent Meta</div>
+          <div class="card-desc">
+            Autonomous trading bots are exploding on Solana. On mobile, bots either require constant human biometric confirmation or store raw private keys in memory vulnerable to exploits.
+          </div>
+        </div>
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06); font-size: 13px; color: #FB7185; font-weight: 600;">
+          &bull; No bounded on-chain session ceilings on mobile.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>Haptix Architectural Intelligence</span>
+    <span>Slide 02 / 10</span>
+  </div>
+</div>
+
+<!-- SLIDE 3: THE SOLUTION -->
+<div class="slide">
+  <div class="slide-header">
+    <div>
+      <div class="slide-kicker-row">
+        <span class="slide-index">03</span>
+        <span class="slide-category">The Solution</span>
+      </div>
+      <div class="slide-title">4-Layer Security Engine <span>Enforced in Anchor Bytecode</span></div>
+    </div>
+    <div class="slide-tag"><span class="status-dot"></span> Zero Client-Side Heuristics</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="grid-3">
+      <div class="card card-emerald">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <span class="card-badge badge-green">Tier 1: Everyday Fast Lane</span>
+            <span class="mono" style="font-size: 11px; color: #00C076;">&le; 0.10 SOL</span>
+          </div>
+          <div class="card-title">1-Tap Hardware Passkey</div>
+          <div class="card-desc">
+            Small daily transactions authorize instantly via Fingerprint / Face ID from Android's hardware keystore. Verified on Solana in ~400ms. Frictionless, seedless consumer UX.
+          </div>
+        </div>
+        <div style="margin-top: 20px; padding: 12px 14px; background: #060907; border-radius: 10px; border: 1px solid rgba(0, 192, 118, 0.2); font-size: 12px; color: #00C076; font-family: 'JetBrains Mono', monospace;">
+          Secp256r1SigVerify Precompile (1 Sig)
+        </div>
+      </div>
+
+      <div class="card card-highlight">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <span class="card-badge badge-blue">Tier 2: Vault Mode</span>
+            <span class="mono" style="font-size: 11px; color: #8BA8FF;">&gt; 0.10 SOL</span>
+          </div>
+          <div class="card-title">2-of-2 Hardware Quorum</div>
+          <div class="card-desc">
+            High-value transfers mathematically require two distinct hardware signatures (Phone Secure Enclave + Out-of-band Mac Touch ID or backup YubiKey). Cold-storage safety on mobile.
+          </div>
+        </div>
+        <div style="margin-top: 20px; padding: 12px 14px; background: #060810; border-radius: 10px; border: 1px solid rgba(108, 140, 255, 0.25); font-size: 12px; color: #8BA8FF; font-family: 'JetBrains Mono', monospace;">
+          Dual Precompile Atomic Introspection (2 Sigs)
+        </div>
+      </div>
+
+      <div class="card">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <span class="card-badge badge-neutral">Tier 3: Autonomous AI</span>
+            <span class="mono" style="font-size: 11px; color: #FBBF24;">Delegated</span>
+          </div>
+          <div class="card-title">Scoped AI Session Keys</div>
+          <div class="card-desc">
+            Trading agents (e.g. Jupiter Auto-DCA) execute swaps within pre-approved spending ceilings and time expiries with zero human biometric prompts. Enforced directly in contract bytecode.
+          </div>
+        </div>
+        <div style="margin-top: 20px; padding: 12px 14px; background: #0A0A0D; border-radius: 10px; border: 1px solid #1C1D24; font-size: 12px; color: #D4D4D8; font-family: 'JetBrains Mono', monospace;">
+          On-Chain Budget Allowance Accounting
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>Policy execution is atomic & immutable on-chain</span>
+    <span>Slide 03 / 10</span>
+  </div>
+</div>
+
+<!-- SLIDE 4: TECHNICAL INNOVATIONS -->
+<div class="slide">
+  <div class="slide-header">
+    <div>
+      <div class="slide-kicker-row">
+        <span class="slide-index">04</span>
+        <span class="slide-category">Core Technology</span>
+      </div>
+      <div class="slide-title">Cryptographic Feats & <span>Mobile Primitives</span></div>
+    </div>
+    <div class="slide-tag">Native Solana Precompile</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="grid-2">
+      <div class="card">
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 14px;">
+            <span class="card-badge badge-blue">Native Precompile</span>
+            <span class="mono" style="font-size: 12px; color: #8BA8FF;">P-256 Curve</span>
+          </div>
+          <div class="card-title">Secp256r1SigVerify Introspection</div>
+          <div class="card-desc">
+            Instead of expensive custom BPF curve math, Haptix targets Solana's native <code class="mono" style="color: #8BA8FF;">Secp256r1SigVerify1111111111111111111111111</code> precompile. The Anchor program inspects the instructions sysvar, validates signature offsets, and enforces canonical low-S normalization (<code class="mono">s &le; n/2</code>) to prevent malleability.
+          </div>
+        </div>
+        <div class="mono" style="margin-top: 18px; font-size: 12px; color: #71717A; background: #050608; padding: 12px; border-radius: 8px; border: 1px solid #181920;">
+          &bull; Private key stays locked in Android StrongBox / Secure Enclave
+        </div>
+      </div>
+
+      <div class="card">
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 14px;">
+            <span class="card-badge badge-blue">Out-of-Band Relay</span>
+            <span class="mono" style="font-size: 12px; color: #8BA8FF;">Local & Remote</span>
+          </div>
+          <div class="card-title">Dual-Device Vault Mode</div>
+          <div class="card-desc">
+            When high-value transactions trigger 2-of-2 quorum, the mobile app broadcasts an encrypted payload via our relay to a secondary browser/hardware terminal (<code class="mono">vault.html</code>). The co-signer approves with Mac Touch ID or YubiKey. Neither device ever shares memory or private keys.
+          </div>
+        </div>
+        <div class="mono" style="margin-top: 18px; font-size: 12px; color: #71717A; background: #050608; padding: 12px; border-radius: 8px; border: 1px solid #181920;">
+          &bull; End-to-end encrypted out-of-band multisig coordination
+        </div>
+      </div>
+
+      <div class="card">
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 14px;">
+            <span class="card-badge badge-green">Frictionless UX</span>
+            <span class="mono" style="font-size: 12px; color: #00C076;">Zero Dead-Ends</span>
+          </div>
+          <div class="card-title">Gasless Sponsored Onboarding</div>
+          <div class="card-desc">
+            Users can create and deploy a smart wallet with zero pre-funded SOL. Our embedded paymaster relayer sponsors account rent and drips a 0.20 SOL starter test balance so new users never hit an empty $0.00 screen.
+          </div>
+        </div>
+        <div class="mono" style="margin-top: 18px; font-size: 12px; color: #71717A; background: #050608; padding: 12px; border-radius: 8px; border: 1px solid #181920;">
+          &bull; Automatic PDA account rent sponsorship on Solana Devnet
+        </div>
+      </div>
+
+      <div class="card">
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 14px;">
+            <span class="card-badge badge-neutral">Circuit Breaker</span>
+            <span class="mono" style="font-size: 12px; color: #D4D4D8;">Timelocked</span>
+          </div>
+          <div class="card-title">Guardian Recovery & Panic Freeze</div>
+          <div class="card-desc">
+            In emergencies, users or designated guardians can invoke an on-chain <code class="mono">panic_freeze</code> to lock all outflows immediately. If a phone is lost or stolen, a 24-hour timelocked passkey rotation recovers funds without exposing seed phrases.
+          </div>
+        </div>
+        <div class="mono" style="margin-top: 18px; font-size: 12px; color: #71717A; background: #050608; padding: 12px; border-radius: 8px; border: 1px solid #181920;">
+          &bull; Safe social recovery governed on-chain by timelocks
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>Zero custom cryptography dependencies &bull; 100% native Solana architecture</span>
+    <span>Slide 04 / 10</span>
+  </div>
+</div>
+
+<!-- SLIDE 5: SEEKER & SKR BONUS TRACK -->
+<div class="slide">
+  <div class="slide-header">
+    <div>
+      <div class="slide-kicker-row">
+        <span class="slide-index">05</span>
+        <span class="slide-category">Ecosystem Synergy</span>
+      </div>
+      <div class="slide-title">Seeker (SKR) Architecture <span>$10,000 Bonus Track</span></div>
+    </div>
+    <div class="slide-tag"><span class="status-dot"></span> 18 Passing Automated Tests</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="grid-3">
+      <div class="card card-highlight">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px;">
+          <img src="../docs/assets/seeker-logo.png" alt="Seeker Logo" style="height: 38px; width: 38px; object-fit: contain;">
+          <div>
+            <div class="card-title" style="margin: 0;">Risk-Adaptive SKR Policy</div>
+            <div class="mono" style="font-size: 11px; color: #8BA8FF;">Configurable Multi-Asset Tiers</div>
+          </div>
+        </div>
+        <div class="card-desc">
+          The Haptix spend policy engine natively accommodates SPL tokens alongside native SOL:
+          <ul style="margin: 16px 0 0 20px; line-height: 1.8;">
+            <li><strong>&le; 50 SKR</strong>: 1-Tap Biometric Passkey authorization.</li>
+            <li><strong>&gt; 50 SKR</strong>: Escalates to 2-of-2 Hardware Quorum.</li>
+            <li>Fully validated in automated test suite with deterministic PDAs.</li>
+          </ul>
+        </div>
+        <div style="margin-top: 20px; font-size: 12px; color: #00C076; font-family: 'JetBrains Mono', monospace;">
+          Validated against mock SKR SPL mint
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="margin-bottom: 16px;">
+          <span class="card-badge badge-green">Genesis Grant</span>
+          <div class="card-title" style="margin-top: 10px;">100 SKR Welcome Reward</div>
+        </div>
+        <div class="card-desc">
+          Onboarding automatically provisions a 100 SKR Genesis Reward balance into the newly derived wallet PDA. Demonstrates multi-asset portfolio accounting, rolling digit balance counters, and instant token usability upon launch.
+        </div>
+        <div style="margin-top: 24px; padding: 14px; background: #050608; border-radius: 12px; border: 1px solid #181920; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #D4D4D8;">
+          Initial Allocation: 100.00 SKR<br>
+          Genesis Value: $25.00 USD
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="margin-bottom: 16px;">
+          <span class="card-badge badge-blue">SMS Integration</span>
+          <div class="card-title" style="margin-top: 10px;">Solana Mobile Stack Ready</div>
+        </div>
+        <div class="card-desc">
+          Designed specifically for the Solana Seeker (Chapter 2) physical hardware release:
+          <ul style="margin: 16px 0 0 20px; line-height: 1.8;">
+            <li>Direct integration with Android Keystore StrongBox.</li>
+            <li>Compatible with Seeker Seed Vault architecture.</li>
+            <li>Conforms strictly to Solana dApp Store publishing guidelines.</li>
+          </ul>
+        </div>
+        <div style="margin-top: 24px; font-size: 12px; color: #8BA8FF; font-family: 'JetBrains Mono', monospace;">
+          100% native Android React Native 0.83
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>Directly addresses the official Seeker (SKR) Hackathon Track</span>
+    <span>Slide 05 / 10</span>
+  </div>
+</div>
+
+<!-- SLIDE 6: SYSTEM TOPOLOGY -->
+<div class="slide">
+  <div class="slide-header">
+    <div>
+      <div class="slide-kicker-row">
+        <span class="slide-index">06</span>
+        <span class="slide-category">System Architecture</span>
+      </div>
+      <div class="slide-title">End-to-End <span>System Architecture</span></div>
+    </div>
+    <div class="slide-tag">React Native 0.83 + Anchor Rust</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="grid-2">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div class="card-title" style="color: #8BA8FF; margin: 0;">Mobile Client (Android / Seeker)</div>
+          <span class="mono" style="font-size: 11px; color: #8BA8FF;">haptix-mobile-app</span>
+        </div>
+        <div class="code-terminal" style="font-size: 13px; line-height: 1.8;">
+          <div class="terminal-bar">
+            <div class="term-dot" style="background: #EF4444;"></div>
+            <div class="term-dot" style="background: #F59E0B;"></div>
+            <div class="term-dot" style="background: #10B981;"></div>
+            <span style="font-size: 11px; color: #71717A; margin-left: 8px;">React Native 0.83 / Expo 55 Architecture</span>
+          </div>
+          &bull; <strong>Hardware Cryptography</strong>: react-native-passkey (WebAuthn P-256)<br>
+          &bull; <strong>Secure Biometrics</strong>: Android BiometricPrompt with StrongBox<br>
+          &bull; <strong>Anti-Spam Shield</strong>: 10s cooldown + 0.50 SOL balance cap + 5 wallet limit<br>
+          &bull; <strong>Accounts</strong>: Multi-account isolation (Personal vs 2-of-2 Vault)<br>
+          &bull; <strong>Relay Client</strong>: WebRTC out-of-band co-signing coordination<br>
+          &bull; <strong>Paymaster</strong>: Automated Devnet rent & fee sponsoring client
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div class="card-title" style="color: #00C076; margin: 0;">On-Chain Smart Program (Solana)</div>
+          <span class="mono" style="font-size: 11px; color: #00C076;">haptix_program</span>
+        </div>
+        <div class="code-terminal" style="font-size: 13px; line-height: 1.8;">
+          <div class="terminal-bar">
+            <div class="term-dot" style="background: #EF4444;"></div>
+            <div class="term-dot" style="background: #F59E0B;"></div>
+            <div class="term-dot" style="background: #10B981;"></div>
+            <span style="font-size: 11px; color: #71717A; margin-left: 8px;">Anchor 0.31 / Solana Agave v3.1.13</span>
+          </div>
+          &bull; <strong>Program ID</strong>: 9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke<br>
+          &bull; <strong>PDA Derivation</strong>: Counterfactual seeds [b"haptix_wallet", &key]<br>
+          &bull; <strong>Precompile Introspection</strong>: Verifies Secp256r1 instruction sysvar<br>
+          &bull; <strong>Policy Engine</strong>: Threshold check (&le; limit 1-tap, &gt; limit quorum)<br>
+          &bull; <strong>Session Delegation</strong>: Bounded agent allowances with expiry<br>
+          &bull; <strong>Emergency Controls</strong>: On-chain panic_freeze & 24h timelocked recovery
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>Zero Web-Wrappers &bull; Compiled Native Bytecode</span>
+    <span>Slide 06 / 10</span>
+  </div>
+</div>
+
+<!-- SLIDE 7: COMPETITIVE LANDSCAPE -->
+<div class="slide">
+  <div class="slide-header">
+    <div>
+      <div class="slide-kicker-row">
+        <span class="slide-index">07</span>
+        <span class="slide-category">Competitive Advantage</span>
+      </div>
+      <div class="slide-title">Why Haptix Leads the <span>Next Generation</span></div>
+    </div>
+    <div class="slide-tag">Feature Comparison Matrix</div>
+  </div>
+
+  <div class="slide-body">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Phantom / Solflare</th>
+          <th>Backpack</th>
+          <th>Safe (EVM)</th>
+          <th class="col-haptix">Haptix (Solana Mobile)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Seedless Hardware Passkeys</strong></td>
+          <td>No (Seed Phrase)</td>
+          <td>No (Seed Phrase)</td>
+          <td>WebAuthn (High Gas)</td>
+          <td class="col-haptix"><span class="badge-green">Native Secp256r1</span></td>
+        </tr>
+        <tr>
+          <td><strong>Risk-Adaptive Spend Policy</strong></td>
+          <td>No (1 Key Only)</td>
+          <td>No</td>
+          <td>Complex Multisig</td>
+          <td class="col-haptix"><span class="badge-green">1-Tap vs 2-of-2 Quorum</span></td>
+        </tr>
+        <tr>
+          <td><strong>Dual-Device Out-of-Band Pair</strong></td>
+          <td>No</td>
+          <td>No</td>
+          <td>No</td>
+          <td class="col-haptix"><span class="badge-green">Phone + Mac Touch ID</span></td>
+        </tr>
+        <tr>
+          <td><strong>AI Trading Session Keys</strong></td>
+          <td>No</td>
+          <td>No</td>
+          <td>Session Keys</td>
+          <td class="col-haptix"><span class="badge-green">Bounded On-Chain Allowance</span></td>
+        </tr>
+        <tr>
+          <td><strong>Gasless Starter Top-Up</strong></td>
+          <td>No ($0 Dead-End)</td>
+          <td>No</td>
+          <td>No</td>
+          <td class="col-haptix"><span class="badge-green">0.20 SOL Auto-Funder</span></td>
+        </tr>
+        <tr>
+          <td><strong>Seeker SKR Token Support</strong></td>
+          <td>Basic SPL</td>
+          <td>Basic SPL</td>
+          <td>None</td>
+          <td class="col-haptix"><span class="badge-green">Native Thresholds Ready</span></td>
+        </tr>
+        <tr>
+          <td><strong>Emergency Panic Freeze</strong></td>
+          <td>No</td>
+          <td>No</td>
+          <td>Guard Module</td>
+          <td class="col-haptix"><span class="badge-green">Instant On-Chain Circuit Breaker</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="slide-footer">
+    <span>Superior security posture with unmatched consumer ease</span>
+    <span>Slide 07 / 10</span>
+  </div>
+</div>
+
+<!-- SLIDE 8: MARKET OPPORTUNITY & METRICS -->
+<div class="slide">
+  <div class="slide-header">
+    <div>
+      <div class="slide-kicker-row">
+        <span class="slide-index">08</span>
+        <span class="slide-category">Traction & Market</span>
+      </div>
+      <div class="slide-title">Targeting <span class="accent-text">150,000+ Solana Seeker</span> Pre-Orders</div>
+    </div>
+    <div class="slide-tag">Production Release v1.0.1</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="grid-4">
+      <div class="card card-highlight">
+        <div class="big-metric metric-blue">150K+</div>
+        <div class="card-title">Seeker Pre-Orders</div>
+        <div class="card-desc">
+          The largest pre-ordered crypto hardware distribution in history across 50+ countries. Every device has an Android StrongBox enclave built for Haptix.
+        </div>
+      </div>
+
+      <div class="card card-emerald">
+        <div class="big-metric metric-green">100%</div>
+        <div class="card-title">Live Devnet Pass Rate</div>
+        <div class="card-desc">
+          57 comprehensive integration tests validated live on Devnet. 14 test suites covering curves, PDAs, policies, and Seeker SKR tokens.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="big-metric">400ms</div>
+        <div class="card-title">Average Confirmation</div>
+        <div class="card-desc">
+          Sub-second passkey confirmation time on Solana Devnet. Fast, responsive, and completely seedless.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="big-metric">96.6MB</div>
+        <div class="card-title">Standalone Android APK</div>
+        <div class="card-desc">
+          Production release APK built and verified via EAS. Sideloadable instantly on physical Seeker & Android phones.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>Validated with physical Android & Seeker hardware</span>
+    <span>Slide 08 / 10</span>
+  </div>
+</div>
+
+<!-- SLIDE 9: REPRODUCIBILITY & RUNBOOK -->
+<div class="slide">
+  <div class="slide-header">
+    <div>
+      <div class="slide-kicker-row">
+        <span class="slide-index">09</span>
+        <span class="slide-category">Evaluation Runbook</span>
+      </div>
+      <div class="slide-title">2-Minute Verification <span>Runbook for Judges</span></div>
+    </div>
+    <div class="slide-tag">100% Reproducible</div>
+  </div>
+
+  <div class="slide-body">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">1-Click Automated Test Suite</div>
+        <div class="code-terminal" style="font-size: 13px;">
+          <div class="terminal-bar">
+            <div class="term-dot" style="background: #EF4444;"></div>
+            <div class="term-dot" style="background: #F59E0B;"></div>
+            <div class="term-dot" style="background: #10B981;"></div>
+            <span style="font-size: 11px; color: #71717A; margin-left: 8px;">bash terminal</span>
+          </div>
+          $ cd haptix-mobile-app<br>
+          $ npm test<br><br>
+          <span style="color: #00C076;">✓ TEST GROUP 1: SECP256R1 CRYPTOGRAPHY (4/4 PASSED)</span><br>
+          <span style="color: #00C076;">✓ TEST GROUP 2: ANCHOR PDA DERIVATION (2/2 PASSED)</span><br>
+          <span style="color: #00C076;">✓ TEST GROUP 3: PRECOMPILE SERIALIZATION (7/7 PASSED)</span><br>
+          <span style="color: #00C076;">✓ TEST GROUP 4: INSTRUCTION ENCODING (9/9 PASSED)</span><br>
+          <span style="color: #00C076;">✓ TEST GROUP 5: LIVE DEVNET CONTRACT VERIFIED (7/7 PASSED)</span><br>
+          <span style="color: #00C076;">✓ TEST GROUP 6: SEEKER SKR POLICY & SPONSOR (18/18 PASSED)</span><br><br>
+          <span style="color: #8BA8FF;">TOTAL: 57 PASSED | 0 FAILED (0 TypeScript Errors)</span>
+        </div>
+      </div>
+
+      <div class="card card-highlight">
+        <div class="card-title">Direct Deliverable Receipts</div>
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-top: 10px;">
+          <div style="background: #050608; padding: 14px; border-radius: 12px; border: 1px solid #181920;">
+            <div style="font-size: 11px; color: #71717A; text-transform: uppercase; font-family: 'JetBrains Mono', monospace;">Open Source Repository</div>
+            <div class="mono" style="font-size: 14px; color: #8BA8FF; font-weight: 700; margin-top: 4px;">github.com/ritesh59697/haptix-mobile-app</div>
+          </div>
+          <div style="background: #050608; padding: 14px; border-radius: 12px; border: 1px solid #181920;">
+            <div style="font-size: 11px; color: #71717A; text-transform: uppercase; font-family: 'JetBrains Mono', monospace;">Live Devnet Program ID</div>
+            <div class="mono" style="font-size: 14px; color: #00C076; font-weight: 700; margin-top: 4px;">9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke</div>
+          </div>
+          <div style="background: #050608; padding: 14px; border-radius: 12px; border: 1px solid #181920;">
+            <div style="font-size: 11px; color: #71717A; text-transform: uppercase; font-family: 'JetBrains Mono', monospace;">Release APK (v1.0.1)</div>
+            <div class="mono" style="font-size: 14px; color: #EDEDED; margin-top: 4px;">github.com/.../releases/download/v1.0.1/haptix-wallet.apk</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>Zero external environment setup needed to reproduce test results</span>
+    <span>Slide 09 / 10</span>
+  </div>
+</div>
+
+<!-- SLIDE 10: VISION & OUTRO -->
+<div class="slide">
+  <div class="slide-header">
+    <div class="slide-kicker-row">
+      <span class="slide-index">10</span>
+      <span class="slide-category">The Vision</span>
+    </div>
+    <div class="slide-tag"><span class="status-dot"></span> Ready for Solana dApp Store</div>
+  </div>
+
+  <div class="cover-container">
+    <div class="cover-pill">
+      <span>SHIPPING FOR SOLANA SEEKER CHAPTER 2</span>
+    </div>
+    <div style="font-size: 64px; font-weight: 800; letter-spacing: -0.04em; color: #FFFFFF; max-width: 1200px; line-height: 1.15; margin-bottom: 24px;">
+      Turning Solana Seeker into the <span style="color: #6C8CFF;">Safest Smart Wallet on Earth</span>.
+    </div>
+    <div class="cover-subtitle" style="font-size: 22px; margin-bottom: 36px; color: #A1A1AA;">
+      No seed phrases. No blind signing. No unconstrained bots.<br>
+      Consumer-grade security engineered natively for the Solana Mobile Ecosystem.
+    </div>
+    <div class="cover-chips">
+      <div class="cover-chip" style="border-color: rgba(108, 140, 255, 0.35);"><span style="color: #6C8CFF;">&bull;</span> github.com/ritesh59697/haptix-mobile-app</div>
+      <div class="cover-chip" style="border-color: rgba(0, 192, 118, 0.35);"><span style="color: #00C076;">&bull;</span> Built by Ritesh (@Ritesh5969)</div>
+    </div>
+  </div>
+
+  <div class="slide-footer">
+    <span>Haptix &bull; Solana Mobile Hackathon Finalist</span>
+    <span>Slide 10 / 10</span>
+  </div>
+</div>
+
+</body>
+</html>
