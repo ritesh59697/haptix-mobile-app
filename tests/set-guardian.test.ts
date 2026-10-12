@@ -199,3 +199,4 @@ equals(
 
 console.log(`\n  SET GUARDIAN TOTAL: ${passed + failed} | PASSED: ${passed} | FAILED: ${failed}\n`)
 if (failed > 0) process.exit(1)
+process.exit(0)

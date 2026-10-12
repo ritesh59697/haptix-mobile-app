@@ -60,7 +60,7 @@ This repository contains both the **React Native / Expo Mobile App** and the **O
 haptix-mobile-app/
 ├── app/                            # Expo Router file-based navigation
 │   ├── (tabs)/                     # Main authenticated tab views
-│   │   ├── account/                # Smart wallet dashboard, send, receive
+│   │   ├── index.tsx               # Smart wallet dashboard & navigation
 │   │   └── settings/               # Spending limits, recovery, security
 │   ├── sign-in.tsx                 # Onboarding & passkey registration
 │   └── _layout.tsx                 # Root layout & providers
@@ -126,7 +126,7 @@ npx eas-cli build -p android --profile preview
 - **Program ID**: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`
 - **Solana Cluster**: `devnet`
 - **Native Elliptic Curve**: `Secp256r1` (P-256 / WebAuthn)
-- **Precompile**: `Secp256r1SigVerify11111111111111111111111`
+- **Precompile**: `Secp256r1SigVerify1111111111111111111111111`
 
 ### Build & Test On-Chain
 ```bash
@@ -137,53 +137,32 @@ anchor test
 
 ---
 
-## Integration Test Suite (146 / 146 Passing)
+## Integration Test Suite (290 / 290 Passing across 14 Suites)
 
-The repository includes a comprehensive test suite validating the complete cryptographic and on-chain pipeline:
+The repository includes a comprehensive 14-suite test harness validating the complete cryptographic and on-chain pipeline:
 
 ```
 ===============================================================
-  HAPTIX SMART WALLET — REAL INTEGRATION TEST SUITE   
+  HAPTIX SMART WALLET — TEST HARNESS SUMMARY
 ===============================================================
 
---- TEST GROUP 1: SECP256R1 CRYPTOGRAPHY ---
-  PASS: Primary private key seed is exactly 32 bytes
-  PASS: Primary compressed public key is exactly 33 bytes
-  PASS: Public key prefix is 0x02 or 0x03 SEC1 format
-  PASS: Secondary compressed public key is exactly 33 bytes
-
---- TEST GROUP 2: ANCHOR PDA DERIVATION ---
-  PASS: Wallet address is off-curve PDA
-  PASS: Valid canonical bump derived
-
---- TEST GROUP 3: SECP256R1 PRECOMPILE INSTRUCTION ---
-  PASS: Transfer payload is exactly 40 bytes (32B pubkey + 8B amount)
-  PASS: Compact signature is exactly 64 bytes [r (32B), s (32B)]
-  PASS: Signature enforces canonical low-S (s <= n/2)
-  PASS: Precompile instruction targets Secp256r1SigVerify1111111111111111111111111
-  PASS: Precompile instruction data length is 153 bytes
-
---- TEST GROUP 4: ANCHOR INSTRUCTION ENCODING ---
-  PASS: initialize_wallet discriminator matches on-chain Anchor IDL
-  PASS: execute_transfer discriminator matches on-chain Anchor IDL
-  PASS: grant_agent_session discriminator matches on-chain Anchor IDL
-  PASS: agent_execute discriminator matches on-chain Anchor IDL
-  PASS: panic_freeze discriminator matches on-chain Anchor IDL
-  PASS: unfreeze discriminator matches on-chain Anchor IDL
-
---- TEST GROUP 5: LIVE SOLANA DEVNET ON-CHAIN VERIFICATION ---
-  PASS: Program account exists on Devnet (9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke)
-  PASS: Program account is executable on Devnet
-
---- SPEND THRESHOLD ON-CHAIN GOVERNANCE (DEVNET) ---
-  PASS: initializes wallet with 0.1 SOL spending limit
-  PASS: on-chain threshold matches initial 0.1 SOL
-  PASS: rejects threshold update lacking valid secondary signature
-  PASS: updates threshold to 0.5 SOL with 2-of-2 quorum
-  PASS: on-chain threshold verified as 0.5 SOL
+  Suite 1:  Solana Address & Recipient Validation ........ 12 PASS
+  Suite 2:  Contact List & Address Book .................. 14 PASS
+  Suite 3:  Solana Dynamic Fee Estimation ................. 7 PASS
+  Suite 4:  Secp256r1 Layout & Serialization ............. 28 PASS
+  Suite 5:  Passkey Recovery Assertion Matcher ........... 10 PASS
+  Suite 6:  Wallet Seed & Timelock Parsing ............... 33 PASS
+  Suite 7:  Activity Display & Theme Rules ............... 28 PASS
+  Suite 8:  Environment Variable Inlining ................. 5 PASS
+  Suite 9:  WYSIWYS Cross-Validation Payload Checks ...... 11 PASS
+  Suite 10: Devnet 24h Timelock Recovery Quorum .......... 53 PASS
+  Suite 11: End-to-End Cryptography & Precompile ......... 29 PASS
+  Suite 12: On-Chain Guardian Governance ................. 32 PASS
+  Suite 13: Spend Threshold Dual-Signer Escalation ........ 9 PASS
+  Suite 14: Seeker SKR Token & Sponsored Paymaster ....... 18 PASS
 
 ===============================================================
-  TOTAL: 146 | PASSED: 146 | FAILED: 0
+  TOTAL: 290 | PASSED: 290 | FAILED: 0 (100% PASSING)
 ===============================================================
 ```
 

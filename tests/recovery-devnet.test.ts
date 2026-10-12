@@ -500,6 +500,7 @@ async function run() {
 
   console.log(`\n  RECOVERY DEVNET TOTAL: ${passed + failed} | PASSED: ${passed} | FAILED: ${failed}\n`)
   if (failed > 0) process.exit(1)
+  process.exit(0)
 }
 
 void run()
