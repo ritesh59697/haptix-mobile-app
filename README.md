@@ -2,8 +2,6 @@
 
 <div align="center">
 
-![Haptix Banner](assets/images/haptix-logo-white.png)
-
 **Seedless. Biometric-Secured. Agent-Ready.**  
 *Built for the Solana Mobile Ecosystem (Saga / Chapter 2)*
 
@@ -14,17 +12,16 @@
 [![Documentation](https://img.shields.io/badge/Docs-Mintlify-4F6BFF?style=flat&logo=gitbook&logoColor=white)](https://haptix-docs.mintlify.app)
 [![Twitter](https://img.shields.io/badge/X-@HaptixWalllet-black?style=flat&logo=x)](https://x.com/HaptixWalllet)
 [![Tests](https://img.shields.io/badge/Tests-146%20Passing-brightgreen?style=flat)](tests/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 <br />
 
-**[📖 Live Docs](https://haptix-docs.mintlify.app)** &bull; **[🐦 X Community](https://x.com/HaptixWalllet)** &bull; **[📲 Download Release APK (v1.0.0)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.0/haptix-wallet.apk)** &bull; **[🚀 EAS Build Console](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a)** &bull; **[📦 GitHub Release v1.0.0](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.0)** &bull; **[⚡ Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
+**[Live Docs](https://haptix-docs.mintlify.app)** &bull; **[X Community](https://x.com/HaptixWalllet)** &bull; **[Download Release APK (v1.0.0)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.0/haptix-wallet.apk)** &bull; **[EAS Build Console](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/6e6cbb0a-cb5b-4e38-bd17-c5345c8f767a)** &bull; **[GitHub Release v1.0.0](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.0)** &bull; **[Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
 
 </div>
 
 ---
 
-## 📱 Latest Standalone APK (v1.0.0)
+## Latest Standalone APK (v1.0.0)
 
 | Attribute | Verified Value |
 | :--- | :--- |
@@ -37,13 +34,13 @@
 
 ---
 
-## 🚀 Overview
+## Overview
 
 **Haptix** is a consumer-grade smart contract wallet designed natively for the **Solana Mobile Stack (SMS)**. 
 
 Traditional mobile crypto wallets force users to manage 12-to-24 word seed phrases or endure friction-heavy prompts for every micro-transaction. Haptix eliminates seed phrases entirely by utilizing **Hardware Passkeys (Secp256r1 / P-256)** verified directly on Solana through native **instruction introspection (`Secp256r1SigVerify`)**.
 
-### 🌟 Key Innovations
+### Key Innovations
 
 - **1-Tap Biometric Hardware Passkey**: Frictionless Face ID / Touch ID authentication without seed phrases, backed by OS hardware security.
 - **Dual-Device Vault Mode (2-of-2 Quorum)**: High-value transactions or security policy adjustments mandate two independent hardware signatures (Primary phone passkey + secondary hardware key).
@@ -55,7 +52,7 @@ Traditional mobile crypto wallets force users to manage 12-to-24 word seed phras
 
 ---
 
-## 🏛️ Repository Architecture
+## Repository Architecture
 
 This repository contains both the **React Native / Expo Mobile App** and the **On-Chain Anchor Solana Smart Program**:
 
@@ -92,7 +89,7 @@ haptix-mobile-app/
 
 ---
 
-## ⚡ Quick Start: Mobile App
+## Quick Start: Mobile App
 
 ### Prerequisites
 - Node.js (v18+)
@@ -123,7 +120,7 @@ npx eas-cli build -p android --profile preview
 
 ---
 
-## 🔒 Quick Start: Smart Program (`haptix_program`)
+## Quick Start: Smart Program (`haptix_program`)
 
 ### Program Details (Solana Devnet)
 - **Program ID**: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`
@@ -140,7 +137,7 @@ anchor test
 
 ---
 
-## 🧪 Integration Test Suite (146 / 146 Passing)
+## Integration Test Suite (146 / 146 Passing)
 
 The repository includes a comprehensive test suite validating the complete cryptographic and on-chain pipeline:
 
@@ -192,7 +189,7 @@ The repository includes a comprehensive test suite validating the complete crypt
 
 ---
 
-## 🎨 UI & Design Principles
+## UI & Design Principles
 
 - **Pure Minimalist Monochrome**: Dark tones paired with crisp typography and subtle hairline borders, completely free of neon / AI-slop cliches.
 - **Physical Haptic Feedback**: Tactile responses on dock tab selection, percentage chip taps, and biometric passkey authorization.
@@ -200,5 +197,4 @@ The repository includes a comprehensive test suite validating the complete crypt
 
 ---
 
-## 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+Built by [Ritesh](https://x.com/Ritesh5969)
