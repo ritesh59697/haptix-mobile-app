@@ -1155,6 +1155,40 @@ export function HaptixWalletScreen() {
     }
   }
 
+  const handleDownloadReceipt = async (tx: any) => {
+    if (!tx) return
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
+    const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+    const amountStr = tx.amount != null ? `${typeof tx.amount === 'number' ? tx.amount.toFixed(4) : tx.amount} SOL` : '0 SOL'
+    const dateStr = tx.timestamp ? new Date(tx.timestamp).toLocaleString() : new Date().toLocaleString()
+    const lines = [
+      '========================================',
+      '        HAPTIX TRANSACTION RECEIPT      ',
+      '========================================',
+      `Action:        ${tx.title || 'SOL Transfer'}`,
+      `Amount:        ${amountStr}`,
+      `Status:        Confirmed on Solana Devnet`,
+      `Authorized By: NIST P-256 (Secp256r1) Biometrics`,
+      `Date & Time:   ${dateStr}`,
+      `Signature:     ${tx.signature}`,
+      `Counterparty:  ${tx.counterparty || 'Haptix Smart Program'}`,
+      `Explorer Link: https://explorer.solana.com/tx/${tx.signature}${clusterParam}`,
+      '========================================',
+      'Secured by Haptix Passkey Smart Wallet',
+    ]
+    const receiptText = lines.join('\n')
+    try {
+      await Share.share({
+        title: 'Haptix Transaction Receipt',
+        message: receiptText,
+      })
+    } catch {
+      await Clipboard.setString(receiptText)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+      dialog.alert('Receipt Copied', 'Receipt details have been copied to your clipboard.')
+    }
+  }
+
   // Autonomous Agent Execution via On-Chain Program (Zero Passkey Prompts)
   const handleAgentExecute = async (recipientAddress: string) => {
     if (isFrozen) {
@@ -3057,22 +3091,18 @@ export function HaptixWalletScreen() {
                     </Text>
                   </TouchableOpacity>
 
-                  {/* External View Options */}
+                  {/* External View & Export Options */}
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     <TouchableOpacity
                       style={[styles.explorerButtonSecondary, { flex: 1 }]}
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-                        const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-                        Linking.openURL(`https://solscan.io/tx/${selectedTransaction.signature}${clusterParam}`)
-                      }}
+                      onPress={() => handleDownloadReceipt(selectedTransaction)}
                       activeOpacity={0.8}
                       accessibilityRole="button"
-                      accessibilityLabel="View on Solscan"
+                      accessibilityLabel="Download Receipt"
                     >
-                      <MaterialIcons name="open-in-new" size={16} color={theme.textPrimary} />
+                      <MaterialIcons name="download" size={16} color={theme.textPrimary} />
                       <Text style={styles.explorerButtonSecondaryText} numberOfLines={1}>
-                        View Solscan
+                        Download Receipt
                       </Text>
                     </TouchableOpacity>
 

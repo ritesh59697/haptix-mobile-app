@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Haptix Vault — Co-Signer Device</title>
+<link rel="icon" type="image/png" href="haptix-logo-white.png">
+<link rel="shortcut icon" type="image/png" href="haptix-logo-white.png">
+<link rel="apple-touch-icon" href="haptix-logo-white.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -1190,16 +1193,31 @@
   .history-right {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     color: var(--text-3);
     font-size: 11px;
     flex-shrink: 0;
     transition: color 0.15s var(--ease);
   }
 
+  .history-time-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+  }
+
   .history-time {
     font-family: var(--font-mono);
     font-size: 11px;
+    font-weight: 500;
+    color: var(--text-2);
+  }
+
+  .history-date {
+    font-size: 9.5px;
+    color: var(--text-3);
+    white-space: nowrap;
   }
 
   .history-ext-icon {
@@ -2634,6 +2652,7 @@
     historyList.innerHTML = items.map(function (item) {
       var date = new Date(item.timestamp);
       var timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      var dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
       var amtStr = item.amountSol ? (item.amountSol + ' SOL') : (item.actionType || 'Transfer');
       var recip = item.recipient || '';
       var recipShort = recip ? (recip.slice(0, 4) + '...' + recip.slice(-4)) : '';
@@ -2644,7 +2663,10 @@
           '<span class="history-sub">' + (item.network || 'Solana devnet') + '</span>' +
         '</div>' +
         '<div class="history-right">' +
-          '<span class="history-time">' + timeStr + '</span>' +
+          '<div class="history-time-col">' +
+            '<span class="history-time">' + timeStr + '</span>' +
+            '<span class="history-date">' + dateStr + '</span>' +
+          '</div>' +
           '<svg class="history-ext-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
             '<path d="M7 17L17 7"/>' +
             '<path d="M7 7h10v10"/>' +
