@@ -11,22 +11,24 @@
 [![Secp256r1](https://img.shields.io/badge/Cryptography-Secp256r1%20%2F%20P--256-blue?style=flat)](https://docs.solana.com)
 [![Documentation](https://img.shields.io/badge/Docs-Mintlify-4F6BFF?style=flat&logo=gitbook&logoColor=white)](https://haptix-docs.mintlify.app)
 [![Twitter](https://img.shields.io/badge/X-@HaptixWalllet-black?style=flat&logo=x)](https://x.com/HaptixWalllet)
-[![Tests](https://img.shields.io/badge/Tests-146%20Passing-brightgreen?style=flat)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-290%20Passing-brightgreen?style=flat)](tests/)
 
 <br />
 
-**[Live Docs](https://haptix-docs.mintlify.app)** &bull; **[X Community](https://x.com/HaptixWalllet)** &bull; **[Download Release APK (v1.0.1)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk)** &bull; **[EAS Build Console](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/da754004-963e-4d77-bbae-45c4ac1f5a98)** &bull; **[GitHub Release v1.0.1](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1)** &bull; **[Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
+**[🎬 Demo Video (YouTube)](https://youtu.be/kNsqykt4rfg)** &bull; **[Live Docs](https://haptix-docs.mintlify.app)** &bull; **[Download Release APK (v1.0.1)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk)** &bull; **[Pitch Deck (PDF)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf)** &bull; **[GitHub Release v1.0.1](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1)** &bull; **[Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
 
 </div>
 
 ---
 
-## Latest Standalone APK (v1.0.1)
+## Submission Deliverables & Standalone APK (v1.0.1)
 
 | Attribute | Verified Value |
 | :--- | :--- |
+| **Demo Video** | [**Watch 3-Min Walkthrough on YouTube**](https://youtu.be/kNsqykt4rfg) |
 | **Release Tag** | [`v1.0.1`](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1) |
 | **Direct APK Binary** | [**haptix-wallet.apk**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk) |
+| **Pitch Deck (PDF)** | [**Haptix_Pitch_Deck.pdf**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf) |
 | **EAS Build ID** | `da754004-963e-4d77-bbae-45c4ac1f5a98` |
 | **EAS Build Console** | [View Build Logs on Expo.dev](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/da754004-963e-4d77-bbae-45c4ac1f5a98) |
 | **Passkey UX** | Auto-targeted active wallet passkey (Zero-picker direct fingerprint prompt) |
