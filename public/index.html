@@ -26,8 +26,6 @@
     --shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 64px -16px rgba(0, 0, 0, 0.8), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
     --accent-ok: #34d399;
     --accent-ok-bg: rgba(52, 211, 153, 0.12);
-    --relay-ok: #10b981;
-    --relay-down: #f87171;
     --overlay: rgba(0, 0, 0, 0.65);
     --btn-primary-bg: #f4f4f5;
     --btn-primary-text: #09090b;
@@ -51,8 +49,6 @@
     --shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 20px 48px -12px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.03);
     --accent-ok: #059669;
     --accent-ok-bg: rgba(16, 185, 129, 0.10);
-    --relay-ok: #047857;
-    --relay-down: #dc2626;
     --overlay: rgba(15, 23, 42, 0.35);
     --btn-primary-bg: #09090b;
     --btn-primary-text: #ffffff;
@@ -79,7 +75,7 @@
   /* ---------- Top Desktop Header ---------- */
   .desktop-header {
     width: 100%;
-    max-width: 760px;
+    max-width: 980px;
     padding: 24px 32px 14px;
     display: flex;
     align-items: center;
@@ -91,7 +87,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    flex-shrink: 0;
   }
 
   .brand-meta {
@@ -104,7 +99,6 @@
     font-size: 11px;
     font-weight: 500;
     color: var(--text-3);
-    white-space: nowrap;
     background: var(--card-inner);
     border: 1px solid var(--border);
     padding: 2px 8px;
@@ -116,14 +110,12 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-shrink: 0;
   }
 
   .relay-status-pill {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    white-space: nowrap;
     padding: 6px 12px;
     border-radius: 999px;
     background: var(--card-inner);
@@ -137,25 +129,13 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--text-3);
-    flex-shrink: 0;
-  }
-
-  .relay-status-pill[data-relay="connected"] .relay-dot {
-    background: var(--relay-ok);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--relay-ok) 70%, transparent);
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
   }
 
   .relay-status-pill[data-relay="down"] .relay-dot {
-    background: var(--relay-down);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--relay-down) 55%, transparent);
-  }
-
-  .relay-net {
-    color: var(--text-3);
-    padding-left: 8px;
-    margin-left: 2px;
-    border-left: 1px solid var(--border);
+    background: #f87171;
+    box-shadow: 0 0 8px rgba(248, 113, 113, 0.55);
   }
 
   .nav-btn {
@@ -171,7 +151,6 @@
     font-weight: 500;
     cursor: pointer;
     font-family: inherit;
-    white-space: nowrap;
     transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease);
   }
 
@@ -197,7 +176,7 @@
     justify-content: center;
     flex: 1;
     width: 100%;
-    max-width: 760px;
+    max-width: 980px;
     padding: 12px 32px 48px;
     box-sizing: border-box;
   }
@@ -205,7 +184,7 @@
   /* ---------- Main Card ---------- */
   .card {
     width: 100%;
-    max-width: 760px;
+    max-width: 980px;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
@@ -216,8 +195,8 @@
   }
 
   .card.card-compact {
-    max-width: 760px;
-    padding: 32px 34px;
+    max-width: 520px;
+    padding: 30px 28px 28px;
   }
 
   .idle-grid {
@@ -312,7 +291,6 @@
     letter-spacing: -0.01em;
     margin: 0;
     line-height: 1.2;
-    white-space: nowrap;
   }
 
   .brand-text p {
@@ -616,9 +594,9 @@
   }
 
   .hero-amount {
-    font-size: 40px;
+    font-size: 32px;
     font-weight: 600;
-    letter-spacing: -0.035em;
+    letter-spacing: -0.02em;
     font-variant-numeric: tabular-nums;
     margin: 0;
     line-height: 1.15;
@@ -1126,6 +1104,14 @@
     border-radius: 4px;
   }
 
+  .history-empty-line {
+    margin: 0;
+    padding: 28px 8px;
+    text-align: center;
+    color: var(--text-2);
+    font-size: 13px;
+  }
+
   .history-empty {
     padding: 24px 16px;
     text-align: center;
@@ -1263,308 +1249,16 @@
     transform: translate(1px, -1px);
   }
 
-  /* ---------- Idle status ---------- */
-  #stateIdle {
-    align-items: center;
-    text-align: center;
-    gap: 22px;
-  }
-
-  .ready {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .ready-kicker {
-    margin: 0;
-    font-size: 40px;
-    font-weight: 600;
-    letter-spacing: -0.035em;
-    line-height: 1.05;
-    color: var(--text-1);
-  }
-
-  .ready-kicker[data-status="offline"] {
-    color: var(--relay-down);
-  }
-
-  .ready-wallet {
-    margin: 10px 0 0;
-    font-size: 18px;
-    font-weight: 500;
-    letter-spacing: -0.02em;
-    color: var(--text-1);
-  }
-
-  .ready-line {
-    margin: 6px 0 0;
-    max-width: 36ch;
-    font-size: 14.5px;
-    line-height: 1.45;
-    color: var(--text-2);
-  }
-
-  .pair {
-    display: grid;
-    grid-template-columns: 1fr 120px 1fr;
-    align-items: center;
-    width: 100%;
-    max-width: 420px;
-  }
-
-  .pair-device {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-2);
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .pair-device svg {
-    width: 26px;
-    height: 26px;
-    color: var(--text-1);
-  }
-
-  .pair-device-here {
-    color: var(--text-1);
-  }
-
-  .pair-device-here span {
-    font-weight: 600;
-  }
-
-  .pair-line {
-    position: relative;
-    height: 1px;
-    background: var(--border-strong);
-  }
-
-  .pair-pulse {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--text-3);
-    transform: translate(-50%, -50%);
-  }
-
-  .pair[data-relay="connected"] .pair-pulse {
-    background: var(--relay-ok);
-    animation: relay-ping 2.2s ease-out infinite;
-  }
-
-  .pair[data-relay="down"] .pair-pulse {
-    background: var(--relay-down);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--relay-down) 22%, transparent);
-  }
-
-  @keyframes relay-ping {
-    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--relay-ok) 55%, transparent); }
-    70% { box-shadow: 0 0 0 8px transparent; }
-    100% { box-shadow: 0 0 0 0 transparent; }
-  }
-
-  .listen-label {
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.4;
-    color: var(--text-2);
-  }
-
-  .card.is-busy #enrolledKeySection,
-  .card.is-busy #unEnrolledSection,
-  .card.is-busy .history-card:has(.history-empty-line) {
-    display: none !important;
-  }
-
-  #unEnrolledSection.enroll-wrap {
-    width: 100%;
-    margin-top: 22px;
-  }
-
-  .history-card {
-    margin-top: 28px;
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-  }
-
-  .history-title {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-2);
-  }
-
-  .history-count {
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-3);
-  }
-
-  .history-list {
-    gap: 0;
-    max-height: 240px;
-  }
-
-  .history-item {
-    display: grid;
-    grid-template-columns: 5.8rem minmax(0, 1fr) auto auto;
-    column-gap: 14px;
-    align-items: baseline;
-    padding: 11px 4px;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    border-top: 1px solid var(--border);
-    transform: none;
-  }
-
-  .history-item:hover {
-    background: var(--key-bg);
-    border-color: transparent;
-    border-top-color: var(--border);
-    transform: none;
-  }
-
-  .history-item:focus-visible,
-  .key-action-btn:focus-visible,
-  .nav-btn:focus-visible,
-  .auth-btn:focus-visible,
-  .clear-history-btn:focus-visible,
-  .icon-btn:focus-visible {
-    outline: 2px solid var(--text-1);
-    outline-offset: 2px;
-  }
-
-  .history-amt {
-    font-size: 13px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    color: var(--text-1);
-    white-space: nowrap;
-  }
-
-  .history-recip {
-    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-2);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .history-outcome {
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .history-outcome.approved { color: var(--relay-ok); }
-  .history-outcome.declined { color: var(--relay-down); }
-
-  .history-time {
-    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-2);
-    white-space: nowrap;
-  }
-
-  .history-empty-line {
-    margin: 0;
-    padding: 14px 0;
-    border-top: 1px solid var(--border);
-    color: var(--text-2);
-    font-size: 13px;
-  }
-
-  .device-panel {
-    margin-top: 22px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border);
-    text-align: left;
-  }
-
-  .device-panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 8px;
-  }
-
-  .device-panel-label {
-    color: var(--text-1);
-    font-size: 13px;
-    font-weight: 500;
-  }
-
-  .key-verified {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--relay-ok);
-    background: color-mix(in srgb, var(--relay-ok) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--relay-ok) 28%, transparent);
-    padding: 2px 7px;
-    border-radius: 6px;
-    white-space: nowrap;
-  }
-
-  .device-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 10px;
-  }
-
-  .device-actions + .device-actions {
-    margin-top: 8px;
-  }
-
-  .key-help-note {
-    margin-top: 10px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .pair-pulse,
-    .state-enter,
-    .confirm-ring,
-    .confirm-check {
-      animation: none !important;
-    }
-  }
-
   @media (max-width: 768px) {
     .desktop-header { padding: 16px 20px 8px; flex-wrap: wrap; gap: 10px; }
     .stage { padding: 8px 16px 32px; }
-    .card { padding: 28px 20px; }
-    .nav-btn { position: relative; width: 34px; height: 34px; padding: 0; justify-content: center; }
-    .history-item { grid-template-columns: auto minmax(0, 1fr) auto auto; column-gap: 10px; }
-    .nav-btn span {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-    .pair { grid-template-columns: 1fr 72px 1fr; }
-    .ready-kicker, .hero-amount { font-size: 34px; }
+    .card { padding: 24px 20px; }
+    .idle-grid { grid-template-columns: 1fr; gap: 24px; }
+    .relay-status-pill { display: none; }
+  }
 
+  @media (max-width: 480px) {
+    .hero-amount { font-size: 32px; }
   }
 </style>
 </head>
@@ -1589,10 +1283,9 @@
   </div>
 
   <div class="header-right">
-    <div class="relay-status-pill" id="relayStatusPill" data-relay="connecting">
+    <div class="relay-status-pill" id="relayStatusPill">
       <span class="relay-dot"></span>
-      <span class="relay-text">Connecting</span>
-      <span class="relay-net">Devnet</span>
+      <span class="relay-text">Relay Connected</span>
     </div>
     <button class="nav-btn" id="howItWorksBtn" type="button">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5" stroke-linecap="round"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/></svg>
@@ -1614,33 +1307,129 @@
   <main class="card">
     <div class="state-view">
 
+      <!-- STATE A: Idle (Default) -->
       <section class="state" id="stateIdle" aria-label="Ready">
-        <div class="ready">
-          <h2 class="ready-kicker" id="readyKicker" data-status="connecting">Ready</h2>
-          <p class="ready-wallet" id="idleWalletName">Hardware Vault 2</p>
-          <p class="ready-line" id="idleApprovesText">This Mac signs sends over 0.10 SOL.</p>
-        </div>
+        <div class="idle-grid">
+          <!-- Left Column: Device & Key Identity -->
+          <div class="idle-col-identity">
+            <div class="identity-body">
+              <div class="hardware-anchor">
+                <div class="hardware-icon-box">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                  </svg>
+                </div>
+                <h2 class="hardware-title">Co-Signer Hardware Key</h2>
+              </div>
 
-        <div class="pair" id="pairStatus" data-relay="connecting">
-          <div class="pair-device">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="7" y="2.5" width="10" height="19" rx="2"/>
-              <path d="M11 18.5h2"/>
-            </svg>
-            <span>Phone</span>
+              <div class="listen-row">
+                <span class="pulse-dot" aria-hidden="true"></span>
+                <span>Listening for requests from your phone</span>
+              </div>
+
+              <div id="enrolledKeySection" style="width: 100%; text-align: left;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
+                  <p class="field-label" style="margin: 0;">Co-signer public key</p>
+                  <span id="keyVerifiedBadge" style="display: none; font-size: 11px; color: #10b981; font-weight: 600; background: rgba(16, 185, 129, 0.12); padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.25);">✓ Verified in Hardware</span>
+                </div>
+                <div class="key-row">
+                  <span class="key-value" id="pubkeyText">02...</span>
+                  <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
+                    <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
+                      <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 12.5l5 5 11-11"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Co-Signer Key Health & Lifecycle Actions -->
+                <div class="key-actions-row">
+                  <button class="key-action-btn" id="verifyKeyBtn" type="button" title="Test if this passkey is still present in your hardware keystore">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      <path d="M9 12l2 2 4-4"/>
+                    </svg>
+                    <span id="verifyKeyText">Verify in Hardware</span>
+                  </button>
+                  <button class="key-action-btn" id="reEnrollBtn" type="button" title="Create a new passkey to replace this one">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                    <span>Re-enroll Key</span>
+                  </button>
+                  <button class="key-action-btn danger" id="removeKeyBtn" type="button" title="Remove this key from browser storage">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    <span>Remove</span>
+                  </button>
+                </div>
+                <p class="key-help-note">If you deleted this passkey from your device settings, tap <strong>Verify</strong> to test it or <strong>Re-enroll</strong> to generate a fresh key.</p>
+              </div>
+
+              <!-- If no key enrolled yet -->
+              <div id="unEnrolledSection" class="enroll-wrap" style="display:none; width: 100%;">
+                <p>This device has not enrolled a co-signer passkey yet.</p>
+                <button class="auth-btn" id="enrollBtn" type="button">
+                  <svg class="biometric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+                    <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+                    <path d="M2 12a10 10 0 0 1 18-6"/>
+                    <path d="M2 16h.01"/>
+                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+                    <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
+                    <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+                    <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+                  </svg>
+                  <span id="enrollBtnText">Enroll This Device</span>
+                </button>
+              </div>
+            </div>
+
           </div>
-          <div class="pair-line" aria-hidden="true"><span class="pair-pulse"></span></div>
-          <div class="pair-device pair-device-here">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="12" rx="2"/>
-              <path d="M8 20h8"/>
-              <path d="M12 16v4"/>
-            </svg>
-            <span>This Mac</span>
+
+          <!-- Right Column: Vault Policy & Activity -->
+          <div class="idle-col-activity">
+            <!-- Active Wallet & Limit Policy Card -->
+            <div class="info-card">
+              <div class="info-row">
+                <span class="info-label">Wallet</span>
+                <span class="info-val" id="idleWalletName">Hardware Vault 2</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Approves</span>
+                <span class="info-val" id="idleApprovesText">Transfers above 0.10 SOL</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Network</span>
+                <span class="info-val">Solana devnet</span>
+              </div>
+            </div>
+
+            <!-- Hardware Signing History Section -->
+            <div id="vaultHistorySection" class="history-card" style="margin-top: 0;">
+              <div class="history-head">
+                <div class="history-title-wrap">
+                  <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span class="history-title">Approval History</span>
+                  <span class="history-count" id="historyCountBadge">0</span>
+                </div>
+                <button class="clear-history-btn" id="clearHistoryBtn" type="button" title="Clear approval log">Clear</button>
+              </div>
+              <div class="history-list" id="historyList"></div>
+            </div>
           </div>
         </div>
-
-        <p class="listen-label" id="listenLabel" aria-live="polite">Connecting to the relay.</p>
       </section>
 
       <!-- STATE B: Approval request (Appears when transfer arrives) -->
@@ -1711,65 +1500,9 @@
         </div>
       </section>
 
+      <!-- Error box -->
       <div id="errorBox" class="error-box"></div>
 
-    </div>
-
-    <div id="unEnrolledSection" class="enroll-wrap" style="display:none;">
-      <button class="auth-btn" id="enrollBtn" type="button">
-        <svg class="biometric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
-          <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
-          <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
-          <path d="M2 12a10 10 0 0 1 18-6"/>
-          <path d="M2 16h.01"/>
-          <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
-          <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
-          <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
-          <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
-        </svg>
-        <span id="enrollBtnText">Enroll this Mac</span>
-      </button>
-    </div>
-
-    <section class="device-panel" id="enrolledKeySection" style="display:none">
-      <div class="device-panel-head">
-        <span class="device-panel-label">This device</span>
-        <span class="key-verified" id="keyVerifiedBadge" style="display:none;">Verified</span>
-      </div>
-      <div class="key-row">
-        <span class="key-value" id="pubkeyText">02...</span>
-        <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
-          <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
-            <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-          </svg>
-          <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M4 12.5l5 5 11-11"/>
-          </svg>
-        </button>
-      </div>
-      <div class="device-actions">
-        <button class="key-action-btn" id="verifyKeyBtn" type="button">
-          <span id="verifyKeyText">Test this key</span>
-        </button>
-        <button class="key-action-btn" id="reEnrollBtn" type="button">Re-enroll</button>
-      </div>
-      <div class="device-actions">
-        <button class="key-action-btn danger" id="removeKeyBtn" type="button">Remove</button>
-      </div>
-      <p class="key-help-note">Test checks that the passkey is still on this Mac. Re-enroll replaces it.</p>
-    </section>
-
-    <div id="vaultHistorySection" class="history-card">
-      <div class="history-head">
-        <div class="history-title-wrap">
-          <span class="history-title">Recent approvals</span>
-          <span class="history-count" id="historyCountBadge" hidden>0</span>
-        </div>
-        <button class="clear-history-btn" id="clearHistoryBtn" type="button" title="Clear approval log" hidden>Clear</button>
-      </div>
-      <div class="history-list" id="historyList"></div>
     </div>
   </main>
 </div>
@@ -1985,7 +1718,7 @@
     var cachedW = localStorage.getItem('haptix_last_wallet_name');
     if (cachedW && idleWalletName) idleWalletName.textContent = cachedW;
     var cachedT = localStorage.getItem('haptix_last_spend_threshold');
-    if (cachedT && idleApprovesText) idleApprovesText.textContent = thresholdSentence(cachedT);
+    if (cachedT && idleApprovesText) idleApprovesText.textContent = 'Transfers above ' + cachedT + ' SOL';
   } catch (e) {}
 
   function showToast(text) {
@@ -1997,8 +1730,11 @@
   function showState(el) {
     var card = document.querySelector('.card');
     if (card) {
-      card.classList.toggle('is-busy', el !== stateIdle);
-      card.classList.remove('card-compact');
+      if (el === stateRequest || el === stateApproved) {
+        card.classList.add('card-compact');
+      } else {
+        card.classList.remove('card-compact');
+      }
     }
     [stateIdle, stateRequest, stateApproved].forEach(function (s) {
       s.hidden = (s !== el);
@@ -2022,9 +1758,7 @@
   function closeModal() { overlay.classList.remove('open'); }
 
   // --- Copy Button ---
-  copyBtn.addEventListener('click', function (e) {
-    e.preventDefault();
-    e.stopPropagation();
+  copyBtn.addEventListener('click', function () {
     if (!rawFullPubKey) return;
     var done = function () {
       copyBtn.classList.add('copied');
@@ -2053,71 +1787,6 @@
     loadStoredKey();
   }
 
-  var relayState = 'connecting';
-  var relayMisses = 0;
-  var keyEnrolled = false;
-
-  function thresholdSentence(raw) {
-    var n = Number(raw);
-    var shown = Number.isFinite(n) ? n.toFixed(2) : String(raw);
-    return 'This Mac signs sends over ' + shown + ' SOL.';
-  }
-
-  function paintStatus() {
-    var pill = document.getElementById('relayStatusPill');
-    var pair = document.getElementById('pairStatus');
-    var kicker = document.getElementById('readyKicker');
-    var listen = document.getElementById('listenLabel');
-    var label = relayState === 'connected' ? 'Connected' : relayState === 'down' ? 'Relay down' : 'Connecting';
-    if (pill) {
-      pill.dataset.relay = relayState;
-      var text = pill.querySelector('.relay-text');
-      if (text) text.textContent = label;
-    }
-    if (pair) pair.dataset.relay = relayState;
-    if (!keyEnrolled) {
-      if (kicker) {
-        kicker.textContent = 'Set up';
-        kicker.dataset.status = 'setup';
-      }
-      if (listen) listen.textContent = 'Enroll this Mac before it can approve a send.';
-      return;
-    }
-    if (relayState === 'down') {
-      if (kicker) {
-        kicker.textContent = 'Offline';
-        kicker.dataset.status = 'offline';
-      }
-      if (listen) listen.textContent = 'This Mac cannot see requests from your phone.';
-      return;
-    }
-    if (kicker) {
-      kicker.textContent = 'Ready';
-      kicker.dataset.status = 'ready';
-    }
-    if (listen) {
-      listen.textContent = relayState === 'connected'
-        ? 'Listening for requests from your phone.'
-        : 'Connecting to the relay.';
-    }
-  }
-
-  function noteRelay(ok) {
-    if (ok) {
-      relayMisses = 0;
-      if (relayState !== 'connected') {
-        relayState = 'connected';
-        paintStatus();
-      }
-      return;
-    }
-    relayMisses += 1;
-    if (relayMisses >= 2 && relayState !== 'down') {
-      relayState = 'down';
-      paintStatus();
-    }
-  }
-
   function loadStoredKey() {
     var stored = localStorage.getItem('haptix_vault_key') || localStorage.getItem('haptix_mac_vault_key');
     if (stored) {
@@ -2128,20 +1797,16 @@
           var hex = parsed.publicKeyHex;
           pubkeyText.textContent = hex.length > 24 ? (hex.slice(0, 10) + '...' + hex.slice(-10)) : hex;
           pubkeyText.title = hex;
-          keyEnrolled = true;
           enrolledKeySection.style.display = 'block';
           unEnrolledSection.style.display = 'none';
-          paintStatus();
           return;
         }
       } catch (e) {}
     }
     rawFullPubKey = '';
-    keyEnrolled = false;
     if (keyVerifiedBadge) keyVerifiedBadge.style.display = 'none';
     enrolledKeySection.style.display = 'none';
     unEnrolledSection.style.display = 'flex';
-    paintStatus();
   }
   loadStoredKey();
 
@@ -2236,7 +1901,7 @@
         }
       } finally {
         verifyKeyBtn.classList.remove('busy');
-        verifyKeyText.textContent = 'Test this key';
+        verifyKeyText.textContent = 'Verify in Hardware';
       }
     });
   }
@@ -2307,7 +1972,7 @@
       errorBox.style.display = 'block';
     } finally {
       enrollBtn.classList.remove('busy');
-      enrollBtnText.textContent = 'Enroll this Mac';
+      enrollBtnText.textContent = 'Enroll This Device';
     }
   });
 
@@ -2602,11 +2267,6 @@
 
   function displayPendingRequest(tx) {
     currentPending = tx;
-    if (relayState !== 'connected') {
-      relayState = 'connected';
-      relayMisses = 0;
-      paintStatus();
-    }
     if (tx.id === 'preview_sample') {
       reqActionEyebrow.textContent = 'Transfer requested from your phone';
       reqAmount.textContent = (tx.amountSol || 0.1137) + ' SOL';
@@ -2735,13 +2395,31 @@
             idleWalletName.textContent = sData.walletInfo.walletName;
           }
           if (idleApprovesText && sData.walletInfo.spendThresholdSol) {
-            idleApprovesText.textContent = thresholdSentence(sData.walletInfo.spendThresholdSol);
+            idleApprovesText.textContent = 'Transfers above ' + Number(sData.walletInfo.spendThresholdSol).toFixed(2) + ' SOL';
           }
         }
       }
     } catch (e) {}
 
     noteRelay(sawRelay);
+  }
+
+  var relayMisses = 0;
+  function noteRelay(ok) {
+    var pill = document.getElementById('relayStatusPill');
+    var text = pill && pill.querySelector('.relay-text');
+    if (!pill) return;
+    if (ok) {
+      relayMisses = 0;
+      pill.dataset.relay = 'connected';
+      if (text) text.textContent = 'Relay Connected';
+      return;
+    }
+    relayMisses += 1;
+    if (relayMisses >= 2) {
+      pill.dataset.relay = 'down';
+      if (text) text.textContent = 'Relay down';
+    }
   }
 
   setInterval(pollPending, 900);
@@ -2772,15 +2450,6 @@
 
   // Decline Handler
   declineBtn.addEventListener('click', async function () {
-    if (currentPending) {
-      recordSignatureHistory({
-        timestamp: Date.now(),
-        amountSol: currentPending.amountSol,
-        recipient: currentPending.recipient,
-        actionType: currentPending.actionType || 'SOL Transfer',
-        outcome: 'declined'
-      });
-    }
     var declinedId = currentPending ? currentPending.id : null;
     if (declinedId) {
       declinedTxIds[declinedId] = true;
@@ -2826,8 +2495,7 @@
           amountSol: 0.1137,
           recipient: 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK',
           actionType: 'SOL Transfer (Preview)',
-          network: 'Solana devnet',
-          outcome: 'approved'
+          network: 'Solana devnet'
         });
         setTimeout(function () {
           showState(stateIdle);
@@ -2903,8 +2571,7 @@
         amountSol: currentPending.amountSol,
         recipient: currentPending.recipient,
         actionType: currentPending.actionType || 'SOL Transfer',
-        network: currentPending.network || 'Solana devnet',
-        outcome: 'approved'
+        network: currentPending.network || 'Solana devnet'
       });
 
       currentPending.signed = true;
@@ -2992,49 +2659,38 @@
     } catch (e) {}
   }
 
-  function escHtml(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
-    });
-  }
-
-  function formatHistoryWhen(ts) {
-    var date = new Date(ts);
-    if (isNaN(date.getTime())) return '';
-    var timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    if (date.toDateString() === new Date().toDateString()) return timeStr;
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  }
-
   function renderHistory() {
     if (!vaultHistorySection || !historyList) return;
     var items = getSignatureHistory();
     vaultHistorySection.style.display = 'block';
-    if (clearHistoryBtn) clearHistoryBtn.hidden = !items || items.length === 0;
     if (!items || items.length === 0) {
-      if (historyCountBadge) {
-        historyCountBadge.textContent = '0';
-        historyCountBadge.hidden = true;
-      }
+      if (historyCountBadge) historyCountBadge.textContent = '0';
       historyList.innerHTML = '<p class="history-empty-line">No approvals yet.</p>';
       return;
     }
-    if (historyCountBadge) {
-      historyCountBadge.textContent = String(items.length);
-      historyCountBadge.hidden = false;
-    }
+    if (historyCountBadge) historyCountBadge.textContent = items.length;
     historyList.innerHTML = items.map(function (item) {
-      var outcome = item.outcome === 'declined' ? 'declined' : 'approved';
-      var outcomeLabel = outcome === 'declined' ? 'Declined' : 'Approved';
-      var amtStr = item.amountSol ? (item.amountSol + ' SOL') : (item.actionType || 'Approval');
+      var date = new Date(item.timestamp);
+      var timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      var dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+      var amtStr = item.amountSol ? (item.amountSol + ' SOL') : (item.actionType || 'Transfer');
       var recip = item.recipient || '';
       var recipShort = recip ? (recip.slice(0, 4) + '...' + recip.slice(-4)) : '';
       var explorerUrl = recip ? ('https://explorer.solana.com/address/' + encodeURIComponent(recip) + '?cluster=devnet') : '';
-      return '<div class="history-item"' + (explorerUrl ? (' data-url="' + escHtml(explorerUrl) + '" title="View on explorer"') : '') + ' tabindex="0" role="button">' +
-        '<span class="history-amt">' + escHtml(amtStr) + '</span>' +
-        '<span class="history-recip">' + escHtml(recipShort) + '</span>' +
-        '<span class="history-outcome ' + outcome + '">' + outcomeLabel + '</span>' +
-        '<span class="history-time">' + escHtml(formatHistoryWhen(item.timestamp)) + '</span>' +
+      return '<div class="history-item" ' + (explorerUrl ? ('data-url="' + explorerUrl + '" title="View on Solana Explorer"') : '') + ' tabindex="0" role="button">' +
+        '<div class="history-left">' +
+          '<span class="history-action">' + amtStr + (recipShort ? (' → <span class="history-recip">' + recipShort + '</span>') : '') + '</span>' +
+        '</div>' +
+        '<div class="history-right">' +
+          '<div class="history-time-col">' +
+            '<span class="history-time">' + timeStr + '</span>' +
+            '<span class="history-date">' + dateStr + '</span>' +
+          '</div>' +
+          '<svg class="history-ext-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M7 17L17 7"/>' +
+            '<path d="M7 7h10v10"/>' +
+          '</svg>' +
+        '</div>' +
       '</div>';
     }).join('');
   }
