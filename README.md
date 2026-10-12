@@ -76,7 +76,7 @@ haptix-mobile-app/
 │   ├── haptix-passkey.ts           # Secp256r1 hardware passkey signing
 │   ├── haptix-client.ts            # Anchor instruction builder & account parser
 │   └── secp256r1-instruction.ts    # Native Secp256r1 precompile serializer
-├── tests/                          # 146-test end-to-end integration test suite
+├── tests/                          # 290-test end-to-end integration test suite
 │
 └── haptix_program/                 # On-Chain Anchor 0.31 Solana Smart Contract
     ├── programs/haptix_program/    # Rust program implementation
@@ -103,7 +103,7 @@ npm install
 ```
 
 ### 2. Run Integration Tests
-Verify all 146 cryptographic, PDA derivation, precompile serialization, and live Devnet verification checks:
+Verify all 290 cryptographic, PDA derivation, precompile serialization, and live Devnet verification checks:
 ```bash
 npm test
 ```
