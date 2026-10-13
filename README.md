@@ -9,11 +9,11 @@
 <br /><br />
 
 **Seedless. Biometric-Secured. Agent-Ready.**  
-*Built specifically for the **Solana Mobile CLOCK IN Hackathon** & **Colosseum** &bull; Dedicated to **Solana Seeker (Chapter 2)***
+*Built specifically for the **Solana Mobile CLOCK IN Hackathon** & **Colosseum** &bull; Dedicated to **Solana Seeker***
 
 [![CLOCK IN Hackathon](https://img.shields.io/badge/Hackathon-CLOCK%20IN%20(Solana%20Mobile)-00FF66?style=flat&logo=solana)](https://solanamobile.radiant.nexus)
 [![Colosseum](https://img.shields.io/badge/Hackathon-Colosseum-blueviolet?style=flat)](https://arena.colosseum.org)
-[![Target Device](https://img.shields.io/badge/Target-Solana%20Seeker%20(Chapter%202)-black?style=flat&logo=android)](https://solanamobile.com)
+[![Target Device](https://img.shields.io/badge/Target-Solana%20Seeker-black?style=flat&logo=android)](https://solanamobile.com)
 [![Solana](https://img.shields.io/badge/Solana-Devnet-14F195?style=flat&logo=solana)](https://solana.com)
 [![Expo](https://img.shields.io/badge/Expo-55.0-000020?style=flat&logo=expo)](https://expo.dev)
 [![Anchor](https://img.shields.io/badge/Anchor-0.31-2B2D42?style=flat)](https://www.anchor-lang.com)
@@ -37,7 +37,7 @@
 | :--- | :--- |
 | **Project Title** | **Haptix — Risk-Adaptive Passkey Smart Wallet** |
 | **Hackathon Submission** | **Solana Mobile CLOCK IN Hackathon** (Mobile-first Apps Track) & **Colosseum** |
-| **Target Hardware** | **Solana Seeker (Chapter 2)** & Solana Mobile Ecosystem |
+| **Target Hardware** | **Solana Seeker** & Solana Mobile Ecosystem |
 | **Live Web Vault** | [**haptix-passkeys.vercel.app**](https://haptix-passkeys.vercel.app) (Zero-install browser client for instant testing) |
 | **Direct APK Binary** | [**haptix-wallet.apk (v1.0.1)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk) |
 | **Colosseum Pitch (70s)** | [**Watch 70-Second Pitch on YouTube**](https://youtu.be/9OnEFuHqNDY) |
@@ -105,7 +105,7 @@ haptix-mobile-app/
 
 ### Prerequisites
 - Node.js (v18+)
-- Android Studio / Android Emulator or a physical Solana Mobile device (Solana Seeker (Chapter 2) / Android Phone)
+- Android Studio / Android Emulator or a physical Android / Solana Mobile device (Solana Seeker)
 
 ### 1. Install Dependencies
 ```bash
