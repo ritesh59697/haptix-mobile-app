@@ -1,2737 +1,926 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Haptix Vault — Co-Signer Device</title>
-<link rel="icon" type="image/png" href="haptix-logo-white.png">
-<link rel="shortcut icon" type="image/png" href="haptix-logo-white.png">
-<link rel="apple-touch-icon" href="haptix-logo-white.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    color-scheme: light dark;
-    --bg: #09090b;
-    --bg-radial: rgba(255, 255, 255, 0.035);
-    --card: #121215;
-    --card-inner: #18181c;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.14);
-    --text-1: #f4f4f5;
-    --text-2: #a1a1aa;
-    --text-3: #71717a;
-    --key-bg: #18181c;
-    --shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 64px -16px rgba(0, 0, 0, 0.8), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
-    --accent-ok: #34d399;
-    --accent-ok-bg: rgba(52, 211, 153, 0.12);
-    --overlay: rgba(0, 0, 0, 0.65);
-    --btn-primary-bg: #f4f4f5;
-    --btn-primary-text: #09090b;
-    --radius-card: 22px;
-    --radius-ctrl: 12px;
-    --ease: cubic-bezier(0.22, 1, 0.36, 1);
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  }
-
-  :root[data-theme="light"] {
-    --bg: #f5f5f7;
-    --bg-radial: rgba(0, 0, 0, 0.025);
-    --card: #ffffff;
-    --card-inner: #f8f8fa;
-    --border: rgba(0, 0, 0, 0.08);
-    --border-strong: rgba(0, 0, 0, 0.14);
-    --text-1: #09090b;
-    --text-2: #52525b;
-    --text-3: #a1a1aa;
-    --key-bg: #f4f4f5;
-    --shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 20px 48px -12px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.03);
-    --accent-ok: #059669;
-    --accent-ok-bg: rgba(16, 185, 129, 0.10);
-    --overlay: rgba(15, 23, 42, 0.35);
-    --btn-primary-bg: #09090b;
-    --btn-primary-text: #ffffff;
-  }
-
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-
-  body {
-    margin: 0;
-    background-color: var(--bg);
-    background-image: radial-gradient(circle at 50% 28%, var(--bg-radial) 0%, transparent 72%);
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    color: var(--text-1);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0;
-    transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
-  }
-
-  /* ---------- Top Desktop Header ---------- */
-  .desktop-header {
-    width: 100%;
-    max-width: 980px;
-    padding: 24px 32px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    box-sizing: border-box;
-  }
-
-  .header-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .brand-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .brand-badge {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-3);
-    background: var(--card-inner);
-    border: 1px solid var(--border);
-    padding: 2px 8px;
-    border-radius: 6px;
-    letter-spacing: 0.01em;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .relay-status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: var(--card-inner);
-    border: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--text-2);
-    font-weight: 500;
-  }
-
-  .relay-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #10b981;
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.7);
-  }
-
-  .relay-status-pill[data-relay="down"] .relay-dot {
-    background: #f87171;
-    box-shadow: 0 0 8px rgba(248, 113, 113, 0.55);
-  }
-
-  .nav-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 13px;
-    border-radius: 10px;
-    background: var(--card-inner);
-    border: 1px solid var(--border);
-    color: var(--text-2);
-    font-size: 12.5px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease);
-  }
-
-  .nav-btn:hover {
-    background: var(--key-bg);
-    color: var(--text-1);
-    border-color: var(--border-strong);
-  }
-
-  .nav-btn svg {
-    color: var(--text-2);
-    flex-shrink: 0;
-  }
-
-  .nav-btn:hover svg {
-    color: var(--text-1);
-  }
-
-  .stage {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    width: 100%;
-    max-width: 980px;
-    padding: 12px 32px 48px;
-    box-sizing: border-box;
-  }
-
-  /* ---------- Main Card ---------- */
-  .card {
-    width: 100%;
-    max-width: 980px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    box-shadow: var(--shadow);
-    padding: 32px 34px;
-    position: relative;
-    transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1), padding 0.35s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s var(--ease), border-color 0.3s var(--ease), box-shadow 0.3s var(--ease);
-  }
-
-  .card.card-compact {
-    max-width: 520px;
-    padding: 30px 28px 28px;
-  }
-
-  .idle-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    align-items: stretch;
-  }
-
-  .idle-col-identity {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: var(--card-inner);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 22px 22px 18px;
-    text-align: center;
-    align-items: center;
-    gap: 14px;
-    box-sizing: border-box;
-  }
-
-  .identity-body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    width: 100%;
-  }
-
-  .hardware-specs-strip {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-    width: 100%;
-  }
-
-  .spec-pill {
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--text-3);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 2px 7px;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-  }
-
-  .idle-col-activity {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    justify-content: flex-start;
-  }
-
-  #stateRequest, #stateApproved {
-    width: 100%;
-    margin: 0 auto;
-  }
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .mark-img {
-    height: 24px;
-    width: auto;
-    object-fit: contain;
-  }
-
-  [data-theme="light"] .mark-img {
-    filter: invert(1);
-  }
-
-  .mark {
-    width: 26px;
-    height: 26px;
-    flex-shrink: 0;
-    color: var(--text-1);
-  }
-
-  .brand-text h1 {
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    margin: 0;
-    line-height: 1.2;
-  }
-
-  .brand-text p {
-    font-size: 12px;
-    color: var(--text-3);
-    margin: 2px 0 0;
-    line-height: 1.2;
-  }
-
-  .icon-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--text-2);
-    cursor: pointer;
-    transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.15s var(--ease);
-  }
-
-  .icon-btn:hover { background: var(--key-bg); color: var(--text-1); border-color: var(--border-strong); }
-  .icon-btn:active { transform: scale(0.94); }
-  .icon-btn svg { width: 16px; height: 16px; }
-
-  /* ---------- Hardware Badge Visual ---------- */
-  .hardware-anchor {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 8px 0 16px;
-  }
-
-  .hardware-icon-box {
-    width: 58px;
-    height: 58px;
-    border-radius: 16px;
-    background: var(--card-inner);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-1);
-    margin-bottom: 14px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .hardware-title {
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    margin: 0 0 4px;
-    color: var(--text-1);
-  }
-
-  .hardware-subtitle {
-    font-size: 13px;
-    color: var(--text-2);
-    margin: 0;
-    max-width: 340px;
-    line-height: 1.45;
-  }
-
-  /* ---------- State swap ---------- */
-  .state-view { position: relative; }
-
-  .state {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .state[hidden] { display: none !important; }
-
-  .state-enter {
-    animation: rise 0.32s var(--ease);
-  }
-
-  @keyframes rise {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ---------- Idle state ---------- */
-  .listen-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    color: var(--text-2);
-    font-size: 13px;
-    padding: 4px 0;
-  }
-
-  .pulse-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--text-2);
-    animation: breathe 2.4s ease-in-out infinite;
-  }
-
-  @keyframes breathe {
-    0%, 100% { opacity: 0.35; transform: scale(0.95); }
-    50% { opacity: 0.95; transform: scale(1.05); }
-  }
-
-  .field-label {
-    font-size: 12px;
-    color: var(--text-3);
-    margin: 0 0 7px;
-  }
-
-  .key-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    background: var(--key-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-ctrl);
-    padding: 12px 14px;
-    transition: border-color 0.15s var(--ease);
-  }
-
-  .key-row:hover {
-    border-color: var(--border-strong);
-  }
-
-  .key-value {
-    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-    font-size: 12.5px;
-    color: var(--text-1);
-    letter-spacing: -0.01em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .copy-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    border: none;
-    background: transparent;
-    color: var(--text-2);
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: background 0.15s var(--ease), color 0.15s var(--ease);
-  }
-
-  .copy-btn:hover { background: var(--border); color: var(--text-1); }
-  .copy-btn svg { width: 15px; height: 15px; }
-  .copy-btn .check-icon { display: none; color: var(--accent-ok); }
-  .copy-btn.copied .copy-icon { display: none; }
-  .copy-btn.copied .check-icon { display: inline-flex; }
-
-  /* ---------- Key Actions & Health Controls ---------- */
-  .key-actions-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-  }
-
-  .key-action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 12px;
-    border-radius: 8px;
-    background: var(--card-inner);
-    border: 1px solid var(--border);
-    color: var(--text-2);
-    font-size: 12px;
-    font-weight: 500;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.15s var(--ease);
-  }
-
-  .key-action-btn:hover {
-    background: var(--key-bg);
-    color: var(--text-1);
-    border-color: var(--border-strong);
-  }
-
-  .key-action-btn:active {
-    transform: scale(0.97);
-  }
-
-  .key-action-btn.danger:hover {
-    color: #ef4444;
-    border-color: rgba(239, 68, 68, 0.4);
-    background: rgba(239, 68, 68, 0.08);
-  }
-
-  .key-action-btn svg {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-  }
-
-  .key-help-note {
-    font-size: 11.5px;
-    color: var(--text-3);
-    margin: 8px 0 0;
-    line-height: 1.45;
-  }
-
-  /* ---------- Info & Details Cards ---------- */
-  .info-card, .details-card {
-    border: 1px solid var(--border);
-    background: var(--card-inner);
-    border-radius: 14px;
-    padding: 2px 14px;
-    margin-bottom: 14px;
-  }
-
-  .info-row, .detail-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 0;
-  }
-
-  .info-row + .info-row, .detail-row + .detail-row {
-    border-top: 1px solid var(--border);
-  }
-
-  .info-label, .detail-label {
-    color: var(--text-2);
-    font-size: 13px;
-    flex-shrink: 0;
-  }
-
-  .info-val, .detail-val {
-    font-size: 13px;
-    color: var(--text-1);
-    text-align: right;
-  }
-
-  .mono-addr {
-    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-    font-size: 12px;
-    line-height: 1.5;
-    text-align: right;
-    color: var(--text-1);
-    letter-spacing: -0.01em;
-    word-break: break-all;
-  }
-
-  .detail-val.mono {
-    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-    font-size: 12px;
-  }
-
-  .helper-row {
-    display: flex;
-    justify-content: center;
-    padding-top: 4px;
-  }
-
-  .link-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: none;
-    border: none;
-    color: var(--text-2);
-    font-size: 12.5px;
-    font-family: inherit;
-    cursor: pointer;
-    padding: 4px 6px;
-    border-radius: 6px;
-    transition: color 0.15s var(--ease), background 0.15s var(--ease);
-  }
-
-  .link-btn:hover { color: var(--text-1); background: var(--key-bg); }
-  .link-btn svg { width: 14px; height: 14px; }
-
-  /* ---------- Approval state ---------- */
-  .hero {
-    text-align: center;
-    padding: 4px 0 16px;
-  }
-
-  .hero-eyebrow {
-    font-size: 12.5px;
-    color: var(--text-2);
-    margin: 0 0 6px;
-    font-weight: 500;
-  }
-
-  .hero-amount {
-    font-size: 32px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-    margin: 0;
-    line-height: 1.15;
-    color: var(--text-1);
-  }
-
-  .hero-fiat {
-    font-size: 13.5px;
-    color: var(--text-2);
-    margin: 5px 0 0;
-    font-variant-numeric: tabular-nums;
-    font-weight: 400;
-  }
-
-  .auth-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    border: none;
-    border-radius: var(--radius-ctrl);
-    background: var(--btn-primary-bg);
-    color: var(--btn-primary-text);
-    font-family: inherit;
-    font-size: 14.5px;
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    padding: 13px 18px;
-    cursor: pointer;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-    transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
-  }
-
-  .auth-btn:hover { opacity: 0.90; transform: translateY(-1px); }
-  .auth-btn:active { transform: translateY(0) scale(0.99); }
-  .auth-btn svg { width: 19px; height: 19px; flex-shrink: 0; }
-  .biometric-icon { width: 19px; height: 19px; flex-shrink: 0; display: inline-block; vertical-align: middle; }
-  .auth-btn.busy { opacity: 0.75; cursor: default; transform: none; }
-
-  .auth-btn-spinner {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 2px solid rgba(0, 0, 0, 0.2);
-    border-top-color: #0c0c0d;
-    box-sizing: border-box;
-    animation: spin 0.9s linear infinite;
-  }
-
-  [data-theme="light"] .auth-btn-spinner {
-    border: 2px solid rgba(255, 255, 255, 0.25);
-    border-top-color: #ffffff;
-  }
-
-  .key-shortcut-hint {
-    font-size: 11px;
-    opacity: 0.65;
-    padding: 1px 6px;
-    border-radius: 4px;
-    border: 1px solid currentColor;
-    margin-left: 2px;
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .decline-row {
-    display: flex;
-    justify-content: center;
-    padding-top: 10px;
-  }
-
-  .decline-btn {
-    background: none;
-    border: none;
-    color: var(--text-2);
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: color 0.15s var(--ease);
-  }
-  .decline-btn:hover { color: var(--text-1); }
-
-  /* ---------- Approved confirmation receipt ---------- */
-  .confirm-receipt {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 6px 0 12px;
-  }
-
-  .confirm-ring {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: rgba(52, 211, 153, 0.12);
-    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0.06);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 6px auto 18px;
-    animation: cvPop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-
-  .confirm-ring svg {
-    width: 28px;
-    height: 28px;
-    stroke: var(--accent-ok);
-  }
-
-  .confirm-check {
-    stroke-dasharray: 26;
-    stroke-dashoffset: 26;
-    animation: cvDraw 0.4s 0.25s ease-out forwards;
-  }
-
-  @keyframes cvPop {
-    0% { transform: scale(0.6); opacity: 0; }
-    60% { transform: scale(1.06); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  @keyframes cvDraw {
-    to { stroke-dashoffset: 0; }
-  }
-
-  .confirm-eyebrow {
-    color: var(--text-2);
-    font-size: 12px;
-    margin-bottom: 4px;
-    font-weight: 500;
-  }
-
-  .confirm-amount {
-    font-size: 28px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    margin: 0;
-    color: var(--text-1);
-    line-height: 1.2;
-  }
-
-  .confirm-target {
-    color: var(--text-2);
-    font-family: "JetBrains Mono", monospace;
-    font-size: 12.5px;
-    margin: 6px 0 16px;
-  }
-
-  .confirm-note {
-    color: var(--text-2);
-    font-size: 13px;
-    line-height: 1.5;
-    margin: 0;
-    max-width: 300px;
-  }
-
-  /* ---------- Un-enrolled view ---------- */
-  .enroll-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 14px;
-    padding: 8px 0;
-  }
-
-  .enroll-wrap p {
-    font-size: 13px;
-    color: var(--text-2);
-    margin: 0;
-    line-height: 1.45;
-  }
-
-  /* ---------- Error Box ---------- */
-  .error-box {
-    display: none;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    padding: 11px 13px;
-    border-radius: var(--radius-ctrl);
-    font-size: 12.5px;
-    line-height: 1.4;
-  }
-
-
-  /* ---------- Modal ---------- */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: var(--overlay);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s var(--ease);
-    z-index: 100;
-  }
-
-  .modal-overlay.open { opacity: 1; pointer-events: auto; }
-
-  .modal {
-    width: 100%;
-    max-width: 560px;
-    background: var(--card);
-    border: 1px solid var(--border-strong);
-    border-radius: 20px;
-    box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border);
-    padding: 28px 30px;
-    transform: translateY(14px) scale(0.98);
-    opacity: 0;
-    transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
-    box-sizing: border-box;
-  }
-
-  .modal-overlay.open .modal { transform: translateY(0) scale(1); opacity: 1; }
-
-  .modal-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    gap: 16px;
-  }
-
-  .modal-head-title-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .modal-tag {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-3);
-  }
-
-  .modal-head h2 {
-    font-size: 18px;
-    font-weight: 650;
-    margin: 0;
-    letter-spacing: -0.02em;
-    color: var(--text-1);
-    line-height: 1.25;
-  }
-
-  .modal-head-desc {
-    font-size: 12.5px;
-    color: var(--text-3);
-    margin: 0;
-    line-height: 1.45;
-  }
-
-  .modal-steps {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 22px;
-  }
-
-  .modal-step-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    background: var(--card-inner);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 13px 15px;
-    transition: border-color 0.2s ease, background 0.2s ease;
-  }
-
-  .modal-step-card:hover {
-    border-color: var(--border-strong);
-  }
-
-  .modal-step-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: var(--text-1);
-    margin-top: 1px;
-  }
-
-  .modal-step-icon svg {
-    width: 17px;
-    height: 17px;
-  }
-
-  .modal-step-content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .modal-step-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 3px;
-  }
-
-  .modal-step-num {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 1px 6px;
-  }
-
-  .modal-step-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-1);
-    letter-spacing: -0.01em;
-  }
-
-  .modal-step-desc {
-    font-size: 12px;
-    color: var(--text-2);
-    line-height: 1.48;
-    margin: 0;
-  }
-
-  .modal-footer {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
-    padding-top: 4px;
-  }
-
-  .modal-got-it-btn {
-    background: var(--btn-primary-bg);
-    color: var(--btn-primary-text);
-    border: none;
-    border-radius: 10px;
-    font-size: 12.5px;
-    font-weight: 600;
-    padding: 9px 18px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: transform 0.15s ease, opacity 0.15s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .modal-got-it-btn:hover {
-    opacity: 0.92;
-    transform: translateY(-1px);
-  }
-
-  .modal-got-it-btn:active {
-    transform: translateY(0);
-  }
-
-  /* ---------- Toast ---------- */
-  .toast {
-    position: fixed;
-    bottom: 28px;
-    background: var(--text-1);
-    color: var(--bg);
-    padding: 8px 16px;
-    border-radius: 9999px;
-    font-size: 12.5px;
-    font-weight: 500;
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
-    opacity: 0;
-    transform: translateY(12px);
-    transition: all 0.2s var(--ease);
-    pointer-events: none;
-    z-index: 200;
-  }
-
-  .toast.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* ---------- Discreet Bottom Toolbar ---------- */
-  .bottom-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 12px;
-    color: var(--text-3);
-  }
-
-  .sim-toggle-btn {
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-3);
-    font-family: inherit;
-    font-size: 11.5px;
-    padding: 5px 9px;
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-  }
-
-  .sim-toggle-btn:hover {
-    color: var(--text-2);
-    border-color: var(--border-strong);
-  }
-
-  /* ---------- Signing History Section ---------- */
-  .history-card {
-    margin-top: 14px;
-    padding: 14px 16px;
-    background: var(--card-inner);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    text-align: left;
-    transition: background 0.3s var(--ease), border-color 0.3s var(--ease);
-  }
-
-  .history-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 11px;
-  }
-
-  .history-title-wrap {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .history-icon {
-    width: 14px;
-    height: 14px;
-    color: var(--text-2);
-  }
-
-  .history-title {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    color: var(--text-1);
-  }
-
-  .history-count {
-    font-size: 11px;
-    font-weight: 500;
-    padding: 1px 7px;
-    border-radius: 999px;
-    background: var(--bg-hover);
-    color: var(--text-2);
-    border: 1px solid var(--border-subtle);
-  }
-
-  .clear-history-btn {
-    background: none;
-    border: none;
-    font-size: 11.5px;
-    color: var(--text-3);
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-    transition: color 0.15s var(--ease);
-  }
-
-  .clear-history-btn:hover {
-    color: var(--text-1);
-  }
-
-  .history-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    max-height: 220px;
-    overflow-y: auto;
-    padding-right: 2px;
-  }
-
-  .history-list::-webkit-scrollbar {
-    width: 4px;
-  }
-  .history-list::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .history-list::-webkit-scrollbar-thumb {
-    background: var(--border-strong);
-    border-radius: 4px;
-  }
-
-  .history-empty-line {
-    margin: 0;
-    padding: 28px 8px;
-    text-align: center;
-    color: var(--text-2);
-    font-size: 13px;
-  }
-
-  .history-empty {
-    padding: 24px 16px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 7px;
-    background: var(--bg);
-    border: 1px dashed var(--border);
-    border-radius: 10px;
-  }
-
-  .history-empty-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: var(--card-inner);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-3);
-    margin-bottom: 2px;
-  }
-
-  .history-empty-icon svg { width: 16px; height: 16px; }
-
-  .history-empty-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-2);
-    margin: 0;
-  }
-
-  .history-empty-desc {
-    font-size: 11.5px;
-    color: var(--text-3);
-    margin: 0;
-    line-height: 1.42;
-    max-width: 270px;
-  }
-
-  .history-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 9px 12px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: 8px;
-    font-size: 12px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.12s var(--ease);
-  }
-
-  .history-item:hover {
-    background: var(--key-bg);
-    border-color: var(--border-strong);
-    transform: translateY(-1px);
-  }
-
-  .history-item:active {
-    transform: translateY(0) scale(0.995);
-  }
-
-  .history-left {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .history-action {
-    font-weight: 600;
-    font-size: 12.5px;
-    color: var(--text-1);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .history-recip {
-    font-family: var(--font-mono);
-    font-weight: 500;
-    color: var(--text-2);
-  }
-
-  .history-sub {
-    font-size: 11px;
-    color: var(--text-3);
-  }
-
-  .history-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-3);
-    font-size: 11px;
-    flex-shrink: 0;
-    transition: color 0.15s var(--ease);
-  }
-
-  .history-time-col {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 1px;
-  }
-
-  .history-time {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text-2);
-  }
-
-  .history-date {
-    font-size: 9.5px;
-    color: var(--text-3);
-    white-space: nowrap;
-  }
-
-  .history-ext-icon {
-    width: 12px;
-    height: 12px;
-    color: var(--text-3);
-    transition: transform 0.15s var(--ease), color 0.15s var(--ease);
-  }
-
-  .history-item:hover .history-right {
-    color: var(--text-1);
-  }
-
-  .history-item:hover .history-ext-icon {
-    color: var(--text-1);
-    transform: translate(1px, -1px);
-  }
-
-  @media (max-width: 768px) {
-    .desktop-header { padding: 16px 20px 8px; flex-wrap: wrap; gap: 10px; }
-    .stage { padding: 8px 16px 32px; }
-    .card { padding: 24px 20px; }
-    .idle-grid { grid-template-columns: 1fr; gap: 24px; }
-    .relay-status-pill { display: none; }
-  }
-
-  @media (max-width: 480px) {
-    .hero-amount { font-size: 32px; }
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Haptix — The Biometric Hardware Enclave Layer for Solana Mobile</title>
+  <meta name="description" content="Haptix provides seedless WebAuthn biometric smart accounts on Solana Mobile (Seeker & Saga) with 2-of-2 dual-device hardware quorum, autonomous agent session keys, and native Secp256r1 precompiles.">
+  <link rel="icon" type="image/png" href="assets/haptix-new-logo.png">
+  <link rel="shortcut icon" type="image/png" href="assets/haptix-new-logo.png">
+  <link rel="apple-touch-icon" href="assets/haptix-new-logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Light Theme Variables */
+      --bg-main: #fbfbfd;
+      --bg-surface: #ffffff;
+      --text-main: #1d1d1f;
+      --text-secondary: #86868b;
+      --accent-black: #1d1d1f;
+      --accent-blue: #0071e3;
+      --accent-solana: #14f195;
+      --accent-purple: #9945ff;
+      --border-light: rgba(0, 0, 0, 0.05);
+      
+      /* Dark Theme Variables */
+      --bg-dark: #09090b;
+      --bg-dark-surface: #18181b;
+      --text-dark-main: #ffffff;
+      --text-dark-secondary: #a1a1aa;
+      --border-dark: rgba(255, 255, 255, 0.08);
+      --text-title: #FFFFFF;
+      --text-body: #E2E8F0;
+      --text-muted: #94A3B8;
+
+      --font-main: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-display: 'Outfit', sans-serif;
+      --font-heading: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.47059;
+      font-weight: 400;
+      letter-spacing: -0.022em;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img {
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 10;
+    }
+    .container.hero-container {
+      max-width: 1180px;
+    }
+
+    /* Section Themes */
+    .section-light {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+    }
+    .section-dark {
+      background-color: var(--bg-dark);
+      color: var(--text-dark-main);
+    }
+
+    /* Navbar */
+    .navbar-wrapper {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: rgba(251, 251, 253, 0.88);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      z-index: 1000;
+      transition: background 0.3s, border-bottom 0.3s;
+    }
+    
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    
+    .logo-container {
+      display: flex; 
+      align-items: center; 
+      gap: 9px; 
+      text-decoration: none;
+    }
+
+    .brand-mark-img {
+      height: 30px;
+      width: 30px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 8px rgba(0, 113, 227, 0.22));
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+    }
+    .logo-container:hover .brand-mark-img {
+      transform: scale(1.05);
+    }
+
+    .brand-text-img {
+      height: 22px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .logo-badge {
+      font-size: 10px;
+      font-weight: 600;
+      color: #059669;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 2px 7px;
+      border-radius: 999px;
+      letter-spacing: 0.02em;
+      margin-left: 2px;
+    }
+    
+    .nav-links {
+      display: flex; gap: 28px; align-items: center;
+    }
+    .nav-links a {
+      color: var(--text-main); text-decoration: none; font-size: 13px; font-weight: 500; opacity: 0.75; transition: opacity 0.2s;
+    }
+    .nav-links a:hover { opacity: 1; }
+    
+    .nav-actions { display: flex; align-items: center; gap: 12px; }
+
+    .btn-vault {
+      background: transparent;
+      color: var(--text-main);
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      padding: 8px 15px;
+      border-radius: 980px;
+      font-weight: 500;
+      font-size: 12.5px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-vault:hover {
+      background: rgba(0, 0, 0, 0.05);
+      border-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-download-apk {
+      background: var(--accent-black); 
+      color: #fff; 
+      border: none; 
+      padding: 8px 18px; 
+      border-radius: 980px; 
+      font-weight: 600; 
+      font-size: 12.5px; 
+      cursor: pointer; 
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-download-apk:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* Section 1: Hero (Centered Apple Style matching Image 2) */
+    .hero-section {
+      text-align: center;
+      padding: 120px 0 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    
+    .hero-pretitle {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 0.005em;
+      margin-bottom: 10px;
+    }
+    
+    .hero-title {
+      font-family: var(--font-heading); 
+      font-size: clamp(48px, 6.2vw, 80px); 
+      font-weight: 700; 
+      line-height: 1.05; 
+      letter-spacing: -0.04em; 
+      margin-bottom: 24px; 
+      color: var(--accent-black);
+      max-width: 820px;
+    }
+    
+    .hero-subtitle {
+      font-size: clamp(17px, 1.8vw, 21px); 
+      color: var(--text-secondary); 
+      max-width: 620px; 
+      margin: 0 auto 34px;
+      font-weight: 400;
+      letter-spacing: 0.008em;
+      line-height: 1.42;
+    }
+
+    .hero-action-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+      z-index: 5;
+    }
+
+    .btn-hero-apk {
+      background: var(--accent-black);
+      color: #ffffff;
+      padding: 10px 22px;
+      border-radius: 980px;
+      font-weight: 500;
+      font-size: 13px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+      transition: all 0.2s ease;
+    }
+    .btn-hero-apk:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+      opacity: 0.92;
+    }
+
+    .link-walkthrough {
+      font-size: 13.5px;
+      color: var(--accent-blue);
+      text-decoration: none;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: gap 0.2s ease;
+    }
+    .link-walkthrough:hover {
+      gap: 7px;
+      text-decoration: underline;
+    }
+
+    .hero-3d-asset {
+      position: relative;
+      width: 100%;
+      max-width: 880px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: heroFloat 6s ease-in-out infinite;
+    }
+    .hero-3d-asset img {
+      width: 100%;
+      max-width: 840px;
+      height: auto;
+      max-height: 520px;
+      object-fit: contain;
+      filter: drop-shadow(0 25px 45px rgba(0, 0, 0, 0.12));
+    }
+
+    @keyframes heroFloat {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-16px); }
+      100% { transform: translateY(0px); }
+    }
+
+    /* Section 2: Stats Banner */
+    .stats-banner {
+      padding: 34px 0;
+      border-top: 1px solid var(--border-dark);
+      border-bottom: 1px solid var(--border-dark);
+      margin-top: 50px;
+    }
+    .stats-grid {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      max-width: 1080px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+    .stat-item {
+      text-align: center;
+      min-width: 140px;
+    }
+    .stat-val {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+      color: #FFFFFF;
+      font-family: var(--font-heading);
+    }
+    .stat-lbl {
+      font-size: 12px;
+      color: var(--text-dark-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+    }
+
+    /* Section 3: Bento Grid */
+    .bento-section {
+      padding: 110px 0;
+    }
+    .section-intro {
+      text-align: center;
+      margin-bottom: 56px;
+      font-size: 46px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .bento-grid {
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      gap: 24px;
+    }
+    .bento-card {
+      background: var(--bg-surface); 
+      border-radius: 28px; 
+      padding: 40px; 
+      box-shadow: 0 10px 40px rgba(0,0,0,0.03), 0 2px 10px rgba(0,0,0,0.02);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      display: flex; 
+      flex-direction: column; 
+      justify-content: space-between;
+      min-height: 380px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
+    }
+    .bento-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 48px rgba(0,0,0,0.07);
+    }
+    .bento-card.large {
+      grid-column: span 2;
+      flex-direction: row;
+      align-items: center;
+    }
+    .bento-card h4 { 
+      font-size: 28px; 
+      font-weight: 700; 
+      letter-spacing: -0.02em;
+      margin-bottom: 12px; 
+      color: var(--accent-black); 
+    }
+    .bento-card p { 
+      font-size: 16.5px; 
+      color: var(--text-secondary); 
+      line-height: 1.5; 
+      max-width: 440px;
+    }
+    .bento-action {
+      margin-top: 24px;
+      color: var(--accent-blue);
+      font-weight: 600;
+      font-size: 14.5px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+    }
+    .bento-action::after {
+      content: '›';
+      font-size: 20px;
+      line-height: 1;
+      margin-top: -2px;
+    }
+
+    /* Section 4 & 5: Feature Spotlights */
+    .spotlight-section {
+      padding: 120px 0;
+      overflow: hidden;
+    }
+    .spotlight-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 60px;
+    }
+    .spotlight-text h2 {
+      font-size: clamp(38px, 4.5vw, 56px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 22px;
+    }
+    .spotlight-text p {
+      font-size: 19px;
+      color: inherit;
+      opacity: 0.78;
+      line-height: 1.48;
+      margin-bottom: 30px;
+    }
+    .spotlight-image {
+      width: 100%;
+      height: 480px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .spotlight-image img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 20px;
+      box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.45);
+    }
+    .spotlight-grid.reverse .spotlight-text {
+      order: 2;
+    }
+    .spotlight-grid.reverse .spotlight-image {
+      order: 1;
+    }
+    .spotlight-grid.reverse .spotlight-image img {
+      box-shadow: none;
+      filter: drop-shadow(0 16px 40px rgba(0, 0, 0, 0.06));
+    }
+
+    .btn-spotlight {
+      background: #ffffff; 
+      color: #000000; 
+      border: none; 
+      padding: 12px 26px; 
+      border-radius: 980px; 
+      font-weight: 600; 
+      font-size: 14px; 
+      cursor: pointer; 
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-spotlight:hover { 
+      transform: scale(1.02);
+      box-shadow: 0 10px 30px rgba(255,255,255,0.2);
+    }
+
+
+
+    /* Section 7: Supported Devices */
+    .devices-section {
+      padding: 80px 0 110px;
+      text-align: center;
+    }
+    .devices-section h3 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 40px;
+    }
+    .device-icons {
+      display: flex;
+      justify-content: center;
+      gap: 50px;
+      flex-wrap: wrap;
+    }
+    .device-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      opacity: 0.75;
+      transition: opacity 0.3s, transform 0.2s;
+    }
+    .device-icon:hover { opacity: 1; transform: translateY(-2px); }
+    .device-icon svg {
+      width: 44px; height: 44px;
+      color: var(--accent-black);
+    }
+    .device-icon span {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .device-icon small {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: -8px;
+    }
+
+    /* FAQ Section */
+    .faq-section {
+      padding: 110px 0;
+      background: var(--bg-surface);
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .faq-section h2 {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .faq-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 36px 48px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .faq-item h4 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.01em;
+    }
+    .faq-item p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    /* Section 8: CTA Section */
+    .cta-section {
+      text-align: center;
+      padding: 140px 0;
+    }
+    .cta-section h2 {
+      font-size: clamp(42px, 5.5vw, 64px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 24px;
+    }
+    .cta-section p {
+      font-size: 20px;
+      color: var(--text-dark-secondary);
+      max-width: 580px;
+      margin: 0 auto 36px;
+      line-height: 1.45;
+    }
+    .cta-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn-large-white {
+      background: #ffffff; 
+      color: #000000; 
+      border: none; 
+      padding: 16px 36px; 
+      border-radius: 980px; 
+      font-weight: 600; 
+      font-size: 16px; 
+      cursor: pointer; 
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-large-white:hover { 
+      transform: scale(1.02);
+      box-shadow: 0 10px 30px rgba(255,255,255,0.22);
+    }
+    .btn-large-outline {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 16px 32px;
+      border-radius: 980px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-large-outline:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: scale(1.02);
+    }
+
+    /* Minimal Footer */
+    .footer {
+      padding: 40px 24px;
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-dark);
+      font-size: 12.5px;
+      color: var(--text-dark-secondary);
+      max-width: 1080px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .footer-links {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .footer-links a {
+      color: inherit;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover {
+      color: #ffffff;
+    }
+
+    @media (max-width: 960px) {
+      .hero-section {
+        padding: 72px 0 40px;
+      }
+      .hero-title {
+        font-size: 54px;
+      }
+      .hero-3d-asset {
+        height: 380px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .navbar { height: 56px; }
+      .nav-links { display: none; }
+      .bento-grid { grid-template-columns: 1fr; }
+      .bento-card.large { grid-column: span 1; flex-direction: column; }
+      .spotlight-grid { grid-template-columns: 1fr; gap: 40px; }
+      .spotlight-image { height: 320px; }
+      .spotlight-grid.reverse .spotlight-image { order: 2; }
+      .spotlight-grid.reverse .spotlight-text { order: 1; }
+      .faq-grid { grid-template-columns: 1fr; gap: 28px; }
+      .globe-asset { height: 320px; }
+      .device-icons { gap: 30px; }
+      .footer { flex-direction: column; text-align: center; align-items: center; }
+    }
+  </style>
 </head>
 <body>
 
-<header class="desktop-header">
-  <div class="header-left">
-    <div class="brand">
-      <img src="/haptix-logo-white.png" alt="Haptix" class="mark-img" onerror="this.style.display='none'; document.getElementById('fallbackMark').style.display='block';">
-      <svg id="fallbackMark" class="mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:none;">
-        <rect x="2" y="2" width="28" height="28" rx="9" stroke="currentColor" stroke-width="1.6"/>
-        <path d="M11 15.5V12a5 5 0 0 1 10 0v3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        <rect x="9.5" y="15.5" width="13" height="9" rx="2.4" stroke="currentColor" stroke-width="1.6"/>
-      </svg>
-      <div class="brand-text">
-        <div class="brand-meta">
-          <h1>Haptix Vault</h1>
-          <span class="brand-badge">Co-Signer Device</span>
+  <!-- NAVBAR -->
+  <div class="navbar-wrapper">
+    <nav class="navbar">
+      <a href="#" class="logo-container">
+        <img src="assets/haptix-new-logo.png" alt="Haptix Logo" class="brand-mark-img">
+        <img src="assets/logotext-light.png" alt="haptix" class="brand-text-img">
+        <span class="logo-badge">Solana</span>
+      </a>
+      <div class="nav-links">
+        <a href="#overview">Overview</a>
+        <a href="#security">4-Layer Security</a>
+        <a href="#quorum">Dual-Device Quorum</a>
+        <a href="#agents">AI Agents</a>
+        <a href="https://haptix-docs.mintlify.app" target="_blank" rel="noopener noreferrer">Docs</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="nav-actions">
+        <a href="vault.html" class="btn-vault" title="Open Co-Signer Device Portal">
+          Launch Vault
+        </a>
+      </div>
+    </nav>
+  </div>
+
+  <!-- SECTION 1: HERO (LIGHT - CENTERED APPLE-GRADE) -->
+  <div class="section-light" id="overview">
+    <div class="container">
+      <section class="hero-section">
+        <div class="hero-pretitle">The new standard.</div>
+        <h1 class="hero-title">Hardware security.<br>Zero seed phrases.</h1>
+        <p class="hero-subtitle">Your fingerprint is your private key. Experience frictionless Solana smart accounts and autonomous AI agent sessions powered by native Secp256r1 precompiles.</p>
+        
+        <div class="hero-action-row">
+          <a href="https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk" class="btn-hero-apk">
+            Download Release APK (v1.0.1)
+          </a>
+          <a href="https://youtu.be/kNsqykt4rfg" target="_blank" rel="noopener noreferrer" class="link-walkthrough">
+            Watch 3-minute walkthrough &rarr;
+          </a>
+        </div>
+
+        <div class="hero-3d-asset">
+          <img src="assets/chatgpt-hero-nobg.png" alt="Haptix Mobile Vault running on Solana Mobile">
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- SECTION 2: STATS BANNER (DARK) -->
+  <div class="section-dark stats-banner">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-val">0</div>
+        <div class="stat-lbl">Seed Phrases Required</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">P-256</div>
+        <div class="stat-lbl">Native Solana Precompile</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">&lt; 0.5s</div>
+        <div class="stat-lbl">Biometric Signing Latency</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-val">290</div>
+        <div class="stat-lbl">Automated Tests Passing</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: BENTO GRID (LIGHT) -->
+  <div class="section-light bento-section" id="security">
+    <div class="container">
+      <h2 class="section-intro">A closer look.</h2>
+      <div class="bento-grid">
+        
+        <div class="bento-card large">
+          <div class="bento-content">
+            <h4>Touch ID / Face ID & StrongBox</h4>
+            <p>No seed phrases. No 24-word paper backups. Android Keystore StrongBox and Apple Secure Enclave sign Solana transactions natively via P-256 (Secp256r1) WebAuthn.</p>
+            <a href="https://github.com/ritesh59697/haptix-mobile-app" target="_blank" rel="noopener noreferrer" class="bento-action">Explore on GitHub</a>
+          </div>
+          <div style="flex-shrink:0; padding: 20px;">
+            <img src="assets/icons/fingerprint.svg" alt="Biometrics" style="width: 140px; height: 140px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));">
+          </div>
+        </div>
+        
+        <div class="bento-card">
+          <div class="bento-content">
+            <img src="assets/icons/zap.svg" alt="Gasless" style="width: 60px; height: 60px; margin-bottom: 16px; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.08));">
+            <h4>Zero-SOL Gasless Onboarding</h4>
+            <p>New to Solana? The embedded paymaster sponsors your smart account derivation on-chain and drips starter test SOL—zero pre-funding required.</p>
+            <a href="https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1" target="_blank" rel="noopener noreferrer" class="bento-action">View Release v1.0.1</a>
+          </div>
+        </div>
+        
+        <div class="bento-card">
+          <div class="bento-content">
+            <img src="assets/icons/sparkle.svg" alt="Agents" style="width: 60px; height: 60px; margin-bottom: 16px; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.08));">
+            <h4>Autonomous AI Agent Sessions</h4>
+            <p>Delegate constrained session keys with strict on-chain spending firewalls, time expiries, and 2-of-2 hardware escalation for high-value operations.</p>
+            <a href="#agents" class="bento-action">Explore Agent Policies</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: AI AGENTS (DARK) -->
+  <div class="section-dark spotlight-section" id="agents">
+    <div class="container">
+      <div class="spotlight-grid">
+        <div class="spotlight-text">
+          <h2>Autonomous firewalls. Complete control.</h2>
+          <p>Authorize AI agents to execute trades, portfolio rebalancing, and micro-swaps while you sleep. The on-chain spending firewall enforces strict rate limits and expiration timestamps directly in our Anchor smart program—ensuring agents can never exceed their allowed spending ceiling or drain your treasury.</p>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet" target="_blank" rel="noopener noreferrer" class="btn-spotlight">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              View Program on Solana Explorer
+            </a>
+            <a href="https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf" target="_blank" rel="noopener noreferrer" class="btn-spotlight" style="background: rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.2);">
+              Download Pitch Deck (PDF)
+            </a>
+          </div>
+        </div>
+        <div class="spotlight-image">
+          <img src="assets/ai-firewall-module.png" alt="Haptix AI Spending Firewall Hardware Module" style="max-width: 100%; max-height: 480px; object-fit: contain; filter: drop-shadow(0 24px 60px rgba(0, 0, 0, 0.7));">
         </div>
       </div>
     </div>
   </div>
 
-  <div class="header-right">
-    <div class="relay-status-pill" id="relayStatusPill">
-      <span class="relay-dot"></span>
-      <span class="relay-text">Relay Connected</span>
-    </div>
-    <button class="nav-btn" id="howItWorksBtn" type="button">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5" stroke-linecap="round"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/></svg>
-      <span>How this works</span>
-    </button>
-    <button class="icon-btn" id="themeToggle" aria-label="Toggle color theme" type="button" title="Toggle Light / Dark theme">
-      <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
-        <circle cx="12" cy="12" r="4.2"/>
-        <path d="M12 2.5v2.3M12 19.2v2.3M4.4 4.4l1.6 1.6M18 18l1.6 1.6M2.5 12h2.3M19.2 12h2.3M4.4 19.6l1.6-1.6M18 6l1.6-1.6"/>
-      </svg>
-      <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:none">
-        <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>
-      </svg>
-    </button>
-  </div>
-</header>
-
-<div class="stage">
-  <main class="card">
-    <div class="state-view">
-
-      <!-- STATE A: Idle (Default) -->
-      <section class="state" id="stateIdle" aria-label="Ready">
-        <div class="idle-grid">
-          <!-- Left Column: Device & Key Identity -->
-          <div class="idle-col-identity">
-            <div class="identity-body">
-              <div class="hardware-anchor">
-                <div class="hardware-icon-box">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="3" width="20" height="14" rx="2"/>
-                    <line x1="8" y1="21" x2="16" y2="21"/>
-                    <line x1="12" y1="17" x2="12" y2="21"/>
-                  </svg>
-                </div>
-                <h2 class="hardware-title">Co-Signer Hardware Key</h2>
-              </div>
-
-              <div class="listen-row">
-                <span class="pulse-dot" aria-hidden="true"></span>
-                <span>Listening for requests from your phone</span>
-              </div>
-
-              <div id="enrolledKeySection" style="width: 100%; text-align: left;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
-                  <p class="field-label" style="margin: 0;">Co-signer public key</p>
-                  <span id="keyVerifiedBadge" style="display: none; font-size: 11px; color: #10b981; font-weight: 600; background: rgba(16, 185, 129, 0.12); padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.25);">✓ Verified in Hardware</span>
-                </div>
-                <div class="key-row">
-                  <span class="key-value" id="pubkeyText">02...</span>
-                  <button class="copy-btn" id="copyBtn" type="button" aria-label="Copy public key" title="Copy public key">
-                    <svg class="copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                      <rect x="8.5" y="8.5" width="11" height="11" rx="2"/>
-                      <path d="M5.5 15.5h-1a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                    </svg>
-                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M4 12.5l5 5 11-11"/>
-                    </svg>
-                  </button>
-                </div>
-
-                <!-- Co-Signer Key Health & Lifecycle Actions -->
-                <div class="key-actions-row">
-                  <button class="key-action-btn" id="verifyKeyBtn" type="button" title="Test if this passkey is still present in your hardware keystore">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                      <path d="M9 12l2 2 4-4"/>
-                    </svg>
-                    <span id="verifyKeyText">Verify in Hardware</span>
-                  </button>
-                  <button class="key-action-btn" id="reEnrollBtn" type="button" title="Create a new passkey to replace this one">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                    </svg>
-                    <span>Re-enroll Key</span>
-                  </button>
-                  <button class="key-action-btn danger" id="removeKeyBtn" type="button" title="Remove this key from browser storage">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="3 6 5 6 21 6"/>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                    <span>Remove</span>
-                  </button>
-                </div>
-                <p class="key-help-note">If you deleted this passkey from your device settings, tap <strong>Verify</strong> to test it or <strong>Re-enroll</strong> to generate a fresh key.</p>
-              </div>
-
-              <!-- If no key enrolled yet -->
-              <div id="unEnrolledSection" class="enroll-wrap" style="display:none; width: 100%;">
-                <p>This device has not enrolled a co-signer passkey yet.</p>
-                <button class="auth-btn" id="enrollBtn" type="button">
-                  <svg class="biometric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
-                    <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
-                    <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
-                    <path d="M2 12a10 10 0 0 1 18-6"/>
-                    <path d="M2 16h.01"/>
-                    <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
-                    <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
-                    <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
-                    <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
-                  </svg>
-                  <span id="enrollBtnText">Enroll This Device</span>
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-          <!-- Right Column: Vault Policy & Activity -->
-          <div class="idle-col-activity">
-            <!-- Active Wallet & Limit Policy Card -->
-            <div class="info-card">
-              <div class="info-row">
-                <span class="info-label">Wallet</span>
-                <span class="info-val" id="idleWalletName">Hardware Vault 2</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Approves</span>
-                <span class="info-val" id="idleApprovesText">Transfers above 0.10 SOL</span>
-              </div>
-              <div class="info-row">
-                <span class="info-label">Network</span>
-                <span class="info-val">Solana devnet</span>
-              </div>
-            </div>
-
-            <!-- Hardware Signing History Section -->
-            <div id="vaultHistorySection" class="history-card" style="margin-top: 0;">
-              <div class="history-head">
-                <div class="history-title-wrap">
-                  <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 16 14"/>
-                  </svg>
-                  <span class="history-title">Approval History</span>
-                  <span class="history-count" id="historyCountBadge">0</span>
-                </div>
-                <button class="clear-history-btn" id="clearHistoryBtn" type="button" title="Clear approval log">Clear</button>
-              </div>
-              <div class="history-list" id="historyList"></div>
-            </div>
-          </div>
+  <!-- SECTION 5: DUAL DEVICE QUORUM (LIGHT) -->
+  <div class="section-light spotlight-section" id="quorum">
+    <div class="container">
+      <div class="spotlight-grid reverse">
+        <div class="spotlight-text">
+          <h2>Dual-Device Quorum.<br>When amounts get serious.</h2>
+          <p>Under your spend threshold (e.g. ≤ 0.10 SOL), transfers sign with a single biometric tap. Over your threshold, Haptix mathematically mandates a 2-of-2 hardware quorum—requiring a secondary signature from your Mac or PC Web Vault before any funds move on Solana.</p>
+          <a href="vault.html" class="btn-hero-primary" style="font-size: 14px; padding: 12px 24px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Open Co-Signer Web Vault
+          </a>
         </div>
-      </section>
-
-      <!-- STATE B: Approval request (Appears when transfer arrives) -->
-      <section class="state" id="stateRequest" hidden aria-label="Approval request">
-        <div class="hero">
-          <p class="hero-eyebrow" id="reqActionEyebrow">Transfer requested from your phone</p>
-          <p class="hero-amount" id="reqAmount">0.1137 SOL</p>
-          <p class="hero-fiat" id="reqUsdVal">≈ $13.54 USD</p>
-        </div>
-
-        <div class="details-card">
-          <div class="detail-row" id="reqTargetRow">
-            <span class="detail-label" id="reqTargetLabel">Recipient</span>
-            <span class="detail-val mono-addr" id="reqRecipient">F2KbEr68...</span>
-          </div>
-          <div class="detail-row" id="reqWalletRow">
-            <span class="detail-label">Wallet</span>
-            <span class="detail-val mono" id="reqWallet">--</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Network</span>
-            <span class="detail-val" id="reqNetwork">Solana devnet</span>
-          </div>
-          <div class="detail-row" id="reqFeeRow">
-            <span class="detail-label">Estimated fee</span>
-            <span class="detail-val" id="reqFee">0.000005 SOL</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Authorization</span>
-            <span class="detail-val" id="reqAuthMethod">2 passkeys</span>
-          </div>
-        </div>
-
-        <button class="auth-btn" id="authBtn" type="button">
-          <span class="auth-btn-spinner" id="authBtnSpinner" style="display:none;"></span>
-          <svg class="biometric-icon" id="authBtnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
-            <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
-            <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
-            <path d="M2 12a10 10 0 0 1 18-6"/>
-            <path d="M2 16h.01"/>
-            <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
-            <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
-            <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
-            <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
-          </svg>
-          <span id="authBtnLabel">Authorize with Biometrics</span>
-          <span class="key-shortcut-hint" id="authBtnKey">↵</span>
-        </button>
-
-        <div class="decline-row">
-          <button class="decline-btn" id="declineBtn" type="button">Decline</button>
-        </div>
-      </section>
-
-      <!-- STATE C: Approved confirmation -->
-      <section class="state" id="stateApproved" hidden aria-label="Approved">
-        <div class="confirm-receipt">
-          <div class="confirm-ring">
-            <svg class="confirm-check" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 12.5l4.5 4.5L19 7.5"/>
-            </svg>
-          </div>
-          <div class="confirm-eyebrow">Approved on this device</div>
-          <p class="confirm-amount" id="approvedAmount">0.1137 SOL</p>
-          <p class="confirm-target" id="approvedTarget">to F2KbEr68..VVrLgK</p>
-          <p class="confirm-note">Your phone will finish sending the transfer.</p>
-        </div>
-      </section>
-
-      <!-- Error box -->
-      <div id="errorBox" class="error-box"></div>
-
-    </div>
-  </main>
-</div>
-
-<!-- Modal: How dual-device signing works -->
-<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-head-title-wrap">
-        <span class="modal-tag">Hardware Quorum · 2-of-2 Policy</span>
-        <h2 id="modalTitle">How dual-device signing works</h2>
-        <p class="modal-head-desc">Physical security enforced by two separate cryptographic enclaves.</p>
-      </div>
-      <button class="icon-btn" id="modalClose" aria-label="Close" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg>
-      </button>
-    </div>
-
-    <div class="modal-steps">
-      <div class="modal-step-card">
-        <div class="modal-step-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-            <line x1="12" y1="18" x2="12.01" y2="18"/>
-          </svg>
-        </div>
-        <div class="modal-step-content">
-          <div class="modal-step-meta">
-            <span class="modal-step-num">Step 1</span>
-            <span class="modal-step-title">Mobile Phone Initiates Transfer</span>
-          </div>
-          <p class="modal-step-desc">Transfers above limit escalate to dual-device mode. Your phone signs first, but cannot broadcast without second device co-signature.</p>
+        <div class="spotlight-image">
+          <img src="assets/quorum-dual-device.png" alt="Dual Device 2-of-2 Hardware Quorum Approval">
         </div>
       </div>
-
-      <div class="modal-step-card">
-        <div class="modal-step-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-            <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
-          </svg>
-        </div>
-        <div class="modal-step-content">
-          <div class="modal-step-meta">
-            <span class="modal-step-num">Step 2</span>
-            <span class="modal-step-title">Biometrics Unlock Hardware Key</span>
-          </div>
-          <p class="modal-step-desc">Your second device receives the out-of-band request. Biometric authentication authorizes an isolated P-256 private key that never leaves the hardware secure chip.</p>
-        </div>
-      </div>
-
-      <div class="modal-step-card">
-        <div class="modal-step-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <polyline points="9 12 11 14 15 10"/>
-          </svg>
-        </div>
-        <div class="modal-step-content">
-          <div class="modal-step-meta">
-            <span class="modal-step-num">Step 3</span>
-            <span class="modal-step-title">Native Solana Precompile Verification</span>
-          </div>
-          <p class="modal-step-desc">Both hardware signatures are verified atomically on-chain via Solana’s native Secp256r1 precompile without relying on centralized relays.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="modal-got-it-btn" id="modalGotItBtn" type="button">
-        <span>Got it</span>
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </button>
     </div>
   </div>
-</div>
 
-<!-- Toast notification -->
-<div id="toast" class="toast">Copied to clipboard</div>
+  <!-- SECTION 7: SUPPORTED DEVICES (LIGHT) -->
+  <div class="section-light devices-section">
+    <div class="container">
+      <h3>Native to the hardware you already own.</h3>
+      <div class="device-icons">
+        <div class="device-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg>
+          <span>Solana Seeker</span>
+          <small>Chapter 2 Seed Vault</small>
+        </div>
+        <div class="device-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg>
+          <span>Android</span>
+          <small>Keystore StrongBox</small>
+        </div>
+        <div class="device-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="6" width="16" height="12" rx="2" ry="2"></rect><path d="M12 18v3"></path><path d="M8 21h8"></path></svg>
+          <span>MacBook</span>
+          <small>Apple Touch ID</small>
+        </div>
+        <div class="device-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg>
+          <span>iPhone</span>
+          <small>Apple Face ID</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ SECTION (LIGHT) -->
+  <div class="section-light faq-section" id="faq">
+    <div class="container">
+      <h2>Frequently Asked Questions</h2>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h4>How does it work without a seed phrase?</h4>
+          <p>Haptix uses WebAuthn and your device's hardware enclave (Android StrongBox or Apple Secure Enclave) to generate a secure P-256 (Secp256r1) keypair that never leaves your device. Solana natively verifies these signatures on-chain via the <code>Secp256r1SigVerify</code> precompile.</p>
+        </div>
+        <div class="faq-item">
+          <h4>How does 2-of-2 Hardware Quorum protect funds?</h4>
+          <p>You define a single-key spend ceiling (e.g. 0.10 SOL). Any transaction exceeding that threshold requires two distinct hardware passkey signatures (your phone + secondary device running the Haptix Web Vault at <code>/vault.html</code>).</p>
+        </div>
+        <div class="faq-item">
+          <h4>Are there any gas fees on onboarding?</h4>
+          <p>No. New users onboard with zero SOL in their pocket. Our gasless paymaster sponsors smart account PDA initialization and drips starter test SOL automatically.</p>
+        </div>
+        <div class="faq-item">
+          <h4>What happens if I lose my phone?</h4>
+          <p>Because passkeys sync to your Google or Apple cloud keystore, signing in on your new device restores your exact on-chain smart wallet PDA. In emergencies, your designated recovery guardians can trigger an on-chain Panic Freeze to stop outflows.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: CTA & FOOTER (DARK) -->
+  <div class="section-dark">
+    <section class="cta-section container">
+      <h2>Your next discovery starts on Solana Mobile.</h2>
+      <p>Download the standalone APK, test the co-signer web portal, or inspect the verified Anchor smart program on Solana Devnet.</p>
+      <div class="cta-buttons">
+        <a href="https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk" class="btn-large-white">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download APK (v1.0.1)
+        </a>
+        <a href="vault.html" class="btn-large-outline">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Launch Web Vault
+        </a>
+        <a href="https://haptix-docs.mintlify.app" target="_blank" rel="noopener noreferrer" class="btn-large-outline">
+          View Documentation
+        </a>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer-brand">
+        <img src="assets/haptix-logo-white.png" alt="Haptix Logo" style="height: 22px; width: 22px; object-fit: contain;">
+        <img src="assets/logotext-dark.png" alt="haptix" style="height: 18px; width: auto; object-fit: contain;">
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/ritesh59697/haptix-mobile-app" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://haptix-docs.mintlify.app" target="_blank" rel="noopener noreferrer">Docs</a>
+        <a href="https://youtu.be/kNsqykt4rfg" target="_blank" rel="noopener noreferrer">Demo Video</a>
+        <a href="https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet" target="_blank" rel="noopener noreferrer">Devnet Program</a>
+        <a href="https://x.com/HaptixWalllet" target="_blank" rel="noopener noreferrer">Twitter</a>
+      </div>
+    </footer>
+  </div>
 
-<script>
-(function () {
-  // --- Cryptographic Helpers ---
-  function bytesToHex(bytes) {
-    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  function hexToBytes(hex) {
-    const clean = hex.startsWith('0x') ? hex.slice(2) : hex;
-    const bytes = new Uint8Array(clean.length / 2);
-    for (let i = 0; i < clean.length; i += 2) {
-      bytes[i / 2] = parseInt(clean.substring(i, i + 2), 16);
-    }
-    return bytes;
-  }
-
-  function base64UrlToBytes(base64url) {
-    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice(0, (3 * base64url.length) % 4);
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return bytes;
-  }
-
-  function parseDerSignature(derBytes) {
-    let offset = 2;
-    if (derBytes[1] & 0x80) offset += (derBytes[1] & 0x7f);
-
-    if (derBytes[offset] !== 0x02) throw new Error("Expected 0x02 for r");
-    offset++;
-    const rLen = derBytes[offset++];
-    let r = derBytes.subarray(offset, offset + rLen);
-    offset += rLen;
-    if (r.length > 32 && r[0] === 0) r = r.subarray(1);
-    const rPadded = new Uint8Array(32);
-    rPadded.set(r, 32 - r.length);
-
-    if (derBytes[offset] !== 0x02) throw new Error("Expected 0x02 for s");
-    offset++;
-    const sLen = derBytes[offset++];
-    let s = derBytes.subarray(offset, offset + sLen);
-    if (s.length > 32 && s[0] === 0) s = s.subarray(1);
-    const sPadded = new Uint8Array(32);
-    sPadded.set(s, 32 - s.length);
-
-    const n = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551n;
-    const halfN = n / 2n;
-    let sVal = BigInt("0x" + bytesToHex(sPadded));
-    if (sVal > halfN) {
-      sVal = n - sVal;
-      const hex = sVal.toString(16).padStart(64, "0");
-      sPadded.set(hexToBytes(hex));
-    }
-
-    const compact = new Uint8Array(64);
-    compact.set(rPadded, 0);
-    compact.set(sPadded, 32);
-    return compact;
-  }
-
-  // --- Theme Handling ---
-  var root = document.documentElement;
-  var themeToggle = document.getElementById('themeToggle');
-  var sunIcon = themeToggle.querySelector('.sun-icon');
-  var moonIcon = themeToggle.querySelector('.moon-icon');
-
-  function applyThemeIcons(theme) {
-    var isDark = theme === 'dark' || (theme !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    sunIcon.style.display = isDark ? 'block' : 'none';
-    moonIcon.style.display = isDark ? 'none' : 'block';
-  }
-
-  var savedTheme = null;
-  try { savedTheme = localStorage.getItem('haptix_vault_theme'); } catch (e) {}
-  if (!savedTheme) {
-    savedTheme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-  }
-  root.setAttribute('data-theme', savedTheme);
-  applyThemeIcons(savedTheme);
-
-  themeToggle.addEventListener('click', function () {
-    var current = root.getAttribute('data-theme');
-    var next = current === 'dark' ? 'light' : 'dark';
-    root.setAttribute('data-theme', next);
-    applyThemeIcons(next);
-    try { localStorage.setItem('haptix_vault_theme', next); } catch (e) {}
-  });
-
-  // --- DOM Elements ---
-  var stateIdle = document.getElementById('stateIdle');
-  var stateRequest = document.getElementById('stateRequest');
-  var stateApproved = document.getElementById('stateApproved');
-  var enrolledKeySection = document.getElementById('enrolledKeySection');
-  var unEnrolledSection = document.getElementById('unEnrolledSection');
-  var pubkeyText = document.getElementById('pubkeyText');
-  var copyBtn = document.getElementById('copyBtn');
-  var enrollBtn = document.getElementById('enrollBtn');
-  var enrollBtnText = document.getElementById('enrollBtnText');
-  var authBtn = document.getElementById('authBtn');
-  var authBtnLabel = document.getElementById('authBtnLabel');
-  var authBtnSpinner = document.getElementById('authBtnSpinner');
-  var authBtnIcon = document.getElementById('authBtnIcon');
-  var authBtnKey = document.getElementById('authBtnKey');
-  var declineBtn = document.getElementById('declineBtn');
-  var reqActionEyebrow = document.getElementById('reqActionEyebrow');
-  var reqAmount = document.getElementById('reqAmount');
-  var reqUsdVal = document.getElementById('reqUsdVal');
-  var reqTargetLabel = document.getElementById('reqTargetLabel');
-  var reqRecipient = document.getElementById('reqRecipient');
-  var reqWallet = document.getElementById('reqWallet');
-  var reqNetwork = document.getElementById('reqNetwork');
-  var reqFee = document.getElementById('reqFee');
-  var reqAuthMethod = document.getElementById('reqAuthMethod');
-  var approvedAmount = document.getElementById('approvedAmount');
-  var approvedTarget = document.getElementById('approvedTarget');
-  var idleWalletName = document.getElementById('idleWalletName');
-  var idleApprovesText = document.getElementById('idleApprovesText');
-  var errorBox = document.getElementById('errorBox');
-  var toast = document.getElementById('toast');
-  var previewToggleBtn = document.getElementById('previewToggleBtn');
-
-  // Modal elements
-  var overlay = document.getElementById('modalOverlay');
-  var howItWorksBtn = document.getElementById('howItWorksBtn');
-  var modalClose = document.getElementById('modalClose');
-
-  var currentPending = null;
-  var rawFullPubKey = '';
-
-  // Restore cached wallet name & threshold for instant render
-  try {
-    var cachedW = localStorage.getItem('haptix_last_wallet_name');
-    if (cachedW && idleWalletName) idleWalletName.textContent = cachedW;
-    var cachedT = localStorage.getItem('haptix_last_spend_threshold');
-    if (cachedT && idleApprovesText) idleApprovesText.textContent = 'Transfers above ' + cachedT + ' SOL';
-  } catch (e) {}
-
-  function showToast(text) {
-    toast.textContent = text;
-    toast.classList.add('show');
-    setTimeout(function () { toast.classList.remove('show'); }, 1800);
-  }
-
-  function showState(el) {
-    var card = document.querySelector('.card');
-    if (card) {
-      if (el === stateRequest || el === stateApproved) {
-        card.classList.add('card-compact');
-      } else {
-        card.classList.remove('card-compact');
-      }
-    }
-    [stateIdle, stateRequest, stateApproved].forEach(function (s) {
-      s.hidden = (s !== el);
-      s.classList.remove('state-enter');
-    });
-    void el.offsetWidth;
-    el.classList.add('state-enter');
-  }
-
-  // --- Modal Events ---
-  var modalGotItBtn = document.getElementById('modalGotItBtn');
-  howItWorksBtn.addEventListener('click', function () {
-    overlay.classList.add('open');
-  });
-  modalClose.addEventListener('click', closeModal);
-  if (modalGotItBtn) modalGotItBtn.addEventListener('click', closeModal);
-  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeModal();
-  });
-  function closeModal() { overlay.classList.remove('open'); }
-
-  // --- Copy Button ---
-  copyBtn.addEventListener('click', function () {
-    if (!rawFullPubKey) return;
-    var done = function () {
-      copyBtn.classList.add('copied');
-      showToast('Public key copied');
-      setTimeout(function () { copyBtn.classList.remove('copied'); }, 1600);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(rawFullPubKey).then(done).catch(done);
-    } else {
-      done();
-    }
-  });
-
-  // --- Load Stored Key & Key Health Controls ---
-  var verifyKeyBtn = document.getElementById('verifyKeyBtn');
-  var verifyKeyText = document.getElementById('verifyKeyText');
-  var keyVerifiedBadge = document.getElementById('keyVerifiedBadge');
-  var reEnrollBtn = document.getElementById('reEnrollBtn');
-  var removeKeyBtn = document.getElementById('removeKeyBtn');
-
-  function clearStoredKey() {
-    localStorage.removeItem('haptix_vault_key');
-    localStorage.removeItem('haptix_mac_vault_key');
-    rawFullPubKey = '';
-    if (keyVerifiedBadge) keyVerifiedBadge.style.display = 'none';
-    loadStoredKey();
-  }
-
-  function loadStoredKey() {
-    var stored = localStorage.getItem('haptix_vault_key') || localStorage.getItem('haptix_mac_vault_key');
-    if (stored) {
-      try {
-        var parsed = JSON.parse(stored);
-        if (parsed.publicKeyHex) {
-          rawFullPubKey = parsed.publicKeyHex;
-          var hex = parsed.publicKeyHex;
-          pubkeyText.textContent = hex.length > 24 ? (hex.slice(0, 10) + '...' + hex.slice(-10)) : hex;
-          pubkeyText.title = hex;
-          enrolledKeySection.style.display = 'block';
-          unEnrolledSection.style.display = 'none';
-          return;
-        }
-      } catch (e) {}
-    }
-    rawFullPubKey = '';
-    if (keyVerifiedBadge) keyVerifiedBadge.style.display = 'none';
-    enrolledKeySection.style.display = 'none';
-    unEnrolledSection.style.display = 'flex';
-  }
-  loadStoredKey();
-
-  // --- Key Action Handlers (Re-enroll, Verify, Remove) ---
-  if (removeKeyBtn) {
-    removeKeyBtn.addEventListener('click', function () {
-      if (confirm('Remove this co-signer key from this device? You will be able to enroll a fresh passkey.')) {
-        clearStoredKey();
-        showToast('Stored key removed');
-      }
-    });
-  }
-
-  if (reEnrollBtn) {
-    reEnrollBtn.addEventListener('click', function () {
-      if (confirm('Re-enroll a new hardware passkey? This will replace the current co-signer key on this device.')) {
-        clearStoredKey();
-        if (enrollBtn) enrollBtn.click();
-      }
-    });
-  }
-
-  if (verifyKeyBtn) {
-    verifyKeyBtn.addEventListener('click', async function () {
-      var stored = localStorage.getItem('haptix_vault_key') || localStorage.getItem('haptix_mac_vault_key');
-      if (!stored) {
-        loadStoredKey();
-        return;
-      }
-      var meta;
-      try {
-        meta = JSON.parse(stored);
-      } catch (e) {
-        clearStoredKey();
-        return;
-      }
-
-      if (!meta.credentialId) {
-        showToast('⚠️ No credential ID saved. Please re-enroll.');
-        clearStoredKey();
-        return;
-      }
-
-      try {
-        verifyKeyBtn.classList.add('busy');
-        verifyKeyText.textContent = 'Checking sensor...';
-        errorBox.style.display = 'none';
-
-        var challengeBytes = crypto.getRandomValues(new Uint8Array(32));
-        var assertion = await navigator.credentials.get({
-          publicKey: {
-            challenge: challengeBytes,
-            rpId: window.location.hostname || 'localhost',
-            allowCredentials: [{
-              type: 'public-key',
-              id: base64UrlToBytes(meta.credentialId)
-            }],
-            userVerification: 'required',
-            timeout: 30000
-          }
-        });
-
-        if (assertion) {
-          if (keyVerifiedBadge) keyVerifiedBadge.style.display = 'inline-block';
-          showToast('✓ Hardware passkey verified and active!');
-        }
-      } catch (err) {
-        console.warn('Verification result:', err);
-        if (err.name === 'AbortError') {
-          showToast('Verification cancelled');
-          return;
-        }
-
-        var isNotFoundError = (
-          err.name === 'NotAllowedError' ||
-          err.name === 'NotFoundError' ||
-          (err.message && (
-            err.message.toLowerCase().includes('no credentials') ||
-            err.message.toLowerCase().includes('not found') ||
-            err.message.toLowerCase().includes('no passkey') ||
-            err.message.toLowerCase().includes('excluded')
-          ))
-        );
-
-        if (isNotFoundError) {
-          clearStoredKey();
-          errorBox.innerHTML = '<strong>Passkey not found in hardware storage!</strong> It was deleted from your phone/computer settings. Your stale key has been removed. Please enroll a fresh passkey below.';
-          errorBox.style.display = 'block';
-          showToast('⚠️ Passkey was deleted from device. Stale key removed.');
-        } else {
-          showToast('Verification note: ' + (err.message || 'Key check ended'));
-        }
-      } finally {
-        verifyKeyBtn.classList.remove('busy');
-        verifyKeyText.textContent = 'Verify in Hardware';
-      }
-    });
-  }
-
-  // --- Enrollment Handler ---
-  enrollBtn.addEventListener('click', async function () {
-    errorBox.style.display = 'none';
-    if (!window.isSecureContext || !navigator.credentials) {
-      errorBox.textContent = 'Browser blocked biometrics: WebAuthn requires a Secure Context (HTTPS or localhost). Open via HTTPS tunnel or localhost.';
-      errorBox.style.display = 'block';
-      return;
-    }
-    try {
-      enrollBtn.classList.add('busy');
-      enrollBtnText.textContent = 'Biometric Sensor Active...';
-
-      const challenge = crypto.getRandomValues(new Uint8Array(32));
-      const credential = await navigator.credentials.create({
-        publicKey: {
-          challenge: challenge,
-          rp: {
-            name: 'Haptix Wallet Vault',
-            id: window.location.hostname || 'localhost'
-          },
-          user: {
-            id: crypto.getRandomValues(new Uint8Array(16)),
-            name: 'Second Device Vault Key',
-            displayName: 'Second Device (Haptix Vault)'
-          },
-          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
-          authenticatorSelection: {
-            authenticatorAttachment: 'platform',
-            userVerification: 'required',
-            residentKey: 'preferred'
-          },
-          timeout: 60000,
-          attestation: 'none'
-        }
-      });
-
-      if (!credential) throw new Error('Enclave credential creation cancelled.');
-
-      let compressedHex = '';
-      if (typeof credential.response.getPublicKey === 'function') {
-        const spki = new Uint8Array(credential.response.getPublicKey());
-        const uncompressed = spki.slice(-65);
-        if (uncompressed[0] === 0x04) {
-          const x = uncompressed.slice(1, 33);
-          const yLast = uncompressed[64];
-          const prefix = (yLast % 2 === 0) ? '02' : '03';
-          compressedHex = prefix + bytesToHex(x);
-        }
-      }
-
-      if (!compressedHex) throw new Error('Could not derive compressed public key.');
-
-      const vaultMeta = {
-        credentialId: credential.id,
-        publicKeyHex: compressedHex,
-        createdAt: Date.now()
-      };
-      localStorage.setItem('haptix_vault_key', JSON.stringify(vaultMeta));
-      localStorage.setItem('haptix_mac_vault_key', JSON.stringify(vaultMeta));
-      loadStoredKey();
-      showToast('Enrolled in Hardware Secure Chip');
-    } catch (err) {
-      errorBox.textContent = err.message || 'Biometric enrollment failed.';
-      errorBox.style.display = 'block';
-    } finally {
-      enrollBtn.classList.remove('busy');
-      enrollBtnText.textContent = 'Enroll This Device';
-    }
-  });
-
-  // --- Relay Polling & Pending Requests ---
-  var DEFAULT_CLOUD_RELAY = 'https://haptix-relay.onrender.com';
-  var relayUrlParams = new URLSearchParams(window.location.search);
-  var customRelay = relayUrlParams.get('relay') || localStorage.getItem('haptix_custom_relay');
-
-  var relayHost = window.location.hostname || 'localhost';
-  var relayOrigin = '';
-
-  if (customRelay) {
-    relayOrigin = customRelay.replace(/\/+$/, '');
-  } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    relayOrigin = (window.location.port === '8082') ? window.location.origin : ('http://' + relayHost + ':8082');
-  } else {
-    // Hosted public web (e.g. Vercel) routes to hosted cloud relay
-    relayOrigin = DEFAULT_CLOUD_RELAY;
-  }
-
-  // Base58 alphabet for Solana addresses
-  var B58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-  function bytesToBase58(bytes) {
-    var digits = [0];
-    for (var i = 0; i < bytes.length; i++) {
-      for (var j = 0; j < digits.length; j++) digits[j] <<= 8;
-      digits[0] += bytes[i];
-      var carry = 0;
-      for (var k = 0; k < digits.length; k++) {
-        digits[k] += carry;
-        carry = (digits[k] / 58) | 0;
-        digits[k] %= 58;
-      }
-      while (carry) {
-        digits.push(carry % 58);
-        carry = (carry / 58) | 0;
-      }
-    }
-    var str = '';
-    for (var p = 0; p < bytes.length && bytes[p] === 0; p++) str += '1';
-    for (var q = digits.length - 1; q >= 0; q--) str += B58_ALPHABET[digits[q]];
-    return str;
-  }
-
-  var reqActionEyebrow = document.getElementById('reqActionEyebrow');
-  var reqTargetLabel = document.getElementById('reqTargetLabel');
-  var reqWallet = document.getElementById('reqWallet');
-  var reqNetwork = document.getElementById('reqNetwork');
-
-  function decodeClusterTag(clusterSlice) {
-    var str = new TextDecoder().decode(clusterSlice).replace(/\0/g, '').trim();
-    if (str === 'mainnet') return 'Solana Mainnet';
-    if (str === 'devnet') return 'Solana Devnet';
-    return str ? ('Solana (' + str + ')') : 'Solana Devnet';
-  }
-
-  function parseAndValidateMessage(tx) {
-    if (!tx || !tx.messageHex) return { ok: false, error: 'Missing signature message payload' };
-    try {
-      var bytes = hexToBytes(tx.messageHex);
-      if (bytes.length < 16) return { ok: false, error: 'Payload too short (' + bytes.length + ' bytes)' };
-
-      var rawString = new TextDecoder().decode(bytes);
-
-      // 1. TRANSFER: (97 bytes: 9 tag + 32 wallet + 8 cluster + 8 nonce + 32 recipient + 8 amount)
-      if (rawString.startsWith('TRANSFER:')) {
-        if (bytes.length !== 97) {
-          return { ok: false, error: 'Malformed TRANSFER payload length (' + bytes.length + ' bytes, expected 97)' };
-        }
-        var walletBytes = bytes.slice(9, 41);
-        var walletBase58 = bytesToBase58(walletBytes);
-        var clusterStr = decodeClusterTag(bytes.slice(41, 49));
-        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 49, 8).getBigUint64(0, true);
-        var recipientBytes = bytes.slice(57, 89);
-        var recipientBase58 = bytesToBase58(recipientBytes);
-        var amountLamports = new DataView(bytes.buffer, bytes.byteOffset + 89, 8).getBigUint64(0, true);
-        var actualAmountSol = Number(amountLamports) / 1e9;
-
-        // Verify that JSON metadata strictly matches the binary payload being signed
-        if (tx.recipient && tx.recipient.length > 10 && !tx.recipient.includes('...')) {
-          if (tx.recipient !== recipientBase58) {
-            return {
-              ok: false,
-              error: 'SECURITY WARNING: Recipient mismatch! UI requested ' + tx.recipient + ' but signed payload is ' + recipientBase58
-            };
-          }
-        }
-        if (tx.amountSol !== undefined && Math.abs(tx.amountSol - actualAmountSol) > 0.000001) {
-          return {
-            ok: false,
-            error: 'SECURITY WARNING: Amount mismatch! UI displayed ' + tx.amountSol + ' SOL but signed payload is ' + actualAmountSol + ' SOL'
-          };
-        }
-
-        var fiatText = tx.amountUsd ? ('≈ $' + tx.amountUsd + ' USD') : ('≈ $' + (actualAmountSol * 145).toFixed(2) + ' USD');
-        return {
-          ok: true,
-          actionType: 'TRANSFER',
-          eyebrow: 'Transfer requested from your phone',
-          amountDisplay: actualAmountSol + ' SOL',
-          fiatDisplay: fiatText,
-          targetLabel: 'Recipient',
-          targetValue: recipientBase58,
-          wallet: walletBase58,
-          walletPda: walletBase58,
-          network: 'Solana devnet',
-          fee: tx.feeSol || '0.000005 SOL',
-          auth: '2 passkeys',
-          nonce: nonce.toString()
-        };
-      }
-
-      // 2. SET_GUARDIAN: (93 bytes: 13 tag + 32 wallet + 8 cluster + 8 nonce + 32 guardian)
-      if (rawString.startsWith('SET_GUARDIAN:')) {
-        if (bytes.length !== 93) {
-          return { ok: false, error: 'Malformed SET_GUARDIAN payload length (' + bytes.length + ' bytes, expected 93)' };
-        }
-        var walletBytes = bytes.slice(13, 45);
-        var walletBase58 = bytesToBase58(walletBytes);
-        var clusterStr = decodeClusterTag(bytes.slice(45, 53));
-        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 53, 8).getBigUint64(0, true);
-        var newGuardianBytes = bytes.slice(61, 93);
-        var newGuardianBase58 = bytesToBase58(newGuardianBytes);
-
-        return {
-          ok: true,
-          actionType: 'SET_GUARDIAN',
-          eyebrow: 'Guardian Rotation requested',
-          amountDisplay: 'SET GUARDIAN',
-          fiatDisplay: 'Recovery Guardian Policy Update',
-          targetLabel: 'New Guardian',
-          targetValue: newGuardianBase58,
-          wallet: walletBase58,
-          network: clusterStr,
-          nonce: nonce.toString()
-        };
-      }
-
-      // 3. SET_THRESHOLD: (70 bytes: 14 tag + 32 wallet + 8 cluster + 8 nonce + 8 threshold)
-      if (rawString.startsWith('SET_THRESHOLD:')) {
-        if (bytes.length !== 70) {
-          return { ok: false, error: 'Malformed SET_THRESHOLD payload length (' + bytes.length + ' bytes, expected 70)' };
-        }
-        var walletBytes = bytes.slice(14, 46);
-        var walletBase58 = bytesToBase58(walletBytes);
-        var clusterStr = decodeClusterTag(bytes.slice(46, 54));
-        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 54, 8).getBigUint64(0, true);
-        var thresholdLamports = new DataView(bytes.buffer, bytes.byteOffset + 62, 8).getBigUint64(0, true);
-        var thresholdSol = Number(thresholdLamports) / 1e9;
-
-        return {
-          ok: true,
-          actionType: 'SET_THRESHOLD',
-          eyebrow: 'Spend Limit Policy Change requested',
-          amountDisplay: thresholdSol + ' SOL',
-          fiatDisplay: 'New 1-Passkey Threshold',
-          targetLabel: 'Policy Limit',
-          targetValue: thresholdSol + ' SOL (Sends above require 2-of-2 Quorum)',
-          wallet: walletBase58,
-          network: clusterStr,
-          nonce: nonce.toString()
-        };
-      }
-
-      // 4. GRANT_AGENT: (140 bytes: 12 tag + 32 wallet + 8 cluster + 8 nonce + 32 agent + 8 allowance + 8 valid + 32 program)
-      if (rawString.startsWith('GRANT_AGENT:')) {
-        if (bytes.length !== 140) {
-          return { ok: false, error: 'Malformed GRANT_AGENT payload length (' + bytes.length + ' bytes, expected 140)' };
-        }
-        var walletBytes = bytes.slice(12, 44);
-        var walletBase58 = bytesToBase58(walletBytes);
-        var clusterStr = decodeClusterTag(bytes.slice(44, 52));
-        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 52, 8).getBigUint64(0, true);
-        var agentBytes = bytes.slice(60, 92);
-        var agentBase58 = bytesToBase58(agentBytes);
-        var allowanceLamports = new DataView(bytes.buffer, bytes.byteOffset + 92, 8).getBigUint64(0, true);
-        var allowanceSol = Number(allowanceLamports) / 1e9;
-        var validForSeconds = new DataView(bytes.buffer, bytes.byteOffset + 100, 8).getBigInt64(0, true);
-
-        return {
-          ok: true,
-          actionType: 'GRANT_AGENT',
-          eyebrow: 'AI Agent Authorization requested',
-          amountDisplay: allowanceSol + ' SOL Limit',
-          fiatDisplay: 'Valid for ' + Math.round(Number(validForSeconds) / 60) + ' minutes',
-          targetLabel: 'Agent Key',
-          targetValue: agentBase58,
-          wallet: walletBase58,
-          network: clusterStr,
-          nonce: nonce.toString()
-        };
-      }
-
-      // 5. REVOKE_AGENT: (93 bytes: 13 tag + 32 wallet + 8 cluster + 8 nonce + 32 agent)
-      if (rawString.startsWith('REVOKE_AGENT:')) {
-        if (bytes.length !== 93) {
-          return { ok: false, error: 'Malformed REVOKE_AGENT payload length (' + bytes.length + ' bytes, expected 93)' };
-        }
-        var walletBytes = bytes.slice(13, 45);
-        var walletBase58 = bytesToBase58(walletBytes);
-        var clusterStr = decodeClusterTag(bytes.slice(45, 53));
-        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 53, 8).getBigUint64(0, true);
-        var agentBytes = bytes.slice(61, 93);
-        var agentBase58 = bytesToBase58(agentBytes);
-
-        return {
-          ok: true,
-          actionType: 'REVOKE_AGENT',
-          eyebrow: 'Agent Session Revocation',
-          amountDisplay: 'REVOKE AGENT',
-          fiatDisplay: 'Immediate Access Revocation',
-          targetLabel: 'Revoked Key',
-          targetValue: agentBase58,
-          wallet: walletBase58,
-          network: clusterStr,
-          nonce: nonce.toString()
-        };
-      }
-
-      // 6. UNFREEZE_WALLET: (64 bytes: 16 tag + 32 wallet + 8 cluster + 8 nonce)
-      if (rawString.startsWith('UNFREEZE_WALLET:')) {
-        if (bytes.length !== 64) {
-          return { ok: false, error: 'Malformed UNFREEZE_WALLET payload length (' + bytes.length + ' bytes, expected 64)' };
-        }
-        var walletBytes = bytes.slice(16, 48);
-        var walletBase58 = bytesToBase58(walletBytes);
-        var clusterStr = decodeClusterTag(bytes.slice(48, 56));
-        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 56, 8).getBigUint64(0, true);
-
-        return {
-          ok: true,
-          actionType: 'UNFREEZE_WALLET',
-          eyebrow: 'Unlock Smart Wallet requested',
-          amountDisplay: 'UNFREEZE',
-          fiatDisplay: 'Restore 1-Passkey Spending Operations',
-          targetLabel: 'Target Wallet',
-          targetValue: walletBase58,
-          wallet: walletBase58,
-          network: clusterStr,
-          nonce: nonce.toString()
-        };
-      }
-
-      // 7. CANCEL_RECOVERY: (64 bytes: 16 tag + 32 wallet + 8 cluster + 8 nonce)
-      if (rawString.startsWith('CANCEL_RECOVERY:')) {
-        if (bytes.length !== 64) {
-          return { ok: false, error: 'Malformed CANCEL_RECOVERY payload length (' + bytes.length + ' bytes, expected 64)' };
-        }
-        var walletBytes = bytes.slice(16, 48);
-        var walletBase58 = bytesToBase58(walletBytes);
-        var clusterStr = decodeClusterTag(bytes.slice(48, 56));
-        var nonce = new DataView(bytes.buffer, bytes.byteOffset + 56, 8).getBigUint64(0, true);
-
-        return {
-          ok: true,
-          actionType: 'CANCEL_RECOVERY',
-          eyebrow: 'Veto In-Flight Recovery requested',
-          amountDisplay: 'VETO RECOVERY',
-          fiatDisplay: 'Reject Guardian Key Rotation',
-          targetLabel: 'Target Wallet',
-          targetValue: walletBase58,
-          wallet: walletBase58,
-          network: clusterStr,
-          nonce: nonce.toString()
-        };
-      }
-
-      // Unrecognized action prefix -> HARD REJECT to prevent spoofing or blind signing!
-      return {
-        ok: false,
-        error: 'SECURITY ALERT: Unrecognized or malformed authorization payload (' + bytes.length + ' bytes). Biometric signing has been blocked to prevent blind signing.'
-      };
-    } catch (e) {
-      return { ok: false, error: 'Failed to parse signed payload: ' + e.message };
-    }
-  }
-
-  function formatTwoLineAddress(addr) {
-    if (!addr) return '--';
-    if (addr.length >= 24) {
-      return addr.slice(0, 10) + '...' + addr.slice(-8);
-    }
-    return addr;
-  }
-
-  function formatFee(fee) {
-    if (!fee) return '0.000005 SOL';
-    var s = String(fee).trim();
-    if (/sol$/i.test(s)) return s;
-    return s + ' SOL';
-  }
-
-  function displayPendingRequest(tx) {
-    currentPending = tx;
-    if (tx.id === 'preview_sample') {
-      reqActionEyebrow.textContent = 'Transfer requested from your phone';
-      reqAmount.textContent = (tx.amountSol || 0.1137) + ' SOL';
-      var usdEst = tx.amountUsd || ((tx.amountSol || 0.1137) * 145).toFixed(2);
-      reqUsdVal.textContent = '≈ $' + usdEst + ' USD';
-      reqTargetLabel.textContent = 'Recipient';
-      var previewAddr = tx.recipient || 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK';
-      reqRecipient.innerHTML = formatTwoLineAddress(previewAddr);
-      reqWallet.textContent = 'p15oXR5W...FuTaGM';
-      reqNetwork.textContent = 'Solana devnet';
-      if (reqFee) reqFee.textContent = '0.000005 SOL';
-      if (reqAuthMethod) reqAuthMethod.textContent = '2 passkeys';
-      errorBox.style.display = 'none';
-      authBtn.style.opacity = '1';
-      authBtn.style.pointerEvents = 'auto';
-      authBtnLabel.textContent = 'Authorize with Biometrics';
-      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
-      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
-      showState(stateRequest);
-      return;
-    }
-
-    var validation = parseAndValidateMessage(tx);
-    if (!validation.ok) {
-      console.error('[Security Warning]', validation.error);
-      errorBox.textContent = validation.error;
-      errorBox.style.display = 'block';
-      reqActionEyebrow.textContent = 'Security Alert';
-      reqAmount.textContent = 'BLOCKED';
-      reqUsdVal.textContent = 'Untrusted Payload';
-      reqTargetLabel.textContent = 'Status';
-      reqRecipient.textContent = 'Blocked by Security Check';
-      reqWallet.textContent = 'Rejected';
-      reqNetwork.textContent = 'Unknown';
-      if (reqFee) reqFee.textContent = '--';
-      if (reqAuthMethod) reqAuthMethod.textContent = '--';
-      authBtn.style.opacity = '0.3';
-      authBtn.style.pointerEvents = 'none';
-      authBtnLabel.textContent = 'Signing Blocked';
-      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
-      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
-      showState(stateRequest);
-      return;
-    }
-
-    authBtn.style.opacity = '1';
-    authBtn.style.pointerEvents = 'auto';
-    authBtnLabel.textContent = 'Authorize with Biometrics';
-    if (authBtnSpinner) authBtnSpinner.style.display = 'none';
-    if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
-    reqActionEyebrow.textContent = validation.eyebrow;
-    reqAmount.textContent = validation.amountDisplay;
-    reqUsdVal.textContent = validation.fiatDisplay;
-    reqTargetLabel.textContent = validation.targetLabel;
-    var targetVal = validation.targetValue;
-    reqRecipient.innerHTML = formatTwoLineAddress(targetVal);
-    reqRecipient.title = targetVal;
-    var walletStr = validation.wallet || '--';
-    if (tx.walletName) {
-      reqWallet.textContent = tx.walletName + (walletStr !== '--' && walletStr.length > 12 ? ' (' + walletStr.slice(0, 4) + '...' + walletStr.slice(-4) + ')' : '');
-    } else {
-      reqWallet.textContent = walletStr.length > 20 ? (walletStr.slice(0, 8) + '...' + walletStr.slice(-6)) : walletStr;
-    }
-    reqWallet.title = walletStr;
-    reqNetwork.textContent = 'Solana devnet';
-    if (reqFee) reqFee.textContent = formatFee(tx.feeSol || validation.fee);
-    if (reqAuthMethod) reqAuthMethod.textContent = validation.auth || '2 passkeys';
-    errorBox.style.display = 'none';
-    showState(stateRequest);
-  }
-
-  var declinedTxIds = {};
-
-  async function pollPending() {
-    // 1. URL params check
-    var params = new URLSearchParams(window.location.search);
-    if (params.get('preview') === '1' || params.get('demo') === '1') {
-      if (!currentPending || currentPending.id !== 'preview_sample') {
-        displayPendingRequest({
-          id: 'preview_sample',
-          amountSol: 0.1137,
-          amountUsd: '13.54',
-          recipient: 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK',
-          messageHex: '0x1234567890abcdef'
-        });
-      }
-      return;
-    }
-
-    var urlMsg = params.get('msg');
-    var urlAmt = params.get('amt');
-    var urlTo = params.get('to');
-    if (urlMsg && urlAmt) {
-      displayPendingRequest({
-        messageHex: urlMsg,
-        amountSol: parseFloat(urlAmt),
-        recipient: urlTo || 'Hou6dz...dYp5'
-      });
-      return;
-    }
-
-    // 2. Local relay on 8082
-    var sawRelay = false;
-    try {
-      var res = await fetch(relayOrigin + '/pending-tx');
-      if (res.ok) {
-        sawRelay = true;
-        var data = await res.json();
-        if (data.pending && !declinedTxIds[data.pending.id] && (!currentPending || currentPending.id !== data.pending.id)) {
-          displayPendingRequest(data.pending);
-        } else if (!data.pending && currentPending && !currentPending.signed) {
-          showState(stateIdle);
-          currentPending = null;
-        }
-      }
-    } catch (e) {}
-
-    // 3. Status sync for Idle card
-    try {
-      var sRes = await fetch(relayOrigin + '/status');
-      if (sRes.ok) {
-        sawRelay = true;
-        var sData = await sRes.json();
-        if (sData.walletInfo) {
-          if (idleWalletName && sData.walletInfo.walletName) {
-            idleWalletName.textContent = sData.walletInfo.walletName;
-          }
-          if (idleApprovesText && sData.walletInfo.spendThresholdSol) {
-            idleApprovesText.textContent = 'Transfers above ' + Number(sData.walletInfo.spendThresholdSol).toFixed(2) + ' SOL';
-          }
-        }
-      }
-    } catch (e) {}
-
-    noteRelay(sawRelay);
-  }
-
-  var relayMisses = 0;
-  function noteRelay(ok) {
-    var pill = document.getElementById('relayStatusPill');
-    var text = pill && pill.querySelector('.relay-text');
-    if (!pill) return;
-    if (ok) {
-      relayMisses = 0;
-      pill.dataset.relay = 'connected';
-      if (text) text.textContent = 'Relay Connected';
-      return;
-    }
-    relayMisses += 1;
-    if (relayMisses >= 2) {
-      pill.dataset.relay = 'down';
-      if (text) text.textContent = 'Relay down';
-    }
-  }
-
-  setInterval(pollPending, 900);
-  pollPending();
-
-  // Preview button toggle (if present)
-  var isPreviewing = false;
-  if (previewToggleBtn) {
-    previewToggleBtn.addEventListener('click', function () {
-      if (!isPreviewing) {
-        displayPendingRequest({
-          id: 'preview_sample',
-          amountSol: 0.1137,
-          amountUsd: '13.54',
-          recipient: 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK',
-          messageHex: '0x1234567890abcdef'
-        });
-        previewToggleBtn.textContent = 'Back to Idle View';
-        isPreviewing = true;
-      } else {
-        showState(stateIdle);
-        currentPending = null;
-        previewToggleBtn.textContent = 'Preview Approval View';
-        isPreviewing = false;
-      }
-    });
-  }
-
-  // Decline Handler
-  declineBtn.addEventListener('click', async function () {
-    var declinedId = currentPending ? currentPending.id : null;
-    if (declinedId) {
-      declinedTxIds[declinedId] = true;
-      try {
-        await fetch(relayOrigin + '/decline', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ txId: declinedId })
-        });
-      } catch (e) {}
-    }
-    currentPending = null;
-    showState(stateIdle);
-    showToast('Transfer declined');
-    if (isPreviewing && previewToggleBtn) {
-      previewToggleBtn.textContent = 'Preview Approval View';
-      isPreviewing = false;
-    }
-  });
-
-  // Biometric Signing Handler
-  authBtn.addEventListener('click', async function () {
-    if (authBtn.classList.contains('busy') || !currentPending) return;
-    errorBox.style.display = 'none';
-
-    // If simulating in preview mode without real challenge, show simulation success
-    if (currentPending.id === 'preview_sample') {
-      authBtn.classList.add('busy');
-      if (authBtnSpinner) authBtnSpinner.style.display = 'inline-block';
-      if (authBtnIcon) authBtnIcon.style.display = 'none';
-      authBtnLabel.textContent = 'Waiting for Biometrics...';
-      setTimeout(function () {
-        authBtn.classList.remove('busy');
-        if (authBtnSpinner) authBtnSpinner.style.display = 'none';
-        if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
-        authBtnLabel.textContent = 'Authorize with Biometrics';
-        if (approvedAmount) approvedAmount.textContent = '0.1137 SOL';
-        if (approvedTarget) approvedTarget.textContent = 'to F2KbEr68...VVrLgK';
-        showState(stateApproved);
-        showToast('Authorized with Biometrics');
-        recordSignatureHistory({
-          timestamp: Date.now(),
-          amountSol: 0.1137,
-          recipient: 'F2KbEr684c41WjtwqhmXQ9yNaZ49nG3A6vbVVrLgK',
-          actionType: 'SOL Transfer (Preview)',
-          network: 'Solana devnet'
-        });
-        setTimeout(function () {
-          showState(stateIdle);
-          currentPending = null;
-          if (previewToggleBtn) {
-            previewToggleBtn.textContent = 'Preview Approval View';
-            isPreviewing = false;
-          }
-        }, 3200);
-      }, 900);
-      return;
-    }
-
-    var vaultData = localStorage.getItem('haptix_vault_key') || localStorage.getItem('haptix_mac_vault_key');
-    if (!vaultData) {
-      errorBox.textContent = 'No passkey enrolled on this device yet. Enroll above.';
-      errorBox.style.display = 'block';
-      return;
-    }
-
-    var meta = JSON.parse(vaultData);
-    try {
-      authBtn.classList.add('busy');
-      if (authBtnSpinner) authBtnSpinner.style.display = 'inline-block';
-      if (authBtnIcon) authBtnIcon.style.display = 'none';
-      authBtnLabel.textContent = 'Waiting for Biometrics...';
-
-      var challengeBytes = hexToBytes(currentPending.messageHex);
-      var assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge: challengeBytes,
-          rpId: window.location.hostname || 'localhost',
-          allowCredentials: [{
-            type: 'public-key',
-            id: base64UrlToBytes(meta.credentialId)
-          }],
-          userVerification: 'required',
-          timeout: 60000
-        }
-      });
-
-      if (!assertion) throw new Error('Biometric prompt was cancelled.');
-
-      var derSignature = new Uint8Array(assertion.response.signature);
-      var compactSig = parseDerSignature(derSignature);
-      var authData = new Uint8Array(assertion.response.authenticatorData);
-      var clientDataJSON = new Uint8Array(assertion.response.clientDataJSON);
-
-      var payload = {
-        txId: currentPending.id,
-        walletPda: currentPending.walletPda || '',
-        signatureHex: bytesToHex(compactSig),
-        authenticatorDataHex: bytesToHex(authData),
-        clientDataJSONHex: bytesToHex(clientDataJSON)
-      };
-
-      // Also copy to clipboard for convenient out-of-band manual transfer
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(JSON.stringify(payload));
-        }
-      } catch (clipErr) {}
-
-      await fetch(relayOrigin + '/submit-signature', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).catch(function () {});
-
-      // Record in biometric approval history
-      recordSignatureHistory({
-        timestamp: Date.now(),
-        amountSol: currentPending.amountSol,
-        recipient: currentPending.recipient,
-        actionType: currentPending.actionType || 'SOL Transfer',
-        network: currentPending.network || 'Solana devnet'
-      });
-
-      currentPending.signed = true;
-      authBtn.classList.remove('busy');
-      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
-      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
-      authBtnLabel.textContent = 'Authorize with Biometrics';
-      if (approvedAmount) approvedAmount.textContent = (currentPending.amountSol ? currentPending.amountSol + ' SOL' : 'Transfer Approved');
-      if (approvedTarget) {
-        var recip = currentPending.recipient || '';
-        approvedTarget.textContent = recip ? ('to ' + (recip.length > 16 ? recip.slice(0, 8) + '...' + recip.slice(-6) : recip)) : '';
-      }
-      showState(stateApproved);
-      showToast('Authorized with Hardware Key');
-
-      setTimeout(function () {
-        showState(stateIdle);
-        currentPending = null;
-      }, 3500);
-
-    } catch (err) {
-      authBtn.classList.remove('busy');
-      if (authBtnSpinner) authBtnSpinner.style.display = 'none';
-      if (authBtnIcon) authBtnIcon.style.display = 'inline-block';
-      authBtnLabel.textContent = 'Authorize with Biometrics';
-
-      var isNotFound = (
-        err.name === 'NotAllowedError' ||
-        err.name === 'NotFoundError' ||
-        (err.message && (
-          err.message.toLowerCase().includes('no credentials') ||
-          err.message.toLowerCase().includes('not found') ||
-          err.message.toLowerCase().includes('no passkey')
-        ))
-      );
-
-      if (isNotFound) {
-        errorBox.innerHTML = '<strong>Passkey not found in device storage!</strong> It was deleted from your phone or password manager. <a href="#" id="errorResetLink" style="color:#ef4444; text-decoration:underline; font-weight:600; margin-left:4px;">Reset & Re-enroll</a>';
-        errorBox.style.display = 'block';
-        var resetLink = document.getElementById('errorResetLink');
-        if (resetLink) {
-          resetLink.onclick = function (e) {
-            e.preventDefault();
-            clearStoredKey();
-            showState(stateIdle);
-          };
-        }
-      } else {
-        errorBox.textContent = err.message || 'Biometric verification failed.';
-        errorBox.style.display = 'block';
-      }
-    }
-  });
-
-  // Enter and Escape keyboard shortcuts
-  window.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && currentPending && !currentPending.signed && !authBtn.classList.contains('busy')) {
-      e.preventDefault();
-      authBtn.click();
-    }
-    if (e.key === 'Escape' && currentPending && !authBtn.classList.contains('busy')) {
-      e.preventDefault();
-      declineBtn.click();
-    }
-  });
-
-  // --- Signing History Storage & Rendering ---
-  var vaultHistorySection = document.getElementById('vaultHistorySection');
-  var historyCountBadge = document.getElementById('historyCountBadge');
-  var historyList = document.getElementById('historyList');
-  var clearHistoryBtn = document.getElementById('clearHistoryBtn');
-
-  function getSignatureHistory() {
-    try {
-      var raw = localStorage.getItem('haptix_vault_history');
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  function saveSignatureHistory(items) {
-    try {
-      localStorage.setItem('haptix_vault_history', JSON.stringify(items.slice(0, 25)));
-    } catch (e) {}
-  }
-
-  function renderHistory() {
-    if (!vaultHistorySection || !historyList) return;
-    var items = getSignatureHistory();
-    vaultHistorySection.style.display = 'block';
-    if (!items || items.length === 0) {
-      if (historyCountBadge) historyCountBadge.textContent = '0';
-      historyList.innerHTML = '<p class="history-empty-line">No approvals yet.</p>';
-      return;
-    }
-    if (historyCountBadge) historyCountBadge.textContent = items.length;
-    historyList.innerHTML = items.map(function (item) {
-      var date = new Date(item.timestamp);
-      var timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      var dateStr = date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-      var amtStr = item.amountSol ? (item.amountSol + ' SOL') : (item.actionType || 'Transfer');
-      var recip = item.recipient || '';
-      var recipShort = recip ? (recip.slice(0, 4) + '...' + recip.slice(-4)) : '';
-      var explorerUrl = recip ? ('https://explorer.solana.com/address/' + encodeURIComponent(recip) + '?cluster=devnet') : '';
-      return '<div class="history-item" ' + (explorerUrl ? ('data-url="' + explorerUrl + '" title="View on Solana Explorer"') : '') + ' tabindex="0" role="button">' +
-        '<div class="history-left">' +
-          '<span class="history-action">' + amtStr + (recipShort ? (' → <span class="history-recip">' + recipShort + '</span>') : '') + '</span>' +
-        '</div>' +
-        '<div class="history-right">' +
-          '<div class="history-time-col">' +
-            '<span class="history-time">' + timeStr + '</span>' +
-            '<span class="history-date">' + dateStr + '</span>' +
-          '</div>' +
-          '<svg class="history-ext-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-            '<path d="M7 17L17 7"/>' +
-            '<path d="M7 7h10v10"/>' +
-          '</svg>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-  }
-
-  if (historyList) {
-    historyList.addEventListener('click', function (e) {
-      var itemEl = e.target.closest('.history-item');
-      if (itemEl && itemEl.dataset.url) {
-        window.open(itemEl.dataset.url, '_blank', 'noopener,noreferrer');
-      }
-    });
-    historyList.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        var itemEl = e.target.closest('.history-item');
-        if (itemEl && itemEl.dataset.url) {
-          e.preventDefault();
-          window.open(itemEl.dataset.url, '_blank', 'noopener,noreferrer');
-        }
-      }
-    });
-  }
-
-  function recordSignatureHistory(entry) {
-    var items = getSignatureHistory();
-    items.unshift(entry);
-    saveSignatureHistory(items);
-    renderHistory();
-  }
-
-  if (clearHistoryBtn) {
-    clearHistoryBtn.addEventListener('click', function () {
-      localStorage.removeItem('haptix_vault_history');
-      renderHistory();
-      showToast('History cleared');
-    });
-  }
-
-  // Initial render of history
-  renderHistory();
-
-})();
-</script>
 </body>
 </html>
