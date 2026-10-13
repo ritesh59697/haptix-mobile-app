@@ -9,8 +9,11 @@
 <br /><br />
 
 **Seedless. Biometric-Secured. Agent-Ready.**  
-*Built natively for the Solana Mobile Ecosystem (Seeker / Saga)*
+*Built specifically for the **Solana Mobile CLOCK IN Hackathon** & **Colosseum** &bull; Dedicated to **Solana Seeker***
 
+[![CLOCK IN Hackathon](https://img.shields.io/badge/Hackathon-CLOCK%20IN%20(Solana%20Mobile)-00FF66?style=flat&logo=solana)](https://solanamobile.radiant.nexus)
+[![Colosseum](https://img.shields.io/badge/Hackathon-Colosseum-blueviolet?style=flat)](https://arena.colosseum.org)
+[![Target Device](https://img.shields.io/badge/Target-Solana%20Seeker-black?style=flat&logo=android)](https://solanamobile.com)
 [![Solana](https://img.shields.io/badge/Solana-Devnet-14F195?style=flat&logo=solana)](https://solana.com)
 [![Expo](https://img.shields.io/badge/Expo-55.0-000020?style=flat&logo=expo)](https://expo.dev)
 [![Anchor](https://img.shields.io/badge/Anchor-0.31-2B2D42?style=flat)](https://www.anchor-lang.com)
@@ -32,6 +35,8 @@
 
 | Attribute | Verified Value |
 | :--- | :--- |
+| **Hackathon Submission** | **Solana Mobile CLOCK IN Hackathon** (Mobile-first Apps) & **Colosseum** |
+| **Target Hardware** | **Solana Seeker** (Native Biometric Passkey & Hardware Keystore Integration) |
 | **Live Web Vault** | [**haptix-passkeys.vercel.app**](https://haptix-passkeys.vercel.app) (Zero-install browser client for instant testing) |
 | **Direct APK Binary** | [**haptix-wallet.apk (v1.0.1)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk) |
 | **Colosseum Pitch (70s)** | [**Watch 70-Second Pitch on YouTube**](https://youtu.be/9OnEFuHqNDY) |
@@ -44,11 +49,12 @@
 | **Cloud Relay** | [https://haptix-relay.onrender.com](https://haptix-relay.onrender.com) (24/7 UptimeRobot monitored) |
 
 
+
 ---
 
 ## Overview
 
-**Haptix** is a consumer-grade smart contract wallet designed natively for the **Solana Mobile Stack (SMS)**. 
+**Haptix** is a consumer-grade smart contract wallet built specifically for the **Solana Mobile CLOCK IN Hackathon** and optimized natively for **Solana Seeker** using the **Solana Mobile Stack (SMS)**. 
 
 Traditional mobile crypto wallets force users to manage 12-to-24 word seed phrases or endure friction-heavy prompts for every micro-transaction. Haptix eliminates seed phrases entirely by utilizing **Hardware Passkeys (Secp256r1 / P-256)** verified directly on Solana through native **instruction introspection (`Secp256r1SigVerify`)**.
 
@@ -105,7 +111,7 @@ haptix-mobile-app/
 
 ### Prerequisites
 - Node.js (v18+)
-- Android Studio / Android Emulator or a physical Solana Mobile device (Saga / Chapter 2)
+- Android Studio / Android Emulator or a physical Solana Mobile device (Solana Seeker / Android Phone)
 
 ### 1. Install Dependencies
 ```bash
