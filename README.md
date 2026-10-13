@@ -1,21 +1,28 @@
-# Haptix — Next-Gen Passkey Smart Wallet for Solana Mobile
-
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="public/assets/logotext-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="public/assets/logotext-light.png">
+  <img alt="Haptix — Next-Gen Passkey Smart Wallet for Solana Mobile" src="public/assets/logotext-dark.png" width="380" />
+</picture>
+
+<br /><br />
+
 **Seedless. Biometric-Secured. Agent-Ready.**  
-*Built for the Solana Mobile Ecosystem (Saga / Chapter 2)*
+*Built natively for the Solana Mobile Ecosystem (Seeker / Saga)*
 
 [![Solana](https://img.shields.io/badge/Solana-Devnet-14F195?style=flat&logo=solana)](https://solana.com)
 [![Expo](https://img.shields.io/badge/Expo-55.0-000020?style=flat&logo=expo)](https://expo.dev)
 [![Anchor](https://img.shields.io/badge/Anchor-0.31-2B2D42?style=flat)](https://www.anchor-lang.com)
 [![Secp256r1](https://img.shields.io/badge/Cryptography-Secp256r1%20%2F%20P--256-blue?style=flat)](https://docs.solana.com)
+[![Live Web Vault](https://img.shields.io/badge/Web%20Vault-Vercel-black?style=flat&logo=vercel)](https://haptix-passkeys.vercel.app)
 [![Documentation](https://img.shields.io/badge/Docs-Mintlify-4F6BFF?style=flat&logo=gitbook&logoColor=white)](https://haptix-docs.mintlify.app)
 [![Twitter](https://img.shields.io/badge/X-@HaptixWalllet-black?style=flat&logo=x)](https://x.com/HaptixWalllet)
 [![Tests](https://img.shields.io/badge/Tests-290%20Passing-brightgreen?style=flat)](tests/)
 
 <br />
 
-**[🎬 Demo Video (YouTube)](https://youtu.be/kNsqykt4rfg)** &bull; **[Live Docs](https://haptix-docs.mintlify.app)** &bull; **[Download Release APK (v1.0.1)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk)** &bull; **[Pitch Deck (PDF)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf)** &bull; **[GitHub Release v1.0.1](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1)** &bull; **[Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
+**[🌐 Live Web Vault](https://haptix-passkeys.vercel.app)** &bull; **[📲 Download APK (v1.0.1)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk)** &bull; **[⚡ 70s Pitch Video](https://youtu.be/9OnEFuHqNDY)** &bull; **[🎬 3m Walkthrough](https://youtu.be/kNsqykt4rfg)** &bull; **[📖 Live Docs](https://haptix-docs.mintlify.app)** &bull; **[📊 Pitch Deck (PDF)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf)** &bull; **[Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
 
 </div>
 
@@ -25,14 +32,17 @@
 
 | Attribute | Verified Value |
 | :--- | :--- |
-| **Demo Video** | [**Watch 3-Min Walkthrough on YouTube**](https://youtu.be/kNsqykt4rfg) |
+| **Live Web Vault** | [**haptix-passkeys.vercel.app**](https://haptix-passkeys.vercel.app) (Zero-install browser client for instant testing) |
+| **Direct APK Binary** | [**haptix-wallet.apk (v1.0.1)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk) |
+| **Colosseum Pitch (70s)** | [**Watch 70-Second Pitch on YouTube**](https://youtu.be/9OnEFuHqNDY) |
+| **Demo Walkthrough (3m)** | [**Watch 3-Minute Walkthrough on YouTube**](https://youtu.be/kNsqykt4rfg) |
 | **Release Tag** | [`v1.0.1`](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1) |
-| **Direct APK Binary** | [**haptix-wallet.apk**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk) |
 | **Pitch Deck (PDF)** | [**Haptix_Pitch_Deck.pdf**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf) |
 | **EAS Build ID** | `da754004-963e-4d77-bbae-45c4ac1f5a98` |
 | **EAS Build Console** | [View Build Logs on Expo.dev](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/da754004-963e-4d77-bbae-45c4ac1f5a98) |
 | **Passkey UX** | Auto-targeted active wallet passkey (Zero-picker direct fingerprint prompt) |
 | **Cloud Relay** | [https://haptix-relay.onrender.com](https://haptix-relay.onrender.com) (24/7 UptimeRobot monitored) |
+
 
 ---
 
