@@ -9,11 +9,11 @@
 <br /><br />
 
 **Seedless. Biometric-Secured. Agent-Ready.**  
-*Built specifically for the **Solana Mobile CLOCK IN Hackathon** & **Colosseum** &bull; Dedicated to **Solana Seeker***
+*Built specifically for the **Solana Mobile CLOCK IN Hackathon** & **Colosseum** &bull; Dedicated to **Solana Seeker (Chapter 2)***
 
 [![CLOCK IN Hackathon](https://img.shields.io/badge/Hackathon-CLOCK%20IN%20(Solana%20Mobile)-00FF66?style=flat&logo=solana)](https://solanamobile.radiant.nexus)
 [![Colosseum](https://img.shields.io/badge/Hackathon-Colosseum-blueviolet?style=flat)](https://arena.colosseum.org)
-[![Target Device](https://img.shields.io/badge/Target-Solana%20Seeker-black?style=flat&logo=android)](https://solanamobile.com)
+[![Target Device](https://img.shields.io/badge/Target-Solana%20Seeker%20(Chapter%202)-black?style=flat&logo=android)](https://solanamobile.com)
 [![Solana](https://img.shields.io/badge/Solana-Devnet-14F195?style=flat&logo=solana)](https://solana.com)
 [![Expo](https://img.shields.io/badge/Expo-55.0-000020?style=flat&logo=expo)](https://expo.dev)
 [![Anchor](https://img.shields.io/badge/Anchor-0.31-2B2D42?style=flat)](https://www.anchor-lang.com)
@@ -35,8 +35,9 @@
 
 | Attribute | Verified Value |
 | :--- | :--- |
-| **Hackathon Submission** | **Solana Mobile CLOCK IN Hackathon** (Mobile-first Apps) & **Colosseum** |
-| **Target Hardware** | **Solana Seeker** (Native Biometric Passkey & Hardware Keystore Integration) |
+| **Project Title** | **Haptix — Risk-Adaptive Passkey Smart Wallet** |
+| **Hackathon Submission** | **Solana Mobile CLOCK IN Hackathon** (Mobile-first Apps Track) & **Colosseum** |
+| **Target Hardware** | **Solana Seeker (Chapter 2)** & Solana Mobile Ecosystem |
 | **Live Web Vault** | [**haptix-passkeys.vercel.app**](https://haptix-passkeys.vercel.app) (Zero-install browser client for instant testing) |
 | **Direct APK Binary** | [**haptix-wallet.apk (v1.0.1)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk) |
 | **Colosseum Pitch (70s)** | [**Watch 70-Second Pitch on YouTube**](https://youtu.be/9OnEFuHqNDY) |
@@ -48,25 +49,18 @@
 | **Passkey UX** | Auto-targeted active wallet passkey (Zero-picker direct fingerprint prompt) |
 | **Cloud Relay** | [https://haptix-relay.onrender.com](https://haptix-relay.onrender.com) (24/7 UptimeRobot monitored) |
 
-
-
 ---
 
 ## Overview
 
-**Haptix** is a consumer-grade smart contract wallet built specifically for the **Solana Mobile CLOCK IN Hackathon** and optimized natively for **Solana Seeker** using the **Solana Mobile Stack (SMS)**. 
+**Haptix was architected natively for the Solana Mobile Stack (SMS) and the Solana Seeker (Chapter 2) ecosystem:**
 
-Traditional mobile crypto wallets force users to manage 12-to-24 word seed phrases or endure friction-heavy prompts for every micro-transaction. Haptix eliminates seed phrases entirely by utilizing **Hardware Passkeys (Secp256r1 / P-256)** verified directly on Solana through native **instruction introspection (`Secp256r1SigVerify`)**.
-
-### Key Innovations
-
-- **1-Tap Biometric Hardware Passkey**: Frictionless Face ID / Touch ID authentication without seed phrases, backed by OS hardware security.
-- **Dual-Device Vault Mode (2-of-2 Quorum)**: High-value transactions or security policy adjustments mandate two independent hardware signatures (Primary phone passkey + secondary hardware key).
-- **Customizable Spending Limits**: Configurable single-key fast lane threshold (e.g. $\le$ 0.1 SOL) with automatic quorum escalation for high-value transfers.
-- **Autonomous AI Agent Sessions**: Scoped delegation of spending budgets to AI trading agents with strict on-chain rolling limits and time expiries.
-- **Instant Panic Freeze & Guardian Recovery**: Emergency circuit breaker allowing users or designated guardians to freeze account outflows instantly in the event of lost hardware.
-- **Agency-Grade Anti-Slop Design**: Ultra-clean monochrome OLED theme inspired by Apple, Cash App, and Linear with minimalist vector stroke iconography (Lucide / Rune).
-- **Rare-UI Stepped Onboarding & Rolling Counters**: Smooth stepped progress onboarding player and vertical rolling odometer counters for live balances.
+1. **Native Hardware Passkey Biometrics**: Integrated Android Credential Manager and Secp256r1 hardware-backed biometrics (`react-native-passkey`) enabling 1-tap fingerprint/face authentication without seed phrases.
+2. **2-of-2 Hardware Biometric Quorum**: Built a risk-adaptive policy engine. Transfers $\le$ 0.10 SOL (or $\le$ 50 SKR) authorize instantly via single-tap biometrics. Transfers exceeding 0.10 SOL automatically escalate to require dual authorization across devices (mobile phone biometric + secondary backup passkey / Mac Touch ID) validated via Solana's native `Secp256r1SigVerify` precompile.
+3. **Clear Security Architecture Boundaries**: Cryptographic enforcement is 100% on-chain. Instruction introspection verifies P-256 signatures before token movement. The cloud paymaster only sponsors network fees—it cannot forge passkey signatures or divert funds.
+4. **Risk-Adaptive Scoped Session Keys**: Temporary, spending-capped local keys for frictionless dApp interactions with rolling expenditure limits and hard expiries.
+5. **Seeker User Retention & PMF**: Delivers a Web2-smooth daily driver experience for Seeker owners with zero seed phrase anxiety, zero cold-start gas requirements, and instant recovery via a 24-hour guardian timelock.
+6. **Auditable Code & Testing**: Built via EAS (Build ID: `da754004-963e-4d77-bbae-45c4ac1f5a98`). Verified by 290 passing Devnet integration tests across 14 test suites covering cryptography, recovery, and SKR policy enforcement.
 
 ---
 
@@ -111,7 +105,7 @@ haptix-mobile-app/
 
 ### Prerequisites
 - Node.js (v18+)
-- Android Studio / Android Emulator or a physical Solana Mobile device (Solana Seeker / Android Phone)
+- Android Studio / Android Emulator or a physical Solana Mobile device (Solana Seeker (Chapter 2) / Android Phone)
 
 ### 1. Install Dependencies
 ```bash

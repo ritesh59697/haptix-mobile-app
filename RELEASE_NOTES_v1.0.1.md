@@ -1,6 +1,6 @@
 # Haptix v1.0.1 — Anti-Spam Protections & Performance Release
 
-Welcome to **v1.0.1** of **Haptix**, the consumer-grade passkey smart wallet built natively for the **Solana Mobile CLOCK IN Hackathon**, optimized for **Solana Seeker** and the **Solana Mobile Stack (SMS)**.
+Welcome to **v1.0.1** of **Haptix**, the consumer-grade passkey smart wallet built natively for the **Solana Mobile CLOCK IN Hackathon**, optimized for the **Solana Mobile Stack (SMS)** and the **Solana Seeker (Chapter 2)** ecosystem.
 
 ---
 
