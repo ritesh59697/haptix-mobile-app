@@ -124,11 +124,15 @@
     }
 
     .brand-text-img {
-      height: 22px;
+      height: 26px;
       width: auto;
       object-fit: contain;
       display: block;
       flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .logo-container:hover .brand-text-img {
+      transform: scale(1.02);
     }
 
     .logo-badge {
@@ -685,8 +689,7 @@
   <div class="navbar-wrapper">
     <nav class="navbar">
       <a href="#" class="logo-container">
-        <img src="assets/haptix-new-logo.png" alt="Haptix Logo" class="brand-mark-img">
-        <img src="assets/logotext-light.png" alt="haptix" class="brand-text-img">
+        <img src="assets/logotext-light.png" alt="Haptix" class="brand-text-img">
         <span class="logo-badge">Solana</span>
       </a>
       <div class="nav-links">
@@ -909,8 +912,7 @@
 
     <footer class="footer">
       <div class="footer-brand">
-        <img src="assets/haptix-logo-white.png" alt="Haptix Logo" style="height: 22px; width: 22px; object-fit: contain;">
-        <img src="assets/logotext-dark.png" alt="haptix" style="height: 18px; width: auto; object-fit: contain;">
+        <img src="assets/logotext-dark.png" alt="Haptix" style="height: 22px; width: auto; object-fit: contain;">
       </div>
       <div class="footer-links">
         <a href="https://github.com/ritesh59697/haptix-mobile-app" target="_blank" rel="noopener noreferrer">GitHub</a>
