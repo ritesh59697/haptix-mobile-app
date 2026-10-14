@@ -520,41 +520,197 @@
       margin-top: -8px;
     }
 
-    /* FAQ Section */
+    /* FAQ Section - Upgraded Apple-Grade Interactive Accordion */
     .faq-section {
-      padding: 110px 0;
+      padding: 120px 0 100px;
       background: var(--bg-surface);
       border-top: 1px solid rgba(0, 0, 0, 0.05);
+      position: relative;
     }
-    .faq-section h2 {
-      font-size: 44px;
-      font-weight: 800;
-      letter-spacing: -0.03em;
+    .faq-header {
       text-align: center;
-      margin-bottom: 56px;
+      max-width: 720px;
+      margin: 0 auto 52px;
     }
-    .faq-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 36px 48px;
-      max-width: 900px;
+    .faq-header h2 {
+      font-family: var(--font-heading);
+      font-size: clamp(36px, 4.5vw, 52px);
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      color: var(--accent-black);
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .faq-header p {
+      font-size: 17px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* FAQ Accordion List */
+    .faq-accordion {
+      max-width: 860px;
       margin: 0 auto;
-    }
-    .faq-item {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
-    .faq-item h4 {
-      font-size: 18px;
+    .faq-card {
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 18px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    }
+    .faq-card:hover {
+      border-color: rgba(0, 0, 0, 0.16);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+      transform: translateY(-1px);
+    }
+    .faq-card.open {
+      border-color: rgba(0, 113, 227, 0.35);
+      box-shadow: 0 10px 30px rgba(0, 113, 227, 0.06);
+    }
+    .faq-question-btn {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 22px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      text-align: left;
+      font-family: var(--font-heading);
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-main);
+      letter-spacing: -0.015em;
+      transition: color 0.2s;
+    }
+    .faq-question-btn:hover {
+      color: var(--accent-blue);
+    }
+    .faq-card.open .faq-question-btn {
+      color: var(--accent-blue);
+    }
+    .faq-question-btn > span:first-child {
+      flex: 1;
+    }
+    .faq-toggle-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.04);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      color: var(--text-secondary);
+    }
+    .faq-card:hover .faq-toggle-icon {
+      background: rgba(0, 0, 0, 0.08);
+      color: var(--text-main);
+    }
+    .faq-card.open .faq-toggle-icon {
+      background: var(--accent-blue);
+      color: #ffffff;
+      transform: rotate(45deg);
+    }
+    .faq-answer-wrapper {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .faq-card.open .faq-answer-wrapper {
+      grid-template-rows: 1fr;
+    }
+    .faq-answer {
+      overflow: hidden;
+    }
+    .faq-answer-inner {
+      padding: 0 24px 22px;
+      font-size: 15px;
+      color: #4b4b52;
+      line-height: 1.62;
+      border-top: 1px solid rgba(0, 0, 0, 0.04);
+      margin-top: -4px;
+      padding-top: 16px;
+    }
+    .faq-answer-inner code {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      color: var(--accent-black);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .faq-answer-inner strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* FAQ Bottom Helper Card */
+    .faq-help-box {
+      max-width: 860px;
+      margin: 48px auto 0;
+      padding: 24px 32px;
+      background: rgba(0, 0, 0, 0.02);
+      border: 1px dashed rgba(0, 0, 0, 0.12);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .faq-help-text h4 {
+      font-size: 16px;
       font-weight: 700;
       color: var(--text-main);
-      letter-spacing: -0.01em;
+      margin-bottom: 4px;
     }
-    .faq-item p {
-      font-size: 15px;
+    .faq-help-text p {
+      font-size: 14px;
       color: var(--text-secondary);
-      line-height: 1.55;
+    }
+    .faq-help-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .faq-help-btn {
+      padding: 8px 16px;
+      border-radius: 980px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .faq-help-btn-primary {
+      background: var(--accent-black);
+      color: #fff;
+    }
+    .faq-help-btn-primary:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+    }
+    .faq-help-btn-secondary {
+      background: #ffffff;
+      color: var(--text-main);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+    .faq-help-btn-secondary:hover {
+      background: rgba(0, 0, 0, 0.04);
+      border-color: rgba(0, 0, 0, 0.24);
     }
 
     /* Section 8: CTA Section */
@@ -675,9 +831,10 @@
       .spotlight-grid { grid-template-columns: 1fr; gap: 40px; }
       .spotlight-image { height: 320px; }
       .spotlight-grid.reverse .spotlight-image { order: 2; }
-      .spotlight-grid.reverse .spotlight-text { order: 1; }
-      .faq-grid { grid-template-columns: 1fr; gap: 28px; }
-      .globe-asset { height: 320px; }
+      .faq-header h2 { font-size: 32px; }
+      .faq-question-btn { padding: 18px 20px; font-size: 16px; }
+      .faq-answer-inner { padding: 0 20px 20px; }
+      .faq-help-box { flex-direction: column; text-align: center; justify-content: center; }
       .device-icons { gap: 30px; }
       .footer { flex-direction: column; text-align: center; align-items: center; }
     }
@@ -865,30 +1022,194 @@
     </div>
   </div>
 
-  <!-- FAQ SECTION (LIGHT) -->
+  <!-- FAQ SECTION (LIGHT - INTERACTIVE ACCORDION) -->
   <div class="section-light faq-section" id="faq">
     <div class="container">
-      <h2>Frequently Asked Questions</h2>
-      <div class="faq-grid">
-        <div class="faq-item">
-          <h4>How does it work without a seed phrase?</h4>
-          <p>Haptix uses WebAuthn and your device's hardware enclave (Android StrongBox or Apple Secure Enclave) to generate a secure P-256 (Secp256r1) keypair that never leaves your device. Solana natively verifies these signatures on-chain via the <code>Secp256r1SigVerify</code> precompile.</p>
+      <div class="faq-header">
+        <h2>Frequently Asked Questions</h2>
+        <p>Everything you need to know about seedless biometric smart accounts, 2-of-2 hardware multisig, and on-chain recovery on Solana Mobile.</p>
+      </div>
+
+      <!-- Accordion List -->
+      <div class="faq-accordion" id="faqAccordion">
+
+        <!-- Question 1 -->
+        <div class="faq-card open">
+          <button class="faq-question-btn" aria-expanded="true">
+            <span>How does Haptix work without a seed phrase?</span>
+            <span class="faq-toggle-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                Haptix leverages <strong>WebAuthn</strong> directly within your phone's physical hardware enclave—<strong>Android Keystore StrongBox</strong> or <strong>Apple Secure Enclave</strong>. When your wallet is initialized, the enclave generates a non-exportable P-256 (<code>Secp256r1</code>) keypair. The private key never enters JavaScript memory, disk, or network packets. Solana natively verifies biometric assertions on-chain using the <code>Secp256r1SigVerify</code> precompile instruction.
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="faq-item">
-          <h4>How does 2-of-2 Hardware Quorum protect funds?</h4>
-          <p>You define a single-key spend ceiling (e.g. 0.10 SOL). Any transaction exceeding that threshold requires two distinct hardware passkey signatures (your phone + secondary device running the Haptix Web Vault at <code>/vault.html</code>).</p>
+
+        <!-- Question 2 -->
+        <div class="faq-card">
+          <button class="faq-question-btn" aria-expanded="false">
+            <span>How does 2-of-2 Hardware Quorum protect funds from drainers?</span>
+            <span class="faq-toggle-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                You configure an on-chain spending threshold (for example, <code>0.10 SOL</code>). Everyday micro-transactions below this limit sign seamlessly with a single biometric tap on your phone. Any high-value transfer or security policy change exceeding this threshold <strong>mathematically mandates two distinct hardware passkeys</strong>—your phone plus a secondary device (laptop Touch ID or tablet) via the Haptix Web Vault at <code>vault.html</code>. Even if a malicious dApp compromises your phone, it cannot move funds above your threshold without physical co-signing on your second device.
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="faq-item">
-          <h4>Are there any gas fees on onboarding?</h4>
-          <p>No. New users onboard with zero SOL in their pocket. Our gasless paymaster sponsors smart account PDA initialization and drips starter test SOL automatically.</p>
+
+        <!-- Question 3 -->
+        <div class="faq-card">
+          <button class="faq-question-btn" aria-expanded="false">
+            <span>How does Haptix differ from the Solana Seeker Seed Vault?</span>
+            <span class="faq-toggle-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                Solana Mobile's native Seed Vault is designed for single-device Ed25519 seed generation. Haptix introduces <strong>native WebAuthn P-256 smart accounts</strong> on top of Solana Mobile. This unlocks cross-device multi-hardware quorum (e.g. co-signing between Seeker and a Mac Touch ID), automated cloud-synced passkey recovery, and programmable on-chain spending firewalls that traditional single-key Ed25519 accounts cannot enforce.
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="faq-item">
-          <h4>What happens if I lose my phone?</h4>
-          <p>Because passkeys sync to your Google or Apple cloud keystore, signing in on your new device restores your exact on-chain smart wallet PDA. In emergencies, your designated recovery guardians can trigger an on-chain Panic Freeze to stop outflows.</p>
+
+        <!-- Question 4 -->
+        <div class="faq-card">
+          <button class="faq-question-btn" aria-expanded="false">
+            <span>Are there any gas fees or pre-funding needed during onboarding?</span>
+            <span class="faq-toggle-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                <strong>Zero gas fees are required.</strong> New users onboard with exactly 0 SOL in their wallet. Our embedded gasless paymaster sponsors smart account PDA derivation on Devnet and automatically drips starter test SOL so you can immediately test transfers and dApp interactions without acquiring funds first.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question 5 -->
+        <div class="faq-card">
+          <button class="faq-question-btn" aria-expanded="false">
+            <span>What happens if I lose or replace my phone?</span>
+            <span class="faq-toggle-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                Because platform passkeys sync securely to your Google Password Manager or Apple iCloud Keychain, simply logging in on your replacement phone restores your exact on-chain smart wallet PDA. If your device credentials are ever compromised or unavailable, your designated recovery guardian can trigger a <strong>timelocked key rotation</strong> to install fresh keys.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question 6 -->
+        <div class="faq-card">
+          <button class="faq-question-btn" aria-expanded="false">
+            <span>What is Panic Freeze and how does Social Recovery work?</span>
+            <span class="faq-toggle-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                If your phone is stolen or lost, your recovery guardian can submit a 1-tap <code>panic_freeze</code> transaction directly on-chain via <a href="recover.html" style="color:var(--accent-blue); text-decoration:none; font-weight:600;">recover.html</a> to immediately freeze all outbound funds. During the on-chain timelock window, an illegitimate recovery attempt can be vetoed with your secondary hardware key, or finalized to rotate your passkeys to your new device.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question 7 -->
+        <div class="faq-card">
+          <button class="faq-question-btn" aria-expanded="false">
+            <span>How do autonomous AI agent sessions stay safe?</span>
+            <span class="faq-toggle-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                Haptix grants constrained, on-chain session keys specifically tailored for trading bots and autonomous micro-tasks. You define a dedicated agent public key, assign a strict cumulative spend ceiling (e.g. <code>0.05 SOL</code> total), and establish a Unix expiration timestamp. The Anchor smart program strictly enforces these rules on-chain; an agent can never exceed its allowance or execute transactions past its deadline.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Question 8 -->
+        <div class="faq-card">
+          <button class="faq-question-btn" aria-expanded="false">
+            <span>Is Haptix deployed on Solana Mainnet or Devnet?</span>
+            <span class="faq-toggle-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+          </button>
+          <div class="faq-answer-wrapper">
+            <div class="faq-answer">
+              <div class="faq-answer-inner">
+                The complete smart program (<code>9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke</code>), Android release APK, and Web Vault are live and fully operational on <strong>Solana Devnet</strong> for hackathon evaluation. Because Haptix relies entirely on Solana's standard <code>Secp256r1SigVerify</code> precompile without custom forks, the architecture is <strong>100% Mainnet-ready</strong>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- FAQ Help Box -->
+      <div class="faq-help-box">
+        <div class="faq-help-text">
+          <h4>Have more questions?</h4>
+          <p>Read our full architectural breakdown, threat models, and IDL specifications on Mintlify.</p>
+        </div>
+        <div class="faq-help-actions">
+          <a href="https://haptix-docs.mintlify.app" target="_blank" rel="noopener noreferrer" class="faq-help-btn faq-help-btn-primary">
+            Explore Documentation &rarr;
+          </a>
+          <a href="https://x.com/HaptixWalllet" target="_blank" rel="noopener noreferrer" class="faq-help-btn faq-help-btn-secondary">
+            Ask on X (Twitter)
+          </a>
         </div>
       </div>
+
     </div>
   </div>
+
+  <script>
+    // --- FAQ Accordion Toggle Logic ---
+    (function initFaq() {
+      const accordion = document.getElementById('faqAccordion');
+      if (!accordion) return;
+
+      const cards = accordion.querySelectorAll('.faq-card');
+
+      cards.forEach(card => {
+        const btn = card.querySelector('.faq-question-btn');
+        if (!btn) return;
+
+        btn.addEventListener('click', () => {
+          const isOpen = card.classList.contains('open');
+          card.classList.toggle('open');
+          btn.setAttribute('aria-expanded', !isOpen);
+        });
+      });
+    })();
+  </script>
 
   <!-- SECTION 8: CTA & FOOTER (DARK) -->
   <div class="section-dark">
