@@ -1,11 +1,15 @@
 [
   {
-    "relation": ["delegate_permission/common.get_login_creds"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "io.haptix.wallet",
       "sha256_cert_fingerprints": [
-        "63:FE:F2:23:9B:12:70:EC:37:81:E0:39:AB:7A:71:EA:8D:D0:CA:D5:F5:7B:F7:4F:6C:12:A4:CC:79:89:B7:D8"
+        "63:FE:F2:23:9B:12:70:EC:37:81:E0:39:AB:7A:71:EA:8D:D0:CA:D5:F5:7B:F7:4F:6C:12:A4:CC:79:89:B7:D8",
+        "F0:55:CD:CC:7A:B7:0A:F5:C3:6C:85:39:10:48:CE:27:FF:03:23:10:6F:2C:2E:59:C1:61:58:6D:42:BF:DB:FE"
       ]
     }
   }
