@@ -9,13 +9,20 @@
 <br /><br />
 
 **Seedless. Biometric-Secured. Agent-Ready.**  
-*Built for the **Solana Mobile CLOCK IN Hackathon** &bull; Dedicated to **Solana Seeker***
+*Built specifically for the **Solana Mobile CLOCK IN Hackathon** & **Colosseum** &bull; Dedicated to **Solana Seeker***
 
+[![CLOCK IN Hackathon](https://img.shields.io/badge/Hackathon-CLOCK%20IN%20(Solana%20Mobile)-00FF66?style=flat&logo=solana)](https://solanamobile.radiant.nexus)
+[![Colosseum](https://img.shields.io/badge/Hackathon-Colosseum-blueviolet?style=flat)](https://arena.colosseum.org)
 [![Target Device](https://img.shields.io/badge/Target-Solana%20Seeker-black?style=flat&logo=android)](https://solanamobile.com)
-[![Solana Devnet](https://img.shields.io/badge/Solana-Devnet-14F195?style=flat&logo=solana)](https://solana.com)
-[![Anchor 0.31](https://img.shields.io/badge/Anchor-0.31-2B2D42?style=flat)](https://www.anchor-lang.com)
+[![Solana](https://img.shields.io/badge/Solana-Devnet-14F195?style=flat&logo=solana)](https://solana.com)
+[![Expo](https://img.shields.io/badge/Expo-55.0-000020?style=flat&logo=expo)](https://expo.dev)
+[![Anchor](https://img.shields.io/badge/Anchor-0.31-2B2D42?style=flat)](https://www.anchor-lang.com)
+<br />
 [![Secp256r1](https://img.shields.io/badge/Cryptography-Secp256r1%20%2F%20P--256-blue?style=flat)](https://docs.solana.com)
-[![Tests Passing](https://img.shields.io/badge/Tests-290%20Passing-brightgreen?style=flat)](tests/)
+[![Live Web Vault](https://img.shields.io/badge/Web%20Vault-Vercel-black?style=flat&logo=vercel)](https://haptix-passkeys.vercel.app/vault.html)
+[![Documentation](https://img.shields.io/badge/Docs-Mintlify-4F6BFF?style=flat&logo=gitbook&logoColor=white)](https://haptix-docs.mintlify.app)
+[![Twitter](https://img.shields.io/badge/X-@HaptixWallet-black?style=flat&logo=x)](https://x.com/HaptixWalllet)
+[![Tests](https://img.shields.io/badge/Tests-290%20Passing-brightgreen?style=flat)](tests/)
 
 <br />
 
