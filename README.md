@@ -18,14 +18,15 @@
 [![Expo](https://img.shields.io/badge/Expo-55.0-000020?style=flat&logo=expo)](https://expo.dev)
 [![Anchor](https://img.shields.io/badge/Anchor-0.31-2B2D42?style=flat)](https://www.anchor-lang.com)
 [![Secp256r1](https://img.shields.io/badge/Cryptography-Secp256r1%20%2F%20P--256-blue?style=flat)](https://docs.solana.com)
-[![Live Web Vault](https://img.shields.io/badge/Web%20Vault-Vercel-black?style=flat&logo=vercel)](https://haptix-passkeys.vercel.app)
+[![Website](https://img.shields.io/badge/Website-haptix--passkeys-0071e3?style=flat)](https://haptix-passkeys.vercel.app)
+[![Live Web Vault](https://img.shields.io/badge/Web%20Vault-Vercel-black?style=flat&logo=vercel)](https://haptix-passkeys.vercel.app/vault.html)
 [![Documentation](https://img.shields.io/badge/Docs-Mintlify-4F6BFF?style=flat&logo=gitbook&logoColor=white)](https://haptix-docs.mintlify.app)
 [![Twitter](https://img.shields.io/badge/X-@HaptixWalllet-black?style=flat&logo=x)](https://x.com/HaptixWalllet)
 [![Tests](https://img.shields.io/badge/Tests-290%20Passing-brightgreen?style=flat)](tests/)
 
 <br />
 
-**[🌐 Live Web Vault](https://haptix-passkeys.vercel.app)** &bull; **[📲 Download APK (v1.0.1)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk)** &bull; **[⚡ 70s Pitch Video](https://youtu.be/9OnEFuHqNDY)** &bull; **[🎬 3m Walkthrough](https://youtu.be/kNsqykt4rfg)** &bull; **[📖 Live Docs](https://haptix-docs.mintlify.app)** &bull; **[📊 Pitch Deck (PDF)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf)** &bull; **[Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
+**[🌐 Website](https://haptix-passkeys.vercel.app)** &bull; **[🔐 Live Web Vault](https://haptix-passkeys.vercel.app/vault.html)** &bull; **[📲 Download APK (v1.0.1)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk)** &bull; **[⚡ 70s Pitch Video](https://youtu.be/9OnEFuHqNDY)** &bull; **[🎬 3m Walkthrough](https://youtu.be/kNsqykt4rfg)** &bull; **[📖 Live Docs](https://haptix-docs.mintlify.app)** &bull; **[📊 Pitch Deck (PDF)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf)** &bull; **[Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)**
 
 </div>
 
@@ -37,8 +38,10 @@
 | :--- | :--- |
 | **Project Title** | **Haptix — Risk-Adaptive Passkey Smart Wallet** |
 | **Hackathon Submission** | **Solana Mobile CLOCK IN Hackathon** (Mobile-first Apps Track) & **Colosseum** |
-| **Target Hardware** | **Solana Seeker** & Solana Mobile Ecosystem |
-| **Live Web Vault** | [**haptix-passkeys.vercel.app**](https://haptix-passkeys.vercel.app) (Zero-install browser client for instant testing) |
+| **Target Hardware** | **Solana Seeker (Chapter 2)** & Android Mobile Ecosystem |
+| **Official Website** | [**haptix-passkeys.vercel.app**](https://haptix-passkeys.vercel.app) (Interactive product walkthrough, threat models & FAQ) |
+| **Live Web Vault** | [**haptix-passkeys.vercel.app/vault.html**](https://haptix-passkeys.vercel.app/vault.html) (Zero-install browser client for instant testing & 2-of-2 hardware quorum) |
+| **Social Recovery Portal** | [**haptix-passkeys.vercel.app/recover.html**](https://haptix-passkeys.vercel.app/recover.html) (Timelocked on-chain guardian key rotation) |
 | **Direct APK Binary** | [**haptix-wallet.apk (v1.0.1)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk) |
 | **Colosseum Pitch (70s)** | [**Watch 70-Second Pitch on YouTube**](https://youtu.be/9OnEFuHqNDY) |
 | **Demo Walkthrough (3m)** | [**Watch 3-Minute Walkthrough on YouTube**](https://youtu.be/kNsqykt4rfg) |
@@ -82,6 +85,11 @@ haptix-mobile-app/
 │   │   ├── haptix-floating-dock.tsx# Floating dock navigation
 │   │   └── haptix-icons.tsx        # Vector icon library (Lucide / Rune)
 │   └── ui/                         # Reusable animated components
+├── public/                         # Web applications & static assets
+│   ├── index.html                  # Official landing page, threat models & FAQ
+│   ├── vault.html                  # Live Web Vault (2-of-2 hardware multisig client)
+│   ├── recover.html                # Social Guardian timelock recovery portal
+│   └── assets/                     # Brand graphics, vector marks & media
 ├── utils/                          # Cryptography, PDA derivation & RPC clients
 │   ├── haptix-passkey.ts           # Secp256r1 hardware passkey signing
 │   ├── haptix-client.ts            # Anchor instruction builder & account parser
