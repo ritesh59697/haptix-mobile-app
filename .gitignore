@@ -51,3 +51,4 @@ haptix_program/target/
 haptix_program/node_modules/
 haptix_program/.anchor/
 
+*.apk
