@@ -82,7 +82,6 @@ $ npx expo prebuild -p android
 
 ### Option A: Local Build (Requires Android Studio / Java 17+)
 ```bash
-cd solana-mobile/haptix-mobile-app
 npm run android:build
 cd android && ./gradlew assembleRelease
 # Output APK: android/app/build/outputs/apk/release/app-release.apk
@@ -94,7 +93,7 @@ cd android && ./gradlew assembleRelease
 - **Direct APK Download Link**: [Download haptix-wallet.apk](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk)
 - **Pitch Deck Presentation (PDF)**: [Download Haptix_Pitch_Deck.pdf](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf)
 - **Live EAS Cloud Build Receipt**: [https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/da754004-963e-4d77-bbae-45c4ac1f5a98](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/da754004-963e-4d77-bbae-45c4ac1f5a98)
-- **Local Workspace Binary**: `solana-mobile/haptix-wallet.apk` (ready for sideloading/installation)
+- **Local Workspace Binary**: `haptix-wallet.apk` (ready for sideloading/installation)
 
 ---
 

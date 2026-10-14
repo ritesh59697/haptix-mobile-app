@@ -15,9 +15,9 @@ The **Haptix Cloud Relay** is a lightweight, zero-dependency Node.js service tha
    - **Name:** `haptix-relay`
    - **Region:** Any (e.g. Frankfurt, Oregon, Singapore)
    - **Language:** `Node`
-   - **Root Directory:** (leave empty if deploying `ritesh59697/haptix`, or set `haptix-mobile-app` if deploying `haptix-mobile-app` repo)
+   - **Root Directory:** (leave empty)
    - **Build Command:** `npm install`
-   - **Start Command:** `npm run start:relay` *(or `node solana-mobile/haptix-mobile-app/tools/haptix-relay.js`)*
+   - **Start Command:** `npm run start:relay` *(or `node tools/haptix-relay.js`)*
    - **Plan:** Free
 5. Click **Create Web Service**.
 6. Render will automatically provision a public HTTPS URL:
@@ -36,7 +36,7 @@ The **Haptix Cloud Relay** is a lightweight, zero-dependency Node.js service tha
 2. Click **New Project** ➔ **Deploy from GitHub repo**.
 3. Select `ritesh59697/haptix`.
 4. Go to **Settings** ➔ **Deploy**:
-   - **Custom Start Command:** `node solana-mobile/haptix-mobile-app/tools/haptix-relay.js`
+   - **Custom Start Command:** `node tools/haptix-relay.js`
 5. Go to **Networking** ➔ Click **Generate Domain**.
 6. Railway will assign an HTTPS domain:
    ```

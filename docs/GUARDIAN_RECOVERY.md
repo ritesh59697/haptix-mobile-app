@@ -58,7 +58,7 @@ linking straight back to **Settings → Recovery**.
 
 ## Run-book
 
-From `solana-mobile/haptix-mobile-app`, with the guardian keypair available. Resolution
+From the repository root, with the guardian keypair available. Resolution
 order is `--keypair <path>`, then `HAPTIX_GUARDIAN_KEYPAIR` — which is read as a **path**,
 not as inline JSON — then `EXPO_PUBLIC_HAPTIX_FUNDER_KEY` from `.env`. Once the guardian
 has been moved off the bundled funder key, only the first two resolve to something the

@@ -127,16 +127,11 @@ Haptix is uniquely engineered for the exact goals of the CLOCK IN hackathon:
 - [ ] Test `.apk` sideload on physical Android phone to verify biometric prompts work offline.
 
 ### Phase 2: Video & Pitch Assets (Days 6–9)
-- [ ] **Record 3-minute video demo** (See script in [HACKATHON_SUBMISSION.md](file:///Users/ritesh/Claude%20projects/passkey-wallet/solana-mobile/HACKATHON_SUBMISSION.md#L93-L121)):
-  - `0:00 - 0:30`: The Seed Phrase & Wallet Fatigue problem on mobile.
-  - `0:30 - 1:15`: Fast-lane 1-tap passkey onboarding and micro-transfer (< 0.1 SOL).
-  - `1:15 - 2:00`: High-value escalation to 2-of-2 Mac Touch ID quorum via out-of-band relay.
-  - `2:00 - 2:35`: Autonomous AI Agent executing trades with session keys.
-  - `2:35 - 3:00`: Multi-account switcher & social guardian emergency freeze.
-- [x] Export [PITCH_DECK.md](file:///Users/ritesh/Claude%20projects/passkey-wallet/solana-mobile/SOLANA_PITCH_DECK.md) to clean PDF slides (`Haptix_Pitch_Deck.pdf`, 3.84 MB).
+- [x] **Record 3-minute video demo** ([Watch on YouTube](https://youtu.be/kNsqykt4rfg), pitch demo script in `docs/HACKATHON_SUBMISSION.md`).
+- [x] Export pitch deck to clean PDF slides (`Haptix_Pitch_Deck.pdf`).
 
 ### Phase 3: Submission & Portal Filing (Days 10–12)
-- [x] Host APK and Pitch Deck on [GitHub Releases v1.0.0](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.0) with direct download links.
-- [x] Update [solana-mobile/README.md](file:///Users/ritesh/Claude%20projects/passkey-wallet/solana-mobile/README.md) with quick-start judge testing steps and live badges.
-- [ ] Submit official form on [solanamobile.radiant.nexus](https://solanamobile.radiant.nexus) (Requires Demo Video URL).
-- [ ] Post public announcement on X tagging `@SolanaMobile` and `@RadiantsDAO`.
+- [x] Host APK and Pitch Deck on [GitHub Releases](https://github.com/ritesh59697/haptix-mobile-app/releases) with direct download links.
+- [x] Update `README.md` with quick-start judge testing steps, live badges, and verified deliverables.
+- [x] Submit official form on [solanamobile.radiant.nexus](https://solanamobile.radiant.nexus) & [Colosseum](https://arena.colosseum.org).
+- [x] Post public announcement on X tagging `@SolanaMobile` and `@RadiantsDAO`.
