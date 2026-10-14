@@ -5,7 +5,7 @@ import { getDevnetRpcUrl, getMainnetRpcUrl } from '@/utils/rpc-endpoints'
 
 export class AppConfig {
   static name = 'Haptix Wallet'
-  static uri = 'https://haptix.io'
+  static uri = 'https://haptix-passkeys.vercel.app'
   static vaultWebUrl = 'https://haptix-passkeys.vercel.app/vault.html'
 
   /**
