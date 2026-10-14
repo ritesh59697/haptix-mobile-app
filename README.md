@@ -31,7 +31,7 @@
 | :--- | :--- |
 | **Track & Target** | Solana Mobile CLOCK IN Hackathon &bull; Dedicated to **Solana Seeker (Chapter 2)** |
 | **Android APK** | [**Download haptix-wallet.apk (v1.0.1)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk) &bull; EAS Build ID: [`da754004`](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/da754004-963e-4d77-bbae-45c4ac1f5a98) |
-| **Live Web Demos** | [**Website**](https://haptix-passkeys.vercel.app) &bull; [**Web Vault (Co-Signer)**](https://haptix-passkeys.vercel.app/vault.html) &bull; [**Recovery Portal**](https://haptix-passkeys.vercel.app/recover.html) |
+| **Live Web Demos** | [**Website**](https://haptix-passkeys.vercel.app) &bull; [**Web Vault (Co-Signer)**](https://haptix-passkeys.vercel.app/vault.html) |
 | **Video Demos** | [**70-Second Pitch**](https://youtu.be/9OnEFuHqNDY) &bull; [**3-Minute Technical Walkthrough**](https://youtu.be/kNsqykt4rfg) |
 | **Pitch Deck** | [**Haptix_Pitch_Deck.pdf**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf) |
 | **On-Chain Program** | [`9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet) on Solana Devnet |
@@ -70,7 +70,7 @@ haptix-mobile-app/
 ├── public/                         # Web applications & static assets
 │   ├── index.html                  # Official landing page, threat models & FAQ
 │   ├── vault.html                  # Live Web Vault (2-of-2 hardware multisig client)
-│   ├── recover.html                # Social Guardian timelock recovery portal
+│   ├── recover.html                # Social Guardian timelock recovery interface (Roadmap)
 │   └── assets/                     # Brand graphics, vector marks & media
 ├── utils/                          # Cryptography, PDA derivation & RPC clients
 │   ├── haptix-passkey.ts           # Secp256r1 hardware passkey signing
