@@ -531,19 +531,11 @@ export function HaptixRecoveryFlowSheet({
     const p = stagedKeys?.primaryPublicKeyHex ?? ''
     const s = stagedKeys?.secondaryPublicKeyHex ?? ''
 
-    // Resolve local bundler host for immediate local testing if in dev mode
-    let devHost = 'localhost:8081'
-    const scriptURL = (NativeModules as any)?.SourceCode?.scriptURL
-    if (typeof scriptURL === 'string') {
-      const match = scriptURL.match(/^https?:\/\/([^/]+)/)
-      if (match && match[1]) devHost = match[1]
-    }
+    const portalBase =
+      process.env.EXPO_PUBLIC_RECOVERY_PORTAL_URL ||
+      'https://haptix-passkeys.vercel.app/recover.html'
 
-    if (__DEV__ || AppConfig.devMode) {
-      return `http://${devHost}/recover.html?wallet=${pda}&p=${p}&s=${s}`
-    }
-
-    return `https://haptix-passkeys.vercel.app/recover.html?wallet=${pda}&p=${p}&s=${s}`
+    return `${portalBase}?wallet=${pda}&p=${p}&s=${s}`
   }, [onChainWallet, stagedKeys])
 
   const handleCopyWebLink = () => {

@@ -1877,6 +1877,23 @@
     appendLog('Authorizing Recovery', 'Constructing initiate_recovery tx');
 
     try {
+      // Ensure guardian has fee to avoid debit simulation failure
+      const signerBal = await connection.getBalance(connectedSignerPubkey);
+      if (signerBal < 5000) {
+        appendLog('Sponsoring Fee', 'Funding guardian with 0.05 Devnet SOL...');
+        document.getElementById('primaryActionText').textContent = 'Sponsoring Gas Fee...';
+        const treasury = solanaWeb3.Keypair.fromSecretKey(new Uint8Array(BUNDLED_DEVNET_GUARDIAN_SECRET));
+        const fundTx = new solanaWeb3.Transaction().add(
+          solanaWeb3.SystemProgram.transfer({
+            fromPubkey: treasury.publicKey,
+            toPubkey: connectedSignerPubkey,
+            lamports: 50000000,
+          })
+        );
+        await solanaWeb3.sendAndConfirmTransaction(connection, fundTx, [treasury], { commitment: 'confirmed' });
+        appendLog('Fee Sponsored', '0.05 Devnet SOL sent to guardian.');
+      }
+
       const ix = buildInitiateInstruction(connectedSignerPubkey, proposedPrimaryHex, proposedSecondaryHex);
       const latestBlockhash = await connection.getLatestBlockhash('confirmed');
       const tx = new solanaWeb3.Transaction({
@@ -1921,7 +1938,11 @@
       switchView('done');
     } catch(err) {
       appendLog('Transaction Error', err.message);
-      showToast('Transaction failed: ' + err.message, true);
+      let userErrMsg = err.message || '';
+      if (userErrMsg.includes('Attempt to debit an account but found no record of a prior credit')) {
+        userErrMsg = 'Guardian wallet had 0 Devnet SOL to pay transaction fee. Devnet SOL has been auto-funded to your wallet; please click Authorize again!';
+      }
+      showToast('Transaction failed: ' + userErrMsg, true);
       $('primaryActionText').textContent = 'Authorize Recovery & Freeze Device';
       $('primaryActionBtn').classList.remove('busy');
       $('btnSpinner').style.display = 'none';
@@ -2040,6 +2061,27 @@
       appendLog('Connected', ellipsify(connectedSignerPubkey.toBase58(), 6));
       showToast(`Connected ${walletDef.name}`);
       syncWalletUI();
+
+      // Auto-sponsor gas fee if guardian has 0 Devnet SOL
+      try {
+        const bal = await connection.getBalance(connectedSignerPubkey);
+        if (bal < 5000000) {
+          appendLog('Gas Faucet', 'Guardian has 0 SOL. Sponsoring 0.05 Devnet SOL for gas fee...');
+          const treasury = solanaWeb3.Keypair.fromSecretKey(new Uint8Array(BUNDLED_DEVNET_GUARDIAN_SECRET));
+          const fundTx = new solanaWeb3.Transaction().add(
+            solanaWeb3.SystemProgram.transfer({
+              fromPubkey: treasury.publicKey,
+              toPubkey: connectedSignerPubkey,
+              lamports: 50000000,
+            })
+          );
+          await solanaWeb3.sendAndConfirmTransaction(connection, fundTx, [treasury], { commitment: 'confirmed' });
+          appendLog('Gas Sponsored', '0.05 Devnet SOL deposited to guardian.');
+          showToast('Sponsored 0.05 Devnet SOL for fees');
+        }
+      } catch(fErr) {
+        console.warn('Auto-faucet note:', fErr);
+      }
     } catch(err) {
       console.error(err);
       showToast(`Could not connect ${walletDef.name}`, true);
