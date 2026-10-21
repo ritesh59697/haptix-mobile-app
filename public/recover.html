@@ -479,6 +479,58 @@
     border-color: rgba(239, 68, 68, 0.3);
   }
 
+  .status-note-box.error {
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.35);
+  }
+
+  .consequence {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+  }
+
+  .consequence li {
+    position: relative;
+    padding-left: 14px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--text-2);
+  }
+
+  .consequence li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55em;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-3);
+  }
+
+  .confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .auth-btn.narrow { width: auto; padding: 11px 18px; }
+
+  .auth-btn.retry {
+    background: transparent;
+    color: var(--text-1);
+    border: 1px solid var(--border-strong);
+    box-shadow: none;
+  }
+
   .status-note-box svg {
     width: 14px;
     height: 14px;
@@ -510,7 +562,18 @@
   .auth-btn:active { transform: translateY(0) scale(0.99); }
   .auth-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
   .auth-btn.busy { opacity: 0.75; cursor: default; transform: none; }
-  .auth-btn.disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+  .auth-btn.disabled,
+  .auth-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .auth-btn:focus-visible,
+  .key-action-btn:focus-visible,
+  .copy-btn:focus-visible,
+  .clear-history-btn:focus-visible,
+  .icon-btn:focus-visible,
+  .chip-btn:focus-visible {
+    outline: 2px solid var(--text-1);
+    outline-offset: 2px;
+  }
 
   .auth-btn-spinner {
     width: 16px;
@@ -607,7 +670,21 @@
 
   .info-val.mono {
     font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
-    font-size: 12.5px;
+    font-size: 12px;
+    word-break: break-all;
+    justify-content: flex-end;
+  }
+
+  .info-val.stack {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .balance-note {
+    font-size: 11px;
+    color: var(--text-3);
+    font-weight: 400;
   }
 
   /* History & Event Log Card matching vault.html */
@@ -668,6 +745,16 @@
   }
 
   .clear-history-btn:hover { color: var(--text-1); }
+
+  .history-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .history-card.is-collapsed .history-list { display: none; }
+  .history-card.is-collapsed .history-head { margin-bottom: 0; }
+  .history-card.is-collapsed #clearLogBtn { display: none; }
 
   .history-list {
     display: flex;
@@ -768,6 +855,25 @@
     margin: 0 0 20px;
     max-width: 480px;
     line-height: 1.5;
+  }
+
+  .owner-copy {
+    width: 100%;
+    max-width: 480px;
+    text-align: left;
+    background: var(--card-inner);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+  }
+
+  .owner-copy p {
+    margin: 0 0 10px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--text-2);
   }
 
   .countdown-box {
@@ -1025,6 +1131,12 @@
     .idle-grid { grid-template-columns: 1fr; gap: 24px; }
     .relay-status-pill { display: none; }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .confirm-ring,
+    .pulse-dot,
+    .auth-btn-spinner { animation: none; }
+  }
 </style>
 </head>
 <body>
@@ -1192,32 +1304,43 @@
                 </svg>
               </div>
               <h2 class="hardware-title">Rescue Lost Wallet</h2>
-              <p class="hardware-subtitle">Authorize recovery on Solana to freeze the lost phone and start the dispute window.</p>
+              <p class="hardware-subtitle">Stop the lost phone from sending funds. You cannot take them.</p>
             </div>
 
-            <!-- Neutral pulse dot matching vault.html -->
-            <div class="listen-row">
+            <div class="listen-row" id="guardianListenRow">
               <span class="pulse-dot"></span>
               <span id="guardianStatusText">Awaiting guardian wallet connection</span>
             </div>
 
-            <!-- Clean, understated status notes without glowing green dots -->
-            <div id="bannerMatched" class="status-note-box verified" style="display:none;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              <span><strong>Guardian Verified:</strong> Signer matches on-chain guardian.</span>
-            </div>
+            <div id="statusSlot" aria-live="polite" style="width:100%; display:flex; flex-direction:column; gap:10px;">
+              <div id="bannerMatched" class="status-note-box verified" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ok)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>You're the guardian for this wallet.</span>
+              </div>
 
-            <div id="bannerMismatch" class="status-note-box mismatch" style="display:none;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              <span>Signer (<span id="mismatchSignerText" class="mono" style="display:inline;">--</span>) is not this wallet's guardian.</span>
-            </div>
+              <div id="bannerMismatch" class="status-note-box mismatch" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>This wallet is not the guardian. Switch it from the button in the header.</span>
+              </div>
 
-            <div id="bannerFrozen" class="status-note-box frozen" style="display:none;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-              <span>Wallet already frozen on Solana. Recovery in flight.</span>
+              <div id="bannerFrozen" class="status-note-box frozen" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span>This phone is already frozen. The owner can cancel during the dispute window.</span>
+              </div>
+
+              <div id="bannerError" class="status-note-box error" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span id="bannerErrorText">The freeze did not go through.</span>
+              </div>
+
+              <ul class="consequence" id="freezeFacts" style="display:none;">
+                <li>Outgoing transfers stop immediately.</li>
+                <li>This does not move the funds or give you the keys.</li>
+                <li>The owner has <span id="factsTimelock">24 hours</span> to cancel.</li>
+              </ul>
             </div>
 
             <!-- Primary Action Button -->
@@ -1239,27 +1362,13 @@
               <span id="primaryActionText">Connect Guardian Wallet</span>
             </button>
 
-            <!-- Secondary Actions -->
             <div class="key-actions-row">
-              <button class="key-action-btn" id="devkeyBtn" type="button" title="Use built-in keypair on Solana Devnet">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
-                </svg>
-                <span>Use Devnet Guardian (1-Tap Test)</span>
-              </button>
-              <button class="key-action-btn" id="disconnectBtn" type="button" style="display:none;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
-                  <line x1="12" y1="2" x2="12" y2="12"/>
-                </svg>
-                <span>Disconnect</span>
-              </button>
               <button class="key-action-btn" id="changeAddrBtn" type="button">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="19" y1="12" x2="5" y2="12"/>
                   <polyline points="12 19 5 12 12 5"/>
                 </svg>
-                <span>Change target wallet</span>
+                <span>Look up a different wallet</span>
               </button>
             </div>
           </div>
@@ -1269,7 +1378,7 @@
         <div class="idle-col-activity">
           <div class="info-card">
             <div class="info-row">
-              <span class="info-label">Target Wallet</span>
+              <span class="info-label">Wallet</span>
               <span class="info-val mono">
                 <span id="displayWallet">--</span>
                 <button class="copy-btn" id="copyWalletBtn" type="button" title="Copy wallet address">
@@ -1279,11 +1388,14 @@
               </span>
             </div>
             <div class="info-row">
-              <span class="info-label">Wallet Balance</span>
-              <span class="info-val" id="displayBalance">-- SOL</span>
+              <span class="info-label">Balance</span>
+              <span class="info-val stack">
+                <span id="displayBalance">-- SOL</span>
+                <span class="balance-note">Stays in the wallet</span>
+              </span>
             </div>
             <div class="info-row">
-              <span class="info-label">Authorized Guardian</span>
+              <span class="info-label">Guardian</span>
               <span class="info-val mono">
                 <span id="displayGuardian">--</span>
                 <button class="copy-btn" id="copyGuardianBtn" type="button" title="Copy guardian address">
@@ -1293,28 +1405,30 @@
               </span>
             </div>
             <div class="info-row">
-              <span class="info-label">Dispute Timelock</span>
+              <span class="info-label">Dispute window</span>
               <span class="info-val" id="displayTimelock">24 hours</span>
             </div>
             <div class="info-row">
-              <span class="info-label">On-Chain Status</span>
-              <!-- Clean text without any dot emoji/character -->
-              <span class="info-val" id="displayStatus">Active (Normal)</span>
+              <span class="info-label">Status</span>
+              <span class="info-val" id="displayStatus">Not frozen</span>
             </div>
           </div>
 
           <!-- Activity / Event Log Section matching vault.html -->
-          <div class="history-card">
+          <div class="history-card is-collapsed" id="historyCard">
             <div class="history-head">
               <div class="history-title-wrap">
                 <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"/>
                   <polyline points="12 6 12 12 16 14"/>
                 </svg>
-                <span class="history-title">Recovery Audit Log</span>
-                <span class="history-count" id="logCount">0</span>
+                <span class="history-title">Activity</span>
+                <span class="history-count" id="logCount">1</span>
               </div>
-              <button class="clear-history-btn" id="clearLogBtn" type="button">Clear</button>
+              <div class="history-head-actions">
+                <button class="clear-history-btn" id="toggleLogBtn" type="button" aria-expanded="false" aria-controls="logList">Details</button>
+                <button class="clear-history-btn" id="clearLogBtn" type="button">Clear</button>
+              </div>
             </div>
             <div class="history-list" id="logList">
               <div class="history-item">
@@ -1339,7 +1453,12 @@
           </svg>
         </div>
         <h2 class="confirm-title">Recovery Initiated</h2>
-        <p class="confirm-desc">The lost phone has been frozen on Solana Devnet. The owner has a 24-hour veto window before the replacement device can finalize passkey installation.</p>
+        <p class="confirm-desc">The lost phone is frozen. Outgoing transfers are stopped. The funds have not moved.</p>
+
+        <div class="owner-copy">
+          <p id="ownerMessage">The phone is frozen. You can cancel for 24 hours from a backup device. Nothing can be spent until then.</p>
+          <button class="key-action-btn" id="copyOwnerBtn" type="button">Copy message for the owner</button>
+        </div>
 
         <div class="countdown-box">
           <div class="countdown-digits" id="countdownTimer">24:00:00</div>
@@ -1365,7 +1484,7 @@
             <span>View on Solana Explorer</span>
           </a>
           <button class="key-action-btn" id="returnPortalBtn" type="button" style="padding: 11px 18px;">
-            <span>Back to Portal</span>
+            <span>Check wallet status</span>
           </button>
         </div>
       </div>
@@ -1547,8 +1666,25 @@
   </div>
 </div>
 
-    <div style="display: flex; justify-content: center;">
-      <button class="clear-history-btn" id="cancelWalletModalBtn" type="button">Cancel</button>
+<div class="modal-overlay" id="confirmFreezeModal">
+  <div class="modal" style="max-width: 440px;" role="dialog" aria-modal="true" aria-labelledby="confirmFreezeTitle">
+    <div class="modal-head">
+      <div>
+        <h2 id="confirmFreezeTitle">Freeze this phone?</h2>
+        <p class="modal-head-desc">This starts the dispute window. It does not move the funds.</p>
+      </div>
+      <button class="icon-btn" id="closeConfirmBtn" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <ul class="consequence">
+      <li>Outgoing transfers stop immediately.</li>
+      <li>You do not receive the funds or the keys.</li>
+      <li>The owner has <span id="confirmTimelock">24 hours</span> to cancel. After that, the new phone can take over.</li>
+    </ul>
+    <div class="confirm-actions">
+      <button class="key-action-btn" id="cancelConfirmBtn" type="button">Cancel</button>
+      <button class="auth-btn narrow" id="confirmFreezeBtn" type="button">Freeze device</button>
     </div>
   </div>
 </div>
@@ -1583,7 +1719,9 @@
   let timerInterval = null;
   let isBusy = false;
   let toastTimer = null;
-  let logItemCounter = 0;
+  let logItemCounter = 1;
+  let actionError = '';
+  let freezeConfirmedLocally = false;
 
   const root = document.documentElement;
   function $(id) { return document.getElementById(id); }
@@ -1603,19 +1741,102 @@
   // --- Audit Log Feed ---
   function appendLog(action, subtext) {
     logItemCounter++;
-    $('logCount').textContent = logItemCounter;
+    $('logCount').textContent = String(logItemCounter);
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const list = $('logList');
     const item = document.createElement('div');
     item.className = 'history-item';
-    item.innerHTML = `
-      <div>
-        <div class="history-action">${action}</div>
-        <div class="history-sub">${subtext}</div>
-      </div>
-      <span class="history-time">${timeStr}</span>
-    `;
+    const body = document.createElement('div');
+    const actionEl = document.createElement('div');
+    actionEl.className = 'history-action';
+    actionEl.textContent = action;
+    const subEl = document.createElement('div');
+    subEl.className = 'history-sub';
+    subEl.textContent = subtext;
+    body.append(actionEl, subEl);
+    const timeEl = document.createElement('span');
+    timeEl.className = 'history-time';
+    timeEl.textContent = timeStr;
+    item.append(body, timeEl);
     list.prepend(item);
+  }
+
+  function timelockLabel() {
+    const seconds = Number(recoveryTimelockSeconds || 86400n);
+    const hours = seconds / 3600;
+    return hours >= 1 ? `${Math.round(hours)} hours` : `${seconds}s`;
+  }
+
+  function ownerMessageText() {
+    return `The phone is frozen. You can cancel for ${timelockLabel()} from a backup device. Nothing can be spent until then.`;
+  }
+
+  function disputeStatusLabel() {
+    if (recoveryInitiatedAtSeconds <= 0n) return 'Frozen — owner can cancel';
+    const remaining = Number(recoveryInitiatedAtSeconds) + Number(recoveryTimelockSeconds || 0n) - Math.floor(Date.now() / 1000);
+    if (remaining <= 0) return 'Frozen — dispute window ended';
+    const h = Math.floor(remaining / 3600);
+    const m = Math.floor((remaining % 3600) / 60);
+    if (h > 0) return `Frozen — ${h}h ${m}m left to cancel`;
+    return `Frozen — ${m}m ${remaining % 60}s left to cancel`;
+  }
+
+  function friendlyTxError(message) {
+    const raw = String(message || 'The transaction failed.');
+    const cleaned = raw.replace(/Catch the `SendTransactionError`[\s\S]*$/i, '').trim();
+    if (raw.includes('Attempt to debit an account but found no record of a prior credit') || raw.includes('insufficient lamports')) {
+      const who = connectedSignerPubkey ? ellipsify(connectedSignerPubkey.toBase58(), 8) : 'the connected wallet';
+      return {
+        banner: `The guardian wallet needs a little SOL to pay the network fee. Send some to ${who}, then try again.`,
+        log: 'No SOL for the network fee',
+      };
+    }
+    if (/reject/i.test(raw)) {
+      return { banner: 'The wallet request was declined. Nothing was frozen.', log: 'Signature declined' };
+    }
+    return {
+      banner: 'The freeze did not go through. Nothing changed on-chain.',
+      log: cleaned.slice(0, 160) || 'Transaction failed',
+    };
+  }
+
+  function resetActionChrome() {
+    $('btnSpinner').style.display = 'none';
+    $('btnIconSlot').style.display = 'inline-flex';
+    $('primaryActionBtn').classList.remove('busy');
+  }
+
+  function hideStatusBanners() {
+    $('bannerMatched').style.display = 'none';
+    $('bannerMismatch').style.display = 'none';
+    $('bannerFrozen').style.display = 'none';
+    $('bannerError').style.display = 'none';
+    $('freezeFacts').style.display = 'none';
+  }
+
+  const LOCK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+
+  function startDisputeCountdown(initiatedAtSec, timelockSec) {
+    clearInterval(timerInterval);
+    const tick = () => {
+      const remaining = Math.max(0, initiatedAtSec + timelockSec - Math.floor(Date.now() / 1000));
+      $('countdownTimer').textContent = formatDuration(remaining);
+      if (remaining <= 0) clearInterval(timerInterval);
+    };
+    tick();
+    timerInterval = setInterval(tick, 1000);
+  }
+
+  function showReceipt(sig) {
+    $('displayTxSig').textContent = ellipsify(sig, 8);
+    setupCopyButton('copyTxBtn', () => sig);
+    $('explorerBtn').href = `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
+    const msg = ownerMessageText();
+    $('ownerMessage').textContent = msg;
+    setupCopyButton('copyOwnerBtn', () => msg);
+    const started = Number(recoveryInitiatedAtSeconds) || Math.floor(Date.now() / 1000);
+    switchView('done');
+    startDisputeCountdown(started, Number(recoveryTimelockSeconds || 86400n));
   }
 
   // --- Theme Toggle ---
@@ -1696,7 +1917,6 @@
       if (hdrIcon) {
         hdrIcon.innerHTML = '<span class="relay-dot" style="margin:0;"></span>';
       }
-      $('disconnectBtn').style.display = 'inline-flex';
     } else {
       hdrBtn.classList.remove('connected');
       hdrText.textContent = 'Select Wallet';
@@ -1713,7 +1933,6 @@
           <path d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z" fill="url(#solBtnGradHdr2)"/>
         </svg>`;
       }
-      $('disconnectBtn').style.display = 'none';
     }
     updateAuthorityUI();
   }
@@ -1748,32 +1967,37 @@
       onChainGuardianPubkey = new solanaWeb3.PublicKey(guardianBytes);
       const guardianStr = onChainGuardianPubkey.toBase58();
 
-      $('displayWallet').textContent = ellipsify(targetWalletPda.toBase58(), 6);
+      $('displayWallet').textContent = ellipsify(targetWalletPda.toBase58(), 8);
       setupCopyButton('copyWalletBtn', () => targetWalletPda.toBase58());
 
-      $('displayGuardian').textContent = ellipsify(guardianStr, 6);
+      $('displayGuardian').textContent = ellipsify(guardianStr, 8);
       setupCopyButton('copyGuardianBtn', () => guardianStr);
 
       const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
       // Offset 115: recoveryTimelock (8 bytes i64 LE)
       recoveryTimelockSeconds = view.getBigInt64(115, true);
-      const hours = Number(recoveryTimelockSeconds) / 3600;
-      $('displayTimelock').textContent = hours >= 1 ? `${hours.toFixed(0)} hours` : `${Number(recoveryTimelockSeconds)}s`;
+      const label = timelockLabel();
+      $('displayTimelock').textContent = label;
+      $('factsTimelock').textContent = label;
 
       // Offset 123: recoveryInitiatedAt (8 bytes i64 LE)
-      recoveryInitiatedAtSeconds = view.getBigInt64(123, true);
+      const chainInitiatedAt = view.getBigInt64(123, true);
+      const chainFrozen = data[197] === 1;
 
-      // Offset 197: isFrozen (1 byte boolean)
-      isFrozenState = data[197] === 1;
+      if (freezeConfirmedLocally && !chainFrozen && chainInitiatedAt <= 0n) {
+        isFrozenState = true;
+      } else {
+        recoveryInitiatedAtSeconds = chainInitiatedAt;
+        isFrozenState = chainFrozen;
+        if (isFrozenState || recoveryInitiatedAtSeconds > 0n) freezeConfirmedLocally = false;
+      }
 
       if (isFrozenState || recoveryInitiatedAtSeconds > 0n) {
-        $('displayStatus').textContent = 'Frozen (Recovery In Flight)';
-        $('bannerFrozen').style.display = 'flex';
-        appendLog('State Checked', 'Wallet is currently frozen on-chain');
+        $('displayStatus').textContent = disputeStatusLabel();
+        appendLog('State Checked', 'Phone is frozen');
       } else {
-        $('displayStatus').textContent = 'Active (Normal)';
-        $('bannerFrozen').style.display = 'none';
-        appendLog('State Checked', 'Active and normal');
+        $('displayStatus').textContent = 'Not frozen';
+        appendLog('State Checked', 'Not frozen');
       }
 
       updateAuthorityUI();
@@ -1785,15 +2009,18 @@
 
   // --- Update Authority & Button States ---
   function updateAuthorityUI() {
-    const statusText = $('guardianStatusText');
     const primaryBtn = $('primaryActionBtn');
     const primaryText = $('primaryActionText');
     const btnIconSlot = $('btnIconSlot');
+    const frozen = isFrozenState || recoveryInitiatedAtSeconds > 0n;
+
+    hideStatusBanners();
+    primaryBtn.disabled = false;
 
     if (!connectedSignerPubkey) {
-      statusText.textContent = 'Awaiting guardian wallet connection';
-      $('bannerMatched').style.display = 'none';
-      $('bannerMismatch').style.display = 'none';
+      actionError = '';
+      $('guardianListenRow').style.display = 'flex';
+      $('guardianStatusText').textContent = 'Awaiting guardian wallet connection';
       primaryBtn.className = 'auth-btn';
       primaryText.textContent = 'Connect Guardian Wallet';
       btnIconSlot.innerHTML = `<svg width="18" height="14" viewBox="0 0 398 312" fill="none">
@@ -1810,31 +2037,51 @@
       return;
     }
 
-    if (onChainGuardianPubkey) {
-      if (connectedSignerPubkey.equals(onChainGuardianPubkey)) {
-        statusText.textContent = 'Guardian identity verified on-chain';
-        $('bannerMatched').style.display = 'flex';
-        $('bannerMismatch').style.display = 'none';
+    $('guardianListenRow').style.display = 'none';
 
-        if (isFrozenState || recoveryInitiatedAtSeconds > 0n) {
-          primaryBtn.className = 'auth-btn disabled';
-          primaryText.textContent = 'Recovery Already In Flight';
-          btnIconSlot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-        } else {
-          primaryBtn.className = 'auth-btn';
-          primaryText.textContent = 'Authorize Recovery & Freeze Device';
-          btnIconSlot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
-        }
-      } else {
-        statusText.textContent = 'Connected wallet does not match guardian';
-        $('bannerMatched').style.display = 'none';
-        $('bannerMismatch').style.display = 'flex';
-        $('mismatchSignerText').textContent = ellipsify(connectedSignerPubkey.toBase58(), 4);
-        primaryBtn.className = 'auth-btn disabled';
-        primaryText.textContent = 'Signer Cannot Authorize (Mismatch)';
-        btnIconSlot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
-      }
+    if (!onChainGuardianPubkey) {
+      primaryBtn.className = 'auth-btn disabled';
+      primaryBtn.disabled = true;
+      primaryText.textContent = 'Checking wallet...';
+      return;
     }
+
+    const matched = connectedSignerPubkey.equals(onChainGuardianPubkey);
+    if (!matched) {
+      $('bannerMismatch').style.display = 'flex';
+      primaryBtn.className = 'auth-btn disabled';
+      primaryBtn.disabled = true;
+      primaryText.textContent = 'Cannot freeze';
+      btnIconSlot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+      return;
+    }
+
+    if (frozen) {
+      actionError = '';
+      $('bannerFrozen').style.display = 'flex';
+      $('displayStatus').textContent = disputeStatusLabel();
+      primaryBtn.className = 'auth-btn disabled';
+      primaryBtn.disabled = true;
+      primaryText.textContent = 'Phone already frozen';
+      btnIconSlot.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+      return;
+    }
+
+    if (actionError) {
+      $('bannerError').style.display = 'flex';
+      $('bannerErrorText').textContent = actionError;
+      primaryBtn.className = 'auth-btn retry';
+      primaryText.textContent = 'Try again';
+      btnIconSlot.innerHTML = LOCK_ICON;
+      return;
+    }
+
+    $('bannerMatched').style.display = 'flex';
+    $('freezeFacts').style.display = 'flex';
+    $('factsTimelock').textContent = timelockLabel();
+    primaryBtn.className = 'auth-btn';
+    primaryText.textContent = 'Freeze lost phone';
+    btnIconSlot.innerHTML = LOCK_ICON;
   }
 
   // --- Build Anchor Transaction Instruction ---
@@ -1869,12 +2116,14 @@
       return;
     }
 
+    actionError = '';
     isBusy = true;
     $('btnSpinner').style.display = 'inline-block';
     $('btnIconSlot').style.display = 'none';
     $('primaryActionText').textContent = 'Broadcasting to Solana...';
-    $('primaryActionBtn').classList.add('busy');
-    appendLog('Authorizing Recovery', 'Constructing initiate_recovery tx');
+    $('primaryActionBtn').className = 'auth-btn busy';
+    $('primaryActionBtn').disabled = true;
+    appendLog('Authorizing Recovery', 'Waiting for the wallet signature');
 
     try {
       // Ensure guardian has fee to avoid debit simulation failure
@@ -1918,37 +2167,38 @@
       $('primaryActionText').textContent = 'Confirming on Devnet...';
 
       await connection.confirmTransaction(sig, 'confirmed');
-      appendLog('Transaction Confirmed', 'Lost device frozen on Solana');
-      showToast('Recovery initiated! Phone frozen.');
+      appendLog('Transaction Confirmed', 'Lost phone frozen');
+      showToast('Phone frozen. Dispute window started.');
 
-      // Setup Confirmation Receipt View
-      $('displayTxSig').textContent = ellipsify(sig, 8);
-      setupCopyButton('copyTxBtn', () => sig);
-      $('explorerBtn').href = `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
-
-      // Start Dispute Countdown
-      let remainingSec = Number(recoveryTimelockSeconds || 86400n);
-      $('countdownTimer').textContent = formatDuration(remainingSec);
-      timerInterval = setInterval(() => {
-        remainingSec--;
-        $('countdownTimer').textContent = formatDuration(Math.max(0, remainingSec));
-        if (remainingSec <= 0) clearInterval(timerInterval);
-      }, 1000);
-
-      switchView('done');
-    } catch(err) {
-      appendLog('Transaction Error', err.message);
-      let userErrMsg = err.message || '';
-      if (userErrMsg.includes('Attempt to debit an account but found no record of a prior credit')) {
-        userErrMsg = 'Guardian wallet had 0 Devnet SOL to pay transaction fee. Devnet SOL has been auto-funded to your wallet; please click Authorize again!';
+      isFrozenState = true;
+      freezeConfirmedLocally = true;
+      if (recoveryInitiatedAtSeconds <= 0n) {
+        recoveryInitiatedAtSeconds = BigInt(Math.floor(Date.now() / 1000));
       }
-      showToast('Transaction failed: ' + userErrMsg, true);
-      $('primaryActionText').textContent = 'Authorize Recovery & Freeze Device';
-      $('primaryActionBtn').classList.remove('busy');
-      $('btnSpinner').style.display = 'none';
-      $('btnIconSlot').style.display = 'inline-flex';
+      resetActionChrome();
+      updateAuthorityUI();
+      showReceipt(sig);
+      loadOnChainState().then(() => {
+        if ($('stateDone').style.display === 'none') return;
+        if (recoveryInitiatedAtSeconds > 0n) {
+          const msg = ownerMessageText();
+          $('ownerMessage').textContent = msg;
+          setupCopyButton('copyOwnerBtn', () => msg);
+          startDisputeCountdown(Number(recoveryInitiatedAtSeconds), Number(recoveryTimelockSeconds || 86400n));
+        }
+      });
+    } catch(err) {
+      const explained = friendlyTxError(err && err.message);
+      actionError = explained.banner;
+      appendLog('Freeze failed', explained.log);
+      showToast(explained.banner, true);
+      resetActionChrome();
+      updateAuthorityUI();
     } finally {
       isBusy = false;
+      if (!$('primaryActionBtn').classList.contains('disabled')) {
+        $('primaryActionBtn').disabled = false;
+      }
     }
   }
 
@@ -1964,18 +2214,12 @@
     if (connectedSignerPubkey) {
       connectedSignerType = null;
       connectedSignerPubkey = null;
+      activeWalletProvider = null;
       syncWalletUI();
       showToast('Wallet disconnected');
     } else {
       openWalletModal();
     }
-  };
-
-  $('disconnectBtn').onclick = function() {
-    connectedSignerType = null;
-    connectedSignerPubkey = null;
-    syncWalletUI();
-    showToast('Signer disconnected');
   };
 
   let activeWalletProvider = null;
@@ -2108,16 +2352,31 @@
     syncWalletUI();
   };
 
-  $('devkeyBtn').onclick = $('opt_devkey').onclick;
-
   // --- Primary Action Click Router ---
   $('primaryActionBtn').onclick = function() {
+    if (isBusy || $('primaryActionBtn').disabled) return;
     if (!connectedSignerPubkey) {
       openWalletModal();
-    } else {
-      executeAuthorizeRecovery();
+      return;
     }
+    if (!onChainGuardianPubkey || !connectedSignerPubkey.equals(onChainGuardianPubkey)) return;
+    if (isFrozenState || recoveryInitiatedAtSeconds > 0n) return;
+    $('confirmTimelock').textContent = timelockLabel();
+    openModal('confirmFreezeModal');
+    $('cancelConfirmBtn').focus();
   };
+
+  function closeConfirm() { closeModal('confirmFreezeModal'); }
+  $('closeConfirmBtn').onclick = closeConfirm;
+  $('cancelConfirmBtn').onclick = closeConfirm;
+  $('confirmFreezeModal').onclick = (e) => { if (e.target === $('confirmFreezeModal')) closeConfirm(); };
+  $('confirmFreezeBtn').onclick = function() {
+    closeConfirm();
+    executeAuthorizeRecovery();
+  };
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('confirmFreezeModal').classList.contains('open')) closeConfirm();
+  });
 
   // --- Lookup & Form Handlers ---
   const addrInput = $('addrInput');
@@ -2162,6 +2421,16 @@
 
   $('returnPortalBtn').onclick = function() {
     switchView('details');
+    resetActionChrome();
+    updateAuthorityUI();
+    loadOnChainState();
+  };
+
+  $('toggleLogBtn').onclick = function() {
+    const card = $('historyCard');
+    const collapsed = card.classList.toggle('is-collapsed');
+    $('toggleLogBtn').textContent = collapsed ? 'Details' : 'Hide';
+    $('toggleLogBtn').setAttribute('aria-expanded', collapsed ? 'false' : 'true');
   };
 
   $('clearLogBtn').onclick = function() {
@@ -2178,6 +2447,8 @@
     }
     try {
       targetWalletPda = new solanaWeb3.PublicKey(trimmed);
+      freezeConfirmedLocally = false;
+      actionError = '';
       switchView('details');
       loadOnChainState();
     } catch(err) {
