@@ -4,11 +4,15 @@ Welcome to **v1.0.2** of **Haptix**, the consumer-grade passkey smart wallet bui
 
 ---
 
-### Key Updates in v1.0.2
+### Key Updates in v1.0.2 (Build 2)
 
-- **Production Emergency Recovery Routing**:
-  - Replaced development bundler fallback (`localhost:8081`) with live production Vercel portal routing: `https://haptix-passkeys.vercel.app/recover.html`.
-  - Both the on-screen link and generated QR code now open the live web recovery portal directly on external devices (Mac, Windows, tablets, or phones).
+- **Solana Mobile dApp Store Compliance (PER-001)**:
+  - Stripped unnecessary permissions (`SYSTEM_ALERT_WINDOW`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`) from Android build manifest to comply strictly with Solana Mobile publisher policies.
+  - Bumped internal Android `versionCode` to `2` to satisfy store monotonic version sequence requirements.
+  - Submitted for official review on the Solana Mobile Publishing Portal (`publish.solanamobile.com`, Submission `#344316773102`).
+- **Production Emergency Recovery & Custom Domain Routing**:
+  - Live production recovery portal routing on both primary domain [haptixwallet.xyz/recover.html](https://haptixwallet.xyz/recover.html) and backwards-compatible fallback [haptix-passkeys.vercel.app/recover.html](https://haptix-passkeys.vercel.app/recover.html).
+  - Both on-screen link and generated QR code open the live web recovery portal directly on external devices (Mac, Windows, tablets, or phones).
   - Centralized URL configuration in `AppConfig.recoveryPortalUrl`.
 - **E2E Tested & Verified On-Chain**:
   - Full end-to-end verification with browser wallets (Phantom, Solflare) initiating on-chain emergency freezes and timelock executions.
@@ -26,11 +30,11 @@ Welcome to **v1.0.2** of **Haptix**, the consumer-grade passkey smart wallet bui
 
 ### Verified EAS Production Build Receipt
 
-- **Version**: `1.0.2`
-- **Build ID**: `c5def63a-dc70-4a58-a3b4-a6dd8c72c881`
-- **EAS Console**: [expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/c5def63a-dc70-4a58-a3b4-a6dd8c72c881](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/c5def63a-dc70-4a58-a3b4-a6dd8c72c881)
-- **Direct Download Link**: [Download haptix-wallet.apk (v1.0.2)](https://expo.dev/artifacts/eas/zHXOU9hzxs29W8lMrYkwcU0Mkp1FEcdsBZXwTfcwjMQ.apk)
-- **APK Binary**: `haptix-wallet.apk` (96.3 MB)
+- **Version**: `1.0.2 (2)`
+- **Build ID**: `24fe25c1-4982-4646-91d6-b0c39e84a046`
+- **EAS Console**: [expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/24fe25c1-4982-4646-91d6-b0c39e84a046](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/24fe25c1-4982-4646-91d6-b0c39e84a046)
+- **Direct Download Link**: [Download haptix-wallet.apk (v1.0.2 Build 2)](https://expo.dev/artifacts/eas/mjPp2sqRl62kglLs78622gzjJiaxk-ca13A_L_5bVpo.apk)
+- **APK Binary**: `haptix-wallet.apk` (96.38 MB, SHA256: `fb7bde7211593d67362f5d7d6ddf0420aa37e21c241ba0115fa87ad9ecda277f`)
 
 ---
 
