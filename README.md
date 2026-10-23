@@ -150,4 +150,10 @@ npm test
 
 ---
 
+## License
+
+This project is open-source and licensed under the [MIT License](LICENSE).
+
+---
+
 Built by [Ritesh](https://x.com/Ritesh5969)

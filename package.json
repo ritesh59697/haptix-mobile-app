@@ -23,6 +23,8 @@
   },
   "displayName": "Haptix",
   "description": "Next-Gen Passkey Smart Wallet for Solana Mobile with hardware-enforced 2-of-2 multisig, on-chain spending limits, and session keys.",
+  "license": "MIT",
+  "author": "Ritesh (https://github.com/ritesh59697)",
   "usecase": "Mobile",
   "keywords": [
     "expo",
