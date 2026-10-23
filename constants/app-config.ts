@@ -5,11 +5,11 @@ import { getDevnetRpcUrl, getMainnetRpcUrl } from '@/utils/rpc-endpoints'
 
 export class AppConfig {
   static name = 'Haptix Wallet'
-  static uri = 'https://haptix-passkeys.vercel.app'
-  static vaultWebUrl = 'https://haptix-passkeys.vercel.app/vault.html'
+  static uri = 'https://haptixwallet.xyz'
+  static vaultWebUrl = 'https://haptixwallet.xyz/vault.html'
   static recoveryPortalUrl =
     process.env.EXPO_PUBLIC_RECOVERY_PORTAL_URL ||
-    'https://haptix-passkeys.vercel.app/recover.html'
+    'https://haptixwallet.xyz/recover.html'
 
   /**
    * Hosted Cloud Relay service for cross-device Hardware Vault (2-of-2 multisig) signing.
