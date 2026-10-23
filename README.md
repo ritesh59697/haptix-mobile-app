@@ -26,7 +26,7 @@
 
 <br />
 
-[Website](https://haptix-passkeys.vercel.app) &middot; [Web Vault](https://haptix-passkeys.vercel.app/vault.html) &middot; [Download APK (v1.0.2)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.2/haptix-wallet.apk) &middot; [Pitch Video (70s)](https://youtu.be/9OnEFuHqNDY) &middot; [Walkthrough (3m)](https://youtu.be/kNsqykt4rfg) &middot; [Docs](https://haptix-docs.mintlify.app) &middot; [Pitch Deck](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf) &middot; [Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)
+[Website](https://haptix-passkeys.vercel.app) &middot; [Web Vault](https://haptix-passkeys.vercel.app/vault.html) &middot; [Recovery Guide](docs/GUARDIAN_RECOVERY_GUIDE.md) &middot; [Download APK (v1.0.2)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.2/haptix-wallet.apk) &middot; [Pitch Video (70s)](https://youtu.be/9OnEFuHqNDY) &middot; [Walkthrough (3m)](https://youtu.be/kNsqykt4rfg) &middot; [Docs](https://haptix-docs.mintlify.app) &middot; [Pitch Deck](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf) &middot; [Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)
 
 </div>
 
@@ -38,7 +38,8 @@
 | :--- | :--- |
 | **Track & Target** | Solana Mobile CLOCK IN Hackathon &bull; Dedicated to **Solana Seeker (Chapter 2)** |
 | **Android APK** | [**Download haptix-wallet.apk (v1.0.2)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.2/haptix-wallet.apk) &bull; EAS Build ID: [`c5def63a`](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/c5def63a-dc70-4a58-a3b4-a6dd8c72c881) |
-| **Live Web Demos** | [**Website**](https://haptix-passkeys.vercel.app) &bull; [**Web Vault (Co-Signer)**](https://haptix-passkeys.vercel.app/vault.html) |
+| **Recovery Guide** | [**Visual Guardian Recovery Guide**](docs/GUARDIAN_RECOVERY_GUIDE.md) &bull; On-chain lifecycle, timelock & veto walkthrough |
+| **Live Web Demos** | [**Website**](https://haptix-passkeys.vercel.app) &bull; [**Web Vault (Co-Signer)**](https://haptix-passkeys.vercel.app/vault.html) &bull; [**Recovery Portal**](https://haptix-passkeys.vercel.app/recover.html) |
 | **Video Demos** | [**70-Second Pitch**](https://youtu.be/9OnEFuHqNDY) &bull; [**3-Minute Technical Walkthrough**](https://youtu.be/kNsqykt4rfg) |
 | **Pitch Deck** | [**Haptix_Pitch_Deck.pdf**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf) |
 | **On-Chain Program** | [`9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet) on Solana Devnet |
