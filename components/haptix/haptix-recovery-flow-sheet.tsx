@@ -531,9 +531,7 @@ export function HaptixRecoveryFlowSheet({
     const p = stagedKeys?.primaryPublicKeyHex ?? ''
     const s = stagedKeys?.secondaryPublicKeyHex ?? ''
 
-    const portalBase =
-      process.env.EXPO_PUBLIC_RECOVERY_PORTAL_URL ||
-      'https://haptix-passkeys.vercel.app/recover.html'
+    const portalBase = AppConfig.recoveryPortalUrl
 
     return `${portalBase}?wallet=${pda}&p=${p}&s=${s}`
   }, [onChainWallet, stagedKeys])
