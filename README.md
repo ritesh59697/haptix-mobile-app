@@ -19,14 +19,14 @@
 <br />
 [![Secp256r1](https://img.shields.io/badge/Cryptography-Secp256r1%20%2F%20P--256-blue?style=flat)](https://docs.solana.com)
 [![Expo](https://img.shields.io/badge/Expo-55.0-000020?style=flat&logo=expo)](https://expo.dev)
-[![Live Web Vault](https://img.shields.io/badge/Web%20Vault-Vercel-black?style=flat&logo=vercel)](https://haptix-passkeys.vercel.app/vault.html)
-[![Documentation](https://img.shields.io/badge/Docs-Mintlify-4F6BFF?style=flat&logo=gitbook&logoColor=white)](https://haptix-docs.mintlify.app)
+[![Live Web Vault](https://img.shields.io/badge/Web%20Vault-Vercel-black?style=flat&logo=vercel)](https://haptixwallet.xyz/vault.html)
+[![Documentation](https://img.shields.io/badge/Docs-Mintlify-4F6BFF?style=flat&logo=gitbook&logoColor=white)](https://docs.haptixwallet.xyz)
 [![Twitter](https://img.shields.io/badge/X-@HaptixWallet-black?style=flat&logo=x)](https://x.com/HaptixWalllet)
 [![Tests](https://img.shields.io/badge/Tests-290%20Passing-brightgreen?style=flat)](tests/)
 
 <br />
 
-[Website](https://haptix-passkeys.vercel.app) &middot; [Web Vault](https://haptix-passkeys.vercel.app/vault.html) &middot; [Recovery Guide](docs/GUARDIAN_RECOVERY_GUIDE.md) &middot; [Download APK (v1.0.2)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.2/haptix-wallet.apk) &middot; [Pitch Video (70s)](https://youtu.be/9OnEFuHqNDY) &middot; [Walkthrough (3m)](https://youtu.be/kNsqykt4rfg) &middot; [Docs](https://haptix-docs.mintlify.app) &middot; [Pitch Deck](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf) &middot; [Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)
+[Website](https://haptixwallet.xyz) &middot; [Web Vault](https://haptixwallet.xyz/vault.html) &middot; [Recovery Guide](docs/GUARDIAN_RECOVERY_GUIDE.md) &middot; [Download APK (v1.0.2)](https://github.com/ritesh59697/haptix-mobile-app/releases/latest/download/haptix-wallet.apk) &middot; [Pitch Video (70s)](https://youtu.be/9OnEFuHqNDY) &middot; [Walkthrough (3m)](https://youtu.be/kNsqykt4rfg) &middot; [Docs](https://docs.haptixwallet.xyz) &middot; [Pitch Deck](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf) &middot; [Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)
 
 </div>
 
