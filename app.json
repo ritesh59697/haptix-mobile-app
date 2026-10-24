@@ -21,7 +21,7 @@
         "backgroundColor": "#000000"
       },
       "package": "io.haptix.wallet",
-      "versionCode": 2,
+      "versionCode": 3,
       "permissions": [
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
