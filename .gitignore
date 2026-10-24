@@ -52,3 +52,5 @@ haptix_program/node_modules/
 haptix_program/.anchor/
 
 *.apk
+__pycache__/
+*.pyc

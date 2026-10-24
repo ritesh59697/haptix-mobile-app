@@ -38,8 +38,8 @@
 | Deliverable | Details & Links |
 | :--- | :--- |
 | **Track & Target** | Solana Mobile CLOCK IN Hackathon &bull; Dedicated to **Solana Seeker (Chapter 2)** |
-| **Solana dApp Store** | **In Review (v1.0.2 / Build 2)** &bull; Submission ID: `#344316773102` &bull; Package: `io.haptix.wallet` &bull; On-chain Mint: [`9PeQnGCK...nbmHp1MX`](https://explorer.solana.com/address/9PeQnGCK7Vb59Z134B8m4c22xU1e4j21mQnbmHp1MX) |
-| **Android APK** | [**Download haptix-wallet.apk (v1.0.2)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.2/haptix-wallet.apk) &bull; EAS Build ID: [`24fe25c1`](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/24fe25c1-4982-4646-91d6-b0c39e84a046) &bull; Version Code: `2` (PER-001 Compliant) |
+| **Solana dApp Store** | **In Review (v1.0.2 / Build 3)** &bull; Package: `io.haptix.wallet` &bull; On-chain Mint: [`9PeQnGCK...nbmHp1MX`](https://explorer.solana.com/address/9PeQnGCK7Vb59Z134B8m4c22xU1e4j21mQnbmHp1MX) |
+| **Android APK** | [**Download haptix-wallet.apk (v1.0.2)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.2/haptix-wallet.apk) &bull; EAS Build ID: [`d1a7544a`](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/d1a7544a-1f49-47dc-a1c3-94c4be3ac105) &bull; Version Code: `3` (FUN-002 & PER-001 Compliant) |
 | **Recovery Guide** | [**Visual Guardian Recovery Guide**](docs/GUARDIAN_RECOVERY_GUIDE.md) &bull; On-chain lifecycle, timelock & veto walkthrough |
 | **Live Web Demos** | [**haptixwallet.xyz**](https://haptixwallet.xyz) (Primary) &bull; [**Web Vault (Co-Signer)**](https://haptixwallet.xyz/vault.html) &bull; [**Recovery Portal**](https://haptixwallet.xyz/recover.html) &bull; *(Fallback: [haptix-passkeys.vercel.app](https://haptix-passkeys.vercel.app))* |
 | **Video Demos** | [**70-Second Pitch**](https://youtu.be/9OnEFuHqNDY) &bull; [**3-Minute Technical Walkthrough**](https://youtu.be/kNsqykt4rfg) |
