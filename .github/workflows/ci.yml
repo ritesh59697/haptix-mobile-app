@@ -6,15 +6,16 @@ on:
   pull_request:
 
 jobs:
-  typecheck:
-    name: Typecheck
+  test:
+    name: Test & Typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22.14.0'
           cache: npm
 
       - name: Install dependencies
@@ -22,3 +23,6 @@ jobs:
 
       - name: Typecheck
         run: npx tsc --noEmit
+
+      - name: Run test suite without keys
+        run: npm run test:no-key
