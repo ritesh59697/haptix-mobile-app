@@ -10,7 +10,7 @@ Welcome to **v1.0.2** of **Haptix**, the consumer-grade passkey smart wallet bui
   - **FUN-002 Resolved**: Embedded cloud environment variables into the standalone APK build (`EXPO_PUBLIC_HAPTIX_DEV_MODE=true`, Devnet RPC URL, and funded paymaster key). The paymaster automatically funds devnet gas and auto-drips test Devnet SOL on wallet creation so store reviewers can test instant passkey transfers, dual-biometric quorums, and agent sessions immediately on a clean device.
   - **PER-001 Verified**: Stripped unnecessary permissions (`SYSTEM_ALERT_WINDOW`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE`) from Android build manifest to comply strictly with Solana Mobile publisher policies.
   - Bumped internal Android `versionCode` to `3` to satisfy store monotonic version sequence requirements.
-  - Submitted for official review on the Solana Mobile Publishing Portal (`publish.solanamobile.com`).
+  - Submitted for official review on the Solana Mobile Publishing Portal (`publish.solanamobile.com`, Submission `#344280197850`, Release Mint: `HF6AUA7d...atdZoEQg`).
 - **Production Emergency Recovery & Custom Domain Routing**:
   - Live production recovery portal routing on both primary domain [haptixwallet.xyz/recover.html](https://haptixwallet.xyz/recover.html) and backwards-compatible fallback [haptix-passkeys.vercel.app/recover.html](https://haptix-passkeys.vercel.app/recover.html).
   - Both on-screen link and generated QR code open the live web recovery portal directly on external devices (Mac, Windows, tablets, or phones).
