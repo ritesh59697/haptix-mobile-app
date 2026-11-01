@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="haptix-logo-white.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: light dark;
@@ -24,15 +24,20 @@
     --text-3: #71717a;
     --key-bg: #18181c;
     --shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 64px -16px rgba(0, 0, 0, 0.8), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
-    --accent-ok: #34d399;
-    --accent-ok-bg: rgba(52, 211, 153, 0.12);
+    --accent-ok: #14f195;
+    --accent-ok-bg: rgba(20, 241, 149, 0.12);
+    /* Brand accents, shared with the landing page and the recovery portal so
+       the three surfaces read as one product. */
+    --brand-solana: #14f195;
+    --brand-purple: #9945ff;
+    --brand-glow: rgba(20, 241, 149, 0.18);
     --overlay: rgba(0, 0, 0, 0.65);
     --btn-primary-bg: #f4f4f5;
     --btn-primary-text: #09090b;
     --radius-card: 22px;
     --radius-ctrl: 12px;
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
-    font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   }
 
   :root[data-theme="light"] {
@@ -49,6 +54,9 @@
     --shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 20px 48px -12px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.03);
     --accent-ok: #059669;
     --accent-ok-bg: rgba(16, 185, 129, 0.10);
+    --brand-solana: #00916a;
+    --brand-purple: #7c3aed;
+    --brand-glow: rgba(0, 145, 106, 0.20);
     --overlay: rgba(15, 23, 42, 0.35);
     --btn-primary-bg: #09090b;
     --btn-primary-text: #ffffff;
@@ -342,11 +350,18 @@
   }
 
   .hardware-title {
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    margin: 0 0 4px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    margin: 0 0 6px;
     color: var(--text-1);
+    line-height: 1.12;
+  }
+
+  @media (max-width: 720px) {
+    .hardware-title {
+      font-size: 24px;
+    }
   }
 
   .hardware-subtitle {
@@ -386,6 +401,117 @@
     color: var(--text-2);
     font-size: 13px;
     padding: 4px 0;
+  }
+
+  /* The 2-of-2 quorum is the product's whole idea, and in the idle state it was
+     one line of grey text. Drawn instead as the two devices that must both
+     sign, with the link between them carrying the waiting state. */
+  .quorum-viz {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    width: 100%;
+    padding: 18px 0 6px;
+  }
+
+  .quorum-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    flex-shrink: 0;
+    width: 86px;
+  }
+
+  .quorum-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 15px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    background: var(--card-inner);
+    color: var(--text-2);
+    transition: all 0.4s var(--ease);
+  }
+
+  .quorum-icon svg {
+    width: 23px;
+    height: 23px;
+  }
+
+  /* This device: enrolled and ready, so it reads as live. */
+  .quorum-node.is-self .quorum-icon {
+    border-color: var(--brand-solana);
+    color: var(--brand-solana);
+    box-shadow: 0 0 0 3px var(--brand-glow);
+  }
+
+  .quorum-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-2);
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .quorum-sub {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .quorum-link {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+    min-width: 34px;
+    border-radius: 2px;
+  }
+
+  /* A pulse travels phone -> vault while the device waits for a request. */
+  .quorum-link::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--brand-solana), transparent);
+    animation: quorum-travel 2.4s var(--ease) infinite;
+  }
+
+  @keyframes quorum-travel {
+    0% { left: -40%; }
+    100% { left: 100%; }
+  }
+
+  .quorum-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brand-solana);
+    background: var(--accent-ok-bg);
+    border: 1px solid var(--brand-solana);
+    border-radius: 999px;
+    padding: 5px 12px;
+    margin-top: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .quorum-link::after {
+      animation: none;
+      left: 30%;
+    }
   }
 
   .pulse-dot {
@@ -539,6 +665,40 @@
     font-size: 13px;
     color: var(--text-1);
     text-align: right;
+  }
+
+  .info-card-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 14px 0 10px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .info-card-head::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand-solana);
+    box-shadow: 0 0 8px var(--brand-glow);
+    flex-shrink: 0;
+  }
+
+  /* Idle-state policy card only: the label recedes so the value leads. */
+  .info-card .info-label {
+    color: var(--text-3);
+    font-size: 12.5px;
+  }
+
+  .info-card .info-val {
+    font-size: 13.5px;
+    font-weight: 600;
   }
 
   .mono-addr {
@@ -1324,6 +1484,31 @@
                 <h2 class="hardware-title">Co-Signer Hardware Key</h2>
               </div>
 
+              <div class="quorum-viz" aria-hidden="true">
+                <div class="quorum-node">
+                  <div class="quorum-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="5" y="2" width="14" height="20" rx="2.5"/>
+                      <line x1="12" y1="18" x2="12" y2="18"/>
+                    </svg>
+                  </div>
+                  <div class="quorum-label">Phone<span class="quorum-sub" style="display:block;">Primary</span></div>
+                </div>
+
+                <div class="quorum-link"></div>
+
+                <div class="quorum-node is-self">
+                  <div class="quorum-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="3" width="20" height="14" rx="2"/>
+                      <line x1="8" y1="21" x2="16" y2="21"/>
+                      <line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                  </div>
+                  <div class="quorum-label">This Device<span class="quorum-sub" style="display:block;">Co-Signer</span></div>
+                </div>
+              </div>
+
               <div class="listen-row">
                 <span class="pulse-dot" aria-hidden="true"></span>
                 <span>Listening for requests from your phone</span>
@@ -1399,6 +1584,7 @@
           <div class="idle-col-activity">
             <!-- Active Wallet & Limit Policy Card -->
             <div class="info-card">
+              <div class="info-card-head">Vault Policy</div>
               <div class="info-row">
                 <span class="info-label">Wallet</span>
                 <span class="info-val" id="idleWalletName">Hardware Vault 2</span>
@@ -2665,7 +2851,15 @@
     vaultHistorySection.style.display = 'block';
     if (!items || items.length === 0) {
       if (historyCountBadge) historyCountBadge.textContent = '0';
-      historyList.innerHTML = '<p class="history-empty-line">No approvals yet.</p>';
+      historyList.innerHTML =
+        '<div class="history-empty">' +
+        '<div class="history-empty-icon">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+        '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+        '</div>' +
+        '<p class="history-empty-title">No approvals yet</p>' +
+        '<p class="history-empty-desc">High-value transfers from your phone will appear here for a second biometric approval.</p>' +
+        '</div>';
       return;
     }
     if (historyCountBadge) historyCountBadge.textContent = items.length;
