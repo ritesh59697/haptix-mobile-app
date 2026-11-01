@@ -9,6 +9,43 @@ const VAULT_HTML_PATH = path.join(__dirname, '../public/vault.html')
 const pendingById = new Map()
 const pendingByWallet = new Map()
 
+// Largest POST body this service will buffer. Real payloads are a signature,
+// a message and a few short strings -- comfortably under a kilobyte. Without a
+// ceiling, `body += chunk` grows until the instance runs out of memory, so an
+// oversized upload is enough to take the relay down.
+const MAX_BODY_BYTES = 10 * 1024
+
+/**
+ * Buffers a request body, refusing anything over MAX_BODY_BYTES.
+ *
+ * Calls back once with the body, or responds 413 itself and never calls back.
+ * The socket is destroyed on overflow so a sender that ignores the response
+ * cannot keep streaming into memory.
+ */
+function readLimitedBody(req, res, onBody) {
+  let body = ''
+  let size = 0
+  let rejected = false
+
+  req.on('data', (chunk) => {
+    if (rejected) return
+    size += chunk.length
+    if (size > MAX_BODY_BYTES) {
+      rejected = true
+      res.writeHead(413, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Request body too large' }))
+      req.destroy()
+      return
+    }
+    body += chunk
+  })
+
+  req.on('end', () => {
+    if (rejected) return
+    onBody(body)
+  })
+}
+
 // Periodic TTL cleanup (10 min expiration)
 setInterval(() => {
   const now = Date.now()
@@ -73,9 +110,7 @@ const server = http.createServer((req, res) => {
 
   // Phone initiates transfer: POST /pending-tx
   if (req.method === 'POST' && url.pathname === '/pending-tx') {
-    let body = ''
-    req.on('data', (chunk) => (body += chunk))
-    req.on('end', () => {
+    readLimitedBody(req, res, (body) => {
       try {
         const data = JSON.parse(body)
         const txId = data.id && typeof data.id === 'string' ? data.id : Math.random().toString(36).substring(2, 10)
@@ -154,9 +189,7 @@ const server = http.createServer((req, res) => {
 
   // Second device submits signature: POST /submit-signature
   if (req.method === 'POST' && url.pathname === '/submit-signature') {
-    let body = ''
-    req.on('data', (chunk) => (body += chunk))
-    req.on('end', () => {
+    readLimitedBody(req, res, (body) => {
       try {
         const data = JSON.parse(body)
         const txId = data.txId
@@ -237,9 +270,7 @@ const server = http.createServer((req, res) => {
 
   // Decline or Cancel: POST /decline or /cancel
   if (req.method === 'POST' && (url.pathname === '/decline' || url.pathname === '/cancel')) {
-    let body = ''
-    req.on('data', (chunk) => (body += chunk))
-    req.on('end', () => {
+    readLimitedBody(req, res, (body) => {
       try {
         const data = body ? JSON.parse(body) : {}
         const txId = data.txId || url.searchParams.get('id')
