@@ -919,6 +919,123 @@
     color: var(--text-2);
   }
 
+  /* Recovery runs across a day, over three on-chain instructions, and the page
+     gave no sense of position in it. The stepper names the whole arc so a
+     guardian can see what has happened and what is still owed. */
+  .recovery-steps {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto 26px;
+    padding: 0 4px;
+  }
+
+  .rstep {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+  }
+
+  .rstep-dot {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    border: 1.5px solid var(--border-strong);
+    background: var(--card-inner);
+    color: var(--text-3);
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    transition: all 0.35s var(--ease);
+  }
+
+  .rstep-dot svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .rstep-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-3);
+    line-height: 1.3;
+    transition: color 0.35s var(--ease);
+  }
+
+  .rstep-sub {
+    font-size: 10px;
+    color: var(--text-3);
+    opacity: 0.75;
+    line-height: 1.3;
+  }
+
+  /* Done: the instruction has landed on chain. */
+  .rstep.is-done .rstep-dot {
+    border-color: var(--brand-solana);
+    background: var(--accent-ok-bg);
+    color: var(--brand-solana);
+  }
+
+  .rstep.is-done .rstep-label {
+    color: var(--text-2);
+  }
+
+  /* Current: what the guardian is waiting on or acting on right now. */
+  .rstep.is-current .rstep-dot {
+    border-color: var(--brand-solana);
+    background: var(--brand-solana);
+    color: #06281b;
+    box-shadow: 0 0 0 4px var(--brand-glow);
+  }
+
+  .rstep.is-current .rstep-label {
+    color: var(--text-1);
+    font-weight: 700;
+  }
+
+  .rstep-line {
+    flex: 1;
+    height: 1.5px;
+    background: var(--border-strong);
+    margin-top: 14px;
+    min-width: 12px;
+    border-radius: 2px;
+    transition: background 0.35s var(--ease);
+  }
+
+  .rstep-line.is-done {
+    background: var(--brand-solana);
+  }
+
+  @media (max-width: 760px) {
+    .recovery-steps {
+      margin-bottom: 20px;
+      padding: 0;
+    }
+    .rstep-sub {
+      display: none !important;
+    }
+    .rstep-label {
+      font-size: 10.5px;
+    }
+    .rstep-dot {
+      width: 26px;
+      height: 26px;
+      font-size: 11px;
+    }
+    .rstep-line {
+      margin-top: 12px;
+      min-width: 8px;
+    }
+  }
+
   .countdown-box {
     background: var(--card-inner);
     border: 1px solid var(--border);
@@ -1314,6 +1431,30 @@
 <!-- Main Stage -->
 <div class="stage">
   <main class="card" id="mainCard">
+
+    <!-- Progress across the recovery lifecycle. Mirrors the program's three
+         instructions: initiate_recovery, the timelock, then execute_recovery. -->
+    <div class="recovery-steps" id="recoverySteps" role="list" aria-label="Recovery progress">
+      <div class="rstep" id="rstep1" role="listitem">
+        <div class="rstep-dot"><span class="rstep-num">1</span></div>
+        <div class="rstep-label">Locate wallet<span class="rstep-sub" style="display:block;">Find the smart wallet</span></div>
+      </div>
+      <div class="rstep-line" id="rline1"></div>
+      <div class="rstep" id="rstep2" role="listitem">
+        <div class="rstep-dot"><span class="rstep-num">2</span></div>
+        <div class="rstep-label">Freeze &amp; initiate<span class="rstep-sub" style="display:block;">Guardian signs on chain</span></div>
+      </div>
+      <div class="rstep-line" id="rline2"></div>
+      <div class="rstep" id="rstep3" role="listitem">
+        <div class="rstep-dot"><span class="rstep-num">3</span></div>
+        <div class="rstep-label">Timelock<span class="rstep-sub" style="display:block;">24h owner veto window</span></div>
+      </div>
+      <div class="rstep-line" id="rline3"></div>
+      <div class="rstep" id="rstep4" role="listitem">
+        <div class="rstep-dot"><span class="rstep-num">4</span></div>
+        <div class="rstep-label">Keys rotated<span class="rstep-sub" style="display:block;">Access restored</span></div>
+      </div>
+    </div>
 
     <!-- VIEW 1: Input / Search State (when no wallet is loaded) -->
     <section id="stateLookup" style="display:none;">
@@ -1959,7 +2100,12 @@
       // Inside the final hour the ring warms to amber.
       if (box) box.classList.toggle('is-urgent', remaining > 0 && remaining <= 3600);
 
-      if (remaining <= 0) clearInterval(timerInterval);
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        // The veto window has closed: the guardian can now execute the
+        // rotation, so the stepper moves on to the final step.
+        renderRecoverySteps(4);
+      }
     };
     tick();
     timerInterval = setInterval(tick, 1000);
@@ -2037,11 +2183,53 @@
   }
 
   // --- View States ---
+
+  /** Tick mark for a step whose on-chain instruction has landed. */
+  const RSTEP_CHECK =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5 11-11"/></svg>';
+
+  /**
+   * Paints the stepper for the current point in the recovery lifecycle.
+   *
+   * `active` is 1-based: everything before it reads as done, it reads as
+   * current, and everything after stays idle. Step 4 is only ever current,
+   * since the page stops being the place to look once keys have rotated.
+   */
+  function renderRecoverySteps(active) {
+    for (let i = 1; i <= 4; i++) {
+      const step = $('rstep' + i);
+      if (!step) continue;
+      const dot = step.querySelector('.rstep-dot');
+      const done = i < active;
+      step.classList.toggle('is-done', done);
+      step.classList.toggle('is-current', i === active);
+      // A completed step trades its number for a tick.
+      if (dot) dot.innerHTML = done ? RSTEP_CHECK : '<span class="rstep-num">' + i + '</span>';
+      const line = $('rline' + i);
+      if (line) line.classList.toggle('is-done', i < active);
+    }
+  }
+
+  /**
+   * Maps a view to its step. The details view covers two very different
+   * moments -- a healthy wallet the guardian has just looked up, and one
+   * already frozen with the timelock running -- so the chain state decides
+   * which of the two it is.
+   */
+  function stepForView(view) {
+    if (view === 'lookup') return 1;
+    if (view === 'done') return 3;
+    const recoveryRunning = (typeof recoveryInitiatedAtSeconds !== 'undefined') && recoveryInitiatedAtSeconds > 0n;
+    return recoveryRunning ? 3 : 2;
+  }
+
   function switchView(view) {
     clearInterval(timerInterval);
     $('stateLookup').style.display = (view === 'lookup') ? 'block' : 'none';
     $('stateDetails').style.display = (view === 'details') ? 'block' : 'none';
     $('stateDone').style.display = (view === 'done') ? 'block' : 'none';
+    renderRecoverySteps(stepForView(view));
   }
 
   // --- Sync Connected Wallet Header ---
