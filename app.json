@@ -54,7 +54,8 @@
         {
           "faceIDPermission": "Allow Haptix to use biometric authentication for smart wallet access."
         }
-      ]
+      ],
+      "./plugins/with-haptix-mwa"
     ],
     "experiments": {
       "typedRoutes": true

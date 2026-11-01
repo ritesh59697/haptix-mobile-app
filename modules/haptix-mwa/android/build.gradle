@@ -1,0 +1,49 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+group = 'io.haptix.mwa'
+version = '0.1.0'
+
+def expoModulesCorePlugin = new File(project(':expo-modules-core').projectDir.absolutePath, 'ExpoModulesCorePlugin.gradle')
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useExpoPublishing()
+
+android {
+  namespace 'io.haptix.mwa'
+
+  compileSdk safeExtGet('compileSdkVersion', 35)
+
+  defaultConfig {
+    minSdk safeExtGet('minSdkVersion', 24)
+    consumerProguardFiles 'proguard-rules.pro'
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+
+  sourceSets {
+    main {
+      java.srcDirs = ['src/main/java']
+    }
+  }
+}
+
+def safeExtGet(prop, fallback) {
+  rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+dependencies {
+  // Wallet-side Mobile Wallet Adapter implementation. 2.0.8 is the current
+  // stable release on Maven Central; the migration docs still point at
+  // 2.0.0-beta1, which predates it by well over a year.
+  implementation 'com.solanamobile:mobile-wallet-adapter-walletlib:2.0.8'
+  implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+}
