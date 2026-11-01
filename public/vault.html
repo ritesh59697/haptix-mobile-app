@@ -146,6 +146,30 @@
     box-shadow: 0 0 8px rgba(248, 113, 113, 0.55);
   }
 
+  /* Polling has given up; the pill becomes the retry control. */
+  .relay-status-pill.is-retryable {
+    cursor: pointer;
+    transition: border-color 0.18s ease, color 0.18s ease;
+  }
+
+  .relay-status-pill.is-retryable:hover,
+  .relay-status-pill.is-retryable:focus-visible {
+    border-color: #f87171;
+    color: var(--text-1);
+    outline: none;
+  }
+
+  .relay-status-pill[data-relay="connecting"] .relay-dot {
+    background: #fbbf24;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.55);
+    animation: relay-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes relay-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
   .nav-btn {
     display: inline-flex;
     align-items: center;
@@ -2570,8 +2594,13 @@
       }
     } catch (e) {}
 
-    // 3. Status sync for Idle card
+    // 3. Status sync for Idle card. Skipped when /pending-tx just failed: the
+    // relay is one service, so a second request only doubles the console noise.
     try {
+      if (!sawRelay && relayMisses > 0) {
+        noteRelay(false);
+        return;
+      }
       var sRes = await fetch(relayOrigin + '/status');
       if (sRes.ok) {
         sawRelay = true;
@@ -2608,8 +2637,95 @@
     }
   }
 
-  setInterval(pollPending, 900);
-  pollPending();
+  // Self-scheduling poll loop with backoff, and a hard stop when no relay is
+  // reachable at all.
+  //
+  // A fixed 900ms interval against a dead relay issues ~2 requests a second and
+  // the browser logs every refusal at the network layer. Those logs come from
+  // the browser itself, not from any console call here, so `catch` cannot
+  // suppress them -- the only way to keep the console clean is to stop asking.
+  //
+  // So: back off geometrically, then give up after RELAY_MAX_MISSES and let the
+  // user reconnect by clicking the relay pill. On a hosted origin the relay is
+  // the always-on cloud service, so this path is effectively never taken; it
+  // matters for local development, where port 8082 is usually not running.
+  var RELAY_POLL_MS = 900;
+  var RELAY_POLL_MAX_MS = 15000;
+  var RELAY_BACKOFF_AFTER = 2;
+  var RELAY_MAX_MISSES = 6;
+  var relayPollTimer = null;
+
+  function relayPollDelay() {
+    if (relayMisses <= RELAY_BACKOFF_AFTER) return RELAY_POLL_MS;
+    var backoff = RELAY_POLL_MS * Math.pow(2, relayMisses - RELAY_BACKOFF_AFTER);
+    return Math.min(backoff, RELAY_POLL_MAX_MS);
+  }
+
+  async function relayPollLoop() {
+    try {
+      await pollPending();
+    } finally {
+      if (relayMisses >= RELAY_MAX_MISSES) {
+        relayPollTimer = null;
+        noteRelayGaveUp();
+        return;
+      }
+      relayPollTimer = setTimeout(relayPollLoop, relayPollDelay());
+    }
+  }
+
+  function startRelayPolling() {
+    if (relayPollTimer !== null) return;
+    relayMisses = 0;
+    relayPollTimer = setTimeout(relayPollLoop, 0);
+  }
+
+  function noteRelayGaveUp() {
+    var pill = document.getElementById('relayStatusPill');
+    var text = pill && pill.querySelector('.relay-text');
+    if (!pill) return;
+    pill.dataset.relay = 'down';
+    pill.classList.add('is-retryable');
+    pill.setAttribute('role', 'button');
+    pill.setAttribute('tabindex', '0');
+    pill.setAttribute('title', 'No relay reachable at ' + relayOrigin + ' -- click to retry');
+    if (text) text.textContent = 'Relay offline -- retry';
+  }
+
+  function retryRelay() {
+    var pill = document.getElementById('relayStatusPill');
+    var text = pill && pill.querySelector('.relay-text');
+    if (pill) {
+      pill.classList.remove('is-retryable');
+      pill.removeAttribute('role');
+      pill.removeAttribute('tabindex');
+      pill.removeAttribute('title');
+      pill.dataset.relay = 'connecting';
+    }
+    if (text) text.textContent = 'Reconnecting...';
+    startRelayPolling();
+  }
+
+  var relayPillEl = document.getElementById('relayStatusPill');
+  if (relayPillEl) {
+    relayPillEl.addEventListener('click', function () {
+      if (relayPillEl.classList.contains('is-retryable')) retryRelay();
+    });
+    relayPillEl.addEventListener('keydown', function (e) {
+      if ((e.key === 'Enter' || e.key === ' ') && relayPillEl.classList.contains('is-retryable')) {
+        e.preventDefault();
+        retryRelay();
+      }
+    });
+  }
+
+  // A tab resumed from the background is the most likely moment for the relay
+  // to have come back, so retry once on wake rather than making the user click.
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && relayPollTimer === null) retryRelay();
+  });
+
+  startRelayPolling();
 
   // Preview button toggle (if present)
   var isPreviewing = false;
