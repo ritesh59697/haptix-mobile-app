@@ -199,7 +199,8 @@ export function HaptixSwapSheet({
   const exchangeRate = payPrice > 0 && receivePrice > 0 ? (payPrice / receivePrice).toFixed(4) : '0'
 
   // Quorum requirement
-  const isQuorumRequired = paySymbol === 'SOL' ? payAmountNum > spendThreshold : payFiatValue > spendThreshold * solPriceUsd
+  const isQuorumRequired =
+    paySymbol === 'SOL' ? payAmountNum > spendThreshold : payFiatValue > spendThreshold * solPriceUsd
 
   const handleInvertTokens = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
@@ -221,10 +222,7 @@ export function HaptixSwapSheet({
 
   const handleInitiateSwap = async () => {
     if (!SWAP_ENABLED) {
-      dialog.alert(
-        'Swap is not available',
-        'There is no exchange on this network. This screen will not move SOL.',
-      )
+      dialog.alert('Swap is not available', 'There is no exchange on this network. This screen will not move SOL.')
       return
     }
 
@@ -288,7 +286,11 @@ export function HaptixSwapSheet({
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey, walletPda),
+          guardian: assertRecoveryGuardian(
+            parseGuardianAddress(activeWallet.guardianAddress),
+            payer.publicKey,
+            walletPda,
+          ),
         })
 
         const initBlockhash = await connection.getLatestBlockhash('confirmed')
@@ -481,9 +483,7 @@ export function HaptixSwapSheet({
                     }}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.sigText}>
-                      {ellipsify(confirmedSwap.signature, 8)}
-                    </Text>
+                    <Text style={styles.sigText}>{ellipsify(confirmedSwap.signature, 8)}</Text>
                     <MaterialIcons
                       name={copiedSig ? 'check' : 'content-copy'}
                       size={14}
@@ -522,255 +522,249 @@ export function HaptixSwapSheet({
             <>
               {/* Header */}
               <View style={styles.headerBar}>
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={onClose}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <MaterialIcons name="close" size={18} color={theme.textPrimary} />
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={onClose}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <MaterialIcons name="close" size={18} color={theme.textPrimary} />
+                </TouchableOpacity>
 
-            <Text style={[styles.title, { color: theme.textPrimary }]}>Swap</Text>
+                <Text style={[styles.title, { color: theme.textPrimary }]}>Swap</Text>
 
-            {/* Slippage Chip */}
-            <View style={styles.slippageRow}>
-              {([0.1, 0.5, 1.0] as const).map((slip) => {
-                const isActive = slippage === slip
-                return (
-                  <TouchableOpacity
-                    key={slip}
-                    style={[
-                      styles.slipBtn,
-                      isActive && styles.slipBtnActive,
-                    ]}
-                    onPress={() => {
-                      Haptics.selectionAsync().catch(() => {})
-                      setSlippage(slip)
+                {/* Slippage Chip */}
+                <View style={styles.slippageRow}>
+                  {([0.1, 0.5, 1.0] as const).map((slip) => {
+                    const isActive = slippage === slip
+                    return (
+                      <TouchableOpacity
+                        key={slip}
+                        style={[styles.slipBtn, isActive && styles.slipBtnActive]}
+                        onPress={() => {
+                          Haptics.selectionAsync().catch(() => {})
+                          setSlippage(slip)
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.slipText,
+                            { color: isActive ? theme.textPrimary : theme.textMuted },
+                            isActive && { fontWeight: '700' },
+                          ]}
+                        >
+                          {slip}%
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                {!SWAP_ENABLED && (
+                  <View
+                    style={{
+                      backgroundColor: isDark ? 'rgba(108, 140, 255, 0.08)' : 'rgba(79, 107, 255, 0.08)',
+                      borderColor: isDark ? 'rgba(108, 140, 255, 0.22)' : 'rgba(79, 107, 255, 0.18)',
+                      borderWidth: 1,
+                      borderRadius: radius.md,
+                      padding: 12,
+                      marginBottom: 16,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
                     }}
                   >
-                    <Text
-                      style={[
-                        styles.slipText,
-                        { color: isActive ? theme.textPrimary : theme.textMuted },
-                        isActive && { fontWeight: '700' },
-                      ]}
-                    >
-                      {slip}%
+                    <MaterialIcons name="info-outline" size={18} color={theme.accent} />
+                    <Text style={{ flex: 1, fontSize: 12, color: theme.textSecondary, lineHeight: 17 }}>
+                      Devnet Preview: AMM exchange liquidity is not available on Solana Devnet. Jupiter DEX routing will
+                      activate in Mainnet release.
                     </Text>
+                  </View>
+                )}
+
+                {/* YOU PAY CARD */}
+                <View style={styles.tradeCard}>
+                  <View style={styles.cardTopRow}>
+                    <Text style={[styles.cardRoleLabel, { color: theme.textMuted }]}>YOU PAY</Text>
+                    <Text style={[styles.balanceHint, { color: theme.textMuted }]}>
+                      Balance: {payBalance.toFixed(4)} {paySymbol}
+                    </Text>
+                  </View>
+
+                  <View style={styles.inputAndTokenRow}>
+                    <TextInput
+                      style={[styles.amountInput, { color: theme.textPrimary }]}
+                      value={payAmount}
+                      onChangeText={setPayAmount}
+                      placeholder="0.0"
+                      placeholderTextColor={theme.textMuted}
+                      keyboardType="decimal-pad"
+                      autoFocus={false}
+                    />
+
+                    <TouchableOpacity
+                      style={styles.tokenSelectorBtn}
+                      onPress={() => setShowPayPicker(!showPayPicker)}
+                      activeOpacity={0.75}
+                    >
+                      <HaptixTokenIcon symbol={paySymbol} size={22} />
+                      <Text style={[styles.tokenSymbolText, { color: theme.textPrimary }]}>{paySymbol}</Text>
+                      <MaterialIcons name="expand-more" size={18} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.cardBottomRow}>
+                    <Text style={[styles.fiatEstimate, { color: theme.textSecondary }]}>
+                      ≈ ${payFiatValue.toFixed(2)}
+                    </Text>
+
+                    <View style={styles.pctChipsRow}>
+                      {[25, 50, 100].map((pct) => (
+                        <TouchableOpacity key={pct} style={styles.pctChip} onPress={() => handleApplyPercentage(pct)}>
+                          <Text style={[styles.pctChipText, { color: theme.textSecondary }]}>
+                            {pct === 100 ? 'MAX' : `${pct}%`}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Pay Token Picker Dropdown */}
+                  {showPayPicker && (
+                    <View style={styles.dropdownMenu}>
+                      {AVAILABLE_SWAP_TOKENS.map((item) => (
+                        <TouchableOpacity
+                          key={item.symbol}
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            setPaySymbol(item.symbol)
+                            setShowPayPicker(false)
+                            if (item.symbol === receiveSymbol) {
+                              setReceiveSymbol(paySymbol)
+                            }
+                          }}
+                        >
+                          <HaptixTokenIcon symbol={item.symbol} size={20} />
+                          <Text style={[styles.dropdownItemText, { color: theme.textPrimary }]}>{item.symbol}</Text>
+                          <Text style={[styles.dropdownItemSub, { color: theme.textMuted }]}>{item.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+
+                {/* Invert Button */}
+                <View style={styles.invertRow}>
+                  <TouchableOpacity
+                    style={styles.invertBtn}
+                    onPress={handleInvertTokens}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Invert swap tokens"
+                  >
+                    <MaterialIcons name="swap-vert" size={24} color={theme.accent} />
                   </TouchableOpacity>
-                )
-              })}
-            </View>
-          </View>
-
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {!SWAP_ENABLED && (
-              <View
-                style={{
-                  backgroundColor: isDark ? 'rgba(108, 140, 255, 0.08)' : 'rgba(79, 107, 255, 0.08)',
-                  borderColor: isDark ? 'rgba(108, 140, 255, 0.22)' : 'rgba(79, 107, 255, 0.18)',
-                  borderWidth: 1,
-                  borderRadius: radius.md,
-                  padding: 12,
-                  marginBottom: 16,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                }}
-              >
-                <MaterialIcons name="info-outline" size={18} color={theme.accent} />
-                <Text style={{ flex: 1, fontSize: 12, color: theme.textSecondary, lineHeight: 17 }}>
-                  Devnet Preview: AMM exchange liquidity is not available on Solana Devnet. Jupiter DEX routing will activate in Mainnet release.
-                </Text>
-              </View>
-            )}
-
-            {/* YOU PAY CARD */}
-            <View style={styles.tradeCard}>
-              <View style={styles.cardTopRow}>
-                <Text style={[styles.cardRoleLabel, { color: theme.textMuted }]}>YOU PAY</Text>
-                <Text style={[styles.balanceHint, { color: theme.textMuted }]}>
-                  Balance: {payBalance.toFixed(4)} {paySymbol}
-                </Text>
-              </View>
-
-              <View style={styles.inputAndTokenRow}>
-                <TextInput
-                  style={[styles.amountInput, { color: theme.textPrimary }]}
-                  value={payAmount}
-                  onChangeText={setPayAmount}
-                  placeholder="0.0"
-                  placeholderTextColor={theme.textMuted}
-                  keyboardType="decimal-pad"
-                  autoFocus={false}
-                />
-
-                <TouchableOpacity
-                  style={styles.tokenSelectorBtn}
-                  onPress={() => setShowPayPicker(!showPayPicker)}
-                  activeOpacity={0.75}
-                >
-                  <HaptixTokenIcon symbol={paySymbol} size={22} />
-                  <Text style={[styles.tokenSymbolText, { color: theme.textPrimary }]}>{paySymbol}</Text>
-                  <MaterialIcons name="expand-more" size={18} color={theme.textMuted} />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.cardBottomRow}>
-                <Text style={[styles.fiatEstimate, { color: theme.textSecondary }]}>
-                  ≈ ${payFiatValue.toFixed(2)}
-                </Text>
-
-                <View style={styles.pctChipsRow}>
-                  {[25, 50, 100].map((pct) => (
-                    <TouchableOpacity
-                      key={pct}
-                      style={styles.pctChip}
-                      onPress={() => handleApplyPercentage(pct)}
-                    >
-                      <Text style={[styles.pctChipText, { color: theme.textSecondary }]}>
-                        {pct === 100 ? 'MAX' : `${pct}%`}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
                 </View>
-              </View>
 
-              {/* Pay Token Picker Dropdown */}
-              {showPayPicker && (
-                <View style={styles.dropdownMenu}>
-                  {AVAILABLE_SWAP_TOKENS.map((item) => (
+                {/* YOU RECEIVE CARD */}
+                <View style={styles.tradeCard}>
+                  <View style={styles.cardTopRow}>
+                    <Text style={[styles.cardRoleLabel, { color: theme.textMuted }]}>YOU RECEIVE</Text>
+                    <Text style={[styles.balanceHint, { color: theme.textMuted }]}>
+                      Rate: 1 {paySymbol} ≈ {exchangeRate} {receiveSymbol}
+                    </Text>
+                  </View>
+
+                  <View style={styles.inputAndTokenRow}>
+                    <Text style={[styles.receiveAmountText, { color: theme.textPrimary }]}>
+                      {receiveAmountNum > 0 ? receiveAmountNum.toFixed(4) : '0.00'}
+                    </Text>
+
                     <TouchableOpacity
-                      key={item.symbol}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setPaySymbol(item.symbol)
-                        setShowPayPicker(false)
-                        if (item.symbol === receiveSymbol) {
-                          setReceiveSymbol(paySymbol)
-                        }
-                      }}
+                      style={styles.tokenSelectorBtn}
+                      onPress={() => setShowReceivePicker(!showReceivePicker)}
+                      activeOpacity={0.75}
                     >
-                      <HaptixTokenIcon symbol={item.symbol} size={20} />
-                      <Text style={[styles.dropdownItemText, { color: theme.textPrimary }]}>{item.symbol}</Text>
-                      <Text style={[styles.dropdownItemSub, { color: theme.textMuted }]}>{item.name}</Text>
+                      <HaptixTokenIcon symbol={receiveSymbol} size={22} />
+                      <Text style={[styles.tokenSymbolText, { color: theme.textPrimary }]}>{receiveSymbol}</Text>
+                      <MaterialIcons name="expand-more" size={18} color={theme.textMuted} />
                     </TouchableOpacity>
-                  ))}
+                  </View>
+
+                  <View style={styles.cardBottomRow}>
+                    <Text style={[styles.fiatEstimate, { color: theme.textSecondary }]}>
+                      ≈ ${receiveFiatValue.toFixed(2)}
+                    </Text>
+                  </View>
+
+                  {/* Receive Token Picker Dropdown */}
+                  {showReceivePicker && (
+                    <View style={styles.dropdownMenu}>
+                      {AVAILABLE_SWAP_TOKENS.map((item) => (
+                        <TouchableOpacity
+                          key={item.symbol}
+                          style={styles.dropdownItem}
+                          onPress={() => {
+                            setReceiveSymbol(item.symbol)
+                            setShowReceivePicker(false)
+                            if (item.symbol === paySymbol) {
+                              setPaySymbol(receiveSymbol)
+                            }
+                          }}
+                        >
+                          <HaptixTokenIcon symbol={item.symbol} size={20} />
+                          <Text style={[styles.dropdownItemText, { color: theme.textPrimary }]}>{item.symbol}</Text>
+                          <Text style={[styles.dropdownItemSub, { color: theme.textMuted }]}>{item.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
 
-            {/* Invert Button */}
-            <View style={styles.invertRow}>
-              <TouchableOpacity
-                style={styles.invertBtn}
-                onPress={handleInvertTokens}
-                activeOpacity={0.8}
-                accessibilityRole="button"
-                accessibilityLabel="Invert swap tokens"
-              >
-                <MaterialIcons name="swap-vert" size={24} color={theme.accent} />
-              </TouchableOpacity>
-            </View>
-
-            {/* YOU RECEIVE CARD */}
-            <View style={styles.tradeCard}>
-              <View style={styles.cardTopRow}>
-                <Text style={[styles.cardRoleLabel, { color: theme.textMuted }]}>YOU RECEIVE</Text>
-                <Text style={[styles.balanceHint, { color: theme.textMuted }]}>
-                  Rate: 1 {paySymbol} ≈ {exchangeRate} {receiveSymbol}
-                </Text>
-              </View>
-
-              <View style={styles.inputAndTokenRow}>
-                <Text style={[styles.receiveAmountText, { color: theme.textPrimary }]}>
-                  {receiveAmountNum > 0 ? receiveAmountNum.toFixed(4) : '0.00'}
-                </Text>
-
-                <TouchableOpacity
-                  style={styles.tokenSelectorBtn}
-                  onPress={() => setShowReceivePicker(!showReceivePicker)}
-                  activeOpacity={0.75}
-                >
-                  <HaptixTokenIcon symbol={receiveSymbol} size={22} />
-                  <Text style={[styles.tokenSymbolText, { color: theme.textPrimary }]}>{receiveSymbol}</Text>
-                  <MaterialIcons name="expand-more" size={18} color={theme.textMuted} />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.cardBottomRow}>
-                <Text style={[styles.fiatEstimate, { color: theme.textSecondary }]}>
-                  ≈ ${receiveFiatValue.toFixed(2)}
-                </Text>
-              </View>
-
-              {/* Receive Token Picker Dropdown */}
-              {showReceivePicker && (
-                <View style={styles.dropdownMenu}>
-                  {AVAILABLE_SWAP_TOKENS.map((item) => (
-                    <TouchableOpacity
-                      key={item.symbol}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setReceiveSymbol(item.symbol)
-                        setShowReceivePicker(false)
-                        if (item.symbol === paySymbol) {
-                          setPaySymbol(receiveSymbol)
-                        }
-                      }}
-                    >
-                      <HaptixTokenIcon symbol={item.symbol} size={20} />
-                      <Text style={[styles.dropdownItemText, { color: theme.textPrimary }]}>{item.symbol}</Text>
-                      <Text style={[styles.dropdownItemSub, { color: theme.textMuted }]}>{item.name}</Text>
-                    </TouchableOpacity>
-                  ))}
+                {/* Routing & Security Pill Box */}
+                <View style={styles.routeBox}>
+                  <View style={styles.routeRow}>
+                    <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Route</Text>
+                    <Text style={[styles.routeValue, { color: theme.textPrimary }]}>Jupiter Direct ({network})</Text>
+                  </View>
+                  <View style={styles.routeRow}>
+                    <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Price impact</Text>
+                    <Text style={[styles.routeValue, { color: theme.emerald }]}>&lt; 0.01%</Text>
+                  </View>
+                  <View style={styles.routeRow}>
+                    <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Security quorum</Text>
+                    <Text style={[styles.routeValue, { color: theme.accent }]}>
+                      {isQuorumRequired ? 'Both passkeys' : 'One passkey'}
+                    </Text>
+                  </View>
                 </View>
-              )}
-            </View>
 
-            {/* Routing & Security Pill Box */}
-            <View style={styles.routeBox}>
-              <View style={styles.routeRow}>
-                <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Route</Text>
-                <Text style={[styles.routeValue, { color: theme.textPrimary }]}>Jupiter Direct ({network})</Text>
-              </View>
-              <View style={styles.routeRow}>
-                <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Price impact</Text>
-                <Text style={[styles.routeValue, { color: theme.emerald }]}>&lt; 0.01%</Text>
-              </View>
-              <View style={styles.routeRow}>
-                <Text style={[styles.routeLabel, { color: theme.textMuted }]}>Security quorum</Text>
-                <Text style={[styles.routeValue, { color: theme.accent }]}>
-                  {isQuorumRequired ? 'Both passkeys' : 'One passkey'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Action Button */}
-            <View style={{ marginTop: 18 }}>
-              <PrismDepthButton
-                title={
-                  !SWAP_ENABLED
-                    ? 'Swap Unavailable on Devnet'
-                    : payAmountNum <= 0
-                    ? 'Enter an amount'
-                    : isSwapping
-                    ? 'Swapping'
-                    : `Swap ${paySymbol} for ${receiveSymbol}`
-                }
-                size="large"
-                disabled={!SWAP_ENABLED || payAmountNum <= 0 || isSwapping}
-                loading={isSwapping}
-                onPress={handleInitiateSwap}
-              />
-            </View>
-          </ScrollView>
-        </>
-      )}
-    </Animated.View>
-  </View>
-</Modal>
+                {/* Action Button */}
+                <View style={{ marginTop: 18 }}>
+                  <PrismDepthButton
+                    title={
+                      !SWAP_ENABLED
+                        ? 'Swap Unavailable on Devnet'
+                        : payAmountNum <= 0
+                          ? 'Enter an amount'
+                          : isSwapping
+                            ? 'Swapping'
+                            : `Swap ${paySymbol} for ${receiveSymbol}`
+                    }
+                    size="large"
+                    disabled={!SWAP_ENABLED || payAmountNum <= 0 || isSwapping}
+                    loading={isSwapping}
+                    onPress={handleInitiateSwap}
+                  />
+                </View>
+              </ScrollView>
+            </>
+          )}
+        </Animated.View>
+      </View>
+    </Modal>
   )
 }
 

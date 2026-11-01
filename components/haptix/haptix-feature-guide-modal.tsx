@@ -51,7 +51,7 @@ function PulsingBiometricStage({ accentColor = '#5a6ee6' }: { accentColor?: stri
           Animated.timing(pulse1, { toValue: 1, duration: 1600, useNativeDriver: true }),
           Animated.timing(opacity1, { toValue: 1, duration: 1600, useNativeDriver: true }),
         ]),
-      ])
+      ]),
     )
 
     // Ring 2 loop with 500ms phase offset
@@ -67,7 +67,7 @@ function PulsingBiometricStage({ accentColor = '#5a6ee6' }: { accentColor?: stri
             Animated.timing(pulse2, { toValue: 1, duration: 1600, useNativeDriver: true }),
             Animated.timing(opacity2, { toValue: 1, duration: 1600, useNativeDriver: true }),
           ]),
-        ])
+        ]),
       )
       anim2.start()
     }, 500)
@@ -120,11 +120,7 @@ function PulsingBiometricStage({ accentColor = '#5a6ee6' }: { accentColor?: stri
 
       {/* Center 112px tactile sensor disc with high-res branded fingerprint */}
       <View style={[styles.sensorDisc, { borderColor: accentColor }]}>
-        <Image
-          source={FINGERPRINT_HERO_BLUE}
-          style={{ width: 58, height: 58 }}
-          resizeMode="contain"
-        />
+        <Image source={FINGERPRINT_HERO_BLUE} style={{ width: 58, height: 58 }} resizeMode="contain" />
       </View>
     </View>
   )
@@ -246,11 +242,8 @@ export function HaptixFeatureGuideModal({
     {
       id: 'seedless',
       title: 'No seed phrase to lose',
-      subtitle:
-        "Your fingerprint unlocks your wallet. The key stays in your phone's secure chip and never leaves it.",
-      renderVisual: (palette) => (
-        <PulsingBiometricStage accentColor={palette.accent} />
-      ),
+      subtitle: "Your fingerprint unlocks your wallet. The key stays in your phone's secure chip and never leaves it.",
+      renderVisual: (palette) => <PulsingBiometricStage accentColor={palette.accent} />,
     },
     {
       id: 'two-keys',
@@ -269,18 +262,14 @@ export function HaptixFeatureGuideModal({
               },
             ]}
           >
-            <Text style={[styles.obCardMono, { color: palette.textPrimary }]}>
-              ≤ 0.1 SOL
-            </Text>
+            <Text style={[styles.obCardMono, { color: palette.textPrimary }]}>≤ 0.1 SOL</Text>
             <View style={styles.obCardRight}>
               <Image
                 source={FINGERPRINT_HERO_BLUE}
                 style={{ width: 17, height: 17, tintColor: palette.textCard }}
                 resizeMode="contain"
               />
-              <Text style={[styles.obCardLabel, { color: palette.textCard }]}>
-                One fingerprint
-              </Text>
+              <Text style={[styles.obCardLabel, { color: palette.textCard }]}>One fingerprint</Text>
             </View>
           </View>
 
@@ -294,24 +283,15 @@ export function HaptixFeatureGuideModal({
               },
             ]}
           >
-            <Text style={[styles.obCardMono, { color: palette.textPrimary }]}>
-              &gt; 0.1 SOL
-            </Text>
+            <Text style={[styles.obCardMono, { color: palette.textPrimary }]}>&gt; 0.1 SOL</Text>
             <View style={styles.obCardRight}>
               <Image
                 source={FINGERPRINT_HERO_BLUE}
                 style={{ width: 17, height: 17, tintColor: palette.textCard }}
                 resizeMode="contain"
               />
-              <MaterialIcons
-                name="laptop"
-                size={16}
-                color={palette.textCard}
-                style={{ marginLeft: 1 }}
-              />
-              <Text style={[styles.obCardLabel, { color: palette.textCard }]}>
-                Both keys
-              </Text>
+              <MaterialIcons name="laptop" size={16} color={palette.textCard} style={{ marginLeft: 1 }} />
+              <Text style={[styles.obCardLabel, { color: palette.textCard }]}>Both keys</Text>
             </View>
           </View>
         </View>
@@ -320,8 +300,7 @@ export function HaptixFeatureGuideModal({
     {
       id: 'recovery',
       title: 'Lose your phone, keep your wallet',
-      subtitle:
-        'A guardian you choose can start a recovery. They can never move your funds.',
+      subtitle: 'A guardian you choose can start a recovery. They can never move your funds.',
       renderVisual: (palette) => (
         <View
           style={[
@@ -341,9 +320,7 @@ export function HaptixFeatureGuideModal({
               <View style={[styles.stepVerticalLine, { backgroundColor: palette.stepLine }]} />
             </View>
             <View style={styles.stepTextWrap}>
-              <Text style={[styles.stepText, { color: palette.textPrimary }]}>
-                Your guardian starts a recovery
-              </Text>
+              <Text style={[styles.stepText, { color: palette.textPrimary }]}>Your guardian starts a recovery</Text>
             </View>
           </View>
 
@@ -356,9 +333,7 @@ export function HaptixFeatureGuideModal({
               <View style={[styles.stepVerticalLine, { backgroundColor: palette.stepLine }]} />
             </View>
             <View style={styles.stepTextWrap}>
-              <Text style={[styles.stepText, { color: palette.textPrimary }]}>
-                You have 24 hours to cancel it
-              </Text>
+              <Text style={[styles.stepText, { color: palette.textPrimary }]}>You have 24 hours to cancel it</Text>
             </View>
           </View>
 
@@ -370,9 +345,7 @@ export function HaptixFeatureGuideModal({
               </View>
             </View>
             <View style={[styles.stepTextWrap, { paddingBottom: 4 }]}>
-              <Text style={[styles.stepText, { color: palette.textPrimary }]}>
-                Your new phone takes over
-              </Text>
+              <Text style={[styles.stepText, { color: palette.textPrimary }]}>Your new phone takes over</Text>
             </View>
           </View>
         </View>
@@ -381,8 +354,7 @@ export function HaptixFeatureGuideModal({
     {
       id: 'ai-agents',
       title: 'Agents trade within limits',
-      subtitle:
-        'Give an AI agent a small budget for a set time, so it can trade without you approving every swap.',
+      subtitle: 'Give an AI agent a small budget for a set time, so it can trade without you approving every swap.',
       renderVisual: (palette) => (
         <View style={styles.splitCardsCol}>
           {/* Card 1: AI agents */}
@@ -401,9 +373,7 @@ export function HaptixFeatureGuideModal({
               <MaterialCommunityIcons name="robot-outline" size={21} color={palette.accent} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.featureTitleText, { color: palette.textPrimary }]}>
-                AI agents
-              </Text>
+              <Text style={[styles.featureTitleText, { color: palette.textPrimary }]}>AI agents</Text>
               <Text style={[styles.featureSubtitleText, { color: palette.textSecondary }]}>
                 A budget and time limit you set
               </Text>
@@ -426,9 +396,7 @@ export function HaptixFeatureGuideModal({
               <MaterialCommunityIcons name="star-outline" size={21} color={palette.accent} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.featureTitleText, { color: palette.textPrimary }]}>
-                Seeker ready
-              </Text>
+              <Text style={[styles.featureTitleText, { color: palette.textPrimary }]}>Seeker ready</Text>
               <Text style={[styles.featureSubtitleText, { color: palette.textSecondary }]}>
                 Genesis rewards and free devnet fees
               </Text>
@@ -528,8 +496,7 @@ export function HaptixFeatureGuideModal({
                     styles.pill,
                     {
                       width: idx === currentIndex ? 26 : 12,
-                      backgroundColor:
-                        idx === currentIndex ? p.pillActive : p.pillInactive,
+                      backgroundColor: idx === currentIndex ? p.pillActive : p.pillInactive,
                     },
                   ]}
                 />
@@ -599,14 +566,10 @@ export function HaptixFeatureGuideModal({
               </LinearGradient>
 
               {/* Title */}
-              <Text style={[styles.slideTitle, { color: p.textPrimary }]}>
-                {item.title}
-              </Text>
+              <Text style={[styles.slideTitle, { color: p.textPrimary }]}>{item.title}</Text>
 
               {/* Subtitle */}
-              <Text style={[styles.slideSubtitle, { color: p.textSecondary }]}>
-                {item.subtitle}
-              </Text>
+              <Text style={[styles.slideSubtitle, { color: p.textSecondary }]}>{item.subtitle}</Text>
             </View>
           )}
         />
@@ -642,9 +605,7 @@ export function HaptixFeatureGuideModal({
               <Text style={[styles.primaryButtonText, { color: p.primaryBtnText }]}>
                 {isLast ? 'Create wallet' : 'Next'}
               </Text>
-              {!isLast && (
-                <MaterialIcons name="arrow-forward" size={17} color={p.primaryBtnText} />
-              )}
+              {!isLast && <MaterialIcons name="arrow-forward" size={17} color={p.primaryBtnText} />}
             </TouchableOpacity>
           </View>
 
@@ -653,10 +614,7 @@ export function HaptixFeatureGuideModal({
             {isLast ? (
               <TouchableOpacity onPress={handleSignIn} activeOpacity={0.7}>
                 <Text style={[styles.subFooterText, { color: p.textSecondary }]}>
-                  Already have a wallet?{' '}
-                  <Text style={[styles.signInLinkText, { color: p.signInLink }]}>
-                    Sign in
-                  </Text>
+                  Already have a wallet? <Text style={[styles.signInLinkText, { color: p.signInLink }]}>Sign in</Text>
                 </Text>
               </TouchableOpacity>
             ) : null}

@@ -3,19 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Buffer } from 'buffer'
 import { hexToBytes } from '@noble/curves/abstract/utils'
 import { AppConfig } from '@/constants/app-config'
-import {
-  HaptixWalletAccount,
-  createSmartWalletRecord,
-  saveWallet,
-} from '@/utils/haptix-wallet-storage'
-import {
-  bindHardwarePasskey,
-  getDiscoverablePlatformAssertion,
-} from '@/utils/haptix-passkey'
-import {
-  prepareAssertionVerification,
-  preparedAssertionMatchesPublicKey,
-} from '@/utils/secp256r1-instruction'
+import { HaptixWalletAccount, createSmartWalletRecord, saveWallet } from '@/utils/haptix-wallet-storage'
+import { bindHardwarePasskey, getDiscoverablePlatformAssertion } from '@/utils/haptix-passkey'
+import { prepareAssertionVerification, preparedAssertionMatchesPublicKey } from '@/utils/secp256r1-instruction'
 import { fetchHaptixWallet, HAPTIX_PROGRAM_ID } from '@/utils/haptix-client'
 
 type ProgramAccountsPromise = ReturnType<Connection['getProgramAccounts']>
@@ -84,7 +74,8 @@ export async function authenticateAndDiscoverPasskeyWallet(
       }
 
       if (roleMatched) {
-        const boundKeyHex = roleMatched === 'primary' ? cachedWallet.primaryPasskeyHex : cachedWallet.secondaryPasskeyHex
+        const boundKeyHex =
+          roleMatched === 'primary' ? cachedWallet.primaryPasskeyHex : cachedWallet.secondaryPasskeyHex
         await bindHardwarePasskey(roleMatched, picked.credentialId, boundKeyHex)
         const updatedWallet: HaptixWalletAccount = {
           ...cachedWallet,

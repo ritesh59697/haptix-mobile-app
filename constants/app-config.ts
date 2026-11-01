@@ -7,16 +7,13 @@ export class AppConfig {
   static name = 'Haptix Wallet'
   static uri = 'https://haptixwallet.xyz'
   static vaultWebUrl = 'https://haptixwallet.xyz/vault.html'
-  static recoveryPortalUrl =
-    process.env.EXPO_PUBLIC_RECOVERY_PORTAL_URL ||
-    'https://haptixwallet.xyz/recover.html'
+  static recoveryPortalUrl = process.env.EXPO_PUBLIC_RECOVERY_PORTAL_URL || 'https://haptixwallet.xyz/recover.html'
 
   /**
    * Hosted Cloud Relay service for cross-device Hardware Vault (2-of-2 multisig) signing.
    * Can be overridden by setting EXPO_PUBLIC_HAPTIX_RELAY_URL.
    */
-  static vaultRelayUrl =
-    process.env.EXPO_PUBLIC_HAPTIX_RELAY_URL || 'https://haptix-relay.onrender.com'
+  static vaultRelayUrl = process.env.EXPO_PUBLIC_HAPTIX_RELAY_URL || 'https://haptix-relay.onrender.com'
 
   /**
    * Development-only escape hatches: client-side Devnet fee sponsorship and the

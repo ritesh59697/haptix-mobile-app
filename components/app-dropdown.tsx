@@ -28,7 +28,12 @@ export function AppDropdown({
 
   return (
     <Dropdown.Root>
-      <Dropdown.Trigger style={StyleSheet.flatten([styles.trigger, { backgroundColor: theme.bgInput, borderColor: theme.borderDefault }])}>
+      <Dropdown.Trigger
+        style={StyleSheet.flatten([
+          styles.trigger,
+          { backgroundColor: theme.bgInput, borderColor: theme.borderDefault },
+        ])}
+      >
         <Text style={[styles.label, { color: theme.textSecondary }]}>{label ?? selectedItem}</Text>
         <View style={styles.valueGroup}>
           {label ? <Text style={[styles.value, { color: theme.textPrimary }]}>{selectedItem}</Text> : null}

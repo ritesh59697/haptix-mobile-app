@@ -1,4 +1,5 @@
 # HAPTIX: Next-Gen Passkey Smart Wallet for Solana Mobile
+
 **Solana Mobile Hackathon (Radiant) Submission**
 
 > 🎬 **Demo Video (YouTube):** [https://youtu.be/kNsqykt4rfg](https://youtu.be/kNsqykt4rfg)  
@@ -10,7 +11,8 @@
 ---
 
 ## Executive Summary
-**Haptix** is a high-security, consumer-grade smart wallet designed specifically for **Solana Mobile (Seeker / Saga)**. 
+
+**Haptix** is a high-security, consumer-grade smart wallet designed specifically for **Solana Mobile (Seeker / Saga)**.
 
 Traditional crypto wallets force users to manage seed phrases, fund an empty account with SOL before doing anything, or endure annoying biometric popups for every trivial interaction. Haptix solves this with a **4-Layer Security Engine** backed by Solana's native **Secp256r1 (P-256) precompile**, **Solana Mobile Stack (SMS)**, and **Gasless Onboarding**:
 
@@ -26,12 +28,14 @@ Traditional crypto wallets force users to manage seed phrases, fund an empty acc
 ## Architecture Breakdown
 
 ### 1. On-Chain Smart Program (`haptix_program`)
+
 - **Framework**: Anchor 0.31 / Solana Agave client (v3.1.13)
 - **Program ID**: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`
 - **Native Elliptic Curve**: Secp256r1 (P-256 / WebAuthn) verified directly on-chain via precompile instruction introspection.
 - **PDA Seeds**: `[b"haptix_wallet", &primary_passkey[1..33]]`
 
 #### Core Instructions:
+
 - `initialize_wallet`: Registers primary biometric passkey, secondary backup hardware key, and spend policy limits.
 - `execute_transfer`: Evaluates spend policy. If `amount <= threshold`, 1-passkey verification is accepted. If `amount > threshold`, requires 2-of-2 Hardware Quorum.
 - `grant_agent_session`: Grants a scoped Ed25519/Secp256k1 session key with expiry and spending ceiling (requires 2-of-2 passkey quorum).
@@ -41,6 +45,7 @@ Traditional crypto wallets force users to manage seed phrases, fund an empty acc
 - `initiate_recovery` & `execute_recovery`: Social recovery with 24-hour timelock.
 
 ### 2. Mobile Client (`haptix-mobile-app`)
+
 - **Framework**: React Native + Expo 55 + Hardware Biometrics (`react-native-passkey`, `expo-local-authentication`, `@solana/web3.js`)
 - **Target OS**: Android (APK build sideloadable on Solana Seeker / Saga / any Android device)
 - **Security Primitives**: Hardware P-256 (Secp256r1) WebAuthn biometric passkeys in Android Keystore / StrongBox.
@@ -50,7 +55,9 @@ Traditional crypto wallets force users to manage seed phrases, fund an empty acc
 ---
 
 ## Verification & Test Results
+
 The on-chain program has been compiled and validated on the Solana local validator:
+
 ```bash
 $ anchor test
   haptix_program tests
@@ -65,12 +72,14 @@ Recovery initiated. Tx: HUHaV9WtKs1esevcaJdgbuD4A6WfFN88CczqkfUVU6fVqvpfq4yEC43a
 ```
 
 TypeScript client type checks:
+
 ```bash
 $ npx tsc --noEmit
 # 0 errors
 ```
 
 Android prebuild:
+
 ```bash
 $ npx expo prebuild -p android
 # Native Android project generated with Gradle and AndroidManifest.xml
@@ -81,6 +90,7 @@ $ npx expo prebuild -p android
 ## How to Build the Android APK
 
 ### Option A: Local Build (Requires Android Studio / Java 17+)
+
 ```bash
 npm run android:build
 cd android && ./gradlew assembleRelease
@@ -88,6 +98,7 @@ cd android && ./gradlew assembleRelease
 ```
 
 ### Option B: Pre-Built Release Binary & Assets (Ready for Judges!)
+
 - **Official 3-Minute Demo Video (YouTube)**: [https://youtu.be/kNsqykt4rfg](https://youtu.be/kNsqykt4rfg)
 - **Official GitHub Release v1.0.1**: [https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1](https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1)
 - **Direct APK Download Link**: [Download haptix-wallet.apk](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/haptix-wallet.apk)
@@ -100,15 +111,18 @@ cd android && ./gradlew assembleRelease
 ## 2-Minute Demo Video Walkthrough Script
 
 ### 0:00 - 0:20: The Opening Thesis
-- *"Under 0.1 SOL, the fingerprint signs alone. Over 0.1 SOL, the second device signs too."*
+
+- _"Under 0.1 SOL, the fingerprint signs alone. Over 0.1 SOL, the second device signs too."_
 - Show Haptix running on a physical Android device / Seeker with no seed phrase required.
 
 ### 0:20 - 0:50: Fast Lane (Fingerprint Signs Small Amounts)
+
 - Enter a small send of 0.05 SOL (below the 0.10 SOL threshold).
 - Tap Send with your fingerprint passkey.
 - Transaction signs and lands on Solana Devnet in < 1 second.
 
 ### 0:50 - 1:30: The 0.10 SOL Line (Dual-Device Quorum)
+
 - Enter 0.1500 SOL (the exact transaction shown on Slide 3 of the pitch deck).
 - The phone signs with its passkey: `This phone: Approved`.
 - The screen shows: `Waiting for second device... Open Haptix Vault on your second device to approve`.
@@ -116,10 +130,12 @@ cd android && ./gradlew assembleRelease
 - Transaction broadcasts and confirms on Solana Devnet! Show the explorer receipt.
 
 ### 1:30 - 1:50: Session Key Delegation
+
 - Show the Agent session delegation screen.
 - Demonstrate granting a temporary session key with a strict spending ceiling (e.g. 0.25 SOL) and expiration.
 - Show how an automated agent can move funds up to the ceiling without interrupting the user with biometric popups.
 
 ### 1:50 - 2:00: Guardian Timelock & Conclusion
+
 - Highlight the 24-hour non-bypassable guardian timelock for emergency recovery and panic freeze.
 - Conclude: Haptix is ready for Solana Seeker on day one.

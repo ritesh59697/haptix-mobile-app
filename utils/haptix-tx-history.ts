@@ -30,10 +30,7 @@ function balanceKey(walletAddress: string, cluster: string = 'devnet'): string {
  * zeroing it. Keyed per address and cluster so a stale entry can never be read for another
  * wallet or another cluster (e.g. devnet balance showing on mainnet).
  */
-export async function loadCachedBalance(
-  walletAddress: string,
-  cluster: string = 'devnet',
-): Promise<number | null> {
+export async function loadCachedBalance(walletAddress: string, cluster: string = 'devnet'): Promise<number | null> {
   try {
     let raw = await AsyncStorage.getItem(balanceKey(walletAddress, cluster))
     if (!raw && cluster === 'devnet') {
@@ -62,10 +59,7 @@ export async function saveCachedBalance(
 }
 
 /** Drops a wallet's cached balance. Called when the device is signed out of it. */
-export async function clearCachedBalance(
-  walletAddress: string,
-  cluster?: string,
-): Promise<void> {
+export async function clearCachedBalance(walletAddress: string, cluster?: string): Promise<void> {
   try {
     if (cluster) {
       await AsyncStorage.removeItem(balanceKey(walletAddress, cluster))
@@ -89,10 +83,7 @@ export async function clearCachedBalance(
  *
  * Scoped by cluster so devnet airdrops/transfers never bleed into mainnet views.
  */
-export async function loadTxHistory(
-  walletAddress: string,
-  cluster: string = 'devnet',
-): Promise<TransactionRecord[]> {
+export async function loadTxHistory(walletAddress: string, cluster: string = 'devnet'): Promise<TransactionRecord[]> {
   try {
     let raw = await AsyncStorage.getItem(storageKey(walletAddress, cluster))
     // Backwards compatibility: fallback to legacy unscoped key only if on devnet
@@ -122,10 +113,7 @@ export async function saveTxHistory(
   }
 }
 
-export async function clearTxHistory(
-  walletAddress: string,
-  cluster?: string,
-): Promise<void> {
+export async function clearTxHistory(walletAddress: string, cluster?: string): Promise<void> {
   try {
     if (cluster) {
       await AsyncStorage.removeItem(storageKey(walletAddress, cluster))

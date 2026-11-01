@@ -18,7 +18,8 @@
 const EXPLANATIONS: { pattern: RegExp; describe: string }[] = [
   {
     pattern: /encoding overruns Uint8Array|packet data size|exceeds maximum packet/i,
-    describe: "Transaction packet exceeded Solana's 1,232-byte network limit. Two platform hardware passkeys together exceed packet size for agent session delegation. Everyday mode uses a biometric device backup key to stay within this limit.",
+    describe:
+      "Transaction packet exceeded Solana's 1,232-byte network limit. Two platform hardware passkeys together exceed packet size for agent session delegation. Everyday mode uses a biometric device backup key to stay within this limit.",
   },
   {
     // `HaptixError::RecoveryInProgress` (6015). The program rejects an unfreeze while a

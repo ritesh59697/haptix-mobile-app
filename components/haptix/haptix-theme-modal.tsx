@@ -1,12 +1,5 @@
 import React from 'react'
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -48,12 +41,7 @@ const THEME_OPTIONS: ThemeOptionItem[] = [
   },
 ]
 
-export function HaptixThemeModal({
-  visible,
-  onClose,
-  selectedTheme,
-  onSelectTheme,
-}: HaptixThemeModalProps) {
+export function HaptixThemeModal({ visible, onClose, selectedTheme, onSelectTheme }: HaptixThemeModalProps) {
   const { theme, isDark } = useAppTheme()
 
   const handleSelect = (mode: ThemeOptionMode) => {
@@ -62,12 +50,7 @@ export function HaptixThemeModal({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
 
@@ -82,20 +65,8 @@ export function HaptixThemeModal({
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text
-              style={[
-                styles.title,
-                { color: isDark ? '#F2F1EE' : '#181714' },
-              ]}
-            >
-              Color theme
-            </Text>
-            <Text
-              style={[
-                styles.subtitle,
-                { color: isDark ? '#8A8985' : '#6B6A64' },
-              ]}
-            >
+            <Text style={[styles.title, { color: isDark ? '#F2F1EE' : '#181714' }]}>Color theme</Text>
+            <Text style={[styles.subtitle, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
               Choose how Haptix looks on your device
             </Text>
           </View>
@@ -118,15 +89,9 @@ export function HaptixThemeModal({
                           ? 'rgba(108, 140, 255, 0.08)'
                           : 'rgba(0, 82, 255, 0.05)'
                         : isDark
-                        ? '#1A1A1D'
-                        : '#FAFAFA',
-                      borderColor: isSelected
-                        ? isDark
-                          ? '#6C8CFF'
-                          : theme.accent
-                        : isDark
-                        ? '#2A2A28'
-                        : '#E6E4DE',
+                          ? '#1A1A1D'
+                          : '#FAFAFA',
+                      borderColor: isSelected ? (isDark ? '#6C8CFF' : theme.accent) : isDark ? '#2A2A28' : '#E6E4DE',
                       borderWidth: isSelected ? 1.5 : 0.5,
                     },
                   ]}
@@ -141,42 +106,22 @@ export function HaptixThemeModal({
                             ? 'rgba(108, 140, 255, 0.15)'
                             : 'rgba(0, 82, 255, 0.10)'
                           : isDark
-                          ? '#222226'
-                          : '#EEECE8',
+                            ? '#222226'
+                            : '#EEECE8',
                       },
                     ]}
                   >
                     <MaterialIcons
                       name={opt.icon}
                       size={18}
-                      color={
-                        isSelected
-                          ? isDark
-                            ? '#6C8CFF'
-                            : theme.accent
-                          : isDark
-                          ? '#8A8985'
-                          : '#6B6A64'
-                      }
+                      color={isSelected ? (isDark ? '#6C8CFF' : theme.accent) : isDark ? '#8A8985' : '#6B6A64'}
                     />
                   </View>
 
                   {/* Option Details */}
                   <View style={styles.optionInfo}>
-                    <Text
-                      style={[
-                        styles.optionName,
-                        { color: isDark ? '#F2F1EE' : '#181714' },
-                      ]}
-                    >
-                      {opt.name}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.optionDesc,
-                        { color: isDark ? '#8A8985' : '#6B6A64' },
-                      ]}
-                    >
+                    <Text style={[styles.optionName, { color: isDark ? '#F2F1EE' : '#181714' }]}>{opt.name}</Text>
+                    <Text style={[styles.optionDesc, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
                       {opt.description}
                     </Text>
                   </View>
@@ -186,13 +131,7 @@ export function HaptixThemeModal({
                     style={[
                       styles.radioCircle,
                       {
-                        borderColor: isSelected
-                          ? isDark
-                            ? '#6C8CFF'
-                            : theme.accent
-                          : isDark
-                          ? '#3A3A37'
-                          : '#D8D5CE',
+                        borderColor: isSelected ? (isDark ? '#6C8CFF' : theme.accent) : isDark ? '#3A3A37' : '#D8D5CE',
                       },
                     ]}
                   >

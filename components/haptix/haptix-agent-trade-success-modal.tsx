@@ -1,14 +1,5 @@
 import React, { useState } from 'react'
-import {
-  Linking,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Linking, Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Clipboard from '@/utils/clipboard'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -64,13 +55,7 @@ export function HaptixAgentTradeSuccessModal({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={handleDone}>
         <Pressable
           style={[
@@ -83,12 +68,7 @@ export function HaptixAgentTradeSuccessModal({
           onPress={(e) => e.stopPropagation()}
         >
           {/* Top Sheet Drag Handle */}
-          <View
-            style={[
-              styles.dragHandle,
-              { backgroundColor: isDark ? '#3A3A37' : '#D8D5CE' },
-            ]}
-          />
+          <View style={[styles.dragHandle, { backgroundColor: isDark ? '#3A3A37' : '#D8D5CE' }]} />
 
           {/* Success Ring & Hero Text */}
           <View style={styles.heroSection}>
@@ -98,9 +78,7 @@ export function HaptixAgentTradeSuccessModal({
               </View>
             </View>
 
-            <Text style={[styles.statusSubtitle, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
-              Agent trade executed
-            </Text>
+            <Text style={[styles.statusSubtitle, { color: isDark ? '#8A8985' : '#6B6A64' }]}>Agent trade executed</Text>
             <Text style={[styles.heroAmount, { color: isDark ? '#F2F1EE' : '#181714' }]}>
               {`−${amountSol.toFixed(2)} SOL`}
             </Text>
@@ -120,16 +98,8 @@ export function HaptixAgentTradeSuccessModal({
             ]}
           >
             {/* Recipient Row */}
-            <View
-              style={[
-                styles.tableRow,
-                styles.rowBorder,
-                { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' },
-              ]}
-            >
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
-                To
-              </Text>
+            <View style={[styles.tableRow, styles.rowBorder, { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' }]}>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>To</Text>
               <TouchableOpacity
                 style={styles.copyWrap}
                 onPress={handleCopyRecipient}
@@ -148,45 +118,23 @@ export function HaptixAgentTradeSuccessModal({
             </View>
 
             {/* Signed By Row */}
-            <View
-              style={[
-                styles.tableRow,
-                styles.rowBorder,
-                { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' },
-              ]}
-            >
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
-                Signed by
-              </Text>
+            <View style={[styles.tableRow, styles.rowBorder, { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' }]}>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>Signed by</Text>
               <View style={styles.badgeRow}>
                 <MaterialIcons name="smart-toy" size={14} color={isDark ? '#6C8CFF' : '#5A6EE6'} />
-                <Text style={[styles.rowValue, { color: isDark ? '#F2F1EE' : '#181714' }]}>
-                  Agent session key
-                </Text>
+                <Text style={[styles.rowValue, { color: isDark ? '#F2F1EE' : '#181714' }]}>Agent session key</Text>
               </View>
             </View>
 
             {/* Biometric Prompt Row */}
-            <View
-              style={[
-                styles.tableRow,
-                styles.rowBorder,
-                { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' },
-              ]}
-            >
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
-                Biometric prompt
-              </Text>
-              <Text style={[styles.rowValue, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
-                None (Autonomous)
-              </Text>
+            <View style={[styles.tableRow, styles.rowBorder, { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' }]}>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>Biometric prompt</Text>
+              <Text style={[styles.rowValue, { color: isDark ? '#8A8985' : '#6B6A64' }]}>None (Autonomous)</Text>
             </View>
 
             {/* Trade Tx Row */}
             <View style={styles.tableRow}>
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
-                Trade tx
-              </Text>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>Trade tx</Text>
               <TouchableOpacity
                 style={styles.copyWrap}
                 onPress={handleCopySig}
@@ -229,14 +177,8 @@ export function HaptixAgentTradeSuccessModal({
             accessibilityRole="button"
             accessibilityLabel="View on Solscan"
           >
-            <MaterialIcons
-              name="open-in-new"
-              size={15}
-              color={isDark ? '#8A8985' : '#6B6A64'}
-            />
-            <Text style={[styles.solscanBtnText, { color: isDark ? '#F2F1EE' : '#181714' }]}>
-              View on Solscan
-            </Text>
+            <MaterialIcons name="open-in-new" size={15} color={isDark ? '#8A8985' : '#6B6A64'} />
+            <Text style={[styles.solscanBtnText, { color: isDark ? '#F2F1EE' : '#181714' }]}>View on Solscan</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>

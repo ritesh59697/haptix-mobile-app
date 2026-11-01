@@ -1,15 +1,5 @@
 import React, { useRef } from 'react'
-import {
-  Pressable,
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Platform,
-  StyleProp,
-  ViewStyle,
-  TextStyle,
-} from 'react-native'
+import { Pressable, View, Text, StyleSheet, Animated, Platform, StyleProp, ViewStyle, TextStyle } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { typeScale } from '@/theme/tokens'

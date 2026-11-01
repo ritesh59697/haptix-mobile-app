@@ -5,7 +5,7 @@
 > **Target Device Ecosystem:** Solana Seeker (Chapter 2), Solana Saga, & Android Solana dApp Store  
 > **Total Prize Pool:** **$135,000** (Top prize: $30,000+ & 1-on-1 with Anatoly Yakovenko)  
 > **Dates:** September 8, 2026 – **October 8, 2026** (🚨 **FINAL 24 HOURS / DEADLINE IMMINENT**)  
-> **Winners Announcement:** Early November 2026  
+> **Winners Announcement:** Early November 2026
 
 ---
 
@@ -13,19 +13,21 @@
 
 The prize structure rewards top-tier mobile engineering and Solana Mobile Stack integration:
 
-| Placement / Category | Prize Amount | Reward Type |
-|:---|:---|:---|
-| **🥇 1st Place (Grand Champion)** | **$30,000** | USDC + Priority dApp Store Placement |
-| **🥈 2nd Place** | **$25,000** | USDC + Launch Support |
-| **🥉 3rd Place** | **$20,000** | USDC + Launch Support |
-| **4th Place** | **$15,000** | USDC |
-| **5th Place** | **$10,000** | USDC |
-| **6th – 10th Place** | **$5,000 each** ($25,000 total) | USDC |
-| **🌟 SKR Integration Bonus Prize** | **$10,000** | Paid in SKR / Seeker Ecosystem allocation |
-| **🎖️ Honorable Mentions (5 teams)** | Recognition & Perks | Devices & dApp Store showcase |
+| Placement / Category                | Prize Amount                    | Reward Type                               |
+| :---------------------------------- | :------------------------------ | :---------------------------------------- |
+| **🥇 1st Place (Grand Champion)**   | **$30,000**                     | USDC + Priority dApp Store Placement      |
+| **🥈 2nd Place**                    | **$25,000**                     | USDC + Launch Support                     |
+| **🥉 3rd Place**                    | **$20,000**                     | USDC + Launch Support                     |
+| **4th Place**                       | **$15,000**                     | USDC                                      |
+| **5th Place**                       | **$10,000**                     | USDC                                      |
+| **6th – 10th Place**                | **$5,000 each** ($25,000 total) | USDC                                      |
+| **🌟 SKR Integration Bonus Prize**  | **$10,000**                     | Paid in SKR / Seeker Ecosystem allocation |
+| **🎖️ Honorable Mentions (5 teams)** | Recognition & Perks             | Devices & dApp Store showcase             |
 
 ### 🎁 Winner Non-Monetary Perks
+
 Beyond the cash prizes, winning projects receive direct ecosystem acceleration:
+
 1. **Featured Placement on Solana dApp Store**: Priority review and featured banner placement on both Solana Seeker and Saga devices.
 2. **1-on-1 Consultation with Anatoly Yakovenko**: Direct technical/strategic mentorship call with the Solana co-founder ("Toly").
 3. **Free Solana Seeker Devices**: Hardware provisioned for the winning engineering teams.
@@ -80,7 +82,7 @@ Submissions are scored on an objective, equal-weighted rubric:
 ## 4. 🚨 Rules & Eligibility Constraints
 
 > [!IMPORTANT]
-> **NO WEB-WRAPPERS ALLOWED:** The hackathon explicitly states: *"Submissions that simply wrap existing websites into Android applications will not be accepted."* Your app must be a functional, native Android application with mobile-specific primitives.
+> **NO WEB-WRAPPERS ALLOWED:** The hackathon explicitly states: _"Submissions that simply wrap existing websites into Android applications will not be accepted."_ Your app must be a functional, native Android application with mobile-specific primitives.
 
 - **Mobile-First Android App:** Submissions must provide a working, release-ready Android APK (`.apk`).
 - **Solana Mobile Stack (SMS) & Seeker Target:** Must interface with Solana Mobile architecture (Mobile Wallet Adapter, hardware biometrics, Seeker hardware security, or dApp store specifications).
@@ -106,20 +108,21 @@ When submitting through [solanamobile.radiant.nexus](https://solanamobile.radian
 
 Haptix is uniquely engineered for the exact goals of the CLOCK IN hackathon:
 
-| Hackathon Priority | Haptix Implementation | Competitive Advantage |
-|:---|:---|:---|
-| **True Mobile Native (No Web Wrapper)** | Built on React Native 0.83 + Expo 55 with native Android `BiometricPrompt` and hardware key attestation. | Not a wrapper; uses actual Android cryptographic keystores. |
-| **Seeker Hardware Security** | On-chain Anchor program (`haptix_program`) verifying **Secp256r1 (P-256)** curves via Solana's native precompile instruction introspection. | Zero seed phrase liability; private keys never leave the phone's hardware enclave. |
-| **Dual-Device Hardware Quorum** | High-value transfers trigger a 2-of-2 multisig requirement, allowing the Seeker phone to pair out-of-band with a Mac Secure Enclave or YubiKey. | Enterprise-grade institutional custody inside a consumer phone. |
-| **Autonomous AI Agent Session Keys** | Built-in session key engine granting bounded budgets to AI trading agents with **0 human biometric interruptions**. | Addresses the explosive Solana AI agent meta natively on mobile. |
-| **Multi-Account Switching** | Instant account switcher separating high-security Vault (2-of-2) from rapid Everyday spending (1-tap). | Familiar Phantom/Rainbow-tier UX with superior hardware isolation. |
-| **Tactile Mobile Ergonomics** | Native `expo-haptics` integration with adaptive haptic vibrations for low-risk approvals vs quorum alerts. | Immersive sensory experience matching the name **Haptix**. |
+| Hackathon Priority                      | Haptix Implementation                                                                                                                           | Competitive Advantage                                                              |
+| :-------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------- |
+| **True Mobile Native (No Web Wrapper)** | Built on React Native 0.83 + Expo 55 with native Android `BiometricPrompt` and hardware key attestation.                                        | Not a wrapper; uses actual Android cryptographic keystores.                        |
+| **Seeker Hardware Security**            | On-chain Anchor program (`haptix_program`) verifying **Secp256r1 (P-256)** curves via Solana's native precompile instruction introspection.     | Zero seed phrase liability; private keys never leave the phone's hardware enclave. |
+| **Dual-Device Hardware Quorum**         | High-value transfers trigger a 2-of-2 multisig requirement, allowing the Seeker phone to pair out-of-band with a Mac Secure Enclave or YubiKey. | Enterprise-grade institutional custody inside a consumer phone.                    |
+| **Autonomous AI Agent Session Keys**    | Built-in session key engine granting bounded budgets to AI trading agents with **0 human biometric interruptions**.                             | Addresses the explosive Solana AI agent meta natively on mobile.                   |
+| **Multi-Account Switching**             | Instant account switcher separating high-security Vault (2-of-2) from rapid Everyday spending (1-tap).                                          | Familiar Phantom/Rainbow-tier UX with superior hardware isolation.                 |
+| **Tactile Mobile Ergonomics**           | Native `expo-haptics` integration with adaptive haptic vibrations for low-risk approvals vs quorum alerts.                                      | Immersive sensory experience matching the name **Haptix**.                         |
 
 ---
 
 ## 7. 🏁 Action Checklist Before October 8 Deadline
 
 ### Phase 1: Technical Freeze & APK Verification (Days 1–5)
+
 - [x] On-chain program deployed & passing tests (`haptix_program` on Devnet: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`).
 - [x] Multi-account support integrated with unique passkey credentials.
 - [x] Zero-neon, minimalist Apple/Linear design system finalized.
@@ -127,10 +130,12 @@ Haptix is uniquely engineered for the exact goals of the CLOCK IN hackathon:
 - [ ] Test `.apk` sideload on physical Android phone to verify biometric prompts work offline.
 
 ### Phase 2: Video & Pitch Assets (Days 6–9)
+
 - [x] **Record 3-minute video demo** ([Watch on YouTube](https://youtu.be/kNsqykt4rfg), pitch demo script in `docs/HACKATHON_SUBMISSION.md`).
 - [x] Export pitch deck to clean PDF slides (`Haptix_Pitch_Deck.pdf`).
 
 ### Phase 3: Submission & Portal Filing (Days 10–12)
+
 - [x] Host APK and Pitch Deck on [GitHub Releases](https://github.com/ritesh59697/haptix-mobile-app/releases) with direct download links.
 - [x] Update `README.md` with quick-start judge testing steps, live badges, and verified deliverables.
 - [x] Submit official form on [solanamobile.radiant.nexus](https://solanamobile.radiant.nexus) & [Colosseum](https://arena.colosseum.org).

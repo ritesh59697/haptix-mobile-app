@@ -30,7 +30,13 @@ import { useAuth } from '@/components/auth/auth-provider'
 import { useCluster } from '@/components/cluster/cluster-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
-import { LucideSmartphone, LucideShieldCheck, LucideCheck, Lock1Bold, LucideArrowRight } from '@/components/haptix/haptix-icons'
+import {
+  LucideSmartphone,
+  LucideShieldCheck,
+  LucideCheck,
+  Lock1Bold,
+  LucideArrowRight,
+} from '@/components/haptix/haptix-icons'
 import { ellipsify } from '@/utils/ellipsify'
 import { describeChainError, formatChainErrorForLog } from '@/utils/haptix-errors'
 import { getFundedDevnetPayer } from '@/utils/haptix-funder'
@@ -378,9 +384,7 @@ export default function SpendingLimitsScreen() {
             }}
           >
             <Text style={{ color: theme.isDark ? '#8A8985' : '#6B6A64', fontSize: 13 }}>New</Text>
-            <Text style={{ color: theme.textPrimary, fontSize: 13, fontWeight: '600' }}>
-              {effectiveDraftLimit} SOL
-            </Text>
+            <Text style={{ color: theme.textPrimary, fontSize: 13, fontWeight: '600' }}>{effectiveDraftLimit} SOL</Text>
           </View>
         </View>
 
@@ -673,9 +677,7 @@ export default function SpendingLimitsScreen() {
       return null
     }
     const deltaImpact =
-      effectiveDraftLimit > savedLimit
-        ? 'This lets one key send more.'
-        : 'This lowers what one key can send.'
+      effectiveDraftLimit > savedLimit ? 'This lets one key send more.' : 'This lowers what one key can send.'
     return {
       isPrompt: false,
       from: savedLimit,
@@ -686,10 +688,7 @@ export default function SpendingLimitsScreen() {
 
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={styles.keyboardContainer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Centered, Balanced Header matching Haptix Settings */}
         <View style={[styles.header, { paddingTop: insets.top + (Platform.OS === 'android' ? 12 : 6) }]}>
           <TouchableOpacity
@@ -723,9 +722,7 @@ export default function SpendingLimitsScreen() {
             <View style={styles.statusHeader}>
               <View>
                 <Text style={styles.cardLabel}>ACTIVE ON-CHAIN LIMIT</Text>
-                <Text style={styles.currentLimitNumber}>
-                  {isLoading ? '...' : `${savedLimit} SOL`}
-                </Text>
+                <Text style={styles.currentLimitNumber}>{isLoading ? '...' : `${savedLimit} SOL`}</Text>
               </View>
               <View style={onChainWallet ? styles.activeBadge : styles.pendingBadge}>
                 <LucideCheck size={12} color={onChainWallet ? '#34C759' : '#F59E0B'} strokeWidth={2.6} />
@@ -742,9 +739,7 @@ export default function SpendingLimitsScreen() {
               </View>
               <View style={styles.ruleTextContainer}>
                 <Text style={styles.ruleTitle}>Up to {savedLimit} SOL</Text>
-                <Text style={styles.ruleSubtitle}>
-                  Instant execution with your primary passkey on this phone.
-                </Text>
+                <Text style={styles.ruleSubtitle}>Instant execution with your primary passkey on this phone.</Text>
               </View>
             </View>
 
@@ -772,9 +767,7 @@ export default function SpendingLimitsScreen() {
               <Text style={styles.sectionTitle}>Set New Single-Key Limit</Text>
               <Text style={styles.metaCurrent}>Current: {savedLimit} SOL</Text>
             </View>
-            <Text style={styles.cardSubtitle}>
-              Select a preset limit or enter a custom amount in SOL.
-            </Text>
+            <Text style={styles.cardSubtitle}>Select a preset limit or enter a custom amount in SOL.</Text>
 
             {/* Row 1 Presets */}
             <View style={styles.presetsRow}>
@@ -784,20 +777,10 @@ export default function SpendingLimitsScreen() {
                   <TouchableOpacity
                     key={preset}
                     onPress={() => handleSelectPreset(preset)}
-                    style={[
-                      styles.presetChip,
-                      isSelected && styles.presetChipActive,
-                    ]}
+                    style={[styles.presetChip, isSelected && styles.presetChipActive]}
                     activeOpacity={0.8}
                   >
-                    <Text
-                      style={[
-                        styles.presetChipText,
-                        isSelected && styles.presetChipTextActive,
-                      ]}
-                    >
-                      {preset} SOL
-                    </Text>
+                    <Text style={[styles.presetChipText, isSelected && styles.presetChipTextActive]}>{preset} SOL</Text>
                   </TouchableOpacity>
                 )
               })}
@@ -811,39 +794,19 @@ export default function SpendingLimitsScreen() {
                   <TouchableOpacity
                     key={preset}
                     onPress={() => handleSelectPreset(preset)}
-                    style={[
-                      styles.presetChip,
-                      isSelected && styles.presetChipActive,
-                    ]}
+                    style={[styles.presetChip, isSelected && styles.presetChipActive]}
                     activeOpacity={0.8}
                   >
-                    <Text
-                      style={[
-                        styles.presetChipText,
-                        isSelected && styles.presetChipTextActive,
-                      ]}
-                    >
-                      {preset} SOL
-                    </Text>
+                    <Text style={[styles.presetChipText, isSelected && styles.presetChipTextActive]}>{preset} SOL</Text>
                   </TouchableOpacity>
                 )
               })}
               <TouchableOpacity
                 onPress={handleSelectCustom}
-                style={[
-                  styles.presetChip,
-                  isCustomMode && styles.presetChipActive,
-                ]}
+                style={[styles.presetChip, isCustomMode && styles.presetChipActive]}
                 activeOpacity={0.8}
               >
-                <Text
-                  style={[
-                    styles.presetChipText,
-                    isCustomMode && styles.presetChipTextActive,
-                  ]}
-                >
-                  Custom
-                </Text>
+                <Text style={[styles.presetChipText, isCustomMode && styles.presetChipTextActive]}>Custom</Text>
               </TouchableOpacity>
             </View>
 
@@ -882,11 +845,7 @@ export default function SpendingLimitsScreen() {
                   <View style={styles.deltaRow}>
                     <View style={styles.deltaTransitionGroup}>
                       <Text style={styles.deltaAmountText}>{deltaSummary.from} SOL</Text>
-                      <LucideArrowRight
-                        size={15}
-                        color={theme.isDark ? '#F2F1EE' : '#181714'}
-                        strokeWidth={2.4}
-                      />
+                      <LucideArrowRight size={15} color={theme.isDark ? '#F2F1EE' : '#181714'} strokeWidth={2.4} />
                       <Text style={styles.deltaAmountText}>{deltaSummary.to} SOL.</Text>
                     </View>
                     <Text style={styles.deltaImpactText}>{deltaSummary.impact}</Text>
@@ -919,10 +878,7 @@ export default function SpendingLimitsScreen() {
           ]}
         >
           <TouchableOpacity
-            style={[
-              styles.saveButton,
-              isSaveEnabled ? styles.saveButtonActive : styles.saveButtonDisabled,
-            ]}
+            style={[styles.saveButton, isSaveEnabled ? styles.saveButtonActive : styles.saveButtonDisabled]}
             onPress={handleSaveLimit}
             disabled={!isSaveEnabled || isUpdating}
             activeOpacity={0.85}
@@ -944,12 +900,7 @@ export default function SpendingLimitsScreen() {
       </KeyboardAvoidingView>
 
       {/* VAULT QUORUM DUAL-DEVICE APPROVAL MODAL */}
-      <Modal
-        visible={vaultModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCancelVaultApproval}
-      >
+      <Modal visible={vaultModalVisible} transparent animationType="fade" onRequestClose={handleCancelVaultApproval}>
         <View style={styles.modalBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={handleCancelVaultApproval} />
           <View
@@ -999,7 +950,14 @@ export default function SpendingLimitsScreen() {
               >
                 Dual-Device Authorization
               </Text>
-              <Text style={{ fontSize: 13, color: isDark ? '#8A8985' : '#6B6A64', textAlign: 'center', paddingHorizontal: 16 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: isDark ? '#8A8985' : '#6B6A64',
+                  textAlign: 'center',
+                  paddingHorizontal: 16,
+                }}
+              >
                 Updating policy limit to {effectiveDraftLimit} SOL requires both keys
               </Text>
             </View>
@@ -1009,11 +967,7 @@ export default function SpendingLimitsScreen() {
               {/* Step 1: Phone Passkey */}
               <View style={styles.stepApprovalRow}>
                 <View style={styles.stepApprovalLeft}>
-                  <MaterialIcons
-                    name="smartphone"
-                    size={18}
-                    color={vaultStep === 'primary' ? '#4F6BFF' : '#10B981'}
-                  />
+                  <MaterialIcons name="smartphone" size={18} color={vaultStep === 'primary' ? '#4F6BFF' : '#10B981'} />
                   <Text style={styles.stepApprovalDeviceName} numberOfLines={1} ellipsizeMode="tail">
                     Phone Passkey
                   </Text>
@@ -1047,10 +1001,12 @@ export default function SpendingLimitsScreen() {
                     size={18}
                     color={
                       vaultStep === 'primary'
-                        ? (isDark ? '#71717A' : '#A1A1AA')
+                        ? isDark
+                          ? '#71717A'
+                          : '#A1A1AA'
                         : vaultStep === 'secondary'
-                        ? '#4F6BFF'
-                        : '#10B981'
+                          ? '#4F6BFF'
+                          : '#10B981'
                     }
                   />
                   <Text
@@ -1857,4 +1813,3 @@ function createStyles(theme: ThemeTokens) {
     },
   })
 }
-

@@ -109,4 +109,3 @@ export async function deductUsdcBalance(walletAddress: string, amountToSend: num
   await setStoredUsdcBalance(walletAddress, updated)
   return updated
 }
-

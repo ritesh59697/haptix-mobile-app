@@ -1966,9 +1966,9 @@ const createStyles = (theme: ThemeTokens) =>
      These used to live in a second style object built inline in JSX because a
      module-level StyleSheet could not see the palette. Now that the sheet is
      built from the theme, one mechanism covers both. */
-    card: { 
-      backgroundColor: theme.bgCard, 
-      borderWidth: 1, 
+    card: {
+      backgroundColor: theme.bgCard,
+      borderWidth: 1,
       borderColor: theme.borderDefault,
       borderRadius: radius.xl,
     },

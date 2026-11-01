@@ -45,7 +45,8 @@ export function parseTimelockInput(raw: string): TimelockParseResult {
   if (seconds <= 0n) {
     return {
       seconds: null,
-      error: 'A zero delay removes your dispute window, making the guardian an instant spender without owner veto. Default is 24 hours.',
+      error:
+        'A zero delay removes your dispute window, making the guardian an instant spender without owner veto. Default is 24 hours.',
     }
   }
 

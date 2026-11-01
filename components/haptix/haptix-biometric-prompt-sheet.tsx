@@ -178,8 +178,7 @@ export function HaptixBiometricPromptSheet({
 
   if (!visible) return null
 
-  const isAuthenticating =
-    phase === 'verifying_primary' || phase === 'verifying_secondary' || phase === 'broadcasting'
+  const isAuthenticating = phase === 'verifying_primary' || phase === 'verifying_secondary' || phase === 'broadcasting'
 
   // Clean, focused values
   const heroAmount =
@@ -188,8 +187,8 @@ export function HaptixBiometricPromptSheet({
         ? `${amountSol.toFixed(2)} SKR`
         : `${amountSol.toFixed(4)} SOL`
       : actionType === 'agent_session'
-      ? `${(agentAllowanceSol || 0.25).toFixed(2)} SOL`
-      : 'Security Action'
+        ? `${(agentAllowanceSol || 0.25).toFixed(2)} SOL`
+        : 'Security Action'
 
   const heroTitle =
     actionType === 'transfer'
@@ -197,17 +196,12 @@ export function HaptixBiometricPromptSheet({
         ? `Transfer to ${recipientLabel || ellipsify(recipientAddress, 4)}`
         : 'Confirm transfer'
       : actionType === 'agent_session'
-      ? `AI agent session (${agentValidHours || 24}h)`
-      : title || 'Authorize action'
+        ? `AI agent session (${agentValidHours || 24}h)`
+        : title || 'Authorize action'
 
   const sheetContent = (
     <View style={asModal ? styles.backdrop : styles.overlayBackdrop}>
-      <Animated.View
-        style={[
-          styles.sheetContainer,
-          { transform: [{ translateY: panY }] },
-        ]}
-      >
+      <Animated.View style={[styles.sheetContainer, { transform: [{ translateY: panY }] }]}>
         {/* Functional Drag handle */}
         <View style={styles.dragHandleTouchZone} {...panResponder.panHandlers}>
           <View style={[styles.dragHandle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
@@ -220,12 +214,7 @@ export function HaptixBiometricPromptSheet({
               style={[
                 styles.agentSensorRing,
                 {
-                  borderColor:
-                    phase === 'confirmed'
-                      ? theme.emerald
-                      : phase === 'error'
-                      ? theme.rose
-                      : '#6C8CFF',
+                  borderColor: phase === 'confirmed' ? theme.emerald : phase === 'error' ? theme.rose : '#6C8CFF',
                 },
               ]}
               onPress={handleStartAuth}
@@ -249,11 +238,7 @@ export function HaptixBiometricPromptSheet({
                 ) : phase === 'verifying_secondary' && securityMode === 'vault' ? (
                   <MaterialIcons name="devices" size={28} color="#6C8CFF" />
                 ) : (
-                  <Image
-                    source={FINGERPRINT_HERO_BLUE}
-                    style={{ width: 34, height: 34 }}
-                    resizeMode="contain"
-                  />
+                  <Image source={FINGERPRINT_HERO_BLUE} style={{ width: 34, height: 34 }} resizeMode="contain" />
                 )}
               </View>
             </TouchableOpacity>
@@ -268,8 +253,8 @@ export function HaptixBiometricPromptSheet({
                       phase === 'confirmed'
                         ? theme.emerald
                         : isDark
-                        ? 'rgba(255, 255, 255, 0.16)'
-                        : 'rgba(0, 0, 0, 0.08)',
+                          ? 'rgba(255, 255, 255, 0.16)'
+                          : 'rgba(0, 0, 0, 0.08)',
                   },
                 ]}
               />
@@ -311,12 +296,8 @@ export function HaptixBiometricPromptSheet({
 
         {actionType === 'agent_session' ? (
           <View style={styles.agentHeroContainer}>
-            <Text style={[styles.agentAllowanceLabel, { color: theme.textSecondary }]}>
-              Agent allowance
-            </Text>
-            <Text style={[styles.agentHeroAmount, { color: theme.textPrimary }]}>
-              {heroAmount}
-            </Text>
+            <Text style={[styles.agentAllowanceLabel, { color: theme.textSecondary }]}>Agent allowance</Text>
+            <Text style={[styles.agentHeroAmount, { color: theme.textPrimary }]}>{heroAmount}</Text>
             <Text style={[styles.agentDurationText, { color: theme.textSecondary }]}>
               {`for ${agentValidHours || 24} hours`}
             </Text>
@@ -330,14 +311,14 @@ export function HaptixBiometricPromptSheet({
               {phase === 'verifying_primary'
                 ? 'Scanning first passkey…'
                 : phase === 'verifying_secondary'
-                ? 'Scanning second passkey…'
-                : phase === 'broadcasting'
-                ? 'Authorizing session on-chain…'
-                : phase === 'confirmed'
-                ? 'Session authorized'
-                : phase === 'error'
-                ? errorMessage || 'Verification cancelled'
-                : "You'll be asked twice, once for each passkey"}
+                  ? 'Scanning second passkey…'
+                  : phase === 'broadcasting'
+                    ? 'Authorizing session on-chain…'
+                    : phase === 'confirmed'
+                      ? 'Session authorized'
+                      : phase === 'error'
+                        ? errorMessage || 'Verification cancelled'
+                        : "You'll be asked twice, once for each passkey"}
             </Text>
           </View>
         ) : (
@@ -360,16 +341,16 @@ export function HaptixBiometricPromptSheet({
               {phase === 'verifying_primary'
                 ? 'Scanning fingerprint…'
                 : phase === 'verifying_secondary'
-                ? currentStep === 2 && securityMode === 'vault'
-                  ? 'Approve on second device…'
-                  : 'Confirm with backup key…'
-                : phase === 'broadcasting'
-                ? 'Submitting to Solana…'
-                : phase === 'confirmed'
-                ? 'Confirmed on-chain'
-                : phase === 'error'
-                ? errorMessage || 'Verification cancelled'
-                : 'Touch sensor or tap below'}
+                  ? currentStep === 2 && securityMode === 'vault'
+                    ? 'Approve on second device…'
+                    : 'Confirm with backup key…'
+                  : phase === 'broadcasting'
+                    ? 'Submitting to Solana…'
+                    : phase === 'confirmed'
+                      ? 'Confirmed on-chain'
+                      : phase === 'error'
+                        ? errorMessage || 'Verification cancelled'
+                        : 'Touch sensor or tap below'}
             </Text>
           </>
         )}
@@ -382,12 +363,12 @@ export function HaptixBiometricPromptSheet({
                 isAuthenticating
                   ? 'Verifying…'
                   : phase === 'error'
-                  ? 'Try Again'
-                  : actionType === 'agent_session'
-                  ? 'Approve with both keys'
-                  : isQuorumRequired
-                  ? 'Authorize (2 Passkeys)'
-                  : 'Authorize'
+                    ? 'Try Again'
+                    : actionType === 'agent_session'
+                      ? 'Approve with both keys'
+                      : isQuorumRequired
+                        ? 'Authorize (2 Passkeys)'
+                        : 'Authorize'
               }
               size="large"
               loading={isAuthenticating}
@@ -398,12 +379,7 @@ export function HaptixBiometricPromptSheet({
         )}
 
         {/* Cancel */}
-        <TouchableOpacity
-          style={styles.cancelBtn}
-          onPress={onClose}
-          disabled={isAuthenticating}
-          activeOpacity={0.6}
-        >
+        <TouchableOpacity style={styles.cancelBtn} onPress={onClose} disabled={isAuthenticating} activeOpacity={0.6}>
           <Text style={[styles.cancelText, { color: theme.textMuted }]}>
             {phase === 'confirmed' ? 'Done' : 'Cancel'}
           </Text>

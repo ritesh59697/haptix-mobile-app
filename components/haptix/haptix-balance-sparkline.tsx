@@ -16,9 +16,7 @@ type SparklineData = number[]
 
 // No hardcoded curves: only live market prices or neutral baseline
 
-
-const COINGECKO_URL =
-  'https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=7'
+const COINGECKO_URL = 'https://api.coingecko.com/api/v3/coins/solana/market_chart?vs_currency=usd&days=7'
 
 // Downsample array to `target` points with basic stride
 function downsample(data: number[], target = 28): number[] {
@@ -69,13 +67,7 @@ function buildAreaPath(pts: { x: number; y: number }[], H: number): string {
   return `${line} L ${last.x.toFixed(1)} ${H} L ${first.x.toFixed(1)} ${H} Z`
 }
 
-function pricesToPoints(
-  prices: SparklineData,
-  W: number,
-  H: number,
-  padX = 4,
-  padY = 12,
-): { x: number; y: number }[] {
+function pricesToPoints(prices: SparklineData, W: number, H: number, padX = 4, padY = 12): { x: number; y: number }[] {
   const min = Math.min(...prices)
   const max = Math.max(...prices)
   const range = max - min || 1
@@ -92,12 +84,7 @@ interface Props {
   isDark: boolean
 }
 
-export function HaptixBalanceSparkline({
-  width,
-  height = 64,
-  isPositive,
-  isDark,
-}: Props) {
+export function HaptixBalanceSparkline({ width, height = 64, isPositive, isDark }: Props) {
   const [prices, setPrices] = useState<SparklineData>([])
 
   const load = useCallback(async () => {
@@ -159,19 +146,8 @@ export function HaptixBalanceSparkline({
         {/* 3. Live current price pulse dot at end */}
         {lastPt && (
           <>
-            <Circle
-              cx={lastPt.x}
-              cy={lastPt.y}
-              r={5}
-              fill={lineColor}
-              fillOpacity={0.25}
-            />
-            <Circle
-              cx={lastPt.x}
-              cy={lastPt.y}
-              r={2.5}
-              fill={lineColor}
-            />
+            <Circle cx={lastPt.x} cy={lastPt.y} r={5} fill={lineColor} fillOpacity={0.25} />
+            <Circle cx={lastPt.x} cy={lastPt.y} r={2.5} fill={lineColor} />
           </>
         )}
       </Svg>

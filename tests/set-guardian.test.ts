@@ -107,9 +107,21 @@ equals(
   'SET_GUARDIAN:',
   'message is prefixed so it cannot collide with another action',
 )
-equals(message.length, 93, 'message is the prefix, 32-byte wallet, an 8-byte cluster, an 8-byte nonce, and the 32-byte address')
-equals(Buffer.from(message.subarray(13, 45)).equals(walletPda.toBuffer()), true, 'the wallet PDA sits immediately after the prefix')
-equals(Buffer.from(message.subarray(45, 53)).toString('utf8'), 'devnet\0\0', 'the cluster tag sits immediately after the wallet PDA')
+equals(
+  message.length,
+  93,
+  'message is the prefix, 32-byte wallet, an 8-byte cluster, an 8-byte nonce, and the 32-byte address',
+)
+equals(
+  Buffer.from(message.subarray(13, 45)).equals(walletPda.toBuffer()),
+  true,
+  'the wallet PDA sits immediately after the prefix',
+)
+equals(
+  Buffer.from(message.subarray(45, 53)).toString('utf8'),
+  'devnet\0\0',
+  'the cluster tag sits immediately after the wallet PDA',
+)
 equals(Buffer.from(message).readBigUInt64LE(53), 0n, 'the nonce sits immediately after the cluster tag')
 assert(
   !Buffer.from(message).equals(Buffer.from(getSetGuardianSignedMessage(walletPda, Keypair.generate().publicKey, 0n))),
@@ -187,9 +199,17 @@ equals(
   'SET_THRESHOLD:',
   'threshold message carries its own prefix',
 )
-equals(thresholdMessage.length, 70, 'threshold message is the prefix, 32-byte wallet, an 8-byte cluster, an 8-byte nonce, and a u64')
+equals(
+  thresholdMessage.length,
+  70,
+  'threshold message is the prefix, 32-byte wallet, an 8-byte cluster, an 8-byte nonce, and a u64',
+)
 equals(Buffer.from(thresholdMessage.subarray(14, 46)).equals(walletPda.toBuffer()), true, 'wallet sits after prefix')
-equals(Buffer.from(thresholdMessage.subarray(46, 54)).toString('utf8'), 'devnet\0\0', 'the cluster tag sits after the wallet')
+equals(
+  Buffer.from(thresholdMessage.subarray(46, 54)).toString('utf8'),
+  'devnet\0\0',
+  'the cluster tag sits after the wallet',
+)
 equals(Buffer.from(thresholdMessage).readBigUInt64LE(54), 7n, 'the nonce is little-endian after the cluster tag')
 equals(
   Buffer.from(thresholdMessage).readBigUInt64LE(62),

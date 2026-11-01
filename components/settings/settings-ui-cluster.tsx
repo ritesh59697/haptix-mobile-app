@@ -119,15 +119,9 @@ export function SettingsUiCluster() {
           <HaptixSettingsRow
             icon="local-gas-station"
             title="Request Devnet Airdrop (+0.2 SOL)"
-            subtitle={
-              isRequestingFaucet ? 'Requesting funds from relayer…' : 'Fund test account with Devnet SOL'
-            }
+            subtitle={isRequestingFaucet ? 'Requesting funds from relayer…' : 'Fund test account with Devnet SOL'}
             onPress={handleRequestFaucet}
-            trailing={
-              isRequestingFaucet ? (
-                <ActivityIndicator size="small" color={theme.accent} />
-              ) : undefined
-            }
+            trailing={isRequestingFaucet ? <ActivityIndicator size="small" color={theme.accent} /> : undefined}
           />
           {activeWallet?.address && (
             <>

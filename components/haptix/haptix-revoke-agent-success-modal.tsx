@@ -1,14 +1,5 @@
 import React, { useState } from 'react'
-import {
-  Linking,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Linking, Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Clipboard from '@/utils/clipboard'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -62,13 +53,7 @@ export function HaptixRevokeAgentSuccessModal({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={handleDone}>
         <Pressable
           style={[
@@ -81,12 +66,7 @@ export function HaptixRevokeAgentSuccessModal({
           onPress={(e) => e.stopPropagation()}
         >
           {/* Top Sheet Drag Handle */}
-          <View
-            style={[
-              styles.dragHandle,
-              { backgroundColor: isDark ? '#3A3A37' : '#D8D5CE' },
-            ]}
-          />
+          <View style={[styles.dragHandle, { backgroundColor: isDark ? '#3A3A37' : '#D8D5CE' }]} />
 
           {/* Success Ring & Hero Text */}
           <View style={styles.heroSection}>
@@ -99,9 +79,7 @@ export function HaptixRevokeAgentSuccessModal({
             <Text style={[styles.statusSubtitle, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
               Agent session revoked
             </Text>
-            <Text style={[styles.heroTitle, { color: isDark ? '#F2F1EE' : '#181714' }]}>
-              Session Inactive
-            </Text>
+            <Text style={[styles.heroTitle, { color: isDark ? '#F2F1EE' : '#181714' }]}>Session Inactive</Text>
             <Text style={[styles.explainSub, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
               The program no longer accepts signatures from this agent.
             </Text>
@@ -118,16 +96,8 @@ export function HaptixRevokeAgentSuccessModal({
             ]}
           >
             {/* Session Key Row */}
-            <View
-              style={[
-                styles.tableRow,
-                styles.rowBorder,
-                { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' },
-              ]}
-            >
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
-                Session key
-              </Text>
+            <View style={[styles.tableRow, styles.rowBorder, { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' }]}>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>Session key</Text>
               <TouchableOpacity
                 style={styles.copyWrap}
                 onPress={handleCopyKey}
@@ -146,16 +116,8 @@ export function HaptixRevokeAgentSuccessModal({
             </View>
 
             {/* Signature Row */}
-            <View
-              style={[
-                styles.tableRow,
-                styles.rowBorder,
-                { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' },
-              ]}
-            >
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
-                Signature
-              </Text>
+            <View style={[styles.tableRow, styles.rowBorder, { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' }]}>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>Signature</Text>
               <TouchableOpacity
                 style={styles.copyWrap}
                 onPress={handleCopySig}
@@ -175,12 +137,8 @@ export function HaptixRevokeAgentSuccessModal({
 
             {/* Status Row */}
             <View style={styles.tableRow}>
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
-                Status
-              </Text>
-              <Text style={[styles.statusValue, { color: '#5FBF7A' }]}>
-                Permanently revoked
-              </Text>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B6A64' }]}>Status</Text>
+              <Text style={[styles.statusValue, { color: '#5FBF7A' }]}>Permanently revoked</Text>
             </View>
           </View>
 
@@ -208,14 +166,8 @@ export function HaptixRevokeAgentSuccessModal({
             accessibilityRole="button"
             accessibilityLabel="View on Solscan"
           >
-            <MaterialIcons
-              name="open-in-new"
-              size={15}
-              color={isDark ? '#8A8985' : '#6B6A64'}
-            />
-            <Text style={[styles.solscanBtnText, { color: isDark ? '#F2F1EE' : '#181714' }]}>
-              View on Solscan
-            </Text>
+            <MaterialIcons name="open-in-new" size={15} color={isDark ? '#8A8985' : '#6B6A64'} />
+            <Text style={[styles.solscanBtnText, { color: isDark ? '#F2F1EE' : '#181714' }]}>View on Solscan</Text>
           </TouchableOpacity>
         </Pressable>
       </Pressable>

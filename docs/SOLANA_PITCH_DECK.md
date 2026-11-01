@@ -1,7 +1,7 @@
 # Haptix — Pitch Deck (Solana Mobile Hackathon)
 
 > **The Biometric Hardware Enclave Smart Wallet for Solana Seeker & Saga**  
-> *Seedless Human Security. 2-of-2 Hardware Quorum. Autonomous AI Agent Delegation.*
+> _Seedless Human Security. 2-of-2 Hardware Quorum. Autonomous AI Agent Delegation._
 
 ---
 
@@ -10,11 +10,12 @@
 <div align="center">
 
 # HAPTIX
+
 ### Next-Gen Passkey Smart Wallet for Solana Mobile
 
 **Seedless Biometrics · Secp256r1 On-Chain Introspection · 2-of-2 Hardware Quorum · AI Agent Session Keys**
 
-*Targeting: Solana Seeker (Chapter 2) · Solana Saga · Solana dApp Store*
+_Targeting: Solana Seeker (Chapter 2) · Solana Saga · Solana dApp Store_
 
 </div>
 
@@ -77,22 +78,27 @@ Haptix replaces vulnerable seed phrases and client-side popups with a **4-Layer 
 ## Slide 4: Key Technical Innovations
 
 ### 1. Native Secp256r1 (P-256) Curve Verification
+
 - Uses Solana's native `Secp256r1SigVerify` precompile via instruction introspection (`get_instruction_relative`).
 - Private keys **never leave the phone's hardware enclave** (Android Keystore / StrongBox).
 
 ### 2. Risk-Adaptive Spending Threshold
+
 - **Low-Risk Fast Lane (≤ 0.1 SOL)**: 1-tap passkey. Lightning-fast microtransactions.
 - **High-Risk Escalation (> 0.1 SOL)**: Automatically escalates to **2-of-2 Hardware Quorum**. Requires Passkey #1 (phone) + Passkey #2 (out-of-band Mac Touch ID, YubiKey, or backup hardware).
 
 ### 3. Gasless Onboarding (0.1 SOL Starter Faucet)
+
 - New wallets are immediately funded with 0.1 Devnet SOL and initialized on-chain.
 - Users never land on an empty `$0.00` dead-end wallet.
 
 ### 4. Autonomous AI Agent Session Keys
+
 - Grants temporary, budget-constrained Ed25519/Secp256k1 keys to trading bots.
 - Agents execute autonomous swaps within policy limits with **zero human biometric popups**.
 
 ### 5. Guardian Social Recovery & Panic Freeze
+
 - Lost device? Social guardians initiate a 24-hour timelocked passkey rotation.
 - Suspected exploit? Guardians or users trigger an on-chain **Panic Freeze** to halt all outflows immediately.
 
@@ -135,15 +141,15 @@ Haptix is designed from day one to natively support the upcoming **Solana Seeker
 
 ## Slide 7: Competitive Landscape
 
-| Feature | Phantom / Solflare | Backpack | Safe (EVM) | **Haptix (Solana Mobile)** |
-|:---|:---|:---|:---|:---|
-| **Seedless Hardware Passkeys** | No (Seed Phrase) | No (Seed Phrase) | WebAuthn only | **Yes (Secp256r1 Native)** |
-| **Risk-Adaptive Quorum** | No (1-key only) | No | Complex multisig | **Yes (1-Key vs 2-of-2 Quorum)** |
-| **Out-of-Band Hardware Pair** | No | No | No | **Yes (Phone + Mac Touch ID / YubiKey)** |
-| **AI Agent Session Delegation** | No | No | Session Keys | **Yes (On-Chain Bounded Budget)** |
-| **Gasless First-Run Top-Up** | No ($0 dead-end) | No | No | **Yes (0.1 SOL Auto-Funder)** |
-| **Seeker SKR Native Support** | Basic SPL | Basic SPL | None | **Architecture Ready (Risk Tiers Tested)** |
-| **Emergency Panic Freeze** | No | No | Guard Module | **Yes (On-Chain Instant Freeze)** |
+| Feature                         | Phantom / Solflare | Backpack         | Safe (EVM)       | **Haptix (Solana Mobile)**                 |
+| :------------------------------ | :----------------- | :--------------- | :--------------- | :----------------------------------------- |
+| **Seedless Hardware Passkeys**  | No (Seed Phrase)   | No (Seed Phrase) | WebAuthn only    | **Yes (Secp256r1 Native)**                 |
+| **Risk-Adaptive Quorum**        | No (1-key only)    | No               | Complex multisig | **Yes (1-Key vs 2-of-2 Quorum)**           |
+| **Out-of-Band Hardware Pair**   | No                 | No               | No               | **Yes (Phone + Mac Touch ID / YubiKey)**   |
+| **AI Agent Session Delegation** | No                 | No               | Session Keys     | **Yes (On-Chain Bounded Budget)**          |
+| **Gasless First-Run Top-Up**    | No ($0 dead-end)   | No               | No               | **Yes (0.1 SOL Auto-Funder)**              |
+| **Seeker SKR Native Support**   | Basic SPL          | Basic SPL        | None             | **Architecture Ready (Risk Tiers Tested)** |
+| **Emergency Panic Freeze**      | No                 | No               | Guard Module     | **Yes (On-Chain Instant Freeze)**          |
 
 ---
 

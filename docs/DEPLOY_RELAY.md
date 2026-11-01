@@ -17,7 +17,7 @@ The **Haptix Cloud Relay** is a lightweight, zero-dependency Node.js service tha
    - **Language:** `Node`
    - **Root Directory:** (leave empty)
    - **Build Command:** `npm install`
-   - **Start Command:** `npm run start:relay` *(or `node tools/haptix-relay.js`)*
+   - **Start Command:** `npm run start:relay` _(or `node tools/haptix-relay.js`)_
    - **Plan:** Free
 5. Click **Create Web Service**.
 6. Render will automatically provision a public HTTPS URL:

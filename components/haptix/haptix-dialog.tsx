@@ -135,12 +135,10 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
   }, [pop])
 
   const shouldStackButtons =
-    (active?.buttons.length ?? 0) > 2 ||
-    Boolean(active?.buttons.some((b) => b.text.length > 12))
+    (active?.buttons.length ?? 0) > 2 || Boolean(active?.buttons.some((b) => b.text.length > 12))
 
   const isButtonRow =
-    active?.buttons.length === 2 &&
-    (active.forceRow || (!shouldStackButtons && !active.buttons.some((b) => b.subtext)))
+    active?.buttons.length === 2 && (active.forceRow || (!shouldStackButtons && !active.buttons.some((b) => b.subtext)))
 
   // In vertical stack: place affirmative/action buttons first, and 'cancel' at the very bottom
   const displayButtons = useMemo(() => {
@@ -200,12 +198,20 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
 
   const statusBadgeBg =
     active?.status === 'success'
-      ? (theme.isDark ? 'rgba(16, 185, 129, 0.15)' : 'rgba(16, 185, 129, 0.12)')
+      ? theme.isDark
+        ? 'rgba(16, 185, 129, 0.15)'
+        : 'rgba(16, 185, 129, 0.12)'
       : active?.status === 'warning'
-        ? (theme.isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(245, 158, 11, 0.12)')
+        ? theme.isDark
+          ? 'rgba(245, 158, 11, 0.15)'
+          : 'rgba(245, 158, 11, 0.12)'
         : active?.status === 'error'
-          ? (theme.isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.12)')
-          : (theme.isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)')
+          ? theme.isDark
+            ? 'rgba(239, 68, 68, 0.15)'
+            : 'rgba(239, 68, 68, 0.12)'
+          : theme.isDark
+            ? 'rgba(255, 255, 255, 0.08)'
+            : 'rgba(0, 0, 0, 0.06)'
 
   const statusBadgeBorder =
     active?.status === 'success'
@@ -286,18 +292,33 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
                               {block.split('\n').map((line, lIdx) => {
                                 const trimmed = line.trim()
                                 const isBullet = trimmed.startsWith('•') || trimmed.startsWith('-')
-                                const isHeader = trimmed.startsWith('⚠️') || trimmed.includes('Important') || trimmed.includes('Notice')
+                                const isHeader =
+                                  trimmed.startsWith('⚠️') ||
+                                  trimmed.includes('Important') ||
+                                  trimmed.includes('Notice')
                                 return (
                                   <View key={lIdx} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
                                     {isBullet && (
-                                      <Text style={{ color: active.status === 'warning' ? '#F59E0B' : '#4F6BFF', fontSize: 13, lineHeight: 18 }}>•</Text>
+                                      <Text
+                                        style={{
+                                          color: active.status === 'warning' ? '#F59E0B' : '#4F6BFF',
+                                          fontSize: 13,
+                                          lineHeight: 18,
+                                        }}
+                                      >
+                                        •
+                                      </Text>
                                     )}
                                     <Text
                                       style={[
                                         layout.message,
                                         colors.message,
                                         { textAlign: 'left', flex: 1, fontSize: 12.5, lineHeight: 18 },
-                                        isHeader && { fontWeight: '700', color: theme.isDark ? '#FFFFFF' : '#111827', fontSize: 13 },
+                                        isHeader && {
+                                          fontWeight: '700',
+                                          color: theme.isDark ? '#FFFFFF' : '#111827',
+                                          fontSize: 13,
+                                        },
                                       ]}
                                     >
                                       {isBullet ? trimmed.replace(/^[•-]\s*/, '') : trimmed}
@@ -368,11 +389,7 @@ export function HaptixDialogProvider({ children }: { children: React.ReactNode }
                     )
                   }
 
-                  return (
-                    <React.Fragment key={`${button.text}-${index}`}>
-                      {buttonElement}
-                    </React.Fragment>
-                  )
+                  return <React.Fragment key={`${button.text}-${index}`}>{buttonElement}</React.Fragment>
                 })}
               </View>
             </View>

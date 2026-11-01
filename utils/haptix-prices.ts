@@ -34,7 +34,7 @@ export type MarketSnapshot = {
   fetchedAt: number
 }
 
-export const FALLBACK_SOL_PRICE_USD = 120.70
+export const FALLBACK_SOL_PRICE_USD = 120.7
 
 export type TokenDescriptor = {
   symbol: string
@@ -55,7 +55,7 @@ export const TOKEN_DESCRIPTORS: TokenDescriptor[] = [
     symbol: 'SOL',
     name: 'Solana',
     coingeckoId: 'solana',
-    fallbackPriceUsd: 120.70,
+    fallbackPriceUsd: 120.7,
     fallbackChangePct: 1.44,
     fallbackMarketCapUsd: 70_900_000_000,
     fallbackVolume24hUsd: 1_650_000_000,
@@ -259,29 +259,35 @@ function readCoinGeckoMarketsPayload(payload: unknown): Record<string, ParsedTok
     )
     if (!matched) continue
 
-    const priceUsd = typeof item.current_price === 'number' && Number.isFinite(item.current_price) && item.current_price > 0
-      ? item.current_price
-      : matched.fallbackPriceUsd
+    const priceUsd =
+      typeof item.current_price === 'number' && Number.isFinite(item.current_price) && item.current_price > 0
+        ? item.current_price
+        : matched.fallbackPriceUsd
 
-    const changePct = typeof item.price_change_percentage_24h === 'number' && Number.isFinite(item.price_change_percentage_24h)
-      ? item.price_change_percentage_24h
-      : matched.fallbackChangePct
+    const changePct =
+      typeof item.price_change_percentage_24h === 'number' && Number.isFinite(item.price_change_percentage_24h)
+        ? item.price_change_percentage_24h
+        : matched.fallbackChangePct
 
-    const marketCapUsd = typeof item.market_cap === 'number' && Number.isFinite(item.market_cap) && item.market_cap > 0
-      ? item.market_cap
-      : matched.fallbackMarketCapUsd
+    const marketCapUsd =
+      typeof item.market_cap === 'number' && Number.isFinite(item.market_cap) && item.market_cap > 0
+        ? item.market_cap
+        : matched.fallbackMarketCapUsd
 
-    const volume24hUsd = typeof item.total_volume === 'number' && Number.isFinite(item.total_volume) && item.total_volume > 0
-      ? item.total_volume
-      : matched.fallbackVolume24hUsd
+    const volume24hUsd =
+      typeof item.total_volume === 'number' && Number.isFinite(item.total_volume) && item.total_volume > 0
+        ? item.total_volume
+        : matched.fallbackVolume24hUsd
 
-    const circulatingSupplyRaw = typeof item.circulating_supply === 'number' && Number.isFinite(item.circulating_supply) && item.circulating_supply > 0
-      ? item.circulating_supply
-      : matched.fallbackCirculatingSupply
+    const circulatingSupplyRaw =
+      typeof item.circulating_supply === 'number' &&
+      Number.isFinite(item.circulating_supply) &&
+      item.circulating_supply > 0
+        ? item.circulating_supply
+        : matched.fallbackCirculatingSupply
 
-    const athUsd = typeof item.ath === 'number' && Number.isFinite(item.ath) && item.ath > 0
-      ? item.ath
-      : matched.fallbackAthUsd
+    const athUsd =
+      typeof item.ath === 'number' && Number.isFinite(item.ath) && item.ath > 0 ? item.ath : matched.fallbackAthUsd
 
     dataMap[matched.symbol] = {
       priceUsd,
@@ -317,18 +323,20 @@ function readCoinGeckoSimplePayload(payload: unknown): Record<string, ParsedToke
     if (!quote || typeof quote.usd !== 'number' || !Number.isFinite(quote.usd) || quote.usd <= 0) continue
 
     const priceUsd = quote.usd
-    const changePct = typeof quote.usd_24h_change === 'number' && Number.isFinite(quote.usd_24h_change)
-      ? quote.usd_24h_change
-      : descriptor.fallbackChangePct
-    const marketCapUsd = typeof quote.usd_market_cap === 'number' && Number.isFinite(quote.usd_market_cap) && quote.usd_market_cap > 0
-      ? quote.usd_market_cap
-      : descriptor.fallbackMarketCapUsd
-    const volume24hUsd = typeof quote.usd_24h_vol === 'number' && Number.isFinite(quote.usd_24h_vol) && quote.usd_24h_vol > 0
-      ? quote.usd_24h_vol
-      : descriptor.fallbackVolume24hUsd
-    const circulatingSupplyRaw = quote.usd_market_cap && quote.usd
-      ? quote.usd_market_cap / quote.usd
-      : descriptor.fallbackCirculatingSupply
+    const changePct =
+      typeof quote.usd_24h_change === 'number' && Number.isFinite(quote.usd_24h_change)
+        ? quote.usd_24h_change
+        : descriptor.fallbackChangePct
+    const marketCapUsd =
+      typeof quote.usd_market_cap === 'number' && Number.isFinite(quote.usd_market_cap) && quote.usd_market_cap > 0
+        ? quote.usd_market_cap
+        : descriptor.fallbackMarketCapUsd
+    const volume24hUsd =
+      typeof quote.usd_24h_vol === 'number' && Number.isFinite(quote.usd_24h_vol) && quote.usd_24h_vol > 0
+        ? quote.usd_24h_vol
+        : descriptor.fallbackVolume24hUsd
+    const circulatingSupplyRaw =
+      quote.usd_market_cap && quote.usd ? quote.usd_market_cap / quote.usd : descriptor.fallbackCirculatingSupply
 
     dataMap[descriptor.symbol] = {
       priceUsd,

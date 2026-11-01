@@ -1,13 +1,5 @@
 import React from 'react'
-import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -47,13 +39,7 @@ export function HaptixAgentTradeConfirmModal({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={handleCancel}>
         <Pressable
           style={[
@@ -71,9 +57,7 @@ export function HaptixAgentTradeConfirmModal({
           </View>
 
           {/* Title & Subtitle */}
-          <Text style={[styles.title, { color: isDark ? '#F2F1EE' : '#111827' }]}>
-            Run agent trade?
-          </Text>
+          <Text style={[styles.title, { color: isDark ? '#F2F1EE' : '#111827' }]}>Run agent trade?</Text>
           <Text style={[styles.subtitle, { color: isDark ? '#8A8985' : '#6B7280' }]}>
             The agent will sign this transfer on its own.
           </Text>
@@ -89,58 +73,28 @@ export function HaptixAgentTradeConfirmModal({
             ]}
           >
             {/* Amount Row */}
-            <View
-              style={[
-                styles.tableRow,
-                styles.rowBorder,
-                { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' },
-              ]}
-            >
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>
-                Amount
-              </Text>
-              <Text style={[styles.amountValue, { color: isDark ? '#F2F1EE' : '#111827' }]}>
-                {`${amountSol} SOL`}
-              </Text>
+            <View style={[styles.tableRow, styles.rowBorder, { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' }]}>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>Amount</Text>
+              <Text style={[styles.amountValue, { color: isDark ? '#F2F1EE' : '#111827' }]}>{`${amountSol} SOL`}</Text>
             </View>
 
             {/* To Row */}
-            <View
-              style={[
-                styles.tableRow,
-                styles.rowBorder,
-                { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' },
-              ]}
-            >
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>
-                To
-              </Text>
+            <View style={[styles.tableRow, styles.rowBorder, { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' }]}>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>To</Text>
               <Text style={[styles.monoValue, { color: isDark ? '#F2F1EE' : '#111827' }]}>
                 {ellipsify(destinationAddress, 6)}
               </Text>
             </View>
 
             {/* Network Row */}
-            <View
-              style={[
-                styles.tableRow,
-                styles.rowBorder,
-                { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' },
-              ]}
-            >
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>
-                Network
-              </Text>
-              <Text style={[styles.textValue, { color: isDark ? '#F2F1EE' : '#111827' }]}>
-                {networkName}
-              </Text>
+            <View style={[styles.tableRow, styles.rowBorder, { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' }]}>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>Network</Text>
+              <Text style={[styles.textValue, { color: isDark ? '#F2F1EE' : '#111827' }]}>{networkName}</Text>
             </View>
 
             {/* Agent Allowance Row */}
             <View style={styles.tableRow}>
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>
-                Agent allowance
-              </Text>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>Agent allowance</Text>
               <Text style={[styles.textValue, { color: isDark ? '#F2F1EE' : '#111827' }]}>
                 {`${allowanceSol} SOL for ${expiryHours} hours`}
               </Text>
@@ -157,7 +111,7 @@ export function HaptixAgentTradeConfirmModal({
                 style={styles.consequenceIcon}
               />
               <Text style={[styles.consequenceText, { color: isDark ? '#B4B3AE' : '#4B5563' }]}>
-                You'll approve with both passkeys, one after the other.
+                You&apos;ll approve with both passkeys, one after the other.
               </Text>
             </View>
 
@@ -189,9 +143,7 @@ export function HaptixAgentTradeConfirmModal({
               accessibilityRole="button"
               accessibilityLabel="Cancel"
             >
-              <Text style={[styles.cancelButtonText, { color: isDark ? '#F2F1EE' : '#1F2937' }]}>
-                Cancel
-              </Text>
+              <Text style={[styles.cancelButtonText, { color: isDark ? '#F2F1EE' : '#1F2937' }]}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -201,9 +153,7 @@ export function HaptixAgentTradeConfirmModal({
               accessibilityRole="button"
               accessibilityLabel="Approve with both keys"
             >
-              <Text style={styles.confirmButtonText}>
-                Approve with both keys
-              </Text>
+              <Text style={styles.confirmButtonText}>Approve with both keys</Text>
             </TouchableOpacity>
           </View>
         </Pressable>

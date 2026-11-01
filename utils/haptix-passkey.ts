@@ -1073,9 +1073,7 @@ async function registerHardwarePasskey(
   const roleDisplay = id === 'primary' ? 'Primary Key' : 'Backup Key'
   const rawName = walletName.trim()
   const cleanWalletName =
-    rawName && rawName !== 'Primary Passkey' && rawName !== 'Backup Key'
-      ? rawName
-      : 'Haptix Wallet'
+    rawName && rawName !== 'Primary Passkey' && rawName !== 'Backup Key' ? rawName : 'Haptix Wallet'
   // Make user.name and user.displayName unique per wallet & key role to prevent
   // Google Password Manager / Android Credential Manager from colliding multiple keys
   // under the identical username 'Haptix Wallet'.
@@ -1135,10 +1133,7 @@ async function registerHardwarePasskey(
       'the authenticator and cannot be exported; only the credential id and public key are stored.',
   )
 
-  const resolvedLabel =
-    attachment === 'securityKey'
-      ? 'Vault key (external security key)'
-      : HARDWARE_KEY_LABELS[id]
+  const resolvedLabel = attachment === 'securityKey' ? 'Vault key (external security key)' : HARDWARE_KEY_LABELS[id]
 
   return {
     id,
@@ -1442,10 +1437,7 @@ export async function bindHardwarePasskey(
  * Binds a software passkey for a role, pointing the public key slot at it and
  * marking mode as software.
  */
-export async function bindSoftwarePasskey(
-  id: 'primary' | 'secondary',
-  publicKeyHex: string,
-): Promise<void> {
+export async function bindSoftwarePasskey(id: 'primary' | 'secondary', publicKeyHex: string): Promise<void> {
   await AsyncStorage.setItem(pubkeyKey(id), publicKeyHex)
   await writeMode(id, 'software')
 }

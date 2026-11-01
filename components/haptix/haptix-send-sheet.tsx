@@ -481,7 +481,10 @@ export function HaptixSendSheet({
     }
 
     if (sendRecipient.trim() === wallet.address) {
-      dialog.alert('Self-Transfer Not Supported', 'Cannot transfer funds to your own wallet address. Please enter a different recipient address.')
+      dialog.alert(
+        'Self-Transfer Not Supported',
+        'Cannot transfer funds to your own wallet address. Please enter a different recipient address.',
+      )
       return
     }
 
@@ -527,9 +530,7 @@ export function HaptixSendSheet({
       throw new Error('Cannot transfer funds to your own wallet address.')
     }
     if (selectedToken !== 'SOL') {
-      throw new Error(
-        'Only SOL can be sent. SKR and USDC figures in this app were stored on the phone, not on Solana.',
-      )
+      throw new Error('Only SOL can be sent. SKR and USDC figures in this app were stored on the phone, not on Solana.')
     }
     const isHighRiskQuorum = amt > spendThreshold
 
@@ -602,7 +603,11 @@ export function HaptixSendSheet({
           primaryPasskey,
           secondaryPasskey,
           spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-          guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey, walletPda),
+          guardian: assertRecoveryGuardian(
+            parseGuardianAddress(activeWallet.guardianAddress),
+            payer.publicKey,
+            walletPda,
+          ),
         })
 
         const initBlockhash = await connection.getLatestBlockhash('confirmed')
@@ -844,8 +849,8 @@ export function HaptixSendSheet({
     selectedToken === 'SKR'
       ? SKR_TOKEN_METADATA.quorumThreshold
       : selectedToken === 'USDC'
-      ? USDC_TOKEN_METADATA.quorumThreshold
-      : spendThreshold
+        ? USDC_TOKEN_METADATA.quorumThreshold
+        : spendThreshold
   const isSendQuorumRequired = sendAmountNum > activeSpendThreshold
 
   // Not blocked: moving your own SOL back to yourself is a legitimate devnet test. It is
@@ -863,9 +868,7 @@ export function HaptixSendSheet({
       (!!recipientParse.error &&
         (sendRecipientAttempted || sendRecipientBlurred || sendRecipient.trim().length > MAX_SOLANA_ADDRESS_LENGTH)))
   const isRecipientInvalid = Boolean(
-    isRecipientSelf ||
-      recipientAttemptError ||
-      (showRecipientError && recipientParse.error),
+    isRecipientSelf || recipientAttemptError || (showRecipientError && recipientParse.error),
   )
   const recipientNotice = describeRecipientSource(sendRecipientSource)
 
@@ -880,8 +883,8 @@ export function HaptixSendSheet({
     selectedToken === 'SKR'
       ? SKR_TOKEN_METADATA.fallbackPriceUsd
       : selectedToken === 'USDC'
-      ? USDC_TOKEN_METADATA.fallbackPriceUsd
-      : solPriceUsd
+        ? USDC_TOKEN_METADATA.fallbackPriceUsd
+        : solPriceUsd
 
   const sendAmountError = (() => {
     if (sendAmountNum <= 0) return null
@@ -989,9 +992,7 @@ export function HaptixSendSheet({
               <Text style={styles.confirmedHeroAmount}>
                 −{confirmedTransfer.amount} {confirmedTransfer.tokenSymbol}
               </Text>
-              <Text style={styles.confirmedNetworkText}>
-                Confirmed on Solana {network}
-              </Text>
+              <Text style={styles.confirmedNetworkText}>Confirmed on Solana {network}</Text>
 
               {/* Detail Card Box */}
               <View style={styles.confirmedDetailBox}>
@@ -1008,13 +1009,11 @@ export function HaptixSendSheet({
                     }}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.confirmedMonoText}>
-                      {ellipsify(confirmedTransfer.recipientAddress, 4)}
-                    </Text>
+                    <Text style={styles.confirmedMonoText}>{ellipsify(confirmedTransfer.recipientAddress, 4)}</Text>
                     <MaterialIcons
                       name={copiedRecipient ? 'check' : 'content-copy'}
                       size={13}
-                      color={copiedRecipient ? '#5fbf7a' : (isDark ? '#8a8985' : theme.textMuted)}
+                      color={copiedRecipient ? '#5fbf7a' : isDark ? '#8a8985' : theme.textMuted}
                     />
                   </TouchableOpacity>
                 </View>
@@ -1055,13 +1054,11 @@ export function HaptixSendSheet({
                     }}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.confirmedMonoText}>
-                      {ellipsify(confirmedTransfer.signature, 8)}
-                    </Text>
+                    <Text style={styles.confirmedMonoText}>{ellipsify(confirmedTransfer.signature, 8)}</Text>
                     <MaterialIcons
                       name={copiedSig ? 'check' : 'content-copy'}
                       size={13}
-                      color={copiedSig ? '#5fbf7a' : (isDark ? '#8a8985' : theme.textMuted)}
+                      color={copiedSig ? '#5fbf7a' : isDark ? '#8a8985' : theme.textMuted}
                     />
                   </TouchableOpacity>
                 </View>
@@ -1124,501 +1121,505 @@ export function HaptixSendSheet({
                 keyboardShouldPersistTaps="handled"
                 contentContainerStyle={{ paddingBottom: 150 }}
               >
-            {/* HERO AMOUNT INPUT SECTION */}
-            <View style={styles.cleanSendCard}>
-              {/* Header row: Clickable Asset Selector Menu + Available Balance */}
-              <View style={styles.cleanTokenHeaderRow}>
-                {/* Menu-type Asset Selector Button */}
-                <TouchableOpacity
-                  style={[
-                    styles.assetSelectorTrigger,
-                    {
-                      backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
-                      borderColor: showTokenMenu ? theme.accent : theme.borderDefault,
-                    },
-                  ]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-                    setShowTokenMenu(!showTokenMenu)
-                  }}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Select asset, currently ${selectedToken}`}
-                >
-                  <View style={styles.assetSelectorLogoWrap}>
-                    {selectedToken === 'SOL' && <SolanaTokenLogo size={20} />}
-                    {selectedToken === 'SKR' && <SeekerTokenLogo size={20} />}
-                    {selectedToken === 'USDC' && <UsdcTokenLogo size={20} />}
-                  </View>
-                  <Text style={[styles.assetSelectorTicker, { color: theme.textPrimary }]}>
-                    {selectedToken}
-                  </Text>
-                  <MaterialIcons
-                    name={showTokenMenu ? 'expand-less' : 'expand-more'}
-                    size={18}
-                    color={theme.textSecondary}
-                  />
-                </TouchableOpacity>
-
-                {/* Available Balance (Clickable to fill Max) */}
-                <TouchableOpacity
-                  onPress={() => {
-                    Haptics.selectionAsync()
-                    if (selectedToken === 'SKR') {
-                      setSendAmountText(skrBalance > 0 ? skrBalance.toFixed(2) : '0')
-                    } else if (selectedToken === 'USDC') {
-                      setSendAmountText((usdcBalance ?? 0) > 0 ? (usdcBalance ?? 0).toFixed(2) : '0')
-                    } else {
-                      setSendAmountText(maxSendableSol > 0 ? maxSendableSol.toFixed(4) : '0')
-                    }
-                  }}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={styles.cleanAvailableBtn}
-                >
-                  <Text style={[styles.cleanAvailableText, { color: theme.textSecondary }]}>
-                    Available{' '}
-                    <Text style={{ color: theme.textPrimary, fontWeight: '600' }}>
-                      {selectedToken === 'SKR'
-                        ? `${skrBalance.toFixed(2)} SKR`
-                        : selectedToken === 'USDC'
-                        ? `${(usdcBalance ?? 0).toFixed(2)} USDC`
-                        : `${balance.toFixed(4)} SOL`}
-                    </Text>
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Asset Dropdown Menu */}
-              {showTokenMenu && (
-                <View
-                  style={[
-                    styles.assetDropdownMenu,
-                    {
-                      backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
-                      borderColor: theme.borderDefault,
-                    },
-                  ]}
-                >
-                  {[{ symbol: 'SOL' as const, name: 'Solana' }].map((token) => {
-                    const isSelected = selectedToken === token.symbol
-                    const tokBal = balance
-                    const tokPrice = solPriceUsd
-                    const tokFiat = tokBal * tokPrice
-
-                    return (
-                      <TouchableOpacity
-                        key={token.symbol}
-                        style={[
-                          styles.assetDropdownItem,
-                          isSelected && {
-                            backgroundColor: theme.isDark
-                              ? 'rgba(108, 140, 255, 0.12)'
-                              : 'rgba(108, 140, 255, 0.08)',
-                          },
-                        ]}
-                        onPress={() => {
-                          Haptics.selectionAsync()
-                          setSelectedToken(token.symbol)
-                          setShowTokenMenu(false)
-                          setSendAmountText('0.05')
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.assetDropdownItemLeft}>
-                          <View style={styles.assetDropdownLogoWrap}>
-                            <SolanaTokenLogo size={24} />
-                          </View>
-                          <View>
-                            <Text style={[styles.assetDropdownName, { color: theme.textPrimary }]}>
-                              {token.name}
-                            </Text>
-                            <Text style={[styles.assetDropdownTicker, { color: theme.textSecondary }]}>
-                              {token.symbol}
-                            </Text>
-                          </View>
-                        </View>
-
-                        <View style={styles.assetDropdownItemRight}>
-                          <Text style={[styles.assetDropdownBalance, { color: theme.textPrimary }]}>
-                            {tokBal.toFixed(token.symbol === 'SOL' ? 4 : 2)} {token.symbol}
-                          </Text>
-                          <Text style={[styles.assetDropdownFiat, { color: theme.textSecondary }]}>
-                            ≈ ${tokFiat.toFixed(2)}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    )
-                  })}
-                </View>
-              )}
-
-              {/* Center Big Amount */}
-              <View style={{ alignItems: 'center', justifyContent: 'center', marginVertical: 8 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                  <TextInput
-                    style={styles.cleanSendBigInput}
-                    value={sendAmountText}
-                    onChangeText={setSendAmountText}
-                    keyboardType="decimal-pad"
-                    placeholder="0.00"
-                    placeholderTextColor={theme.textMuted}
-                    selectionColor={theme.accent}
-                    autoFocus={false}
-                  />
-                  <Text style={[styles.cleanSendCurrencySuffix, { color: theme.textSecondary }]}>
-                    {selectedToken}
-                  </Text>
-                </View>
-                <Text style={[styles.cleanSendUsdText, { color: theme.textMuted }]}>
-                  ≈ ${(sendAmountNum * activeTokenPriceUsd).toFixed(2)} USD
-                </Text>
-              </View>
-
-              {/* Quick Percentage Chips (4-grid: 25%, 50%, 75%, Max) */}
-              <View style={styles.cleanPercentGrid}>
-                {[
-                  { label: '25%', fraction: 0.25 },
-                  { label: '50%', fraction: 0.5 },
-                  { label: '75%', fraction: 0.75 },
-                  { label: 'Max', fraction: 1 },
-                ].map((chip) => {
-                  const targetMax =
-                    selectedToken === 'SKR'
-                      ? skrBalance
-                      : selectedToken === 'USDC'
-                      ? (usdcBalance ?? 0)
-                      : maxSendableSol
-                  const chipDecimals = selectedToken === 'SOL' ? 4 : 2
-                  const chipVal = Math.max(0, targetMax * chip.fraction).toFixed(chipDecimals)
-                  const isChipActive =
-                    targetMax > 0 &&
-                    (sendAmountText === chipVal ||
-                      (chip.fraction === 1 && Math.abs(sendAmountNum - targetMax) < 0.0001))
-                  return (
+                {/* HERO AMOUNT INPUT SECTION */}
+                <View style={styles.cleanSendCard}>
+                  {/* Header row: Clickable Asset Selector Menu + Available Balance */}
+                  <View style={styles.cleanTokenHeaderRow}>
+                    {/* Menu-type Asset Selector Button */}
                     <TouchableOpacity
-                      key={chip.label}
                       style={[
-                        styles.cleanPercentChip,
-                        isChipActive ? styles.cleanPercentChipActive : styles.cleanPercentChipInactive,
+                        styles.assetSelectorTrigger,
+                        {
+                          backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
+                          borderColor: showTokenMenu ? theme.accent : theme.borderDefault,
+                        },
                       ]}
                       onPress={() => {
-                        Haptics.selectionAsync()
-                        setSendAmountText(chipVal)
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                        setShowTokenMenu(!showTokenMenu)
                       }}
                       activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Select asset, currently ${selectedToken}`}
                     >
-                      <Text
-                        style={[
-                          styles.cleanPercentChipText,
-                          isChipActive ? styles.cleanPercentChipTextActive : styles.cleanPercentChipTextInactive,
-                        ]}
-                      >
-                        {chip.label}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </View>
-
-              {/* Warning Banner when over balance */}
-              {sendAmountError ? (
-                <View style={styles.cleanWarningBanner}>
-                  <MaterialIcons name="error-outline" size={15} color="#e5484d" style={{ marginTop: 1, flexShrink: 0 }} />
-                  <Text style={styles.cleanWarningBannerText}>{sendAmountError}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {/* RECIPIENT INPUT SECTION */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={styles.cleanFieldLabel}>Recipient Solana address</Text>
-              <View
-                style={[
-                  styles.cleanRecipientBox,
-                  isValidRecipient && { borderColor: theme.emeraldBorder },
-                  isRecipientInvalid && { borderColor: theme.roseBorder },
-                ]}
-              >
-                <View style={{ flex: 1, minWidth: 0, overflow: 'hidden', marginRight: 8 }}>
-                  <TextInput
-                    style={styles.cleanRecipientInput}
-                    value={sendRecipient}
-                    onChangeText={handleRecipientTextChange}
-                    onBlur={() => setSendRecipientBlurred(true)}
-                    placeholder="Enter recipient address"
-                    placeholderTextColor="#5f5e5a"
-                    selectionColor="#6c8cff"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    numberOfLines={1}
-                    multiline={false}
-                    accessibilityLabel="Recipient Solana address"
-                  />
-                </View>
-                {sendRecipient ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                    {isValidRecipient ? (
-                      <View
-                        style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: 11,
-                          backgroundColor: theme.emeraldBg,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <MaterialIcons name="check" size={14} color={theme.emerald} />
+                      <View style={styles.assetSelectorLogoWrap}>
+                        {selectedToken === 'SOL' && <SolanaTokenLogo size={20} />}
+                        {selectedToken === 'SKR' && <SeekerTokenLogo size={20} />}
+                        {selectedToken === 'USDC' && <UsdcTokenLogo size={20} />}
                       </View>
-                    ) : null}
+                      <Text style={[styles.assetSelectorTicker, { color: theme.textPrimary }]}>{selectedToken}</Text>
+                      <MaterialIcons
+                        name={showTokenMenu ? 'expand-less' : 'expand-more'}
+                        size={18}
+                        color={theme.textSecondary}
+                      />
+                    </TouchableOpacity>
+
+                    {/* Available Balance (Clickable to fill Max) */}
                     <TouchableOpacity
-                      style={{ padding: 4 }}
                       onPress={() => {
                         Haptics.selectionAsync()
-                        setSendRecipient('')
-                        setSendRecipientSource(null)
-                        setRecipientAttemptError('')
-                        setSendRecipientAttempted(false)
-                        setResolvedName(null)
-                        setNameLookup(null)
-                        setPendingContactName(null)
+                        if (selectedToken === 'SKR') {
+                          setSendAmountText(skrBalance > 0 ? skrBalance.toFixed(2) : '0')
+                        } else if (selectedToken === 'USDC') {
+                          setSendAmountText((usdcBalance ?? 0) > 0 ? (usdcBalance ?? 0).toFixed(2) : '0')
+                        } else {
+                          setSendAmountText(maxSendableSol > 0 ? maxSendableSol.toFixed(4) : '0')
+                        }
                       }}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                      accessibilityLabel="Clear recipient address"
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={styles.cleanAvailableBtn}
                     >
-                      <MaterialIcons name="cancel" size={16} color="#8a8985" />
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.cleanPasteBtn}
-                    onPress={handlePasteRecipient}
-                    accessibilityLabel="Paste address from clipboard"
-                    activeOpacity={0.7}
-                  >
-                    <MaterialIcons name="content-paste" size={14} color="#6c8cff" />
-                    <Text style={styles.cleanPasteBtnText}>Paste</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {/* One message slot under the field: what the paste did, what a name
-                  resolved to, or what is wrong. The previous sheet said nothing at all
-                  about a rejected paste. */}
-              {isResolvingName ? (
-                <View style={styles.fieldMessageRow}>
-                  <ActivityIndicator size="small" color={theme.textMuted} />
-                  <Text style={[styles.fieldMessageText, styles.textSecondary]}>
-                    {`Resolving ${nameInput ?? 'name'}…`}
-                  </Text>
-                </View>
-              ) : nameLookup ? (
-                <View style={styles.fieldMessageRow}>
-                  <MaterialIcons
-                    name={nameLookup.status === 'resolved' ? 'check-circle' : 'error-outline'}
-                    size={13}
-                    color={nameLookup.status === 'resolved' ? theme.emerald : theme.roseText}
-                  />
-                  <Text
-                    style={[
-                      styles.fieldMessageText,
-                      nameLookup.status === 'resolved' ? styles.textSecondary : { color: theme.roseText },
-                    ]}
-                  >
-                    {nameLookup.message}
-                  </Text>
-                </View>
-              ) : isRecipientSelf ? (
-                <View style={styles.fieldMessageRow}>
-                  <MaterialIcons name="error-outline" size={13} color={theme.roseText} />
-                  <Text style={[styles.fieldMessageText, { color: theme.roseText }]}>
-                    Cannot send to this wallet&apos;s own address.
-                  </Text>
-                </View>
-              ) : recipientAttemptError || (showRecipientError && recipientParse.error) ? (
-                <View style={styles.fieldMessageRow}>
-                  <MaterialIcons name="error-outline" size={13} color={theme.roseText} />
-                  <Text style={[styles.fieldMessageText, { color: theme.roseText }]}>
-                    {recipientAttemptError || recipientParse.error}
-                  </Text>
-                </View>
-              ) : recipientNotice ? (
-                <View style={styles.fieldMessageRow}>
-                  <MaterialIcons name="auto-fix-high" size={13} color={theme.emerald} />
-                  <Text style={[styles.fieldMessageText, styles.textSecondary]}>{recipientNotice}</Text>
-                </View>
-              ) : isValidRecipient ? (
-                <View style={styles.fieldMessageRow}>
-                  <MaterialIcons name="check-circle" size={13} color={theme.emerald} />
-                  <Text style={[styles.fieldMessageText, { color: theme.emeraldText }]}>
-                    {savedContact ? `Saved contact (${savedContact.label})` : 'Valid Solana address'}
-                  </Text>
-                </View>
-              ) : null}
-
-              {/* Saving the current recipient. Opens in place, pre-filled with the name a
-                  .sns/.sol lookup produced when there was one. */}
-              {pendingContactName !== null && recipientAddress ? (
-                <View style={styles.contactSaveRow}>
-                  <TextInput
-                    style={[styles.contactSaveInput, styles.input]}
-                    value={pendingContactName}
-                    onChangeText={setPendingContactName}
-                    placeholder={resolvedName ?? 'Name this recipient (optional)'}
-                    placeholderTextColor={theme.textMuted}
-                    selectionColor={theme.accent}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                    maxLength={32}
-                    accessibilityLabel="Contact name"
-                  />
-                  <View style={styles.contactSaveActions}>
-                    <TouchableOpacity
-                      style={styles.clearActionBtn}
-                      onPress={() => setPendingContactName(null)}
-                      accessibilityLabel="Cancel saving this recipient"
-                    >
-                      <MaterialIcons name="close" size={16} color={theme.textMuted} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.clearActionBtn}
-                      onPress={() => void handleSaveContact(pendingContactName)}
-                      accessibilityLabel="Save recipient"
-                    >
-                      <MaterialIcons name="check" size={18} color={theme.emerald} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : null}
-
-              {/* Shortcuts: saved contacts first, then addresses this wallet has paid.
-                  Only shown while the field is empty, so they never compete with what the
-                  user is typing. Long-pressing a saved one offers to remove it. */}
-              {!sendRecipient && recipientShortcuts.length > 0 ? (
-                <View style={styles.recentRecipientRow}>
-                  <Text style={[styles.recentRecipientLabel, styles.textMuted]}>
-                    {recipientShortcuts.some((entry) => entry.saved) ? 'Saved' : 'Recent'}
-                  </Text>
-                  {recipientShortcuts.map((entry) => {
-                    const useShortcut = () => {
-                      Haptics.selectionAsync()
-                      setSendRecipient(entry.address)
-                      setResolvedName(null)
-                      setNameLookup(null)
-                      setSendRecipientSource(null)
-                      setRecipientAttemptError('')
-                      setSendRecipientAttempted(true)
-                    }
-                    return entry.saved ? (
-                      <TouchableOpacity
-                        key={entry.address}
-                        style={[styles.savedRecipientChip, styles.input]}
-                        onPress={useShortcut}
-                        onLongPress={() => handleRemoveContact(entry.address, entry.label)}
-                        accessibilityLabel={`Send to ${entry.label ?? ellipsify(entry.address, 4)}. Long press to remove.`}
-                      >
-                        <MaterialIcons name="bookmark" size={12} color={theme.amber} />
-                        <View style={styles.savedRecipientTextGroup}>
-                          <Text style={[styles.savedRecipientLabel, styles.textPrimary]} numberOfLines={1}>
-                            {entry.label ?? ellipsify(entry.address, 4)}
-                          </Text>
-                          <Text style={[styles.savedRecipientAddress, styles.textMuted]} numberOfLines={1}>
-                            {ellipsify(entry.address, 4)}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        key={entry.address}
-                        style={[styles.recentRecipientChip, styles.input]}
-                        onPress={useShortcut}
-                        accessibilityLabel={`Use recent recipient ${ellipsify(entry.address, 4)}`}
-                      >
-                        <Text style={[styles.recentRecipientChipText, styles.textSecondary]}>
-                          {ellipsify(entry.address, 4)}
+                      <Text style={[styles.cleanAvailableText, { color: theme.textSecondary }]}>
+                        Available{' '}
+                        <Text style={{ color: theme.textPrimary, fontWeight: '600' }}>
+                          {selectedToken === 'SKR'
+                            ? `${skrBalance.toFixed(2)} SKR`
+                            : selectedToken === 'USDC'
+                              ? `${(usdcBalance ?? 0).toFixed(2)} USDC`
+                              : `${balance.toFixed(4)} SOL`}
                         </Text>
-                      </TouchableOpacity>
-                    )
-                  })}
-                </View>
-              ) : null}
-            </View>
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
 
-            {/* TRANSACTION PREVIEW SECTION */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={styles.cleanFieldLabel}>Transaction preview</Text>
-              <View style={styles.cleanPreviewCard}>
-                {/* Recipient */}
-                <View style={styles.cleanPreviewRow}>
-                  <Text style={styles.cleanPreviewLabel}>Recipient</Text>
-                  <Text style={[styles.cleanPreviewValue, !recipientAddress && { color: theme.textMuted }]}>
-                    {recipientAddress
-                      ? savedContact?.label || resolvedName
-                        ? `${savedContact?.label ?? resolvedName} (${ellipsify(recipientAddress, 4)})`
-                        : ellipsify(recipientAddress, 4)
-                      : 'Not specified'}
-                  </Text>
-                </View>
+                  {/* Asset Dropdown Menu */}
+                  {showTokenMenu && (
+                    <View
+                      style={[
+                        styles.assetDropdownMenu,
+                        {
+                          backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
+                          borderColor: theme.borderDefault,
+                        },
+                      ]}
+                    >
+                      {[{ symbol: 'SOL' as const, name: 'Solana' }].map((token) => {
+                        const isSelected = selectedToken === token.symbol
+                        const tokBal = balance
+                        const tokPrice = solPriceUsd
+                        const tokFiat = tokBal * tokPrice
 
-                {/* Transfer amount */}
-                <View style={styles.cleanPreviewRow}>
-                  <Text style={styles.cleanPreviewLabel}>Transfer amount</Text>
-                  <Text style={[styles.cleanPreviewValue, { fontWeight: '500' }]}>
-                    {sendAmountNum.toFixed(selectedToken === 'SOL' ? 4 : 2)} {selectedToken}
-                  </Text>
-                </View>
+                        return (
+                          <TouchableOpacity
+                            key={token.symbol}
+                            style={[
+                              styles.assetDropdownItem,
+                              isSelected && {
+                                backgroundColor: theme.isDark
+                                  ? 'rgba(108, 140, 255, 0.12)'
+                                  : 'rgba(108, 140, 255, 0.08)',
+                              },
+                            ]}
+                            onPress={() => {
+                              Haptics.selectionAsync()
+                              setSelectedToken(token.symbol)
+                              setShowTokenMenu(false)
+                              setSendAmountText('0.05')
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.assetDropdownItemLeft}>
+                              <View style={styles.assetDropdownLogoWrap}>
+                                <SolanaTokenLogo size={24} />
+                              </View>
+                              <View>
+                                <Text style={[styles.assetDropdownName, { color: theme.textPrimary }]}>
+                                  {token.name}
+                                </Text>
+                                <Text style={[styles.assetDropdownTicker, { color: theme.textSecondary }]}>
+                                  {token.symbol}
+                                </Text>
+                              </View>
+                            </View>
 
-                {/* Network */}
-                <View style={styles.cleanPreviewRow}>
-                  <Text style={styles.cleanPreviewLabel}>Network</Text>
-                  <Text style={styles.cleanPreviewValue}>
-                    {network === 'devnet' ? 'Solana devnet' : 'Solana mainnet'}
-                  </Text>
-                </View>
+                            <View style={styles.assetDropdownItemRight}>
+                              <Text style={[styles.assetDropdownBalance, { color: theme.textPrimary }]}>
+                                {tokBal.toFixed(token.symbol === 'SOL' ? 4 : 2)} {token.symbol}
+                              </Text>
+                              <Text style={[styles.assetDropdownFiat, { color: theme.textSecondary }]}>
+                                ≈ ${tokFiat.toFixed(2)}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        )
+                      })}
+                    </View>
+                  )}
 
-                {/* Estimated fee */}
-                <View style={styles.cleanPreviewRow}>
-                  <Text style={styles.cleanPreviewLabel}>Estimated fee</Text>
-                  <Text style={styles.cleanPreviewValue}>
-                    {selectedToken !== 'SOL' ? '0.00 SOL (Sponsored)' : `${effectiveFeeSol} SOL`}
-                  </Text>
-                </View>
-
-                {/* Authorization */}
-                <View style={styles.cleanPreviewRow}>
-                  <Text style={styles.cleanPreviewLabel}>Authorization</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <MaterialIcons name="fingerprint" size={14} color={theme.textPrimary} />
-                    <Text style={styles.cleanPreviewValue}>
-                      {isSendQuorumRequired ? '2 passkeys' : '1 passkey'}
+                  {/* Center Big Amount */}
+                  <View style={{ alignItems: 'center', justifyContent: 'center', marginVertical: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <TextInput
+                        style={styles.cleanSendBigInput}
+                        value={sendAmountText}
+                        onChangeText={setSendAmountText}
+                        keyboardType="decimal-pad"
+                        placeholder="0.00"
+                        placeholderTextColor={theme.textMuted}
+                        selectionColor={theme.accent}
+                        autoFocus={false}
+                      />
+                      <Text style={[styles.cleanSendCurrencySuffix, { color: theme.textSecondary }]}>
+                        {selectedToken}
+                      </Text>
+                    </View>
+                    <Text style={[styles.cleanSendUsdText, { color: theme.textMuted }]}>
+                      ≈ ${(sendAmountNum * activeTokenPriceUsd).toFixed(2)} USD
                     </Text>
                   </View>
+
+                  {/* Quick Percentage Chips (4-grid: 25%, 50%, 75%, Max) */}
+                  <View style={styles.cleanPercentGrid}>
+                    {[
+                      { label: '25%', fraction: 0.25 },
+                      { label: '50%', fraction: 0.5 },
+                      { label: '75%', fraction: 0.75 },
+                      { label: 'Max', fraction: 1 },
+                    ].map((chip) => {
+                      const targetMax =
+                        selectedToken === 'SKR'
+                          ? skrBalance
+                          : selectedToken === 'USDC'
+                            ? (usdcBalance ?? 0)
+                            : maxSendableSol
+                      const chipDecimals = selectedToken === 'SOL' ? 4 : 2
+                      const chipVal = Math.max(0, targetMax * chip.fraction).toFixed(chipDecimals)
+                      const isChipActive =
+                        targetMax > 0 &&
+                        (sendAmountText === chipVal ||
+                          (chip.fraction === 1 && Math.abs(sendAmountNum - targetMax) < 0.0001))
+                      return (
+                        <TouchableOpacity
+                          key={chip.label}
+                          style={[
+                            styles.cleanPercentChip,
+                            isChipActive ? styles.cleanPercentChipActive : styles.cleanPercentChipInactive,
+                          ]}
+                          onPress={() => {
+                            Haptics.selectionAsync()
+                            setSendAmountText(chipVal)
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.cleanPercentChipText,
+                              isChipActive ? styles.cleanPercentChipTextActive : styles.cleanPercentChipTextInactive,
+                            ]}
+                          >
+                            {chip.label}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+
+                  {/* Warning Banner when over balance */}
+                  {sendAmountError ? (
+                    <View style={styles.cleanWarningBanner}>
+                      <MaterialIcons
+                        name="error-outline"
+                        size={15}
+                        color="#e5484d"
+                        style={{ marginTop: 1, flexShrink: 0 }}
+                      />
+                      <Text style={styles.cleanWarningBannerText}>{sendAmountError}</Text>
+                    </View>
+                  ) : null}
                 </View>
 
-                {/* Single subtle divider before total outflow */}
-                <View style={[styles.cleanPreviewDivider, { backgroundColor: theme.borderDefault }]} />
+                {/* RECIPIENT INPUT SECTION */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={styles.cleanFieldLabel}>Recipient Solana address</Text>
+                  <View
+                    style={[
+                      styles.cleanRecipientBox,
+                      isValidRecipient && { borderColor: theme.emeraldBorder },
+                      isRecipientInvalid && { borderColor: theme.roseBorder },
+                    ]}
+                  >
+                    <View style={{ flex: 1, minWidth: 0, overflow: 'hidden', marginRight: 8 }}>
+                      <TextInput
+                        style={styles.cleanRecipientInput}
+                        value={sendRecipient}
+                        onChangeText={handleRecipientTextChange}
+                        onBlur={() => setSendRecipientBlurred(true)}
+                        placeholder="Enter recipient address"
+                        placeholderTextColor="#5f5e5a"
+                        selectionColor="#6c8cff"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        numberOfLines={1}
+                        multiline={false}
+                        accessibilityLabel="Recipient Solana address"
+                      />
+                    </View>
+                    {sendRecipient ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        {isValidRecipient ? (
+                          <View
+                            style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: 11,
+                              backgroundColor: theme.emeraldBg,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <MaterialIcons name="check" size={14} color={theme.emerald} />
+                          </View>
+                        ) : null}
+                        <TouchableOpacity
+                          style={{ padding: 4 }}
+                          onPress={() => {
+                            Haptics.selectionAsync()
+                            setSendRecipient('')
+                            setSendRecipientSource(null)
+                            setRecipientAttemptError('')
+                            setSendRecipientAttempted(false)
+                            setResolvedName(null)
+                            setNameLookup(null)
+                            setPendingContactName(null)
+                          }}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          accessibilityLabel="Clear recipient address"
+                        >
+                          <MaterialIcons name="cancel" size={16} color="#8a8985" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.cleanPasteBtn}
+                        onPress={handlePasteRecipient}
+                        accessibilityLabel="Paste address from clipboard"
+                        activeOpacity={0.7}
+                      >
+                        <MaterialIcons name="content-paste" size={14} color="#6c8cff" />
+                        <Text style={styles.cleanPasteBtnText}>Paste</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
 
-                {/* Total outflow */}
-                <View style={[styles.cleanPreviewRow, { paddingTop: 2 }]}>
-                  <Text style={[styles.cleanPreviewValue, { fontWeight: '600' }]}>Total outflow</Text>
-                  <Text style={[styles.cleanPreviewValue, { fontWeight: '600' }]}>
-                    {selectedToken === 'SOL'
-                      ? sendTotalSol.toFixed(4)
-                      : sendAmountNum.toFixed(2)}{' '}
-                    {selectedToken}
-                  </Text>
+                  {/* One message slot under the field: what the paste did, what a name
+                  resolved to, or what is wrong. The previous sheet said nothing at all
+                  about a rejected paste. */}
+                  {isResolvingName ? (
+                    <View style={styles.fieldMessageRow}>
+                      <ActivityIndicator size="small" color={theme.textMuted} />
+                      <Text style={[styles.fieldMessageText, styles.textSecondary]}>
+                        {`Resolving ${nameInput ?? 'name'}…`}
+                      </Text>
+                    </View>
+                  ) : nameLookup ? (
+                    <View style={styles.fieldMessageRow}>
+                      <MaterialIcons
+                        name={nameLookup.status === 'resolved' ? 'check-circle' : 'error-outline'}
+                        size={13}
+                        color={nameLookup.status === 'resolved' ? theme.emerald : theme.roseText}
+                      />
+                      <Text
+                        style={[
+                          styles.fieldMessageText,
+                          nameLookup.status === 'resolved' ? styles.textSecondary : { color: theme.roseText },
+                        ]}
+                      >
+                        {nameLookup.message}
+                      </Text>
+                    </View>
+                  ) : isRecipientSelf ? (
+                    <View style={styles.fieldMessageRow}>
+                      <MaterialIcons name="error-outline" size={13} color={theme.roseText} />
+                      <Text style={[styles.fieldMessageText, { color: theme.roseText }]}>
+                        Cannot send to this wallet&apos;s own address.
+                      </Text>
+                    </View>
+                  ) : recipientAttemptError || (showRecipientError && recipientParse.error) ? (
+                    <View style={styles.fieldMessageRow}>
+                      <MaterialIcons name="error-outline" size={13} color={theme.roseText} />
+                      <Text style={[styles.fieldMessageText, { color: theme.roseText }]}>
+                        {recipientAttemptError || recipientParse.error}
+                      </Text>
+                    </View>
+                  ) : recipientNotice ? (
+                    <View style={styles.fieldMessageRow}>
+                      <MaterialIcons name="auto-fix-high" size={13} color={theme.emerald} />
+                      <Text style={[styles.fieldMessageText, styles.textSecondary]}>{recipientNotice}</Text>
+                    </View>
+                  ) : isValidRecipient ? (
+                    <View style={styles.fieldMessageRow}>
+                      <MaterialIcons name="check-circle" size={13} color={theme.emerald} />
+                      <Text style={[styles.fieldMessageText, { color: theme.emeraldText }]}>
+                        {savedContact ? `Saved contact (${savedContact.label})` : 'Valid Solana address'}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {/* Saving the current recipient. Opens in place, pre-filled with the name a
+                  .sns/.sol lookup produced when there was one. */}
+                  {pendingContactName !== null && recipientAddress ? (
+                    <View style={styles.contactSaveRow}>
+                      <TextInput
+                        style={[styles.contactSaveInput, styles.input]}
+                        value={pendingContactName}
+                        onChangeText={setPendingContactName}
+                        placeholder={resolvedName ?? 'Name this recipient (optional)'}
+                        placeholderTextColor={theme.textMuted}
+                        selectionColor={theme.accent}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                        maxLength={32}
+                        accessibilityLabel="Contact name"
+                      />
+                      <View style={styles.contactSaveActions}>
+                        <TouchableOpacity
+                          style={styles.clearActionBtn}
+                          onPress={() => setPendingContactName(null)}
+                          accessibilityLabel="Cancel saving this recipient"
+                        >
+                          <MaterialIcons name="close" size={16} color={theme.textMuted} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.clearActionBtn}
+                          onPress={() => void handleSaveContact(pendingContactName)}
+                          accessibilityLabel="Save recipient"
+                        >
+                          <MaterialIcons name="check" size={18} color={theme.emerald} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {/* Shortcuts: saved contacts first, then addresses this wallet has paid.
+                  Only shown while the field is empty, so they never compete with what the
+                  user is typing. Long-pressing a saved one offers to remove it. */}
+                  {!sendRecipient && recipientShortcuts.length > 0 ? (
+                    <View style={styles.recentRecipientRow}>
+                      <Text style={[styles.recentRecipientLabel, styles.textMuted]}>
+                        {recipientShortcuts.some((entry) => entry.saved) ? 'Saved' : 'Recent'}
+                      </Text>
+                      {recipientShortcuts.map((entry) => {
+                        const useShortcut = () => {
+                          Haptics.selectionAsync()
+                          setSendRecipient(entry.address)
+                          setResolvedName(null)
+                          setNameLookup(null)
+                          setSendRecipientSource(null)
+                          setRecipientAttemptError('')
+                          setSendRecipientAttempted(true)
+                        }
+                        return entry.saved ? (
+                          <TouchableOpacity
+                            key={entry.address}
+                            style={[styles.savedRecipientChip, styles.input]}
+                            onPress={useShortcut}
+                            onLongPress={() => handleRemoveContact(entry.address, entry.label)}
+                            accessibilityLabel={`Send to ${entry.label ?? ellipsify(entry.address, 4)}. Long press to remove.`}
+                          >
+                            <MaterialIcons name="bookmark" size={12} color={theme.amber} />
+                            <View style={styles.savedRecipientTextGroup}>
+                              <Text style={[styles.savedRecipientLabel, styles.textPrimary]} numberOfLines={1}>
+                                {entry.label ?? ellipsify(entry.address, 4)}
+                              </Text>
+                              <Text style={[styles.savedRecipientAddress, styles.textMuted]} numberOfLines={1}>
+                                {ellipsify(entry.address, 4)}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            key={entry.address}
+                            style={[styles.recentRecipientChip, styles.input]}
+                            onPress={useShortcut}
+                            accessibilityLabel={`Use recent recipient ${ellipsify(entry.address, 4)}`}
+                          >
+                            <Text style={[styles.recentRecipientChipText, styles.textSecondary]}>
+                              {ellipsify(entry.address, 4)}
+                            </Text>
+                          </TouchableOpacity>
+                        )
+                      })}
+                    </View>
+                  ) : null}
                 </View>
-              </View>
-            </View>
 
-            {/* Error message */}
-            {sendErrorMsg ? (
-              <View style={[styles.cleanWarningBanner, { marginBottom: 12 }]}>
-                <MaterialIcons name="error-outline" size={15} color="#e5484d" style={{ marginTop: 1, flexShrink: 0 }} />
-                <Text style={styles.cleanWarningBannerText}>{sendErrorMsg}</Text>
-              </View>
-            ) : null}
+                {/* TRANSACTION PREVIEW SECTION */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={styles.cleanFieldLabel}>Transaction preview</Text>
+                  <View style={styles.cleanPreviewCard}>
+                    {/* Recipient */}
+                    <View style={styles.cleanPreviewRow}>
+                      <Text style={styles.cleanPreviewLabel}>Recipient</Text>
+                      <Text style={[styles.cleanPreviewValue, !recipientAddress && { color: theme.textMuted }]}>
+                        {recipientAddress
+                          ? savedContact?.label || resolvedName
+                            ? `${savedContact?.label ?? resolvedName} (${ellipsify(recipientAddress, 4)})`
+                            : ellipsify(recipientAddress, 4)
+                          : 'Not specified'}
+                      </Text>
+                    </View>
 
+                    {/* Transfer amount */}
+                    <View style={styles.cleanPreviewRow}>
+                      <Text style={styles.cleanPreviewLabel}>Transfer amount</Text>
+                      <Text style={[styles.cleanPreviewValue, { fontWeight: '500' }]}>
+                        {sendAmountNum.toFixed(selectedToken === 'SOL' ? 4 : 2)} {selectedToken}
+                      </Text>
+                    </View>
+
+                    {/* Network */}
+                    <View style={styles.cleanPreviewRow}>
+                      <Text style={styles.cleanPreviewLabel}>Network</Text>
+                      <Text style={styles.cleanPreviewValue}>
+                        {network === 'devnet' ? 'Solana devnet' : 'Solana mainnet'}
+                      </Text>
+                    </View>
+
+                    {/* Estimated fee */}
+                    <View style={styles.cleanPreviewRow}>
+                      <Text style={styles.cleanPreviewLabel}>Estimated fee</Text>
+                      <Text style={styles.cleanPreviewValue}>
+                        {selectedToken !== 'SOL' ? '0.00 SOL (Sponsored)' : `${effectiveFeeSol} SOL`}
+                      </Text>
+                    </View>
+
+                    {/* Authorization */}
+                    <View style={styles.cleanPreviewRow}>
+                      <Text style={styles.cleanPreviewLabel}>Authorization</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        <MaterialIcons name="fingerprint" size={14} color={theme.textPrimary} />
+                        <Text style={styles.cleanPreviewValue}>
+                          {isSendQuorumRequired ? '2 passkeys' : '1 passkey'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Single subtle divider before total outflow */}
+                    <View style={[styles.cleanPreviewDivider, { backgroundColor: theme.borderDefault }]} />
+
+                    {/* Total outflow */}
+                    <View style={[styles.cleanPreviewRow, { paddingTop: 2 }]}>
+                      <Text style={[styles.cleanPreviewValue, { fontWeight: '600' }]}>Total outflow</Text>
+                      <Text style={[styles.cleanPreviewValue, { fontWeight: '600' }]}>
+                        {selectedToken === 'SOL' ? sendTotalSol.toFixed(4) : sendAmountNum.toFixed(2)} {selectedToken}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Error message */}
+                {sendErrorMsg ? (
+                  <View style={[styles.cleanWarningBanner, { marginBottom: 12 }]}>
+                    <MaterialIcons
+                      name="error-outline"
+                      size={15}
+                      color="#e5484d"
+                      style={{ marginTop: 1, flexShrink: 0 }}
+                    />
+                    <Text style={styles.cleanWarningBannerText}>{sendErrorMsg}</Text>
+                  </View>
+                ) : null}
               </ScrollView>
 
               {/* ACTION BUTTON & HELPER - PINNED STICKY AT BOTTOM */}
@@ -1628,11 +1629,7 @@ export function HaptixSendSheet({
                     {/* Step 1: This phone */}
                     <View style={styles.stepApprovalRow}>
                       <View style={styles.stepApprovalLeft}>
-                        <MaterialIcons
-                          name="smartphone"
-                          size={18}
-                          color={theme.isDark ? '#F2F1EE' : '#18181B'}
-                        />
+                        <MaterialIcons name="smartphone" size={18} color={theme.isDark ? '#F2F1EE' : '#18181B'} />
                         <Text style={styles.stepApprovalDeviceName}>This phone</Text>
                       </View>
 
@@ -1664,8 +1661,12 @@ export function HaptixSendSheet({
                               size={18}
                               color={
                                 sendStep === 'primary'
-                                  ? (theme.isDark ? '#71717A' : '#A1A1AA')
-                                  : (theme.isDark ? '#F2F1EE' : '#18181B')
+                                  ? theme.isDark
+                                    ? '#71717A'
+                                    : '#A1A1AA'
+                                  : theme.isDark
+                                    ? '#F2F1EE'
+                                    : '#18181B'
                               }
                             />
                             <Text
@@ -1688,7 +1689,9 @@ export function HaptixSendSheet({
                               <View style={styles.stepApprovalStatusBadge}>
                                 <ActivityIndicator size="small" color="#6C8CFF" style={{ marginRight: 6 }} />
                                 <Text style={styles.stepApprovalStatusActive}>
-                                  {wallet?.securityMode === 'vault' ? 'Waiting for second device' : 'Waiting for passkey'}
+                                  {wallet?.securityMode === 'vault'
+                                    ? 'Waiting for second device'
+                                    : 'Waiting for passkey'}
                                 </Text>
                               </View>
                             ) : (
@@ -1717,7 +1720,11 @@ export function HaptixSendSheet({
                     {/* Bottom Action: Broadcasting state OR Cancel button */}
                     {sendStep === 'broadcasting' ? (
                       <View style={styles.stepApprovalBroadcastingRow}>
-                        <ActivityIndicator size="small" color={theme.isDark ? '#F2F1EE' : '#18181B'} style={{ marginRight: 8 }} />
+                        <ActivityIndicator
+                          size="small"
+                          color={theme.isDark ? '#F2F1EE' : '#18181B'}
+                          style={{ marginRight: 8 }}
+                        />
                         <Text style={styles.stepApprovalBroadcastingText}>Sending to Solana…</Text>
                       </View>
                     ) : (
@@ -1737,7 +1744,7 @@ export function HaptixSendSheet({
                     <TouchableOpacity
                       style={[
                         styles.cleanSubmitBtn,
-                        (!recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError)
+                        !recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError
                           ? styles.cleanSubmitBtnDisabled
                           : styles.cleanSubmitBtnEnabled,
                       ]}
@@ -1750,7 +1757,7 @@ export function HaptixSendSheet({
                       <Text
                         style={[
                           styles.cleanSubmitBtnText,
-                          (!recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError)
+                          !recipientAddress || isRecipientSelf || sendAmountNum <= 0 || !!sendAmountError
                             ? styles.cleanSubmitBtnTextDisabled
                             : styles.cleanSubmitBtnTextEnabled,
                         ]}
@@ -1764,10 +1771,10 @@ export function HaptixSendSheet({
                         {!recipientAddress
                           ? 'Add a recipient address to continue'
                           : sendAmountNum <= 0
-                          ? 'Enter an amount to continue'
-                          : sendAmountError
-                          ? 'Adjust amount to continue'
-                          : 'Complete form to continue'}
+                            ? 'Enter an amount to continue'
+                            : sendAmountError
+                              ? 'Adjust amount to continue'
+                              : 'Complete form to continue'}
                       </Text>
                     )}
                   </>

@@ -10,10 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "io.haptix.wallet",
-      "associatedDomains": [
-        "webcredentials:haptixwallet.xyz",
-        "webcredentials:haptix-passkeys.vercel.app"
-      ]
+      "associatedDomains": ["webcredentials:haptixwallet.xyz", "webcredentials:haptix-passkeys.vercel.app"]
     },
     "android": {
       "adaptiveIcon": {
@@ -22,12 +19,7 @@
       },
       "package": "io.haptix.wallet",
       "versionCode": 3,
-      "permissions": [
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT",
-        "INTERNET",
-        "VIBRATE"
-      ],
+      "permissions": ["USE_BIOMETRIC", "USE_FINGERPRINT", "INTERNET", "VIBRATE"],
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",

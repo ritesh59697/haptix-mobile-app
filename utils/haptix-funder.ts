@@ -232,5 +232,3 @@ export function getDevnetFunderPublicKey(): PublicKey | null {
     return null
   }
 }
-
-

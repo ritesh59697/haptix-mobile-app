@@ -1,5 +1,16 @@
 import React, { useMemo, useRef, useEffect } from 'react'
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Animated, PanResponder, Linking } from 'react-native'
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Animated,
+  PanResponder,
+  Linking,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
@@ -233,8 +244,7 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
             },
             {
               term: 'Changing your guardian',
-              detail:
-                'You can update your guardian address at any time using your two device passkeys.',
+              detail: 'You can update your guardian address at any time using your two device passkeys.',
             },
           ],
         },
@@ -330,8 +340,7 @@ export function buildPolicy(threshold: number): Record<PolicyTopic, PolicyConten
             },
             {
               term: 'No telemetry or analytics',
-              detail:
-                'There are no trackers, third-party analytics SDKs, or session recorders bundled in Haptix.',
+              detail: 'There are no trackers, third-party analytics SDKs, or session recorders bundled in Haptix.',
             },
           ],
         },

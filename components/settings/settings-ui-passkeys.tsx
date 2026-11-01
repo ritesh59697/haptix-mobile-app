@@ -171,11 +171,7 @@ export function SettingsUiPasskeys() {
             disabled={isBinding}
             icon={
               isBinding ? (
-                <SpinLoader
-                  size="sm"
-                  color={isBinding ? theme.textMuted : theme.accentForeground}
-                  strokeWidth={2.4}
-                />
+                <SpinLoader size="sm" color={isBinding ? theme.textMuted : theme.accentForeground} strokeWidth={2.4} />
               ) : (
                 <LucideKeyRound size={16} color={theme.accentForeground} strokeWidth={2} />
               )

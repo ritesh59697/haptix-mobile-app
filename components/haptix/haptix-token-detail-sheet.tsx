@@ -45,8 +45,7 @@ function generatePricePoints(
 ): number[] {
   const pointsCount = 24
   const points: number[] = []
-  const volatility =
-    timeframe === '1H' ? 0.008 : timeframe === '1D' ? 0.025 : timeframe === '1W' ? 0.06 : 0.12
+  const volatility = timeframe === '1H' ? 0.008 : timeframe === '1D' ? 0.025 : timeframe === '1W' ? 0.06 : 0.12
 
   // Start from past price
   const trendMultiplier = isPositive ? 1 + Math.abs(changePct) / 100 : 1 - Math.abs(changePct) / 100
@@ -137,12 +136,7 @@ export function HaptixTokenDetailSheet({
   const trendColor = isPositive ? theme.emerald : theme.roseText
 
   const points = useMemo(() => {
-    return generatePricePoints(
-      activeToken.priceUsd || solPriceUsd,
-      activeToken.changePct || 1.0,
-      timeframe,
-      isPositive,
-    )
+    return generatePricePoints(activeToken.priceUsd || solPriceUsd, activeToken.changePct || 1.0, timeframe, isPositive)
   }, [activeToken.priceUsd, activeToken.changePct, timeframe, isPositive, solPriceUsd])
 
   // Fluid pull-down gesture to dismiss bottom sheet
@@ -245,7 +239,7 @@ export function HaptixTokenDetailSheet({
     else if (timeframe === '1W') d.setHours(d.getHours() - offset * 7)
     else if (timeframe === '1M') d.setDate(d.getDate() - offset * 1.25)
     else d.setDate(d.getDate() - offset * 15)
-    
+
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     const month = months[d.getMonth()]
     const date = d.getDate()
@@ -254,16 +248,17 @@ export function HaptixTokenDetailSheet({
     const ampm = hours >= 12 ? 'PM' : 'AM'
     hours = hours % 12 || 12
     const mins = d.getMinutes().toString().padStart(2, '0')
-    
+
     if (timeframe === '1H' || timeframe === '1D') return `${month} ${date}, ${hours}:${mins} ${ampm}`
     if (timeframe === '1W') return `${month} ${date}, ${hours} ${ampm}`
     if (timeframe === '1M') return `${month} ${date}`
     return `${month} ${year}`
   }
 
-  const displayPrice = activePointIndex !== null 
-    ? `$${(coords[activePointIndex]?.value || 0).toFixed(activeToken.priceUsd < 1 ? 4 : 2)}`
-    : activeToken.price
+  const displayPrice =
+    activePointIndex !== null
+      ? `$${(coords[activePointIndex]?.value || 0).toFixed(activeToken.priceUsd < 1 ? 4 : 2)}`
+      : activeToken.price
 
   // Holdings
   const isSol = activeToken.symbol.toUpperCase() === 'SOL'
@@ -310,8 +305,8 @@ export function HaptixTokenDetailSheet({
             </View>
           </View>
 
-          <ScrollView 
-            showsVerticalScrollIndicator={false} 
+          <ScrollView
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
             scrollEnabled={activePointIndex === null}
           >
@@ -328,11 +323,7 @@ export function HaptixTokenDetailSheet({
                     },
                   ]}
                 >
-                  <MaterialIcons
-                    name={isPositive ? 'arrow-drop-up' : 'arrow-drop-down'}
-                    size={16}
-                    color={trendColor}
-                  />
+                  <MaterialIcons name={isPositive ? 'arrow-drop-up' : 'arrow-drop-down'} size={16} color={trendColor} />
                   <Text style={[styles.trendText, { color: trendColor }]}>{activeToken.change}</Text>
                 </View>
                 <Text style={[styles.timeframeSubtitle, { color: theme.textMuted }]}>past {timeframe}</Text>
@@ -370,7 +361,7 @@ export function HaptixTokenDetailSheet({
                 <Path d={areaPath} fill="url(#chartGradient)" />
                 {/* Line */}
                 <Path d={linePath} fill="none" stroke={trendColor} strokeWidth={2.4} strokeLinecap="round" />
-                
+
                 {/* Scrubbing crosshair & dot */}
                 {activePointIndex !== null && (
                   <>

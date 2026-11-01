@@ -107,11 +107,7 @@ export function HaptixCopyableIdentifier({
         ]}
       >
         <Text
-          style={[
-            styles.text,
-            { color: copied ? theme.emeraldText : theme.textPrimary },
-            textStyle,
-          ]}
+          style={[styles.text, { color: copied ? theme.emeraldText : theme.textPrimary }, textStyle]}
           numberOfLines={numberOfLines}
           ellipsizeMode="middle"
         >
@@ -119,9 +115,7 @@ export function HaptixCopyableIdentifier({
         </Text>
 
         <View style={styles.actionGroup}>
-          {copied && (
-            <Text style={[styles.copiedLabel, { color: theme.emeraldText }]}>Copied</Text>
-          )}
+          {copied && <Text style={[styles.copiedLabel, { color: theme.emeraldText }]}>Copied</Text>}
           <Animated.View style={{ transform: [{ scale: iconScaleAnim }] }}>
             <MaterialIcons
               name={copied ? 'check' : 'content-copy'}

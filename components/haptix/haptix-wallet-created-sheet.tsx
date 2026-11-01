@@ -139,39 +139,38 @@ export function HaptixWalletCreatedContent({
     onClose()
   }
 
-  const thresholdSol =
-    spendThreshold !== undefined ? spendThreshold : 0.1
+  const thresholdSol = spendThreshold !== undefined ? spendThreshold : 0.1
 
   const cardBg = isDark ? '#121213' : (theme.bgElevated ?? '#F6F6F8')
   const cardBorder = isDark ? '#2a2a28' : theme.borderDefault
   const dividerBg = isDark ? '#201f1d' : theme.borderSubtle
-  const iconBoxBg = isDark ? '#1a1a18' : (theme.isDark ? '#1a1a18' : '#E8E8ED')
+  const iconBoxBg = isDark ? '#1a1a18' : theme.isDark ? '#1a1a18' : '#E8E8ED'
 
   return (
     <ScrollView
       style={styles.scrollContainer}
-      contentContainerStyle={[
-        styles.container,
-        { paddingBottom: Math.max(insets.bottom, 16) + 12 },
-      ]}
+      contentContainerStyle={[styles.container, { paddingBottom: Math.max(insets.bottom, 16) + 12 }]}
       showsVerticalScrollIndicator={false}
       bounces={false}
     >
       {/* Handle indicator */}
-      {showHandle && (
-        <View style={[styles.handle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />
-      )}
+      {showHandle && <View style={[styles.handle, { backgroundColor: isDark ? '#3a3a37' : '#D1D1D6' }]} />}
 
       {/* Hero Header with Animated Ring */}
       <View style={styles.header}>
-        <Animated.View
-          style={[
-            styles.ringWrapper,
-            { transform: [{ scale: ringScale }], opacity: ringOpacity },
-          ]}
-        >
-          <View style={[styles.ringOuter, { backgroundColor: isDark ? 'rgba(95, 191, 122, 0.08)' : 'rgba(5, 150, 105, 0.10)' }]}>
-            <View style={[styles.ringInner, { backgroundColor: isDark ? 'rgba(95, 191, 122, 0.16)' : 'rgba(5, 150, 105, 0.18)' }]}>
+        <Animated.View style={[styles.ringWrapper, { transform: [{ scale: ringScale }], opacity: ringOpacity }]}>
+          <View
+            style={[
+              styles.ringOuter,
+              { backgroundColor: isDark ? 'rgba(95, 191, 122, 0.08)' : 'rgba(5, 150, 105, 0.10)' },
+            ]}
+          >
+            <View
+              style={[
+                styles.ringInner,
+                { backgroundColor: isDark ? 'rgba(95, 191, 122, 0.16)' : 'rgba(5, 150, 105, 0.18)' },
+              ]}
+            >
               <Svg viewBox="0 0 24 24" width={30} height={30} fill="none">
                 <Path
                   d="M5 12.5L9.5 17L19 7.5"
@@ -211,12 +210,10 @@ export function HaptixWalletCreatedContent({
             <MaterialIcons
               name={copied ? 'check' : 'content-copy'}
               size={13}
-              color={copied ? (isDark ? '#5fbf7a' : theme.emerald) : (isDark ? '#8a8985' : theme.textMuted)}
+              color={copied ? (isDark ? '#5fbf7a' : theme.emerald) : isDark ? '#8a8985' : theme.textMuted}
             />
             {copied && (
-              <Text style={[styles.copiedText, { color: isDark ? '#5fbf7a' : theme.emeraldText }]}>
-                Copied
-              </Text>
+              <Text style={[styles.copiedText, { color: isDark ? '#5fbf7a' : theme.emeraldText }]}>Copied</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -240,9 +237,7 @@ export function HaptixWalletCreatedContent({
             Sends above {thresholdSol.toFixed(2)} SOL
           </Text>
           <Text style={[styles.quorumValue, { color: theme.textPrimary }]} numberOfLines={1}>
-            {securityMode === 'vault'
-              ? 'Need this phone and second device'
-              : 'Need this phone and backup key'}
+            {securityMode === 'vault' ? 'Need this phone and second device' : 'Need this phone and backup key'}
           </Text>
         </View>
       </View>
@@ -270,11 +265,7 @@ export function HaptixWalletCreatedContent({
                 isFunding && { color: theme.accent },
               ]}
             >
-              {isFunding
-                ? 'Funding 0.1 devnet SOL...'
-                : isFunded
-                ? '0.1 SOL received!'
-                : 'Your balance is empty'}
+              {isFunding ? 'Funding 0.1 devnet SOL...' : isFunded ? '0.1 SOL received!' : 'Your balance is empty'}
             </Text>
           </View>
           {isFunding ? (
@@ -289,11 +280,7 @@ export function HaptixWalletCreatedContent({
         <View style={[styles.divider, { backgroundColor: dividerBg }]} />
 
         {/* Step 2: Recovery Guardian */}
-        <TouchableOpacity
-          style={styles.stepRow}
-          onPress={handleAddGuardian}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.stepRow} onPress={handleAddGuardian} activeOpacity={0.7}>
           <View style={[styles.stepIconBox, { backgroundColor: iconBoxBg }]}>
             <MaterialIcons name="group" size={17} color={isDark ? '#f2f1ee' : theme.textPrimary} />
           </View>
@@ -339,11 +326,7 @@ export function HaptixWalletCreatedContent({
         <Text style={[styles.doneButtonText, { color: '#FFFFFF' }]}>Done</Text>
       </TouchableOpacity>
 
-      <HaptixFeatureGuideModal
-        visible={showGuide}
-        onClose={() => setShowGuide(false)}
-        persistDismissal={false}
-      />
+      <HaptixFeatureGuideModal visible={showGuide} onClose={() => setShowGuide(false)} persistDismissal={false} />
     </ScrollView>
   )
 }
@@ -397,12 +380,7 @@ export function HaptixWalletCreatedSheet({
   }, [visible, panY])
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <Animated.View

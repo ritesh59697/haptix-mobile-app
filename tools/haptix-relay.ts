@@ -56,7 +56,10 @@ const server = http.createServer((req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`)
 
   // Serve vault.html directly if requested
-  if ((req.method === 'GET' || req.method === 'HEAD') && (url.pathname === '/' || url.pathname === '/vault.html' || url.pathname === '/vault')) {
+  if (
+    (req.method === 'GET' || req.method === 'HEAD') &&
+    (url.pathname === '/' || url.pathname === '/vault.html' || url.pathname === '/vault')
+  ) {
     if (fs.existsSync(VAULT_HTML_PATH)) {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
       if (req.method === 'HEAD') {
@@ -75,13 +78,15 @@ const server = http.createServer((req, res) => {
       res.end()
       return
     }
-    res.end(JSON.stringify({
-      ok: true,
-      service: 'Haptix Cloud Relay',
-      activePending: pendingById.size,
-      uptimeSec: Math.round(process.uptime()),
-      timestamp: Date.now(),
-    }))
+    res.end(
+      JSON.stringify({
+        ok: true,
+        service: 'Haptix Cloud Relay',
+        activePending: pendingById.size,
+        uptimeSec: Math.round(process.uptime()),
+        timestamp: Date.now(),
+      }),
+    )
     return
   }
 
@@ -92,8 +97,8 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const data = JSON.parse(body)
-        const txId = (data.id && typeof data.id === 'string') ? data.id : Math.random().toString(36).substring(2, 10)
-        
+        const txId = data.id && typeof data.id === 'string' ? data.id : Math.random().toString(36).substring(2, 10)
+
         const tx: PendingTx = {
           id: txId,
           messageHex: data.messageHex,
@@ -113,11 +118,15 @@ const server = http.createServer((req, res) => {
           pendingByWallet.set(tx.walletPda, tx)
         }
 
-        console.log(`[Relay] New transfer queued: ${tx.amountSol} SOL to ${tx.recipient} (wallet: ${tx.walletPda || 'any'}, id: ${txId})`)
+        console.log(
+          `[Relay] New transfer queued: ${tx.amountSol} SOL to ${tx.recipient} (wallet: ${tx.walletPda || 'any'}, id: ${txId})`,
+        )
 
         if (process.platform === 'darwin') {
           try {
-            exec(`osascript -e 'display notification "Transfer of ${tx.amountSol} SOL pending second device approval" with title "Haptix Vault Quorum" sound name "Glass"'`)
+            exec(
+              `osascript -e 'display notification "Transfer of ${tx.amountSol} SOL pending second device approval" with title "Haptix Vault Quorum" sound name "Glass"'`,
+            )
           } catch {}
         }
 
@@ -196,7 +205,9 @@ const server = http.createServer((req, res) => {
           clientDataJSONHex: data.clientDataJSONHex,
         }
         targetTx.status = 'signed'
-        console.log(`[Relay] Received second device signature for tx ${targetTx.id} (wallet: ${targetTx.walletPda || 'any'})`)
+        console.log(
+          `[Relay] Received second device signature for tx ${targetTx.id} (wallet: ${targetTx.walletPda || 'any'})`,
+        )
 
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: true, txId: targetTx.id }))
@@ -220,7 +231,14 @@ const server = http.createServer((req, res) => {
         pendingById.delete(declinedId)
         if (targetTx.walletPda) pendingByWallet.delete(targetTx.walletPda)
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ ok: false, declined: true, txId: declinedId, error: 'Transfer was declined on second device' }))
+        res.end(
+          JSON.stringify({
+            ok: false,
+            declined: true,
+            txId: declinedId,
+            error: 'Transfer was declined on second device',
+          }),
+        )
         return
       }
       if (targetTx.signature) {

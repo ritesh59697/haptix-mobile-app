@@ -68,9 +68,10 @@ By integrating the **Mobile Wallet Adapter (MWA)** protocol, Haptix unlocks this
 ```
 
 ### Key Technical Distinctions:
-* **Hardware Storage**: Secp256r1 private keys never leave the secure hardware element (Android Keystore StrongBox or TEE). 
-* **On-Chain Precompile Introspection**: The Anchor smart contract (`haptix_program`) uses low-level instruction sysvar introspection to verify that Solana's native `Secp256r1SigVerify1111111111111111111111111` precompile executed successfully in the exact same transaction, verifying exact byte offsets, low-S canonical signatures, and SHA-256 message digests.
-* **Native Seeker (SKR) Token Policy**: Already implemented and tested in the smart contract (`tests/seeker-skr.test.ts`):
+
+- **Hardware Storage**: Secp256r1 private keys never leave the secure hardware element (Android Keystore StrongBox or TEE).
+- **On-Chain Precompile Introspection**: The Anchor smart contract (`haptix_program`) uses low-level instruction sysvar introspection to verify that Solana's native `Secp256r1SigVerify1111111111111111111111111` precompile executed successfully in the exact same transaction, verifying exact byte offsets, low-S canonical signatures, and SHA-256 message digests.
+- **Native Seeker (SKR) Token Policy**: Already implemented and tested in the smart contract (`tests/seeker-skr.test.ts`):
   - Transfers &le; 50 SKR authorize instantly with 1-tap biometric passkey.
   - Transfers > 50 SKR automatically escalate to require 2-of-2 hardware quorum authorization.
   - Native Genesis welcome claim rules (100 SKR allocation).
@@ -79,10 +80,10 @@ By integrating the **Mobile Wallet Adapter (MWA)** protocol, Haptix unlocks this
 
 ## 4. Current Traction & Readiness
 
-* **Solana dApp Store**: Officially approved & LIVE on the dApp Store catalog for Solana Seeker and Saga (v1.0.2 / Build 3). Compliant with publisher policies FUN-002 (zero-config devnet gas auto-funding for reviewers) and PER-001 (minimal Android permissions).
-* **On-Chain Program**: Anchor 0.31 smart contract deployed on Solana Devnet (`9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`).
-* **Automated Test Coverage**: **324 automated tests passing** across 14 suites (`npm test`), with a **262-test zero-private-key runner** (`npm run test:no-key`) and active GitHub Actions continuous integration (CI).
-* **Live Companions**:
+- **Solana dApp Store**: Officially approved & LIVE on the dApp Store catalog for Solana Seeker and Saga (v1.0.2 / Build 3). Compliant with publisher policies FUN-002 (zero-config devnet gas auto-funding for reviewers) and PER-001 (minimal Android permissions).
+- **On-Chain Program**: Anchor 0.31 smart contract deployed on Solana Devnet (`9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`).
+- **Automated Test Coverage**: **324 automated tests passing** across 14 suites (`npm test`), with a **262-test zero-private-key runner** (`npm run test:no-key`) and active GitHub Actions continuous integration (CI).
+- **Live Companions**:
   - Official Web Hub & Web Vault: [haptixwallet.xyz](https://haptixwallet.xyz)
   - 24-Hour Guardian Recovery Portal: [haptixwallet.xyz/recover.html](https://haptixwallet.xyz/recover.html)
   - Complete Developer Documentation: [docs.haptixwallet.xyz](https://docs.haptixwallet.xyz)
@@ -113,8 +114,9 @@ We propose a focused, **3-milestone technical roadmap** funded by a **$10,000 US
 ```
 
 ### Milestone 1: Mobile Wallet Adapter (MWA) Wallet Provider ($4,000)
-* **Goal**: Implement the official Solana Mobile Wallet Adapter 2.0 wallet specification inside Haptix.
-* **Deliverables**:
+
+- **Goal**: Implement the official Solana Mobile Wallet Adapter 2.0 wallet specification inside Haptix.
+- **Deliverables**:
   1. **MWA Intent Handler & WebSocket Server**: Enable Haptix to respond to `solana-wallet://` intents from external Android dApps.
   2. **`authorize` & `reauthorize`**: Session authorization returning the user's smart wallet PDA and Secp256r1 public key identity.
   3. **`sign_and_send_transactions`**: Intercept third-party transaction payloads, construct the Secp256r1 precompile verify instruction, prompt the biometric hardware Keystore, and relay sponsored transactions to Solana.
@@ -122,16 +124,18 @@ We propose a focused, **3-milestone technical roadmap** funded by a **$10,000 US
   5. **Automated MWA Compatibility Test Suite**: End-to-end integration tests verifying communication with standard Solana Mobile dApp clients.
 
 ### Milestone 2: Security Hardening & Mainnet Readiness ($3,500)
-* **Goal**: Validate that all cryptographic precompile introspection and state transitions are exploit-free prior to handling real mainnet capital.
-* **Deliverables**:
+
+- **Goal**: Validate that all cryptographic precompile introspection and state transitions are exploit-free prior to handling real mainnet capital.
+- **Deliverables**:
   1. **Independent Security Audit**: Submit the ~2,645 lines of Rust Anchor code (`haptix_program`) to an experienced Solana security auditing team (leveraging audit grants such as Vaultline).
   2. **Audit Remediation**: Fix any identified issues regarding instruction introspection offset validation, fee-funder front-running, or recovery timelock edge cases.
   3. **Mainnet Readiness Assessment**: Comprehensive report certifying the contract's readiness for Mainnet deployment.
-  * *Note: Mainnet deployment is explicitly conditioned on successful audit completion and remediation.*
+  - _Note: Mainnet deployment is explicitly conditioned on successful audit completion and remediation._
 
 ### Milestone 3: Seeker Developer SDK, Documentation & User Testing ($2,500)
-* **Goal**: Make Haptix's 1-tap passkey and session key architecture easily embeddable by Solana Mobile developers.
-* **Deliverables**:
+
+- **Goal**: Make Haptix's 1-tap passkey and session key architecture easily embeddable by Solana Mobile developers.
+- **Deliverables**:
   1. **Haptix Mobile Client SDK**: A lightweight TypeScript/React Native package allowing developers to query Haptix smart wallet state, check spend policies, and request scoped agent session keys (`grant_agent_session`).
   2. **Developer Documentation & Guides**: Full tutorials on [docs.haptixwallet.xyz](https://docs.haptixwallet.xyz) with working code samples showing how mobile games and DeFi dApps integrate Haptix via MWA.
   3. **Seeker Early-User Testing Group**: Coordinate a structured beta testing cohort of Solana Seeker pre-order holders to stress-test biometric reliability and gasless relay latency across physical devices.
@@ -140,17 +144,18 @@ We propose a focused, **3-milestone technical roadmap** funded by a **$10,000 US
 
 ## 6. Budget Justification & Timeline
 
-| Category | Amount | Justification |
-| :--- | :--- | :--- |
-| **MWA Protocol Engineering** | $4,000 | 4 weeks dedicated engineering to implement native Android MWA 2.0 provider endpoints, protocol session management, and biometric signing integration. |
-| **Security Review & Hardening** | $3,500 | Professional smart contract review fees and engineering time dedicated to cryptographic fuzzing and exploit prevention. |
-| **SDK, Docs & Community Adoption** | $2,500 | 2 weeks of developer tooling creation, sample dApp implementation, documentation writeups, and beta user onboarding. |
-| **Total Grant Request** | **$10,000** | **Delivered across 3 verifiable, milestone-gated releases.** |
+| Category                           | Amount      | Justification                                                                                                                                         |
+| :--------------------------------- | :---------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **MWA Protocol Engineering**       | $4,000      | 4 weeks dedicated engineering to implement native Android MWA 2.0 provider endpoints, protocol session management, and biometric signing integration. |
+| **Security Review & Hardening**    | $3,500      | Professional smart contract review fees and engineering time dedicated to cryptographic fuzzing and exploit prevention.                               |
+| **SDK, Docs & Community Adoption** | $2,500      | 2 weeks of developer tooling creation, sample dApp implementation, documentation writeups, and beta user onboarding.                                  |
+| **Total Grant Request**            | **$10,000** | **Delivered across 3 verifiable, milestone-gated releases.**                                                                                          |
 
 ### Estimated Timeline:
-* **Weeks 1–4**: Milestone 1 (MWA Provider Implementation & Test Harness)
-* **Weeks 5–7**: Milestone 2 (Security Audit Engagement, Vulnerability Fixes & Hardening)
-* **Weeks 8–10**: Milestone 3 (Developer SDK, Integration Docs & Seeker Community Launch)
+
+- **Weeks 1–4**: Milestone 1 (MWA Provider Implementation & Test Harness)
+- **Weeks 5–7**: Milestone 2 (Security Audit Engagement, Vulnerability Fixes & Hardening)
+- **Weeks 8–10**: Milestone 3 (Developer SDK, Integration Docs & Seeker Community Launch)
 
 ---
 
@@ -164,7 +169,7 @@ We propose a focused, **3-milestone technical roadmap** funded by a **$10,000 US
 
 ## 8. Team Background
 
-* **Ritesh ([@Ritesh5969](https://x.com/Ritesh5969))**: Full-stack Web3 engineer and solo creator of Haptix.
+- **Ritesh ([@Ritesh5969](https://x.com/Ritesh5969))**: Full-stack Web3 engineer and solo creator of Haptix.
   - Designed and deployed the Anchor smart contract on Solana Devnet.
   - Implemented the client-side Secp256r1 serialization, low-S canonical encoding, and WebAuthn parsing.
   - Packaged, built, and successfully published Haptix v1.0.2 (Build 3) to the Solana Mobile dApp Store catalog.

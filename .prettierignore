@@ -9,3 +9,10 @@ pnpm-lock.yaml
 .agents
 agent
 pnpm-workspace.yaml
+
+# Hand-authored presentation HTML: live landing page, vault/recovery portals and
+# pitch deck. Reformatting rewrites thousands of lines of deployed markup for no
+# functional gain, so these stay as written.
+/public/**/*.html
+/pitch-deck.html
+/assets/portal/**/*.html

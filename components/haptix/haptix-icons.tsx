@@ -28,30 +28,14 @@ const SEEKER_LOGO_IMG = require('@/assets/images/seeker-logo.png')
 export function HaptixBrandMark({ size = 24, style }: IconProps) {
   const numericSize = typeof size === 'number' ? size : parseInt(String(size), 10) || 24
   return (
-    <Image
-      source={HAPTIX_NEW_LOGO}
-      style={[{ width: numericSize, height: numericSize }, style]}
-      resizeMode="contain"
-    />
+    <Image source={HAPTIX_NEW_LOGO} style={[{ width: numericSize, height: numericSize }, style]} resizeMode="contain" />
   )
 }
 
 // Official Haptix Brand Logotype (New Typography)
-export function HaptixLogoText({
-  height = 22,
-  style,
-}: {
-  height?: number
-  style?: StyleProp<ImageStyle>
-}) {
+export function HaptixLogoText({ height = 22, style }: { height?: number; style?: StyleProp<ImageStyle> }) {
   const width = Math.round(height * 3.6)
-  return (
-    <Image
-      source={HAPTIX_LOGO_TEXT}
-      style={[{ width, height }, style]}
-      resizeMode="contain"
-    />
-  )
+  return <Image source={HAPTIX_LOGO_TEXT} style={[{ width, height }, style]} resizeMode="contain" />
 }
 
 // Official Haptix Full Brand Lockup (New Logo + New Logotype)
@@ -165,10 +149,7 @@ export function RaydiumTokenLogo({ size = 26 }: { size?: number }) {
         </LinearGradient>
       </Defs>
       <Circle cx="50" cy="50" r="46" fill="url(#rayGrad)" />
-      <Path
-        d="M32 68 L50 32 L68 68 L50 56 Z"
-        fill="#FFFFFF"
-      />
+      <Path d="M32 68 L50 32 L68 68 L50 56 Z" fill="#FFFFFF" />
     </Svg>
   )
 }
@@ -556,13 +537,7 @@ export function LucideSmartphone({ size = 18, color = '#FFFFFF', strokeWidth = 1
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <Path
-        d="M11 18h2"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="M11 18h2" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   )
 }
@@ -600,13 +575,7 @@ export function LucideShieldCheck({ size = 18, color = '#FFFFFF', strokeWidth = 
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <Path
-        d="m9 12 2 2 4-4"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="m9 12 2 2 4-4" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   )
 }
@@ -636,13 +605,7 @@ export function LucideShield({ size = 18, color = '#FFFFFF', strokeWidth = 1.8 }
 export function LucideCheck({ size = 14, color = '#FFFFFF', strokeWidth = 2.4 }: StrokeIconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M20 6 9 17l-5-5"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="M20 6 9 17l-5-5" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   )
 }
@@ -712,13 +675,7 @@ export function LucideFingerprint({ size = 18, color = '#FFFFFF', strokeWidth = 
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <Path
-        d="M2 16h.01"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="M2 16h.01" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
       <Path
         d="M21.8 16c.2-2 .131-5.354 0-6"
         stroke={color}
@@ -798,13 +755,7 @@ export function HeroReceiveIcon({ size = 18, color = '#FFFFFF' }: StrokeIconProp
 export function HeroFaucetIcon({ size = 18, color = '#FFFFFF', strokeWidth = 2 }: StrokeIconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M3 21.5h11"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="M3 21.5h11" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
       <Path
         d="M13.5 21.5V5a2 2 0 0 0-2-2h-5a2 2 0 0 0-2 2v16.5"
         stroke={color}
@@ -812,13 +763,7 @@ export function HeroFaucetIcon({ size = 18, color = '#FFFFFF', strokeWidth = 2 }
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <Path
-        d="M6.5 8h5"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="M6.5 8h5" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
       <Path
         d="M13.5 13h1.8a2 2 0 0 1 2 2v1.5a1.8 1.8 0 0 0 1.8 1.8 1.8 1.8 0 0 0 1.8-1.8V9.2a2 2 0 0 0-.6-1.4L18.5 6"
         stroke={color}
@@ -858,5 +803,3 @@ export function TablerFingerprintIcon({
     </Svg>
   )
 }
-
-

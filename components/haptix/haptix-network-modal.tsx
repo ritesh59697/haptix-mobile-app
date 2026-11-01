@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { useAppTheme } from '@/components/theme/theme-context'
@@ -46,8 +39,7 @@ export function HaptixNetworkModal({
 
   const isDifferent = pendingCluster.name !== selectedCluster.name
   const isMainnetSwitch =
-    pendingCluster.network === ClusterNetwork.Mainnet &&
-    selectedCluster.network !== ClusterNetwork.Mainnet
+    pendingCluster.network === ClusterNetwork.Mainnet && selectedCluster.network !== ClusterNetwork.Mainnet
 
   const handleConfirmSwitch = () => {
     if (!isDifferent) {
@@ -60,15 +52,10 @@ export function HaptixNetworkModal({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        
+
         <View
           style={[
             styles.card,
@@ -80,20 +67,8 @@ export function HaptixNetworkModal({
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text
-              style={[
-                styles.title,
-                { color: isDark ? '#F2F1EE' : '#181714' },
-              ]}
-            >
-              Solana network
-            </Text>
-            <Text
-              style={[
-                styles.subtitle,
-                { color: isDark ? '#8A8985' : '#6B6A64' },
-              ]}
-            >
+            <Text style={[styles.title, { color: isDark ? '#F2F1EE' : '#181714' }]}>Solana network</Text>
+            <Text style={[styles.subtitle, { color: isDark ? '#8A8985' : '#6B6A64' }]}>
               Choose which network to connect to
             </Text>
           </View>
@@ -103,8 +78,7 @@ export function HaptixNetworkModal({
             {clusters.map((cluster) => {
               const isSelected = cluster.name === pendingCluster.name
               const isCurrent = cluster.name === selectedCluster.name
-              const description =
-                NETWORK_DESCRIPTIONS[cluster.name] ?? 'Solana cluster'
+              const description = NETWORK_DESCRIPTIONS[cluster.name] ?? 'Solana cluster'
 
               return (
                 <TouchableOpacity
@@ -124,13 +98,7 @@ export function HaptixNetworkModal({
                         : isDark
                           ? '#141416'
                           : '#FAFAFA',
-                      borderColor: isSelected
-                        ? isDark
-                          ? '#6C8CFF'
-                          : theme.accent
-                        : isDark
-                          ? '#2A2A28'
-                          : '#E6E4DE',
+                      borderColor: isSelected ? (isDark ? '#6C8CFF' : theme.accent) : isDark ? '#2A2A28' : '#E6E4DE',
                       borderWidth: isSelected ? 1.5 : 0.5,
                     },
                   ]}
@@ -140,13 +108,7 @@ export function HaptixNetworkModal({
                     style={[
                       styles.radioCircle,
                       {
-                        borderColor: isSelected
-                          ? isDark
-                            ? '#6C8CFF'
-                            : theme.accent
-                          : isDark
-                            ? '#3A3A37'
-                            : '#D8D5CE',
+                        borderColor: isSelected ? (isDark ? '#6C8CFF' : theme.accent) : isDark ? '#3A3A37' : '#D8D5CE',
                       },
                     ]}
                   >
@@ -164,34 +126,13 @@ export function HaptixNetworkModal({
 
                   {/* Network Details */}
                   <View style={styles.networkInfo}>
-                    <Text
-                      style={[
-                        styles.networkName,
-                        { color: isDark ? '#F2F1EE' : '#181714' },
-                      ]}
-                    >
-                      {cluster.name}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.networkDesc,
-                        { color: isDark ? '#8A8985' : '#6B6A64' },
-                      ]}
-                    >
-                      {description}
-                    </Text>
+                    <Text style={[styles.networkName, { color: isDark ? '#F2F1EE' : '#181714' }]}>{cluster.name}</Text>
+                    <Text style={[styles.networkDesc, { color: isDark ? '#8A8985' : '#6B6A64' }]}>{description}</Text>
                   </View>
 
                   {/* Current Active Badge */}
                   {isCurrent && (
-                    <Text
-                      style={[
-                        styles.currentBadge,
-                        { color: isDark ? '#8A8985' : '#6B6A64' },
-                      ]}
-                    >
-                      Current
-                    </Text>
+                    <Text style={[styles.currentBadge, { color: isDark ? '#8A8985' : '#6B6A64' }]}>Current</Text>
                   )}
                 </TouchableOpacity>
               )
@@ -201,12 +142,7 @@ export function HaptixNetworkModal({
           {/* Warning Banner if Switching to Mainnet */}
           {isMainnetSwitch && (
             <View style={styles.warningCard}>
-              <MaterialIcons
-                name="warning-amber"
-                size={18}
-                color="#D99A2B"
-                style={{ marginTop: 1, flexShrink: 0 }}
-              />
+              <MaterialIcons name="warning-amber" size={18} color="#D99A2B" style={{ marginTop: 1, flexShrink: 0 }} />
               <Text style={styles.warningText}>Mainnet uses real funds.</Text>
             </View>
           )}
@@ -219,13 +155,7 @@ export function HaptixNetworkModal({
             style={[
               styles.switchButton,
               {
-                backgroundColor: isDifferent
-                  ? isDark
-                    ? '#6C8CFF'
-                    : theme.accent
-                  : isDark
-                    ? '#201F1D'
-                    : '#EAE8E3',
+                backgroundColor: isDifferent ? (isDark ? '#6C8CFF' : theme.accent) : isDark ? '#201F1D' : '#EAE8E3',
               },
             ]}
           >
@@ -233,11 +163,7 @@ export function HaptixNetworkModal({
               style={[
                 styles.switchButtonText,
                 {
-                  color: isDifferent
-                    ? '#0C0C0D'
-                    : isDark
-                      ? '#5F5E5A'
-                      : '#94928C',
+                  color: isDifferent ? '#0C0C0D' : isDark ? '#5F5E5A' : '#94928C',
                 },
               ]}
             >
@@ -246,19 +172,8 @@ export function HaptixNetworkModal({
           </TouchableOpacity>
 
           {/* Cancel Button */}
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={onClose}
-            style={styles.cancelButton}
-          >
-            <Text
-              style={[
-                styles.cancelButtonText,
-                { color: isDark ? '#8A8985' : '#6B6A64' },
-              ]}
-            >
-              Cancel
-            </Text>
+          <TouchableOpacity activeOpacity={0.7} onPress={onClose} style={styles.cancelButton}>
+            <Text style={[styles.cancelButtonText, { color: isDark ? '#8A8985' : '#6B6A64' }]}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </View>

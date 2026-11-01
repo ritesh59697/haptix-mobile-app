@@ -81,7 +81,9 @@ export function assertRecoveryGuardian(
       throw new Error('A wallet cannot be its own recovery guardian. Please provide a separate guardian address.')
     }
     if (fallback && guardian.equals(fallback)) {
-      throw new Error('The recovery guardian cannot be the fee-payer or relayer key. Use an independent external address.')
+      throw new Error(
+        'The recovery guardian cannot be the fee-payer or relayer key. Use an independent external address.',
+      )
     }
     return guardian
   }

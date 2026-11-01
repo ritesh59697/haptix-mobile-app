@@ -1,13 +1,5 @@
 import React, { useState } from 'react'
-import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import Clipboard from '@/utils/clipboard'
@@ -53,13 +45,7 @@ export function HaptixRevokeAgentConfirmModal({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={handleCancel}>
         <Pressable
           style={[
@@ -77,9 +63,7 @@ export function HaptixRevokeAgentConfirmModal({
           </View>
 
           {/* Title & Subtitle */}
-          <Text style={[styles.title, { color: isDark ? '#F2F1EE' : '#111827' }]}>
-            Revoke agent session?
-          </Text>
+          <Text style={[styles.title, { color: isDark ? '#F2F1EE' : '#111827' }]}>Revoke agent session?</Text>
           <Text style={[styles.subtitle, { color: isDark ? '#8A8985' : '#6B7280' }]}>
             The session key will immediately lose all spending permissions on-chain.
           </Text>
@@ -95,16 +79,8 @@ export function HaptixRevokeAgentConfirmModal({
             ]}
           >
             {/* Session Key Row */}
-            <View
-              style={[
-                styles.tableRow,
-                styles.rowBorder,
-                { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' },
-              ]}
-            >
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>
-                Session key
-              </Text>
+            <View style={[styles.tableRow, styles.rowBorder, { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' }]}>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>Session key</Text>
               <TouchableOpacity
                 style={styles.keyWrap}
                 onPress={handleCopyKey}
@@ -123,16 +99,8 @@ export function HaptixRevokeAgentConfirmModal({
             </View>
 
             {/* Unspent Allowance Row */}
-            <View
-              style={[
-                styles.tableRow,
-                styles.rowBorder,
-                { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' },
-              ]}
-            >
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>
-                Unspent allowance
-              </Text>
+            <View style={[styles.tableRow, styles.rowBorder, { borderBottomColor: isDark ? '#201F1D' : '#E5E7EB' }]}>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>Unspent allowance</Text>
               <Text style={[styles.textValue, { color: isDark ? '#F2F1EE' : '#111827' }]}>
                 {`${unspentSol.toFixed(4)} SOL`}
               </Text>
@@ -140,12 +108,8 @@ export function HaptixRevokeAgentConfirmModal({
 
             {/* Network Row */}
             <View style={styles.tableRow}>
-              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>
-                Network
-              </Text>
-              <Text style={[styles.textValue, { color: isDark ? '#F2F1EE' : '#111827' }]}>
-                {networkName}
-              </Text>
+              <Text style={[styles.rowLabel, { color: isDark ? '#8A8985' : '#6B7280' }]}>Network</Text>
+              <Text style={[styles.textValue, { color: isDark ? '#F2F1EE' : '#111827' }]}>{networkName}</Text>
             </View>
           </View>
 
@@ -191,9 +155,7 @@ export function HaptixRevokeAgentConfirmModal({
               accessibilityRole="button"
               accessibilityLabel="Cancel"
             >
-              <Text style={[styles.cancelButtonText, { color: isDark ? '#F2F1EE' : '#1F2937' }]}>
-                Cancel
-              </Text>
+              <Text style={[styles.cancelButtonText, { color: isDark ? '#F2F1EE' : '#1F2937' }]}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -203,9 +165,7 @@ export function HaptixRevokeAgentConfirmModal({
               accessibilityRole="button"
               accessibilityLabel="Revoke session"
             >
-              <Text style={styles.revokeButtonText}>
-                Revoke session
-              </Text>
+              <Text style={styles.revokeButtonText}>Revoke session</Text>
             </TouchableOpacity>
           </View>
         </Pressable>

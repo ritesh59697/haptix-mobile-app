@@ -47,12 +47,7 @@ import { isSolanaAddress } from '@/utils/solana-address'
 import { createSecp256r1Instruction } from '@/utils/secp256r1-instruction'
 import { deletePasskeys, signWithPasskey } from '@/utils/haptix-passkey'
 import { useAppTheme } from '@/components/theme/theme-context'
-import {
-  PrismDepthButton,
-  DepthOutlineButton,
-  CopyActionButton,
-  HoldToConfirmButton,
-} from '@/components/ui'
+import { PrismDepthButton, DepthOutlineButton, CopyActionButton, HoldToConfirmButton } from '@/components/ui'
 import { HaptixBiometricPromptSheet } from './haptix-biometric-prompt-sheet'
 import {
   assertRecoveryGuardian,
@@ -138,8 +133,6 @@ import {
   activitySecurityLabelFor,
   activityToneFor,
 } from '@/utils/haptix-activity-display'
-
-
 
 const ACTIVITY_FILTERS = [
   { id: 'all', label: 'All' },
@@ -320,19 +313,22 @@ export function HaptixWalletScreen() {
     }, 2000)
   }, [activeWallet?.address])
 
-  const handleCopyTransactionLink = useCallback((signature?: string) => {
-    const sig = signature || selectedTransaction?.signature
-    if (!sig) return
-    const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-    const url = `https://solscan.io/tx/${sig}${clusterParam}`
-    Clipboard.setString(url)
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
-    setCopiedTxLink(true)
-    if (copyTxLinkTimeoutRef.current) clearTimeout(copyTxLinkTimeoutRef.current)
-    copyTxLinkTimeoutRef.current = setTimeout(() => {
-      setCopiedTxLink(false)
-    }, 2500)
-  }, [network, selectedTransaction?.signature])
+  const handleCopyTransactionLink = useCallback(
+    (signature?: string) => {
+      const sig = signature || selectedTransaction?.signature
+      if (!sig) return
+      const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
+      const url = `https://solscan.io/tx/${sig}${clusterParam}`
+      Clipboard.setString(url)
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+      setCopiedTxLink(true)
+      if (copyTxLinkTimeoutRef.current) clearTimeout(copyTxLinkTimeoutRef.current)
+      copyTxLinkTimeoutRef.current = setTimeout(() => {
+        setCopiedTxLink(false)
+      }, 2500)
+    },
+    [network, selectedTransaction?.signature],
+  )
 
   // Passing this down to `ActivityRow` is what lets the row's `memo` hold: an inline
   // arrow would be a new function on every render, so every row would re-render anyway.
@@ -342,7 +338,6 @@ export function HaptixWalletScreen() {
     setShowTxDetailModal(true)
   }, [])
   const [policyTopic, setPolicyTopic] = useState<PolicyTopic | null>(null)
-
 
   // Agent Policy Customization Inputs
   const [isGrantingSession, setIsGrantingSession] = useState(false)
@@ -484,7 +479,11 @@ export function HaptixWalletScreen() {
         primaryPasskey: new Uint8Array(Buffer.from(activeWallet.primaryPasskeyHex, 'hex')),
         secondaryPasskey: new Uint8Array(Buffer.from(activeWallet.secondaryPasskeyHex, 'hex')),
         spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-        guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet.guardianAddress), payer.publicKey, walletPda),
+        guardian: assertRecoveryGuardian(
+          parseGuardianAddress(activeWallet.guardianAddress),
+          payer.publicKey,
+          walletPda,
+        ),
       })
 
       const blockhash = await connection.getLatestBlockhash('confirmed')
@@ -510,7 +509,13 @@ export function HaptixWalletScreen() {
 
       return sig
     },
-    [activeWallet?.primaryPasskeyHex, activeWallet?.secondaryPasskeyHex, activeWallet?.guardianAddress, connection, spendThreshold],
+    [
+      activeWallet?.primaryPasskeyHex,
+      activeWallet?.secondaryPasskeyHex,
+      activeWallet?.guardianAddress,
+      connection,
+      spendThreshold,
+    ],
   )
 
   // Devnet auto-funding for newly created / zero-balance accounts
@@ -642,7 +647,9 @@ export function HaptixWalletScreen() {
       const signatures = await connection.getSignaturesForAddress(pubkey, { limit: 10 }).catch(() => [])
       if (signatures.length === 0) {
         // Prune foreign on-chain transactions if chain shows zero signatures for this address
-        setTransactions((prev) => prev.filter((tx) => tx.type === 'airdrop' || tx.recipientOrSender === 'Devnet Starter Faucet'))
+        setTransactions((prev) =>
+          prev.filter((tx) => tx.type === 'airdrop' || tx.recipientOrSender === 'Devnet Starter Faucet'),
+        )
         return
       }
       const records = await fetchOnChainTransactions(connection, pubkey, {
@@ -942,7 +949,11 @@ export function HaptixWalletScreen() {
         primaryPasskey,
         secondaryPasskey,
         spendThresholdLamports: BigInt(Math.round(spendThreshold * LAMPORTS_PER_SOL)),
-        guardian: assertRecoveryGuardian(parseGuardianAddress(activeWallet?.guardianAddress), payer.publicKey, walletPda),
+        guardian: assertRecoveryGuardian(
+          parseGuardianAddress(activeWallet?.guardianAddress),
+          payer.publicKey,
+          walletPda,
+        ),
       })
 
       const latestBlockhash = await connection.getLatestBlockhash('confirmed')
@@ -1002,8 +1013,6 @@ export function HaptixWalletScreen() {
       setIsInitializingWallet(false)
     }
   }
-
-
 
   // Grant Scoped AI Agent Session Key on Solana Devnet (2-of-2 Passkey Quorum)
   const handleInitiateGrantSession = () => {
@@ -1159,7 +1168,8 @@ export function HaptixWalletScreen() {
     if (!tx) return
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
     const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-    const amountStr = tx.amount != null ? `${typeof tx.amount === 'number' ? tx.amount.toFixed(4) : tx.amount} SOL` : '0 SOL'
+    const amountStr =
+      tx.amount != null ? `${typeof tx.amount === 'number' ? tx.amount.toFixed(4) : tx.amount} SOL` : '0 SOL'
     const dateStr = tx.timestamp ? new Date(tx.timestamp).toLocaleString() : new Date().toLocaleString()
     const lines = [
       '========================================',
@@ -1462,12 +1472,9 @@ export function HaptixWalletScreen() {
     [activeWallet?.address, connection, dialog, fetchRealBalance],
   )
 
-  const confirmRevokeAgentSession = useCallback(
-    (session: AgentSessionState) => {
-      setSessionToRevoke(session)
-    },
-    [],
-  )
+  const confirmRevokeAgentSession = useCallback((session: AgentSessionState) => {
+    setSessionToRevoke(session)
+  }, [])
 
   // Toggle the wallet lock on Solana Devnet
   const handleToggleFreeze = async () => {
@@ -1668,9 +1675,10 @@ export function HaptixWalletScreen() {
   const isPositivePortfolio = totalDollarChange > 0
   const formattedDollarChange = Math.abs(totalDollarChange).toFixed(2)
   const formattedPctChange = Math.abs(totalChangePct).toFixed(2)
-  const portfolioChangeText = totalUsdBalance === 0
-    ? '$0.00 (0.00%) today'
-    : `${totalDollarChange >= 0 ? '+' : '-'}$${formattedDollarChange} (${totalDollarChange >= 0 ? '+' : '-'}${formattedPctChange}%) today`
+  const portfolioChangeText =
+    totalUsdBalance === 0
+      ? '$0.00 (0.00%) today'
+      : `${totalDollarChange >= 0 ? '+' : '-'}$${formattedDollarChange} (${totalDollarChange >= 0 ? '+' : '-'}${formattedPctChange}%) today`
 
   const activeAgentSessions = useMemo(
     () => agentSessions.filter((session) => Number(session.validUntil) > nowSeconds),
@@ -1740,7 +1748,9 @@ export function HaptixWalletScreen() {
             </>
           ) : (
             <>
-              <Text style={[styles.heroPrimaryBalance, { color: theme.textPrimary }]}>${totalUsdBalance.toFixed(2)}</Text>
+              <Text style={[styles.heroPrimaryBalance, { color: theme.textPrimary }]}>
+                ${totalUsdBalance.toFixed(2)}
+              </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
                 <Text style={[styles.heroSecondaryBalance, { color: theme.textSecondary }]}>
                   {balance.toFixed(4)} SOL
@@ -1770,7 +1780,6 @@ export function HaptixWalletScreen() {
             />
           </View>
         )}
-
       </View>
 
       {/* ACTION BUTTONS (Send · Swap · Receive · Faucet) */}
@@ -1839,9 +1848,7 @@ export function HaptixWalletScreen() {
                 <ActionFaucetIcon size={18} color={theme.textPrimary} />
               )}
             </View>
-            <Text style={styles.heroActionBtnText}>
-              {isRequestingFaucet ? '...' : 'Faucet'}
-            </Text>
+            <Text style={styles.heroActionBtnText}>{isRequestingFaucet ? '...' : 'Faucet'}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -1911,10 +1918,7 @@ export function HaptixWalletScreen() {
       {/* RECENT ACTIVITY SECTION */}
       <View style={styles.homeSectionHeaderRow}>
         <Text style={[styles.homeSectionTitle, styles.textPrimary]}>Recent activity</Text>
-        <TouchableOpacity
-          onPress={() => setDockTab('activity')}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
+        <TouchableOpacity onPress={() => setDockTab('activity')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Text style={[styles.homeSectionLink, { color: theme.accent, fontWeight: '600' }]}>See all</Text>
         </TouchableOpacity>
       </View>
@@ -2020,15 +2024,11 @@ export function HaptixWalletScreen() {
         <View style={styles.spendingLimitsRow}>
           <View style={[styles.spendingLimitCard, styles.card]}>
             <Text style={[styles.spendingLimitTitle, styles.textSecondary]}>One key</Text>
-            <Text style={[styles.spendingLimitAmount, styles.textPrimary]}>
-              ⩽ {spendThreshold} SOL
-            </Text>
+            <Text style={[styles.spendingLimitAmount, styles.textPrimary]}>⩽ {spendThreshold} SOL</Text>
           </View>
           <View style={[styles.spendingLimitCard, styles.card]}>
             <Text style={[styles.spendingLimitTitle, styles.textSecondary]}>Both keys</Text>
-            <Text style={[styles.spendingLimitAmount, styles.textPrimary]}>
-              &gt; {spendThreshold} SOL
-            </Text>
+            <Text style={[styles.spendingLimitAmount, styles.textPrimary]}>&gt; {spendThreshold} SOL</Text>
           </View>
         </View>
       </View>
@@ -2097,9 +2097,7 @@ export function HaptixWalletScreen() {
                   styles.agentBudgetChip,
                   isSelected
                     ? {
-                        backgroundColor: isDark
-                          ? 'rgba(108, 140, 255, 0.14)'
-                          : 'rgba(79, 107, 255, 0.10)',
+                        backgroundColor: isDark ? 'rgba(108, 140, 255, 0.14)' : 'rgba(79, 107, 255, 0.10)',
                         borderColor: '#6C8CFF',
                         borderWidth: 1.5,
                       }
@@ -2152,9 +2150,7 @@ export function HaptixWalletScreen() {
                   styles.agentBudgetChip,
                   isSelected
                     ? {
-                        backgroundColor: isDark
-                          ? 'rgba(108, 140, 255, 0.14)'
-                          : 'rgba(79, 107, 255, 0.10)',
+                        backgroundColor: isDark ? 'rgba(108, 140, 255, 0.14)' : 'rgba(79, 107, 255, 0.10)',
                         borderColor: '#6C8CFF',
                         borderWidth: 1.5,
                       }
@@ -2275,10 +2271,7 @@ export function HaptixWalletScreen() {
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}
           >
             <Text
-              style={[
-                styles.agentActionTitle,
-                isFrozen ? { color: theme.roseText } : { color: theme.textPrimary },
-              ]}
+              style={[styles.agentActionTitle, isFrozen ? { color: theme.roseText } : { color: theme.textPrimary }]}
             >
               {isFrozen ? 'Wallet is locked' : 'Wallet lock'}
             </Text>
@@ -2389,9 +2382,7 @@ export function HaptixWalletScreen() {
           <View style={styles.activityGroupsWrapper}>
             {groupedTransactions.map((group) => (
               <View key={group.day} style={styles.activityGroupSection}>
-                <Text style={[styles.activityGroupHeader, styles.textSecondary]}>
-                  {group.day}
-                </Text>
+                <Text style={[styles.activityGroupHeader, styles.textSecondary]}>{group.day}</Text>
                 <View style={[styles.activityGroupCard, styles.card]}>
                   {group.items.map((tx, idx) => (
                     <React.Fragment key={tx.signature ? `${tx.signature}-${idx}` : `${group.day}-${idx}`}>
@@ -2568,14 +2559,10 @@ export function HaptixWalletScreen() {
           <View
             style={[
               styles.auditLogCheckBadge,
-              { backgroundColor: onChainWallet ? theme.emeraldBg : (theme.isDark ? '#1C1C1E' : '#EFEFF0') },
+              { backgroundColor: onChainWallet ? theme.emeraldBg : theme.isDark ? '#1C1C1E' : '#EFEFF0' },
             ]}
           >
-            <LucideCheck
-              size={13}
-              color={onChainWallet ? theme.emeraldText : theme.textMuted}
-              strokeWidth={2.6}
-            />
+            <LucideCheck size={13} color={onChainWallet ? theme.emeraldText : theme.textMuted} strokeWidth={2.6} />
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -2632,11 +2619,7 @@ export function HaptixWalletScreen() {
           </TouchableOpacity>
 
           <View style={styles.headerSubRow}>
-            <TouchableOpacity
-              style={styles.addressCopyChip}
-              onPress={handleCopyWalletAddress}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.addressCopyChip} onPress={handleCopyWalletAddress} activeOpacity={0.7}>
               <Text style={[styles.addressCopyText, styles.textSecondary]}>
                 {hasCopiedAddress ? 'Copied!' : ellipsify(activeWallet?.address || '', 4)}
               </Text>
@@ -2768,10 +2751,7 @@ export function HaptixWalletScreen() {
         <View style={styles.modalBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowReceiveModal(false)} />
           <Animated.View
-            style={[
-              styles.modalSheet,
-              { paddingBottom: insets.bottom + 24, transform: [{ translateY: panYReceive }] },
-            ]}
+            style={[styles.modalSheet, { paddingBottom: insets.bottom + 24, transform: [{ translateY: panYReceive }] }]}
           >
             {/* Functional Drag Handle Touch Zone */}
             <View style={styles.dragHandleTouchZone} {...panResponderReceive.panHandlers}>
@@ -2800,9 +2780,7 @@ export function HaptixWalletScreen() {
                   {network === 'devnet' ? 'Solana devnet' : 'Solana mainnet'}
                 </Text>
               </View>
-              <Text style={styles.receiveMetaText}>
-                {activeWallet?.name ? activeWallet.name : 'My Haptix wallet'}
-              </Text>
+              <Text style={styles.receiveMetaText}>{activeWallet?.name ? activeWallet.name : 'My Haptix wallet'}</Text>
             </View>
 
             <View style={styles.qrContainer}>
@@ -2917,9 +2895,7 @@ export function HaptixWalletScreen() {
                               : `${selectedTransaction.direction === 'receive' ? '+' : '-'}${selectedTransaction.amount.toFixed(4)} ${selectedTransaction.tokenSymbol}`}
                           </Text>
                         ) : (
-                          <Text style={[styles.txDetailNoValueText, styles.textSecondary]}>
-                            No funds moved
-                          </Text>
+                          <Text style={[styles.txDetailNoValueText, styles.textSecondary]}>No funds moved</Text>
                         )}
 
                         {isValue && selectedTransaction.tokenSymbol === 'SOL' && (
@@ -2935,7 +2911,8 @@ export function HaptixWalletScreen() {
                             styles.txDetailConfirmedPill,
                             {
                               backgroundColor: selectedTransaction.status === 'failed' ? theme.roseBg : theme.emeraldBg,
-                              borderColor: selectedTransaction.status === 'failed' ? theme.roseBorder : theme.emeraldBorder,
+                              borderColor:
+                                selectedTransaction.status === 'failed' ? theme.roseBorder : theme.emeraldBorder,
                               borderWidth: 1,
                               paddingHorizontal: 10,
                               paddingVertical: 4,
@@ -2951,7 +2928,9 @@ export function HaptixWalletScreen() {
                           <Text
                             style={[
                               styles.txDetailConfirmedText,
-                              selectedTransaction.status === 'failed' ? { color: theme.roseText } : { color: theme.emeraldText },
+                              selectedTransaction.status === 'failed'
+                                ? { color: theme.roseText }
+                                : { color: theme.emeraldText },
                             ]}
                           >
                             {selectedTransaction.status === 'failed'
@@ -3012,9 +2991,7 @@ export function HaptixWalletScreen() {
                         marginBottom: 5,
                       }}
                     >
-                      <Text style={[styles.specKeyText, styles.textMuted]}>
-                        Transaction Signature
-                      </Text>
+                      <Text style={[styles.specKeyText, styles.textMuted]}>Transaction Signature</Text>
                       <TouchableOpacity
                         onPress={() => handleCopyTransactionLink(selectedTransaction.signature)}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -3025,12 +3002,12 @@ export function HaptixWalletScreen() {
                         <MaterialIcons
                           name={copiedTxLink ? 'check' : 'link'}
                           size={14}
-                          color={copiedTxLink ? theme.emeraldText : (isDark ? '#9C93FF' : '#7C65C1')}
+                          color={copiedTxLink ? theme.emeraldText : isDark ? '#9C93FF' : '#7C65C1'}
                         />
                         <Text
                           style={{
                             fontSize: typeScale.caption,
-                            color: copiedTxLink ? theme.emeraldText : (isDark ? '#9C93FF' : '#7C65C1'),
+                            color: copiedTxLink ? theme.emeraldText : isDark ? '#9C93FF' : '#7C65C1',
                             fontWeight: '600',
                           }}
                         >
@@ -3054,16 +3031,12 @@ export function HaptixWalletScreen() {
                       styles.explorerButton,
                       copiedTxLink
                         ? {
-                            backgroundColor: isDark
-                              ? 'rgba(52, 211, 153, 0.16)'
-                              : 'rgba(16, 185, 129, 0.12)',
+                            backgroundColor: isDark ? 'rgba(52, 211, 153, 0.16)' : 'rgba(16, 185, 129, 0.12)',
                             borderColor: theme.emeraldBorder,
                             borderWidth: 1,
                           }
                         : {
-                            backgroundColor: isDark
-                              ? 'rgba(156, 147, 255, 0.18)'
-                              : 'rgba(124, 101, 193, 0.14)',
+                            backgroundColor: isDark ? 'rgba(156, 147, 255, 0.18)' : 'rgba(124, 101, 193, 0.14)',
                             borderColor: isDark ? '#9C93FF' : '#7C65C1',
                             borderWidth: 1,
                           },
@@ -3076,13 +3049,13 @@ export function HaptixWalletScreen() {
                     <MaterialIcons
                       name={copiedTxLink ? 'check-circle' : 'content-copy'}
                       size={18}
-                      color={copiedTxLink ? theme.emeraldText : (isDark ? '#9C93FF' : '#7C65C1')}
+                      color={copiedTxLink ? theme.emeraldText : isDark ? '#9C93FF' : '#7C65C1'}
                     />
                     <Text
                       style={[
                         styles.explorerButtonText,
                         {
-                          color: copiedTxLink ? theme.emeraldText : (isDark ? '#9C93FF' : '#7C65C1'),
+                          color: copiedTxLink ? theme.emeraldText : isDark ? '#9C93FF' : '#7C65C1',
                           fontWeight: '700',
                         },
                       ]}
@@ -3111,7 +3084,9 @@ export function HaptixWalletScreen() {
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
                         const clusterParam = network === 'devnet' ? '?cluster=devnet' : ''
-                        Linking.openURL(`https://explorer.solana.com/tx/${selectedTransaction.signature}${clusterParam}`)
+                        Linking.openURL(
+                          `https://explorer.solana.com/tx/${selectedTransaction.signature}${clusterParam}`,
+                        )
                       }}
                       activeOpacity={0.8}
                       accessibilityRole="button"
@@ -3265,7 +3240,7 @@ export function HaptixWalletScreen() {
                     <MaterialIcons
                       name={faucetCopiedSig ? 'check' : 'content-copy'}
                       size={13}
-                      color={faucetCopiedSig ? '#5FBF7A' : (isDark ? '#8A8985' : theme.textMuted)}
+                      color={faucetCopiedSig ? '#5FBF7A' : isDark ? '#8A8985' : theme.textMuted}
                     />
                   </TouchableOpacity>
                 </View>

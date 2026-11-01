@@ -55,13 +55,22 @@ function record(overrides: Partial<TransactionRecord> = {}): TransactionRecord {
 console.log('\nActivity display rules\n')
 
 // --- Titles ---------------------------------------------------------------------------
-assert(activityTitleFor(record({ type: 'freeze' })) === 'Wallet locked', 'a freeze reads as the wallet being locked in sentence case')
-assert(activityTitleFor(record({ type: 'agent_trade' })) === 'Agent auto-trade', 'an agent trade names the agent in sentence case')
+assert(
+  activityTitleFor(record({ type: 'freeze' })) === 'Wallet locked',
+  'a freeze reads as the wallet being locked in sentence case',
+)
+assert(
+  activityTitleFor(record({ type: 'agent_trade' })) === 'Agent auto-trade',
+  'an agent trade names the agent in sentence case',
+)
 assert(
   activityTitleFor(record({ type: 'transfer', direction: 'receive' })) === 'Received SOL',
   'an inflow is "Received SOL"',
 )
-assert(activityTitleFor(record({ type: 'transfer', direction: 'send' })) === 'Transfer SOL', 'an outflow is "Transfer SOL"')
+assert(
+  activityTitleFor(record({ type: 'transfer', direction: 'send' })) === 'Transfer SOL',
+  'an outflow is "Transfer SOL"',
+)
 
 // --- Amounts --------------------------------------------------------------------------
 assert(

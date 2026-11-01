@@ -1,23 +1,12 @@
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react'
-import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import Clipboard from '@/utils/clipboard'
 import { useAppTheme } from '@/components/theme/theme-context'
 
 interface RemoveWalletContextValue {
-  confirmRemoveWallet: (
-    address: string | null | undefined,
-    onConfirm: () => void | Promise<void>,
-  ) => void
+  confirmRemoveWallet: (address: string | null | undefined, onConfirm: () => void | Promise<void>) => void
 }
 
 const RemoveWalletContext = createContext<RemoveWalletContextValue>({
@@ -84,12 +73,7 @@ export function RemoveWalletModalProvider({ children }: { children: React.ReactN
     <RemoveWalletContext.Provider value={{ confirmRemoveWallet }}>
       {children}
 
-      <Modal
-        visible={visible}
-        transparent
-        animationType="fade"
-        onRequestClose={handleClose}
-      >
+      <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
         <Pressable style={styles.modalBackdrop} onPress={handleClose}>
           <Pressable style={styles.card} onPress={(e) => e.stopPropagation()}>
             {/* Red Alert Circle */}
@@ -125,14 +109,11 @@ export function RemoveWalletModalProvider({ children }: { children: React.ReactN
               </View>
 
               <Text style={styles.addressCardSubtitle}>
-                Signing back in asks for it, and a passkey can't hand it back.
+                Signing back in asks for it, and a passkey can&apos;t hand it back.
               </Text>
 
               <TouchableOpacity
-                style={[
-                  styles.addressBox,
-                  hasCopied && styles.addressBoxCopied,
-                ]}
+                style={[styles.addressBox, hasCopied && styles.addressBoxCopied]}
                 onPress={handleCopy}
                 activeOpacity={0.8}
               >
@@ -146,28 +127,18 @@ export function RemoveWalletModalProvider({ children }: { children: React.ReactN
 
             {/* Side-by-Side Action Buttons */}
             <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={handleClose}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity style={styles.cancelBtn} onPress={handleClose} activeOpacity={0.8}>
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.removeBtn,
-                  hasCopied ? styles.removeBtnEnabled : styles.removeBtnDisabled,
-                ]}
+                style={[styles.removeBtn, hasCopied ? styles.removeBtnEnabled : styles.removeBtnDisabled]}
                 onPress={handleConfirm}
                 disabled={!hasCopied}
                 activeOpacity={hasCopied ? 0.85 : 1}
               >
                 <Text
-                  style={[
-                    styles.removeBtnText,
-                    hasCopied ? styles.removeBtnTextEnabled : styles.removeBtnTextDisabled,
-                  ]}
+                  style={[styles.removeBtnText, hasCopied ? styles.removeBtnTextEnabled : styles.removeBtnTextDisabled]}
                 >
                   Remove wallet
                 </Text>
@@ -175,9 +146,7 @@ export function RemoveWalletModalProvider({ children }: { children: React.ReactN
             </View>
 
             {/* Helper Text when not copied */}
-            {!hasCopied && (
-              <Text style={styles.helperText}>Copy your address to continue</Text>
-            )}
+            {!hasCopied && <Text style={styles.helperText}>Copy your address to continue</Text>}
           </Pressable>
         </Pressable>
       </Modal>

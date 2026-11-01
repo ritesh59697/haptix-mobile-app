@@ -1,14 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import {
-  Animated,
-  Easing,
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  Text,
-  View,
-  ViewStyle,
-} from 'react-native'
+import { Animated, Easing, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native'
 import QRCode from 'react-qr-code'
 import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
@@ -243,9 +234,7 @@ export function AppQrCode({
       {showTapHint && (
         <View style={styles.hintRow}>
           {showTapIcon && <MaterialIcons name="touch-app" size={13} color={theme.textMuted} />}
-          <Text style={[styles.hintText, { color: theme.textMuted }]}>
-            Tap QR code to copy address
-          </Text>
+          <Text style={[styles.hintText, { color: theme.textMuted }]}>Tap QR code to copy address</Text>
         </View>
       )}
     </View>

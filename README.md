@@ -9,9 +9,9 @@
 <br /><br />
 
 **Seedless. Biometric-Secured. Agent-Ready.**  
-*Built specifically for the **Solana Mobile CLOCK IN Hackathon** &bull; Dedicated to **Solana Seeker***
+_Built specifically for the **Solana Mobile CLOCK IN Hackathon** &bull; Dedicated to **Solana Seeker**_
 
-[![CLOCK IN Hackathon](https://img.shields.io/badge/Hackathon-CLOCK%20IN%20(Solana%20Mobile)-00FF66?style=flat&logo=solana)](https://solanamobile.radiant.nexus)
+[![CLOCK IN Hackathon](<https://img.shields.io/badge/Hackathon-CLOCK%20IN%20(Solana%20Mobile)-00FF66?style=flat&logo=solana>)](https://solanamobile.radiant.nexus)
 [![Target Device](https://img.shields.io/badge/Target-Solana%20Seeker-black?style=flat&logo=android)](https://solanamobile.com)
 [![Solana dApp Store](https://img.shields.io/badge/Solana%20dApp%20Store-Live%20v1.0.2-14F195?style=flat&logo=solana)](https://publish.solanamobile.com)
 [![CI](https://github.com/ritesh59697/haptix-mobile-app/actions/workflows/ci.yml/badge.svg)](https://github.com/ritesh59697/haptix-mobile-app/actions/workflows/ci.yml)
@@ -28,18 +28,18 @@
 
 ## Hackathon Deliverables
 
-| Deliverable | Details & Links |
-| :--- | :--- |
-| **Track & Target** | Solana Mobile CLOCK IN Hackathon &bull; Dedicated to **Solana Seeker (Chapter 2)** |
-| **Solana dApp Store** | **Live & Published (v1.0.2 / Build 3)** &bull; Submission ID: `#344280197850` &bull; Package: `io.haptix.wallet` &bull; [Solana Mobile Publishing Portal](https://publish.solanamobile.com)<br />*Note: Published on the Solana dApp Store catalog (accessible on Solana Seeker/Saga devices). The portal link requires a publisher login; no public web listing URL is currently provided by the dApp Store. Smart contracts execute on Solana Devnet.* |
-| **Android APK** | [**Download haptix-wallet.apk (v1.0.2)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.2/haptix-wallet.apk) &bull; EAS Build ID: [`d1a7544a`](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/d1a7544a-1f49-47dc-a1c3-94c4be3ac105) &bull; Version Code: `3`<br />*Store compliance: Zero-config devnet gas auto-funding for reviewers (FUN-002) and minimal Android permissions (PER-001).* |
-| **Recovery Guide** | [**Visual Guardian Recovery Guide**](docs/GUARDIAN_RECOVERY_GUIDE.md) &bull; On-chain lifecycle, timelock & veto walkthrough |
-| **Live Web Demos** | [**haptixwallet.xyz**](https://haptixwallet.xyz) (Primary) &bull; [**Web Vault (Co-Signer)**](https://haptixwallet.xyz/vault.html) &bull; [**Recovery Portal**](https://haptixwallet.xyz/recover.html) &bull; *(Fallback: [haptix-passkeys.vercel.app](https://haptix-passkeys.vercel.app))* |
-| **Video Demos** | [**70-Second Pitch**](https://youtu.be/9OnEFuHqNDY) &bull; [**3-Minute Technical Walkthrough**](https://youtu.be/kNsqykt4rfg) |
-| **Pitch Deck & Docs** | [**Haptix_Pitch_Deck.pdf**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf) &bull; [**Documentation**](https://docs.haptixwallet.xyz) |
-| **On-Chain Program** | [`9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet) on Solana Devnet |
-| **Test Verification** | **324 automated tests passing** across 14 suites (`npm test` with Devnet funder key) &bull; **262 tests without keys** (`npm run test:no-key`: no private key required; makes read-only calls to public devnet RPC) |
-| **Cloud Paymaster** | [https://haptix-relay.onrender.com](https://haptix-relay.onrender.com) (Gas sponsorship relay &bull; *Render free tier*) |
+| Deliverable           | Details & Links                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| :-------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Track & Target**    | Solana Mobile CLOCK IN Hackathon &bull; Dedicated to **Solana Seeker (Chapter 2)**                                                                                                                                                                                                                                                                                                                                                                       |
+| **Solana dApp Store** | **Live & Published (v1.0.2 / Build 3)** &bull; Submission ID: `#344280197850` &bull; Package: `io.haptix.wallet` &bull; [Solana Mobile Publishing Portal](https://publish.solanamobile.com)<br />_Note: Published on the Solana dApp Store catalog (accessible on Solana Seeker/Saga devices). The portal link requires a publisher login; no public web listing URL is currently provided by the dApp Store. Smart contracts execute on Solana Devnet._ |
+| **Android APK**       | [**Download haptix-wallet.apk (v1.0.2)**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.2/haptix-wallet.apk) &bull; EAS Build ID: [`d1a7544a`](https://expo.dev/accounts/ritesh5969/projects/haptix-wallet/builds/d1a7544a-1f49-47dc-a1c3-94c4be3ac105) &bull; Version Code: `3`<br />_Store compliance: Zero-config devnet gas auto-funding for reviewers (FUN-002) and minimal Android permissions (PER-001)._               |
+| **Recovery Guide**    | [**Visual Guardian Recovery Guide**](docs/GUARDIAN_RECOVERY_GUIDE.md) &bull; On-chain lifecycle, timelock & veto walkthrough                                                                                                                                                                                                                                                                                                                             |
+| **Live Web Demos**    | [**haptixwallet.xyz**](https://haptixwallet.xyz) (Primary) &bull; [**Web Vault (Co-Signer)**](https://haptixwallet.xyz/vault.html) &bull; [**Recovery Portal**](https://haptixwallet.xyz/recover.html) &bull; _(Fallback: [haptix-passkeys.vercel.app](https://haptix-passkeys.vercel.app))_                                                                                                                                                             |
+| **Video Demos**       | [**70-Second Pitch**](https://youtu.be/9OnEFuHqNDY) &bull; [**3-Minute Technical Walkthrough**](https://youtu.be/kNsqykt4rfg)                                                                                                                                                                                                                                                                                                                            |
+| **Pitch Deck & Docs** | [**Haptix_Pitch_Deck.pdf**](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf) &bull; [**Documentation**](https://docs.haptixwallet.xyz)                                                                                                                                                                                                                                                                   |
+| **On-Chain Program**  | [`9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke`](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet) on Solana Devnet                                                                                                                                                                                                                                                                                       |
+| **Test Verification** | **324 automated tests passing** across 14 suites (`npm test` with Devnet funder key) &bull; **262 tests without keys** (`npm run test:no-key`: no private key required; makes read-only calls to public devnet RPC)                                                                                                                                                                                                                                      |
+| **Cloud Paymaster**   | [https://haptix-relay.onrender.com](https://haptix-relay.onrender.com) (Gas sponsorship relay &bull; _Render free tier_)                                                                                                                                                                                                                                                                                                                                 |
 
 ---
 
@@ -67,7 +67,7 @@ Haptix is a risk-adaptive passkey smart wallet built natively for the Solana Mob
 ```mermaid
 flowchart TD
     User(["User initiates transfer"]) --> Check{"Amount at or under threshold?<br/>0.10 SOL / 50 SKR"}
-    
+
     %% Low-Risk Lane
     Check -- "Yes (micro-transfer)" --> P1["Primary biometric passkey<br/>Android Keystore (StrongBox/TEE)"]
     P1 --> Precompile1["Solana Secp256r1SigVerify<br/>precompile instruction"]
@@ -82,7 +82,7 @@ flowchart TD
     P2B --> Precompile2
     Precompile2 --> Program2["Haptix smart program<br/>enforce dual quorum & settle"]
     Program2 --> Confirmed
-    
+
     Relay["Cloud paymaster relay"] -.->|"Zero-SOL gas sponsorship"| Program1
     Relay -.->|"Zero-SOL gas sponsorship"| Program2
 ```
@@ -142,6 +142,7 @@ haptix-mobile-app/
 ## Quick Start
 
 ### Prerequisites
+
 - **Node.js**: Node 20+ (CI and EAS use `22.14.0`) &bull; **Rust**: 1.75+ (tested on `rustc 1.95.0`)
 - **Solana / Agave CLI**: Solana/Agave CLI 2.x or newer (tested on `3.1.13`)
 - **Anchor**: Anchor 0.31.1
@@ -154,6 +155,7 @@ haptix-mobile-app/
   `EXPO_PUBLIC_HAPTIX_DEV_MODE=true` is pre-configured in preview builds for fee sponsorship and devnet faucet drip. Set `EXPO_PUBLIC_HAPTIX_DEVNET_RPC_URL` to a dedicated RPC to avoid public rate-limits.
 
 ### Mobile App
+
 ```bash
 # 1. Install dependencies
 npm install
@@ -172,6 +174,7 @@ npx eas-cli build -p android --profile preview
 ```
 
 ### Smart Program (`haptix_program`)
+
 - **Program ID**: `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke` (Solana Devnet)
 - **Precompile**: `Secp256r1SigVerify1111111111111111111111111`
 

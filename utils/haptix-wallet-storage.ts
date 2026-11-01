@@ -108,11 +108,16 @@ export async function saveWallet(wallet: HaptixWalletAccount): Promise<void> {
     // Index by credentialId for instant, sub-second biometric recovery
     if (wallet.primaryCredentialId) {
       await AsyncStorage.setItem(`@haptix_passkey_pda_${wallet.primaryCredentialId}`, wallet.address).catch(() => {})
-      await AsyncStorage.setItem(`@haptix_passkey_wallet_${wallet.primaryCredentialId}`, JSON.stringify(wallet)).catch(() => {})
+      await AsyncStorage.setItem(`@haptix_passkey_wallet_${wallet.primaryCredentialId}`, JSON.stringify(wallet)).catch(
+        () => {},
+      )
     }
     if (wallet.secondaryCredentialId) {
       await AsyncStorage.setItem(`@haptix_passkey_pda_${wallet.secondaryCredentialId}`, wallet.address).catch(() => {})
-      await AsyncStorage.setItem(`@haptix_passkey_wallet_${wallet.secondaryCredentialId}`, JSON.stringify(wallet)).catch(() => {})
+      await AsyncStorage.setItem(
+        `@haptix_passkey_wallet_${wallet.secondaryCredentialId}`,
+        JSON.stringify(wallet),
+      ).catch(() => {})
     }
   } catch (err) {
     console.error('[Haptix Storage] Failed to save wallet', err)

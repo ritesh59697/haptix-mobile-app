@@ -25,9 +25,23 @@ import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import Clipboard from '@/utils/clipboard'
-import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
+import {
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  sendAndConfirmTransaction,
+} from '@solana/web3.js'
 import { AppConfig } from '@/constants/app-config'
-import { saveWallet, getSavedWallet, createSmartWalletRecord, loadWallets, HaptixWalletAccount } from '@/utils/haptix-wallet-storage'
+import {
+  saveWallet,
+  getSavedWallet,
+  createSmartWalletRecord,
+  loadWallets,
+  HaptixWalletAccount,
+} from '@/utils/haptix-wallet-storage'
 import { hexToBytes } from '@noble/curves/abstract/utils'
 import {
   bindHardwarePasskey,
@@ -47,7 +61,12 @@ import {
   prepareAssertionVerification,
   preparedAssertionMatchesPublicKey,
 } from '@/utils/secp256r1-instruction'
-import { getWalletPda, createInitializeWalletInstruction, fetchHaptixWallet, HAPTIX_PROGRAM_ID } from '@/utils/haptix-client'
+import {
+  getWalletPda,
+  createInitializeWalletInstruction,
+  fetchHaptixWallet,
+  HAPTIX_PROGRAM_ID,
+} from '@/utils/haptix-client'
 import { describeRecipientSource, parseRecipientInput } from '@/utils/solana-address'
 import { DEFAULT_RECOVERY_TIMELOCK_SECONDS, describeTimelock, parseTimelockInput } from '@/utils/recovery-timelock'
 import { getFundedDevnetPayer, getDevnetFunderPublicKey, isDevnetFunder } from '@/utils/haptix-funder'
@@ -236,9 +255,7 @@ function BackupKeyDialogContent({ spendLimitSol, isDark, textPrimary, textSecond
           >
             <MaterialIcons name="check" size={13} color="#5FBF7A" />
           </View>
-          <Text style={{ fontSize: 13, fontWeight: '500', color: bodyText }}>
-            Primary key added (This phone)
-          </Text>
+          <Text style={{ fontSize: 13, fontWeight: '500', color: bodyText }}>Primary key added (This phone)</Text>
         </View>
 
         {/* Row 2: Backup / Co-signer key */}
@@ -296,9 +313,7 @@ function BackupKeyDialogContent({ spendLimitSol, isDark, textPrimary, textSecond
                 borderBottomColor: rowDivider,
               }}
             >
-              <Text style={{ width: 85, fontSize: 13, color: mutedText, fontWeight: '500' }}>
-                This phone
-              </Text>
+              <Text style={{ width: 85, fontSize: 13, color: mutedText, fontWeight: '500' }}>This phone</Text>
               <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
                 Initiates transfers & signs with primary passkey
               </Text>
@@ -312,9 +327,7 @@ function BackupKeyDialogContent({ spendLimitSol, isDark, textPrimary, textSecond
                 paddingVertical: 11,
               }}
             >
-              <Text style={{ width: 85, fontSize: 13, color: mutedText, fontWeight: '500' }}>
-                Second device
-              </Text>
+              <Text style={{ width: 85, fontSize: 13, color: mutedText, fontWeight: '500' }}>Second device</Text>
               <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
                 Approves transactions via Web Vault (Touch ID / Hardware passkey)
               </Text>
@@ -333,9 +346,7 @@ function BackupKeyDialogContent({ spendLimitSol, isDark, textPrimary, textSecond
                 borderBottomColor: rowDivider,
               }}
             >
-              <Text style={{ width: 68, fontSize: 13, color: mutedText, fontWeight: '500' }}>
-                One key
-              </Text>
+              <Text style={{ width: 68, fontSize: 13, color: mutedText, fontWeight: '500' }}>One key</Text>
               <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
                 Send up to {spendLimitSol} SOL
               </Text>
@@ -350,9 +361,7 @@ function BackupKeyDialogContent({ spendLimitSol, isDark, textPrimary, textSecond
                 paddingVertical: 11,
               }}
             >
-              <Text style={{ width: 68, fontSize: 13, color: mutedText, fontWeight: '500' }}>
-                Both keys
-              </Text>
+              <Text style={{ width: 68, fontSize: 13, color: mutedText, fontWeight: '500' }}>Both keys</Text>
               <Text style={{ flex: 1, fontSize: 13, lineHeight: 18, color: bodyText }}>
                 Larger sends, unlocking the wallet, and cancelling a recovery
               </Text>
@@ -646,7 +655,8 @@ export default function SignIn() {
           setShowAdvancedOptions(true)
           dialog.alert(
             'Invalid Guardian Address',
-            guardianParse.error || 'Please enter a valid Solana address or leave it blank to auto-generate a recovery key.',
+            guardianParse.error ||
+              'Please enter a valid Solana address or leave it blank to auto-generate a recovery key.',
           )
           return
         }
@@ -682,9 +692,7 @@ export default function SignIn() {
       // 2. Generate Secondary (Mac Touch ID vs. Security Key vs. Everyday Platform)
       let secondary: PasskeyInfo
       if (securityMode === 'vault' && vaultKeySource === 'mac') {
-        const cleanHex = macVaultKeyHex.trim().startsWith('0x')
-          ? macVaultKeyHex.trim().slice(2)
-          : macVaultKeyHex.trim()
+        const cleanHex = macVaultKeyHex.trim().startsWith('0x') ? macVaultKeyHex.trim().slice(2) : macVaultKeyHex.trim()
         if (!cleanHex || cleanHex.length !== 66 || (!cleanHex.startsWith('02') && !cleanHex.startsWith('03'))) {
           dialog.alert(
             'Second Device Public Key Required',
@@ -825,9 +833,10 @@ export default function SignIn() {
       const allWallets = await loadWallets().catch(() => [])
       const saved = await getSavedWallet().catch(() => null)
       const targetSearch = typedAddress || restoreAddress.trim()
-      const matchingSaved = (!typedInput && saved)
-        ? saved
-        : (allWallets.find((w) => w.address === targetSearch) ?? (saved?.address === targetSearch ? saved : null))
+      const matchingSaved =
+        !typedInput && saved
+          ? saved
+          : (allWallets.find((w) => w.address === targetSearch) ?? (saved?.address === targetSearch ? saved : null))
 
       if (matchingSaved) {
         const auth = await promptBiometricAuth('Authenticate with biometric passkey to sign in')
@@ -870,12 +879,16 @@ export default function SignIn() {
         let matchedRole: 'primary' | 'secondary' = 'primary'
 
         // 0. Instant Device-Local Fast Path: Check if this device already has the wallet for this passkey
-        const cachedWalletJson = await AsyncStorage.getItem(`@haptix_passkey_wallet_${picked.credentialId}`).catch(() => null)
+        const cachedWalletJson = await AsyncStorage.getItem(`@haptix_passkey_wallet_${picked.credentialId}`).catch(
+          () => null,
+        )
         if (cachedWalletJson) {
           try {
             const cachedWallet: HaptixWalletAccount = JSON.parse(cachedWalletJson)
             const primaryBytes = hexToBytes(cachedWallet.primaryPasskeyHex)
-            const secondaryBytes = cachedWallet.secondaryPasskeyHex ? hexToBytes(cachedWallet.secondaryPasskeyHex) : null
+            const secondaryBytes = cachedWallet.secondaryPasskeyHex
+              ? hexToBytes(cachedWallet.secondaryPasskeyHex)
+              : null
 
             let roleMatched: 'primary' | 'secondary' | null = null
             if (preparedAssertionMatchesPublicKey(prepared, primaryBytes)) {
@@ -885,12 +898,14 @@ export default function SignIn() {
             }
 
             if (roleMatched) {
-              const boundKeyHex = roleMatched === 'primary' ? cachedWallet.primaryPasskeyHex : cachedWallet.secondaryPasskeyHex
+              const boundKeyHex =
+                roleMatched === 'primary' ? cachedWallet.primaryPasskeyHex : cachedWallet.secondaryPasskeyHex
               await bindHardwarePasskey(roleMatched, picked.credentialId, boundKeyHex)
               const updatedWallet: HaptixWalletAccount = {
                 ...cachedWallet,
                 primaryCredentialId: roleMatched === 'primary' ? picked.credentialId : cachedWallet.primaryCredentialId,
-                secondaryCredentialId: roleMatched === 'secondary' ? picked.credentialId : cachedWallet.secondaryCredentialId,
+                secondaryCredentialId:
+                  roleMatched === 'secondary' ? picked.credentialId : cachedWallet.secondaryCredentialId,
               }
               await saveWallet(updatedWallet)
               await updateWallet(updatedWallet)
@@ -1279,11 +1294,7 @@ export default function SignIn() {
       style={[
         styles.heroContainer,
         {
-          paddingTop:
-            Math.max(
-              insets.top,
-              Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 0) : 0
-            ) + 16,
+          paddingTop: Math.max(insets.top, Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 0) : 0) + 16,
           paddingBottom: Math.max(insets.bottom + 12, 24),
         },
       ]}
@@ -1363,8 +1374,6 @@ export default function SignIn() {
             Lost device? <Text style={styles.heroRecoveryHighlight}>Recover with Guardian</Text>
           </Text>
         </TouchableOpacity>
-
-
       </View>
 
       {/* CREATE WALLET MODAL */}
@@ -1398,7 +1407,12 @@ export default function SignIn() {
             ) : (
               <>
                 <View
-                  style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 20,
+                  }}
                 >
                   <Text style={styles.sheetTitle}>Create wallet</Text>
                   <TouchableOpacity onPress={() => setShowCreateModal(false)}>
@@ -1406,457 +1420,450 @@ export default function SignIn() {
                   </TouchableOpacity>
                 </View>
 
-            {creationStep === 0 ? (
-              <>
-                <ScrollView
-                  style={{ flexShrink: 1 }}
-                  contentContainerStyle={{ paddingBottom: 8 }}
-                  showsVerticalScrollIndicator={false}
-                >
-                  <Text style={[styles.sheetDesc, { textAlign: 'left' }]}>Choose your security model and customize passkey names.</Text>
+                {creationStep === 0 ? (
+                  <>
+                    <ScrollView
+                      style={{ flexShrink: 1 }}
+                      contentContainerStyle={{ paddingBottom: 8 }}
+                      showsVerticalScrollIndicator={false}
+                    >
+                      <Text style={[styles.sheetDesc, { textAlign: 'left' }]}>
+                        Choose your security model and customize passkey names.
+                      </Text>
 
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Security architecture</Text>
-                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          Haptics.selectionAsync()
-                          setSecurityMode('everyday')
-                          setSecondaryKeyName('Backup Key')
-                        }}
-                        style={[
-                          styles.modeCard,
-                          securityMode === 'everyday' && styles.modeCardActive,
-                        ]}
-                      >
-                        <MaterialIcons
-                          name="smartphone"
-                          size={22}
-                          color={securityMode === 'everyday' ? p.heroInk : p.inkMuted}
-                        />
-                        <Text
-                          style={[
-                            styles.modeCardTitle,
-                            securityMode === 'everyday' && styles.modeCardTitleActive,
-                          ]}
-                        >
-                          Everyday
-                        </Text>
-                        <Text style={styles.modeCardDesc}>Both keys on this device</Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        onPress={() => {
-                          Haptics.selectionAsync()
-                          setSecurityMode('vault')
-                          setSecondaryKeyName('Vault Key (Hardware / Laptop)')
-                        }}
-                        style={[
-                          styles.modeCard,
-                          securityMode === 'vault' && styles.modeCardActive,
-                        ]}
-                      >
-                        <MaterialCommunityIcons
-                          name="safe"
-                          size={22}
-                          color={securityMode === 'vault' ? p.heroInk : p.inkMuted}
-                        />
-                        <Text
-                          style={[
-                            styles.modeCardTitle,
-                            securityMode === 'vault' && styles.modeCardTitleActive,
-                          ]}
-                        >
-                          Vault mode
-                        </Text>
-                        <Text style={styles.modeCardDesc}>Key 2 on laptop or second device</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {securityMode === 'vault' && (
-                      <View style={{ marginTop: 10 }}>
-                        <View style={styles.vaultExplainer}>
-                          <MaterialIcons name="info-outline" size={16} color={p.heroInk} />
-                          <Text style={styles.vaultExplainerText}>
-                            <Text style={{ fontWeight: '700' }}>Vault mode</Text>: daily spends use fingerprint on this phone. Sends above your limit will require approval on your second device (laptop, 2nd phone, or tablet).
-                          </Text>
-                        </View>
-
-                        <Text style={[styles.inputLabel, { marginTop: 14, marginBottom: 6 }]}>Vault key device</Text>
-                        <View style={{ flexDirection: 'row' }}>
-                          <View
-                            style={[
-                              styles.vaultSourceCard,
-                              styles.vaultSourceCardActive,
-                              { flex: 1 },
-                            ]}
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Security architecture</Text>
+                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                          <TouchableOpacity
+                            onPress={() => {
+                              Haptics.selectionAsync()
+                              setSecurityMode('everyday')
+                              setSecondaryKeyName('Backup Key')
+                            }}
+                            style={[styles.modeCard, securityMode === 'everyday' && styles.modeCardActive]}
                           >
                             <MaterialIcons
-                              name="devices"
-                              size={20}
-                              color={p.heroInk}
+                              name="smartphone"
+                              size={22}
+                              color={securityMode === 'everyday' ? p.heroInk : p.inkMuted}
                             />
                             <Text
-                              style={[
-                                styles.vaultSourceTitle,
-                                styles.vaultSourceTitleActive,
-                              ]}
+                              style={[styles.modeCardTitle, securityMode === 'everyday' && styles.modeCardTitleActive]}
                             >
-                              Second Device (Laptop, Mac, or 2nd Phone)
+                              Everyday
                             </Text>
-                          </View>
+                            <Text style={styles.modeCardDesc}>Both keys on this device</Text>
+                          </TouchableOpacity>
+
+                          <TouchableOpacity
+                            onPress={() => {
+                              Haptics.selectionAsync()
+                              setSecurityMode('vault')
+                              setSecondaryKeyName('Vault Key (Hardware / Laptop)')
+                            }}
+                            style={[styles.modeCard, securityMode === 'vault' && styles.modeCardActive]}
+                          >
+                            <MaterialCommunityIcons
+                              name="safe"
+                              size={22}
+                              color={securityMode === 'vault' ? p.heroInk : p.inkMuted}
+                            />
+                            <Text
+                              style={[styles.modeCardTitle, securityMode === 'vault' && styles.modeCardTitleActive]}
+                            >
+                              Vault mode
+                            </Text>
+                            <Text style={styles.modeCardDesc}>Key 2 on laptop or second device</Text>
+                          </TouchableOpacity>
                         </View>
 
-                        {vaultKeySource === 'mac' && (
-                          <View style={styles.macVaultBox}>
-                            {/* Step 1 Header */}
-                            <View style={styles.macVaultStepHeader}>
-                              <View style={styles.macVaultStepBadge}>
-                                <Text style={styles.macVaultStepBadgeText}>1</Text>
-                              </View>
-                              <Text style={styles.macVaultStepTitle}>
-                                Open on laptop or second phone browser
+                        {securityMode === 'vault' && (
+                          <View style={{ marginTop: 10 }}>
+                            <View style={styles.vaultExplainer}>
+                              <MaterialIcons name="info-outline" size={16} color={p.heroInk} />
+                              <Text style={styles.vaultExplainerText}>
+                                <Text style={{ fontWeight: '700' }}>Vault mode</Text>: daily spends use fingerprint on
+                                this phone. Sends above your limit will require approval on your second device (laptop,
+                                2nd phone, or tablet).
                               </Text>
                             </View>
 
-                            {/* Step 1 URL Box */}
-                            <View style={styles.macVaultUrlWrap}>
-                              <View style={styles.macVaultUrlLeft}>
-                                <MaterialIcons name="link" size={16} color="#4F6BFF" style={{ marginRight: 6 }} />
-                                <Text
-                                  style={styles.macVaultUrlText}
-                                  numberOfLines={1}
-                                  ellipsizeMode="middle"
-                                >
-                                  {AppConfig.vaultWebUrl}
+                            <Text style={[styles.inputLabel, { marginTop: 14, marginBottom: 6 }]}>
+                              Vault key device
+                            </Text>
+                            <View style={{ flexDirection: 'row' }}>
+                              <View style={[styles.vaultSourceCard, styles.vaultSourceCardActive, { flex: 1 }]}>
+                                <MaterialIcons name="devices" size={20} color={p.heroInk} />
+                                <Text style={[styles.vaultSourceTitle, styles.vaultSourceTitleActive]}>
+                                  Second Device (Laptop, Mac, or 2nd Phone)
                                 </Text>
                               </View>
-                              <View style={styles.macVaultUrlActions}>
-                                <TouchableOpacity
-                                  style={[
-                                    styles.macVaultActionBtn,
-                                    copiedVaultUrl && styles.macVaultActionBtnCopied,
-                                  ]}
-                                  onPress={async () => {
-                                    await Clipboard.setString(AppConfig.vaultWebUrl)
-                                    setCopiedVaultUrl(true)
-                                    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-                                    setTimeout(() => setCopiedVaultUrl(false), 2000)
-                                  }}
-                                  activeOpacity={0.7}
-                                >
-                                  <MaterialIcons
-                                    name={copiedVaultUrl ? 'check' : 'content-copy'}
-                                    size={13}
-                                    color={copiedVaultUrl ? '#10B981' : p.inkSecondary}
-                                    style={{ marginRight: 3 }}
-                                  />
-                                  <Text
-                                    style={[
-                                      styles.macVaultActionBtnText,
-                                      copiedVaultUrl && { color: '#10B981' },
-                                    ]}
-                                  >
-                                    {copiedVaultUrl ? 'Copied' : 'Copy'}
-                                  </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={styles.macVaultActionBtnOpen}
-                                  onPress={() => Linking.openURL(AppConfig.vaultWebUrl)}
-                                  activeOpacity={0.7}
-                                >
-                                  <MaterialIcons name="open-in-new" size={13} color="#4F6BFF" />
-                                </TouchableOpacity>
-                              </View>
                             </View>
 
-                            {/* Step 2 Header */}
-                            <View style={[styles.macVaultStepHeader, { marginTop: 14 }]}>
-                              <View style={styles.macVaultStepBadge}>
-                                <Text style={styles.macVaultStepBadgeText}>2</Text>
-                              </View>
-                              <Text style={styles.macVaultStepTitle}>
-                                Tap &quot;Enroll&quot; on that device, then paste key below
-                              </Text>
-                            </View>
-
-                            {/* Step 2 Key Input Container */}
-                            <View
-                              style={[
-                                styles.macKeyInputContainer,
-                                isValidVaultHex && styles.macKeyInputContainerValid,
-                                isVaultInputFocused && !isValidVaultHex && styles.macKeyInputContainerFocused,
-                              ]}
-                            >
-                              <TextInput
-                                style={styles.macKeyInput}
-                                value={macVaultKeyHex}
-                                onChangeText={setMacVaultKeyHex}
-                                onFocus={() => setIsVaultInputFocused(true)}
-                                onBlur={() => setIsVaultInputFocused(false)}
-                                placeholder="33-byte public key (02...)"
-                                placeholderTextColor={p.inkMuted}
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                multiline={false}
-                                numberOfLines={1}
-                                textAlignVertical="center"
-                              />
-                              {cleanVaultHex.length > 0 ? (
-                                <View style={styles.keyActionRow}>
-                                  {isValidVaultHex ? (
-                                    <View style={styles.validKeyBadge}>
-                                      <MaterialIcons name="check" size={12} color="#10B981" />
-                                      <Text style={styles.validKeyText}>Valid</Text>
-                                    </View>
-                                  ) : null}
-                                  <TouchableOpacity
-                                    style={styles.clearKeyBtn}
-                                    onPress={() => {
-                                      setMacVaultKeyHex('')
-                                      Haptics.selectionAsync()
-                                    }}
-                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                  >
-                                    <MaterialIcons name="cancel" size={18} color={p.inkMuted} />
-                                  </TouchableOpacity>
+                            {vaultKeySource === 'mac' && (
+                              <View style={styles.macVaultBox}>
+                                {/* Step 1 Header */}
+                                <View style={styles.macVaultStepHeader}>
+                                  <View style={styles.macVaultStepBadge}>
+                                    <Text style={styles.macVaultStepBadgeText}>1</Text>
+                                  </View>
+                                  <Text style={styles.macVaultStepTitle}>Open on laptop or second phone browser</Text>
                                 </View>
-                              ) : (
-                                <TouchableOpacity
-                                  style={styles.macPasteBadgeButton}
-                                  onPress={async () => {
-                                    const text = await Clipboard.getString()
-                                    if (text) {
-                                      const clean = text.trim().startsWith('0x') ? text.trim().slice(2) : text.trim()
-                                      setMacVaultKeyHex(clean)
-                                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-                                    }
-                                  }}
-                                  activeOpacity={0.7}
-                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                  accessibilityLabel="Paste public key"
-                                >
-                                  <MaterialIcons name="content-paste" size={18} color="#4F6BFF" />
-                                </TouchableOpacity>
-                              )}
-                            </View>
 
-                            {/* Status indicator below input */}
-                            {cleanVaultHex.length > 0 && (
-                              <View style={styles.keyStatusWrap}>
-                                {isValidVaultHex ? (
-                                  <Text style={[styles.keyStatusText, { color: '#10B981' }]}>
-                                    ✓ 33-byte compressed P-256 public key verified
+                                {/* Step 1 URL Box */}
+                                <View style={styles.macVaultUrlWrap}>
+                                  <View style={styles.macVaultUrlLeft}>
+                                    <MaterialIcons name="link" size={16} color="#4F6BFF" style={{ marginRight: 6 }} />
+                                    <Text style={styles.macVaultUrlText} numberOfLines={1} ellipsizeMode="middle">
+                                      {AppConfig.vaultWebUrl}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.macVaultUrlActions}>
+                                    <TouchableOpacity
+                                      style={[
+                                        styles.macVaultActionBtn,
+                                        copiedVaultUrl && styles.macVaultActionBtnCopied,
+                                      ]}
+                                      onPress={async () => {
+                                        await Clipboard.setString(AppConfig.vaultWebUrl)
+                                        setCopiedVaultUrl(true)
+                                        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                                        setTimeout(() => setCopiedVaultUrl(false), 2000)
+                                      }}
+                                      activeOpacity={0.7}
+                                    >
+                                      <MaterialIcons
+                                        name={copiedVaultUrl ? 'check' : 'content-copy'}
+                                        size={13}
+                                        color={copiedVaultUrl ? '#10B981' : p.inkSecondary}
+                                        style={{ marginRight: 3 }}
+                                      />
+                                      <Text
+                                        style={[styles.macVaultActionBtnText, copiedVaultUrl && { color: '#10B981' }]}
+                                      >
+                                        {copiedVaultUrl ? 'Copied' : 'Copy'}
+                                      </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                      style={styles.macVaultActionBtnOpen}
+                                      onPress={() => Linking.openURL(AppConfig.vaultWebUrl)}
+                                      activeOpacity={0.7}
+                                    >
+                                      <MaterialIcons name="open-in-new" size={13} color="#4F6BFF" />
+                                    </TouchableOpacity>
+                                  </View>
+                                </View>
+
+                                {/* Step 2 Header */}
+                                <View style={[styles.macVaultStepHeader, { marginTop: 14 }]}>
+                                  <View style={styles.macVaultStepBadge}>
+                                    <Text style={styles.macVaultStepBadgeText}>2</Text>
+                                  </View>
+                                  <Text style={styles.macVaultStepTitle}>
+                                    Tap &quot;Enroll&quot; on that device, then paste key below
                                   </Text>
-                                ) : (
-                                  <Text style={[styles.keyStatusText, { color: '#EF4444' }]}>
-                                    Must be a 66-character hex string starting with 02 or 03 ({cleanVaultHex.length}/66)
-                                  </Text>
+                                </View>
+
+                                {/* Step 2 Key Input Container */}
+                                <View
+                                  style={[
+                                    styles.macKeyInputContainer,
+                                    isValidVaultHex && styles.macKeyInputContainerValid,
+                                    isVaultInputFocused && !isValidVaultHex && styles.macKeyInputContainerFocused,
+                                  ]}
+                                >
+                                  <TextInput
+                                    style={styles.macKeyInput}
+                                    value={macVaultKeyHex}
+                                    onChangeText={setMacVaultKeyHex}
+                                    onFocus={() => setIsVaultInputFocused(true)}
+                                    onBlur={() => setIsVaultInputFocused(false)}
+                                    placeholder="33-byte public key (02...)"
+                                    placeholderTextColor={p.inkMuted}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    multiline={false}
+                                    numberOfLines={1}
+                                    textAlignVertical="center"
+                                  />
+                                  {cleanVaultHex.length > 0 ? (
+                                    <View style={styles.keyActionRow}>
+                                      {isValidVaultHex ? (
+                                        <View style={styles.validKeyBadge}>
+                                          <MaterialIcons name="check" size={12} color="#10B981" />
+                                          <Text style={styles.validKeyText}>Valid</Text>
+                                        </View>
+                                      ) : null}
+                                      <TouchableOpacity
+                                        style={styles.clearKeyBtn}
+                                        onPress={() => {
+                                          setMacVaultKeyHex('')
+                                          Haptics.selectionAsync()
+                                        }}
+                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                      >
+                                        <MaterialIcons name="cancel" size={18} color={p.inkMuted} />
+                                      </TouchableOpacity>
+                                    </View>
+                                  ) : (
+                                    <TouchableOpacity
+                                      style={styles.macPasteBadgeButton}
+                                      onPress={async () => {
+                                        const text = await Clipboard.getString()
+                                        if (text) {
+                                          const clean = text.trim().startsWith('0x')
+                                            ? text.trim().slice(2)
+                                            : text.trim()
+                                          setMacVaultKeyHex(clean)
+                                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+                                        }
+                                      }}
+                                      activeOpacity={0.7}
+                                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                      accessibilityLabel="Paste public key"
+                                    >
+                                      <MaterialIcons name="content-paste" size={18} color="#4F6BFF" />
+                                    </TouchableOpacity>
+                                  )}
+                                </View>
+
+                                {/* Status indicator below input */}
+                                {cleanVaultHex.length > 0 && (
+                                  <View style={styles.keyStatusWrap}>
+                                    {isValidVaultHex ? (
+                                      <Text style={[styles.keyStatusText, { color: '#10B981' }]}>
+                                        ✓ 33-byte compressed P-256 public key verified
+                                      </Text>
+                                    ) : (
+                                      <Text style={[styles.keyStatusText, { color: '#EF4444' }]}>
+                                        Must be a 66-character hex string starting with 02 or 03 ({cleanVaultHex.length}
+                                        /66)
+                                      </Text>
+                                    )}
+                                  </View>
                                 )}
                               </View>
                             )}
                           </View>
                         )}
                       </View>
-                    )}
-                  </View>
 
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Wallet name</Text>
-                    <TextInput
-                      style={styles.textInputField}
-                      value={walletName}
-                      onChangeText={setWalletName}
-                      placeholder="e.g., My Haptix Wallet"
-                      placeholderTextColor={p.inkMuted}
-                      autoCorrect={false}
-                    />
-                  </View>
+                      <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Wallet name</Text>
+                        <TextInput
+                          style={styles.textInputField}
+                          value={walletName}
+                          onChangeText={setWalletName}
+                          placeholder="e.g., My Haptix Wallet"
+                          placeholderTextColor={p.inkMuted}
+                          autoCorrect={false}
+                        />
+                      </View>
 
-                  {/* Recovery Guardian (Optional with Auto-Backup) */}
-                  <View style={styles.inputGroup}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <Text style={styles.inputLabel}>Recovery guardian (Optional)</Text>
-                      <View
-                        style={{
-                          paddingHorizontal: 8,
-                          paddingVertical: 2,
-                          borderRadius: 6,
-                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
-                        }}
-                      >
-                        <Text style={{ fontSize: 11, fontWeight: '500', color: p.inkMuted }}>
-                          {guardianInput.trim() ? 'External key' : 'Auto-backup'}
+                      {/* Recovery Guardian (Optional with Auto-Backup) */}
+                      <View style={styles.inputGroup}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: 6,
+                          }}
+                        >
+                          <Text style={styles.inputLabel}>Recovery guardian (Optional)</Text>
+                          <View
+                            style={{
+                              paddingHorizontal: 8,
+                              paddingVertical: 2,
+                              borderRadius: 6,
+                              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)',
+                            }}
+                          >
+                            <Text style={{ fontSize: 11, fontWeight: '500', color: p.inkMuted }}>
+                              {guardianInput.trim() ? 'External key' : 'Auto-backup'}
+                            </Text>
+                          </View>
+                        </View>
+                        <View
+                          style={[
+                            styles.addressInputContainer,
+                            isGuardianInputFocused && { borderColor: '#4F6BFF', borderWidth: 1.5 },
+                            guardianInput.trim() && (!guardianPublicKey || isDevnetFunder(guardianPublicKey))
+                              ? styles.textInputFieldInvalid
+                              : null,
+                          ]}
+                        >
+                          <TextInput
+                            style={styles.addressInput}
+                            value={guardianInput}
+                            onChangeText={setGuardianInput}
+                            onFocus={() => setIsGuardianInputFocused(true)}
+                            onBlur={() => setIsGuardianInputFocused(false)}
+                            placeholder="Auto-generate or paste address"
+                            placeholderTextColor={p.inkMuted}
+                            autoCorrect={false}
+                            autoCapitalize="none"
+                            multiline={false}
+                            numberOfLines={1}
+                          />
+                          {guardianInput.trim() ? (
+                            <TouchableOpacity
+                              style={styles.pasteBadgeButton}
+                              onPress={() => {
+                                setGuardianInput('')
+                                Haptics.selectionAsync()
+                              }}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <MaterialIcons name="close" size={16} color={p.inkMuted} />
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity
+                              style={styles.pasteBadgeButton}
+                              onPress={async () => {
+                                const text = await Clipboard.getString()
+                                if (text) {
+                                  setGuardianInput(text.trim())
+                                  Haptics.selectionAsync()
+                                }
+                              }}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <MaterialIcons
+                                name="content-paste"
+                                size={14}
+                                color="#6C8CFF"
+                                style={{ marginRight: 2 }}
+                              />
+                              <Text style={[styles.pasteBadgeText, { color: '#6C8CFF' }]}>Paste</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                        <Text
+                          style={[
+                            styles.inputHint,
+                            guardianInput.trim() && (!guardianPublicKey || isDevnetFunder(guardianPublicKey))
+                              ? styles.inputHintError
+                              : null,
+                          ]}
+                        >
+                          {guardianInput.trim()
+                            ? guardianPublicKey
+                              ? isDevnetFunder(guardianPublicKey)
+                                ? 'Cannot use the devnet funder. Guardian must be an external key.'
+                                : `Can rescue wallet after 1d timelock. Cannot move funds.`
+                              : (guardianParse.error ?? 'Invalid Solana address.')
+                            : 'Leave blank for 1-tap setup. An encrypted recovery key will be generated for you.'}
                         </Text>
                       </View>
-                    </View>
-                    <View
-                      style={[
-                        styles.addressInputContainer,
-                        isGuardianInputFocused && { borderColor: '#4F6BFF', borderWidth: 1.5 },
-                        guardianInput.trim() && (!guardianPublicKey || isDevnetFunder(guardianPublicKey)) ? styles.textInputFieldInvalid : null,
-                      ]}
-                    >
-                      <TextInput
-                        style={styles.addressInput}
-                        value={guardianInput}
-                        onChangeText={setGuardianInput}
-                        onFocus={() => setIsGuardianInputFocused(true)}
-                        onBlur={() => setIsGuardianInputFocused(false)}
-                        placeholder="Auto-generate or paste address"
-                        placeholderTextColor={p.inkMuted}
-                        autoCorrect={false}
-                        autoCapitalize="none"
-                        multiline={false}
-                        numberOfLines={1}
-                      />
-                      {guardianInput.trim() ? (
-                        <TouchableOpacity
-                          style={styles.pasteBadgeButton}
-                          onPress={() => {
-                            setGuardianInput('')
-                            Haptics.selectionAsync()
-                          }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <MaterialIcons name="close" size={16} color={p.inkMuted} />
-                        </TouchableOpacity>
-                      ) : (
-                        <TouchableOpacity
-                          style={styles.pasteBadgeButton}
-                          onPress={async () => {
-                            const text = await Clipboard.getString()
-                            if (text) {
-                              setGuardianInput(text.trim())
-                              Haptics.selectionAsync()
-                            }
-                          }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <MaterialIcons name="content-paste" size={14} color="#6C8CFF" style={{ marginRight: 2 }} />
-                          <Text style={[styles.pasteBadgeText, { color: '#6C8CFF' }]}>Paste</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    <Text
-                      style={[
-                        styles.inputHint,
-                        guardianInput.trim() && (!guardianPublicKey || isDevnetFunder(guardianPublicKey)) ? styles.inputHintError : null,
-                      ]}
-                    >
-                      {guardianInput.trim()
-                        ? guardianPublicKey
-                          ? isDevnetFunder(guardianPublicKey)
-                            ? 'Cannot use the devnet funder. Guardian must be an external key.'
-                            : `Can rescue wallet after 1d timelock. Cannot move funds.`
-                          : (guardianParse.error ?? 'Invalid Solana address.')
-                        : 'Leave blank for 1-tap setup. An encrypted recovery key will be generated for you.'}
-                    </Text>
-                  </View>
 
-                  {/* Advanced Options Toggle */}
-                  <TouchableOpacity
-                    style={styles.advancedOptionsToggle}
-                    onPress={() => {
-                      Haptics.selectionAsync()
-                      setShowAdvancedOptions((prev) => !prev)
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <MaterialIcons name="tune" size={18} color={p.heroInk} />
-                      <Text style={styles.advancedOptionsToggleText}>
-                        {showAdvancedOptions ? 'Hide passkey labels' : 'Advanced passkey labels'}
+                      {/* Advanced Options Toggle */}
+                      <TouchableOpacity
+                        style={styles.advancedOptionsToggle}
+                        onPress={() => {
+                          Haptics.selectionAsync()
+                          setShowAdvancedOptions((prev) => !prev)
+                        }}
+                        activeOpacity={0.8}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <MaterialIcons name="tune" size={18} color={p.heroInk} />
+                          <Text style={styles.advancedOptionsToggleText}>
+                            {showAdvancedOptions ? 'Hide passkey labels' : 'Advanced passkey labels'}
+                          </Text>
+                        </View>
+                        <MaterialIcons
+                          name={showAdvancedOptions ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
+                          size={20}
+                          color={p.inkSecondary}
+                        />
+                      </TouchableOpacity>
+
+                      {showAdvancedOptions && (
+                        <>
+                          <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Passkey 1 name, primary</Text>
+                            <TextInput
+                              style={styles.textInputField}
+                              value={primaryKeyName}
+                              onChangeText={setPrimaryKeyName}
+                              placeholder="e.g., Primary passkey"
+                              placeholderTextColor={p.inkMuted}
+                              autoCorrect={false}
+                            />
+                          </View>
+
+                          <View style={styles.inputGroup}>
+                            <Text style={styles.inputLabel}>Passkey 2 name, backup</Text>
+                            <TextInput
+                              style={styles.textInputField}
+                              value={secondaryKeyName}
+                              onChangeText={setSecondaryKeyName}
+                              placeholder="e.g., Backup key"
+                              placeholderTextColor={p.inkMuted}
+                              autoCorrect={false}
+                            />
+                          </View>
+                        </>
+                      )}
+                    </ScrollView>
+
+                    {/* PINNED ACTION BUTTON - Always visible without scrolling */}
+                    <View style={{ paddingTop: 12 }}>
+                      <TouchableOpacity
+                        style={[
+                          styles.primaryDarkButton,
+                          { backgroundColor: '#5E81FF' },
+                          isCreating && { opacity: 0.6 },
+                        ]}
+                        onPress={handleExecutePasskeyCreation}
+                        disabled={isCreating}
+                        activeOpacity={0.85}
+                      >
+                        {isCreating ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
+                        ) : (
+                          <MaterialIcons name="fingerprint" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                        )}
+                        <Text style={[styles.primaryDarkButtonText, { color: '#FFFFFF' }]}>
+                          {securityMode === 'vault' ? 'Start Vault setup' : 'Start setup'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : (
+                  <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={p.link} style={{ marginBottom: 24 }} />
+                    <View style={styles.modalStepRow}>
+                      <MaterialIcons
+                        name={creationStep > 1 ? 'check-circle' : 'radio-button-unchecked'}
+                        size={24}
+                        color={creationStep > 1 ? p.success : p.inkMuted}
+                      />
+                      <Text style={styles.modalStepText}>Creating {primaryKeyName || 'Primary Passkey'}...</Text>
+                    </View>
+                    <View style={styles.modalStepRow}>
+                      <MaterialIcons
+                        name={creationStep > 2 ? 'check-circle' : 'radio-button-unchecked'}
+                        size={24}
+                        color={creationStep > 2 ? p.success : p.inkMuted}
+                      />
+                      <Text style={styles.modalStepText}>
+                        {securityMode === 'vault'
+                          ? `Pairing ${secondaryKeyName || 'Vault Key'} (Cross-Device)...`
+                          : `Creating ${secondaryKeyName || 'Backup Key'}...`}
                       </Text>
                     </View>
-                    <MaterialIcons
-                      name={showAdvancedOptions ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-                      size={20}
-                      color={p.inkSecondary}
-                    />
-                  </TouchableOpacity>
-
-                  {showAdvancedOptions && (
-                    <>
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Passkey 1 name, primary</Text>
-                        <TextInput
-                          style={styles.textInputField}
-                          value={primaryKeyName}
-                          onChangeText={setPrimaryKeyName}
-                          placeholder="e.g., Primary passkey"
-                          placeholderTextColor={p.inkMuted}
-                          autoCorrect={false}
-                        />
-                      </View>
-
-                      <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Passkey 2 name, backup</Text>
-                        <TextInput
-                          style={styles.textInputField}
-                          value={secondaryKeyName}
-                          onChangeText={setSecondaryKeyName}
-                          placeholder="e.g., Backup key"
-                          placeholderTextColor={p.inkMuted}
-                          autoCorrect={false}
-                        />
-                      </View>
-                    </>
-                  )}
-                </ScrollView>
-
-                {/* PINNED ACTION BUTTON - Always visible without scrolling */}
-                <View style={{ paddingTop: 12 }}>
-                  <TouchableOpacity
-                    style={[styles.primaryDarkButton, { backgroundColor: '#5E81FF' }, isCreating && { opacity: 0.6 }]}
-                    onPress={handleExecutePasskeyCreation}
-                    disabled={isCreating}
-                    activeOpacity={0.85}
-                  >
-                    {isCreating ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: 8 }} />
-                    ) : (
-                      <MaterialIcons name="fingerprint" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    )}
-                    <Text style={[styles.primaryDarkButtonText, { color: '#FFFFFF' }]}>
-                      {securityMode === 'vault' ? 'Start Vault setup' : 'Start setup'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            ) : (
-              <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-                <ActivityIndicator size="large" color={p.link} style={{ marginBottom: 24 }} />
-                <View style={styles.modalStepRow}>
-                  <MaterialIcons
-                    name={creationStep > 1 ? 'check-circle' : 'radio-button-unchecked'}
-                    size={24}
-                    color={creationStep > 1 ? p.success : p.inkMuted}
-                  />
-                  <Text style={styles.modalStepText}>Creating {primaryKeyName || 'Primary Passkey'}...</Text>
-                </View>
-                <View style={styles.modalStepRow}>
-                  <MaterialIcons
-                    name={creationStep > 2 ? 'check-circle' : 'radio-button-unchecked'}
-                    size={24}
-                    color={creationStep > 2 ? p.success : p.inkMuted}
-                  />
-                  <Text style={styles.modalStepText}>
-                    {securityMode === 'vault'
-                      ? `Pairing ${secondaryKeyName || 'Vault Key'} (Cross-Device)...`
-                      : `Creating ${secondaryKeyName || 'Backup Key'}...`}
-                  </Text>
-                </View>
-                <View style={styles.modalStepRow}>
-                  <MaterialIcons
-                    name={creationStep > 2 ? 'check-circle' : 'radio-button-unchecked'}
-                    size={24}
-                    color={creationStep > 2 ? p.success : p.inkMuted}
-                  />
-                  <Text style={styles.modalStepText}>Finalizing Smart Account...</Text>
-                </View>
-              </View>
-            )}
+                    <View style={styles.modalStepRow}>
+                      <MaterialIcons
+                        name={creationStep > 2 ? 'check-circle' : 'radio-button-unchecked'}
+                        size={24}
+                        color={creationStep > 2 ? p.success : p.inkMuted}
+                      />
+                      <Text style={styles.modalStepText}>Finalizing Smart Account...</Text>
+                    </View>
+                  </View>
+                )}
               </>
             )}
           </Animated.View>
@@ -1902,11 +1909,7 @@ export default function SignIn() {
               >
                 <View style={styles.heroBiometricRing}>
                   <View style={styles.heroBiometricInnerCircle}>
-                    <Image
-                      source={FINGERPRINT_HERO_BLUE}
-                      style={{ width: 36, height: 36 }}
-                      resizeMode="contain"
-                    />
+                    <Image source={FINGERPRINT_HERO_BLUE} style={{ width: 36, height: 36 }} resizeMode="contain" />
                   </View>
                 </View>
                 <Text style={styles.heroPasskeyTitle}>Passkey Sign In</Text>
@@ -1924,10 +1927,7 @@ export default function SignIn() {
                     return (
                       <TouchableOpacity
                         key={w.address}
-                        style={[
-                          styles.savedWalletCard,
-                          isSelected && styles.savedWalletCardActive,
-                        ]}
+                        style={[styles.savedWalletCard, isSelected && styles.savedWalletCardActive]}
                         onPress={() => {
                           Haptics.selectionAsync()
                           setRestoreAddress(w.address)
@@ -1955,9 +1955,7 @@ export default function SignIn() {
               {restoreParse.address && savedWallets.length === 0 && (
                 <View style={styles.activeTargetAddressPill}>
                   <MaterialIcons name="lock-outline" size={13} color="#6C8CFF" />
-                  <Text style={styles.activeTargetAddressText}>
-                    Target: {ellipsify(restoreParse.address, 6)}
-                  </Text>
+                  <Text style={styles.activeTargetAddressText}>Target: {ellipsify(restoreParse.address, 6)}</Text>
                   <TouchableOpacity
                     onPress={() => {
                       Haptics.selectionAsync()
@@ -2072,7 +2070,8 @@ export default function SignIn() {
                   {showGuardianLookup && (
                     <View style={styles.guardianSearchBox}>
                       <Text style={styles.guardianSearchHelp}>
-                        Enter your guardian&apos;s Solana address, for example your Phantom or a friend&apos;s wallet, to find your smart wallet.
+                        Enter your guardian&apos;s Solana address, for example your Phantom or a friend&apos;s wallet,
+                        to find your smart wallet.
                       </Text>
                       <View style={[styles.addressInputContainer, { marginTop: 10, marginBottom: 10, height: 46 }]}>
                         <TextInput
@@ -2377,7 +2376,12 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       fontWeight: '600',
       letterSpacing: -0.2,
     },
-    primaryDarkButtonText: { color: isDark ? '#000000' : '#FFFFFF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
+    primaryDarkButtonText: {
+      color: isDark ? '#000000' : '#FFFFFF',
+      fontSize: 15,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
     heroPasskeyCard: {
       alignItems: 'center',
       paddingVertical: 18,
@@ -2520,7 +2524,14 @@ const createStyles = (p: OnboardingPalette, isDark: boolean) =>
       paddingHorizontal: 2,
     },
     addressHintText: { flex: 1, fontSize: 12, lineHeight: 16 },
-    pasteBadgeButton: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0, paddingHorizontal: 4, paddingVertical: 4 },
+    pasteBadgeButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      flexShrink: 0,
+      paddingHorizontal: 4,
+      paddingVertical: 4,
+    },
     pasteBadgeText: { color: '#6C8CFF', fontSize: 13, fontWeight: '500' },
     modeCard: {
       flex: 1,

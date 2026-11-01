@@ -148,10 +148,7 @@ async function main() {
 
   const onChainInitial = await fetchHaptixWallet(connection, walletPda)
   assert(onChainInitial !== null, 'reads created wallet from Devnet')
-  assert(
-    onChainInitial?.spendThresholdLamports === initialThreshold,
-    'on-chain threshold matches initial 0.1 SOL',
-  )
+  assert(onChainInitial?.spendThresholdLamports === initialThreshold, 'on-chain threshold matches initial 0.1 SOL')
 
   // 1. Proves single-passkey attempt fails
   const newThreshold = 500_000_000n // 0.5 SOL
@@ -192,10 +189,7 @@ async function main() {
   assert(updateResult.ok, 'updates threshold to 0.5 SOL with 2-of-2 quorum', updateResult.message)
 
   const onChainUpdated = await fetchHaptixWallet(connection, walletPda)
-  assert(
-    onChainUpdated?.spendThresholdLamports === newThreshold,
-    'on-chain threshold verified as 0.5 SOL',
-  )
+  assert(onChainUpdated?.spendThresholdLamports === newThreshold, 'on-chain threshold verified as 0.5 SOL')
 
   // 3. Proves lowering threshold works as well
   const loweredThreshold = 50_000_000n // 0.05 SOL
@@ -221,10 +215,7 @@ async function main() {
   assert(lowerResult.ok, 'lowers threshold to 0.05 SOL with 2-of-2 quorum', lowerResult.message)
 
   const onChainLowered = await fetchHaptixWallet(connection, walletPda)
-  assert(
-    onChainLowered?.spendThresholdLamports === loweredThreshold,
-    'on-chain threshold verified as 0.05 SOL',
-  )
+  assert(onChainLowered?.spendThresholdLamports === loweredThreshold, 'on-chain threshold verified as 0.05 SOL')
 
   console.log(`\n  SPEND THRESHOLD TOTAL: ${passed + failed} | PASSED: ${passed} | FAILED: ${failed}\n`)
   if (failed > 0) process.exit(1)

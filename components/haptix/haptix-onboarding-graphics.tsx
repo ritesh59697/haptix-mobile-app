@@ -262,8 +262,6 @@ export function AgentStackArt({ size = 260 }: { size?: number }) {
   )
 }
 
-
-
 // ============================================================================
 // 5. BIOMETRIC SCAN GRAPHIC (SCREEN 6)
 // Large scanner badge with Face ID / fingerprint brackets
@@ -445,7 +443,13 @@ export function SuperlistDoodleArt({ color = 'rgba(0, 0, 0, 0.08)' }: { color?: 
         {/* Right top circle */}
         <Circle cx="345" cy="80" r="30" stroke={color} strokeWidth="3.5" />
         {/* Right corner angle */}
-        <Path d="M 350 148 L 350 176 L 332 176" stroke={color} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path
+          d="M 350 148 L 350 176 L 332 176"
+          stroke={color}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </Svg>
     </View>
   )

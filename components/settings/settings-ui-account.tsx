@@ -110,7 +110,6 @@ export function SettingsUiAccount({ onOpenSwitcher }: SettingsUiAccountProps = {
           />
         }
       />
-
     </>
   )
 }

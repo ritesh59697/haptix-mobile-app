@@ -29,11 +29,7 @@ export function buildRelayUrl(relayHostOrUrl: string, endpointPath: string): str
 /**
  * Robust fetch with timeout using standard AbortController (safe for React Native Hermes).
  */
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit = {},
-  timeoutMs: number = 5000,
-): Promise<Response> {
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs: number = 5000): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => {
     try {
@@ -68,8 +64,7 @@ export function getRelayCandidateHosts(): string[] {
 
   // 2. Expo Go debuggerHost
   const expoGoHost =
-    (Constants as any)?.expoGoConfig?.debuggerHost ||
-    (Constants as any)?.manifest2?.extra?.expoGo?.debuggerHost
+    (Constants as any)?.expoGoConfig?.debuggerHost || (Constants as any)?.manifest2?.extra?.expoGo?.debuggerHost
   if (typeof expoGoHost === 'string') {
     const ip = expoGoHost.split(':')[0]
     if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
@@ -169,7 +164,8 @@ export async function queueVaultTransfer(params: {
   walletName?: string
   spendThresholdSol?: number
 }): Promise<string> {
-  const { relayHost, messageHex, amountSol, amountUsd, feeSol, recipient, walletPda, walletName, spendThresholdSol } = params
+  const { relayHost, messageHex, amountSol, amountUsd, feeSol, recipient, walletPda, walletName, spendThresholdSol } =
+    params
   const targetUrl = buildRelayUrl(relayHost, '/pending-tx')
   const res = await fetchWithTimeout(
     targetUrl,
@@ -277,11 +273,7 @@ export function parseManualSignaturePayload(input: string): VaultSignaturePayloa
 /**
  * Cancels a pending transfer on the Relay.
  */
-export async function cancelVaultTransfer(
-  relayHost: string,
-  txId?: string,
-  walletPda?: string,
-): Promise<boolean> {
+export async function cancelVaultTransfer(relayHost: string, txId?: string, walletPda?: string): Promise<boolean> {
   try {
     const cancelUrl = buildRelayUrl(relayHost, '/cancel')
     const res = await fetchWithTimeout(

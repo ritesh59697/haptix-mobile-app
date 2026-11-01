@@ -188,10 +188,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     // 3. Finalize Smart Account
     options?.onProgress?.(3)
 
-    const threshold =
-      options?.spendThreshold !== undefined
-        ? options.spendThreshold
-        : 0.1
+    const threshold = options?.spendThreshold !== undefined ? options.spendThreshold : 0.1
 
     const created = await createSmartWalletRecord({
       name: finalName,

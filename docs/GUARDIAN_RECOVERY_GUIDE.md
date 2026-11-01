@@ -1,7 +1,7 @@
 # Haptix Guardian Social Recovery — Visual User & Architecture Guide
 
 > **Seedless. Biometric-Secured. Non-Custodial.**  
-> *How Haptix protects your funds when your phone is lost, stolen, or destroyed—without ever exposing your wallet to guardian theft.*
+> _How Haptix protects your funds when your phone is lost, stolen, or destroyed—without ever exposing your wallet to guardian theft._
 
 ---
 
@@ -9,10 +9,10 @@
 
 Traditional crypto wallets force users to write down a **12-word seed phrase**. If they lose their phone, they restore the wallet by typing the seed phrase on a new device. However, seed phrases are the single largest source of hacks, phishing scams, and permanent balance loss in Web3.
 
-Haptix is **100% seedless**: your private keys are non-exportable hardware credentials stored inside the physical chip of your phone (**Android StrongBox / Apple Secure Enclave**). 
+Haptix is **100% seedless**: your private keys are non-exportable hardware credentials stored inside the physical chip of your phone (**Android StrongBox / Apple Secure Enclave**).
 
 **The fundamental security question:**  
-*If you drop your phone in the ocean, how do you recover your funds without a seed phrase?*
+_If you drop your phone in the ocean, how do you recover your funds without a seed phrase?_
 
 **The Haptix solution:**  
 An on-chain **Asymmetric Guardian Recovery Engine** enforced directly by the [`haptix_program`](../haptix_program) Solana smart contract.
@@ -25,11 +25,11 @@ The bedrock rule of Haptix recovery is **asymmetric authority**:
 
 > **A guardian can START an emergency freeze, but can NEVER steal funds or finish a recovery if the owner vetos.**
 
-| Role | Action | Cryptographic Requirement |
-| :--- | :--- | :--- |
-| **Recovery Guardian** | Initiate freeze & propose new keys | Guardian signature alone |
-| **Wallet Owner** | **Veto & cancel recovery** | **2-of-2 Hardware Passkeys (Biometric)** |
-| **Anyone / New Phone** | Finalize & rotate keys | **Zero signatures — gated ONLY by on-chain timelock** |
+| Role                   | Action                             | Cryptographic Requirement                             |
+| :--------------------- | :--------------------------------- | :---------------------------------------------------- |
+| **Recovery Guardian**  | Initiate freeze & propose new keys | Guardian signature alone                              |
+| **Wallet Owner**       | **Veto & cancel recovery**         | **2-of-2 Hardware Passkeys (Biometric)**              |
+| **Anyone / New Phone** | Finalize & rotate keys             | **Zero signatures — gated ONLY by on-chain timelock** |
 
 ---
 
@@ -46,7 +46,7 @@ sequenceDiagram
     Note over Owner,Guardian: Phone is lost or stolen
     Guardian->>Program: initiate_recovery(proposed_keys)
     Program-->>Program: Freeze wallet on-chain & start timelock
-    
+
     alt Owner Still Controls Device (Veto Flow)
         Owner->>Program: cancel_recovery(2-of-2 passkeys)
         Program-->>Program: Cancel proposal & unfreeze wallet
@@ -146,11 +146,14 @@ Our on-chain program ([`haptix_program/src/instructions/recovery.rs`](../haptix_
 ## 5. Frequently Asked Questions
 
 ### Can my guardian steal my money?
+
 **No.** The guardian address has zero spending authority. It can only call `initiate_recovery`, which freezes the wallet. Only your passkeys can authorize transfers.
 
 ### What if my guardian loses their wallet?
+
 As long as you have your phone, you can change your guardian at any time under **Settings → Recovery → Change Guardian** (requires 2-of-2 biometric authorization).
 
 ### How long is the dispute timelock?
+
 - **Mainnet Standard:** 24 hours (86,400 seconds).
 - **Devnet Testing:** 30–60 seconds for fast developer iteration.

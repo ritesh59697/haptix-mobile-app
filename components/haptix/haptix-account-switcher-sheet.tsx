@@ -109,7 +109,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
         },
         onPanResponderRelease: (_, gestureState) => {
           if (gestureState.dy > 100 || gestureState.vy > 0.8) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { })
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
             Animated.timing(panY, {
               toValue: 600,
               duration: 220,
@@ -156,7 +156,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
           if (cached !== null) {
             results[w.address] = cached
           }
-        } catch { }
+        } catch {}
       }
       if (mounted) setBalances(results)
     }
@@ -281,10 +281,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
       ) {
         return
       }
-      dialog.alert(
-        'Passkey Sign In',
-        msg || 'Could not find an on-chain smart wallet matching this biometric passkey.',
-      )
+      dialog.alert('Passkey Sign In', msg || 'Could not find an on-chain smart wallet matching this biometric passkey.')
     } finally {
       setIsSigningInExisting(false)
     }
@@ -292,8 +289,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
   const handlePromptRemove = (wallet: (typeof wallets)[0]) => {
     const rawLamports = balances[wallet.address]
-    const solBalance =
-      rawLamports !== undefined && rawLamports !== null ? rawLamports / 1e9 : 0
+    const solBalance = rawLamports !== undefined && rawLamports !== null ? rawLamports / 1e9 : 0
     const hasFunds = solBalance > 0.0001
     const isActive = wallet.address === activeWallet?.address
 
@@ -303,8 +299,9 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
       `Remove "${wallet.name}"?`,
       hasFunds
         ? `This wallet holds ${solBalance.toFixed(4)} SOL ($${(solBalance * 120.7).toFixed(2)}). Its passkey will be removed from this phone.\n\nMake sure your recovery guardian or backup keys are saved before proceeding.`
-        : `This passkey will be removed from this phone. Nothing is deleted on-chain, and you can re-import this passkey anytime.${isActive ? '\n\nThe app will automatically switch to your next account.' : ''
-        }`,
+        : `This passkey will be removed from this phone. Nothing is deleted on-chain, and you can re-import this passkey anytime.${
+            isActive ? '\n\nThe app will automatically switch to your next account.' : ''
+          }`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -334,17 +331,11 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
     const isDefaultVault = newAccountName.startsWith('Hardware Vault')
     if (!newAccountName || isDefaultEveryday || isDefaultVault) {
       setNewAccountName(
-        mode === 'vault'
-          ? `Hardware Vault ${wallets.length + 1}`
-          : `Everyday Account ${wallets.length + 1}`
+        mode === 'vault' ? `Hardware Vault ${wallets.length + 1}` : `Everyday Account ${wallets.length + 1}`,
       )
     }
     if (mode === 'vault') {
-      setSecondaryKeyLabel(
-        vaultKeySource === 'mac'
-          ? 'Second Device (Vault Key)'
-          : 'Vault Key (Security Key)'
-      )
+      setSecondaryKeyLabel(vaultKeySource === 'mac' ? 'Second Device (Vault Key)' : 'Vault Key (Security Key)')
     } else {
       setSecondaryKeyLabel('Device Biometrics (Backup)')
     }
@@ -377,9 +368,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
       return
     }
 
-    const finalName =
-      newAccountName.trim() ||
-      (selectedMode === 'vault' ? 'Hardware Vault' : 'Everyday Account')
+    const finalName = newAccountName.trim() || (selectedMode === 'vault' ? 'Hardware Vault' : 'Everyday Account')
 
     let parsedGuardian = parseGuardianAddress(guardianAddress)
     if (!parsedGuardian) {
@@ -415,9 +404,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
     }
 
     if (selectedMode === 'vault' && vaultKeySource === 'mac') {
-      const cleanHex = macVaultKeyHex.trim().startsWith('0x')
-        ? macVaultKeyHex.trim().slice(2)
-        : macVaultKeyHex.trim()
+      const cleanHex = macVaultKeyHex.trim().startsWith('0x') ? macVaultKeyHex.trim().slice(2) : macVaultKeyHex.trim()
       if (!cleanHex || cleanHex.length !== 66 || (!cleanHex.startsWith('02') && !cleanHex.startsWith('03'))) {
         dialog.alert(
           'Second Device Public Key Required',
@@ -443,7 +430,9 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
         vaultKeySource: selectedMode === 'vault' ? vaultKeySource : undefined,
         macVaultKeyHex:
           selectedMode === 'vault' && vaultKeySource === 'mac'
-            ? (macVaultKeyHex.trim().startsWith('0x') ? macVaultKeyHex.trim().slice(2) : macVaultKeyHex.trim())
+            ? macVaultKeyHex.trim().startsWith('0x')
+              ? macVaultKeyHex.trim().slice(2)
+              : macVaultKeyHex.trim()
             : undefined,
         onProgress: (step) => setCreationStep(step),
       })
@@ -464,11 +453,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
     } catch (err: any) {
       setCreationStep(0)
       const msg = err?.message || ''
-      if (
-        msg.includes('cancelled') ||
-        msg.includes('canceled') ||
-        msg.includes('User cancelled')
-      ) {
+      if (msg.includes('cancelled') || msg.includes('canceled') || msg.includes('User cancelled')) {
         return
       }
       dialog.alert('Creation Failed', msg || 'Could not create account passkey.', undefined, {
@@ -549,8 +534,12 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                         styles.editBtn,
                         {
                           backgroundColor: isManageMode
-                            ? (theme.isDark ? '#2A2A2E' : '#E0E0E6')
-                            : (theme.isDark ? '#1C1C1E' : '#EFEFF0'),
+                            ? theme.isDark
+                              ? '#2A2A2E'
+                              : '#E0E0E6'
+                            : theme.isDark
+                              ? '#1C1C1E'
+                              : '#EFEFF0',
                         },
                       ]}
                       onPress={() => {
@@ -560,12 +549,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       activeOpacity={0.7}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <Text
-                        style={[
-                          styles.editBtnText,
-                          { color: isManageMode ? '#6C8CFF' : theme.textPrimary },
-                        ]}
-                      >
+                      <Text style={[styles.editBtnText, { color: isManageMode ? '#6C8CFF' : theme.textPrimary }]}>
                         {isManageMode ? 'Done' : 'Edit'}
                       </Text>
                     </TouchableOpacity>
@@ -605,10 +589,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                     const isSwitching = switchingTo === wallet.address
                     const isVault = wallet.securityMode === 'vault'
                     const rawLamports = balances[wallet.address]
-                    const solBalance =
-                      rawLamports !== undefined && rawLamports !== null
-                        ? rawLamports / 1e9
-                        : null
+                    const solBalance = rawLamports !== undefined && rawLamports !== null ? rawLamports / 1e9 : null
 
                     return (
                       <TouchableOpacity
@@ -616,12 +597,14 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                         style={[
                           styles.accountCard,
                           {
-                            backgroundColor: isActive
-                              ? (theme.isDark ? '#1C1C1E' : '#EFEFF0')
-                              : theme.bgCard,
+                            backgroundColor: isActive ? (theme.isDark ? '#1C1C1E' : '#EFEFF0') : theme.bgCard,
                             borderColor: isActive
-                              ? (theme.isDark ? 'rgba(79, 107, 255, 0.45)' : '#6C8CFF')
-                              : (theme.isDark ? '#222226' : theme.borderSubtle),
+                              ? theme.isDark
+                                ? 'rgba(79, 107, 255, 0.45)'
+                                : '#6C8CFF'
+                              : theme.isDark
+                                ? '#222226'
+                                : theme.borderSubtle,
                             borderWidth: isActive ? 1.5 : 1,
                           },
                         ]}
@@ -653,10 +636,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
                         {/* Middle Column (Name on top, Meta on bottom) */}
                         <View style={styles.accountMiddleCol}>
-                          <Text
-                            style={[styles.accountName, { color: theme.textPrimary }]}
-                            numberOfLines={1}
-                          >
+                          <Text style={[styles.accountName, { color: theme.textPrimary }]} numberOfLines={1}>
                             {wallet.name}
                           </Text>
 
@@ -694,7 +674,11 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                             ) : (
                               <>
                                 <Text style={[styles.balanceText, { color: theme.textPrimary }]}>
-                                  {solBalance !== null ? (isBalanceHidden ? '•••• SOL' : `${solBalance.toFixed(4)} SOL`) : '—'}
+                                  {solBalance !== null
+                                    ? isBalanceHidden
+                                      ? '•••• SOL'
+                                      : `${solBalance.toFixed(4)} SOL`
+                                    : '—'}
                                 </Text>
 
                                 {isActive ? (
@@ -703,11 +687,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                                     <Text style={styles.activeBadgeText}>Active</Text>
                                   </View>
                                 ) : (
-                                  <MaterialIcons
-                                    name="chevron-right"
-                                    size={16}
-                                    color={theme.textMuted}
-                                  />
+                                  <MaterialIcons name="chevron-right" size={16} color={theme.textMuted} />
                                 )}
                               </>
                             )}
@@ -730,17 +710,12 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       activeOpacity={0.75}
                     >
                       <View
-                        style={[
-                          styles.addAccountIconBox,
-                          { backgroundColor: theme.isDark ? '#26262A' : '#E0E0E6' },
-                        ]}
+                        style={[styles.addAccountIconBox, { backgroundColor: theme.isDark ? '#26262A' : '#E0E0E6' }]}
                       >
                         <MaterialIcons name="add" size={20} color={theme.textPrimary} />
                       </View>
                       <View style={styles.addAccountTextGroup}>
-                        <Text style={[styles.addAccountTitle, { color: theme.textPrimary }]}>
-                          Add New Account
-                        </Text>
+                        <Text style={[styles.addAccountTitle, { color: theme.textPrimary }]}>Add New Account</Text>
                         <Text style={[styles.addAccountSubtitle, { color: theme.textMuted }]}>
                           Configure security mode, limits, and hardware keys
                         </Text>
@@ -763,10 +738,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       disabled={isSigningInExisting}
                     >
                       <View
-                        style={[
-                          styles.addAccountIconBox,
-                          { backgroundColor: theme.isDark ? '#26262A' : '#E0E0E6' },
-                        ]}
+                        style={[styles.addAccountIconBox, { backgroundColor: theme.isDark ? '#26262A' : '#E0E0E6' }]}
                       >
                         {isSigningInExisting ? (
                           <ActivityIndicator size="small" color={theme.accent} />
@@ -821,11 +793,14 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       style={[
                         styles.modalStepText,
                         {
-                          color: creationStep > 2
-                            ? (theme.isDark ? '#F4F4F5' : '#111827')
-                            : creationStep === 2
-                              ? theme.textPrimary
-                              : theme.textMuted,
+                          color:
+                            creationStep > 2
+                              ? theme.isDark
+                                ? '#F4F4F5'
+                                : '#111827'
+                              : creationStep === 2
+                                ? theme.textPrimary
+                                : theme.textMuted,
                           fontWeight: creationStep === 2 ? '600' : '500',
                         },
                       ]}
@@ -863,10 +838,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                   ref={createScrollRef}
                   style={styles.scrollList}
                   showsVerticalScrollIndicator={false}
-                  contentContainerStyle={[
-                    styles.scrollContent,
-                    { paddingBottom: 24 },
-                  ]}
+                  contentContainerStyle={[styles.scrollContent, { paddingBottom: 24 }]}
                   keyboardShouldPersistTaps="handled"
                   keyboardDismissMode="on-drag"
                 >
@@ -881,10 +853,14 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                           {
                             backgroundColor:
                               selectedMode === 'everyday'
-                                ? (theme.isDark ? '#1C1C1E' : '#FFFFFF')
-                                : (theme.isDark ? '#141416' : '#F5F5F7'),
+                                ? theme.isDark
+                                  ? '#1C1C1E'
+                                  : '#FFFFFF'
+                                : theme.isDark
+                                  ? '#141416'
+                                  : '#F5F5F7',
                             borderColor:
-                              selectedMode === 'everyday' ? '#5E81FF' : (theme.isDark ? '#26262A' : theme.borderSubtle),
+                              selectedMode === 'everyday' ? '#5E81FF' : theme.isDark ? '#26262A' : theme.borderSubtle,
                             borderWidth: selectedMode === 'everyday' ? 1.5 : 1,
                           },
                         ]}
@@ -897,8 +873,12 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                             {
                               backgroundColor:
                                 selectedMode === 'everyday'
-                                  ? (theme.isDark ? 'rgba(94, 129, 255, 0.16)' : 'rgba(94, 129, 255, 0.10)')
-                                  : (theme.isDark ? '#222226' : '#E5E5EA'),
+                                  ? theme.isDark
+                                    ? 'rgba(94, 129, 255, 0.16)'
+                                    : 'rgba(94, 129, 255, 0.10)'
+                                  : theme.isDark
+                                    ? '#222226'
+                                    : '#E5E5EA',
                             },
                           ]}
                         >
@@ -909,9 +889,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                           />
                         </View>
                         <View style={styles.modeCardTextCol}>
-                          <Text style={[styles.modeCardTitle, { color: theme.textPrimary }]}>
-                            Everyday mode
-                          </Text>
+                          <Text style={[styles.modeCardTitle, { color: theme.textPrimary }]}>Everyday mode</Text>
                           <Text style={[styles.modeCardDesc, { color: theme.textSecondary }]}>
                             Both keys on this device
                           </Text>
@@ -921,7 +899,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                             styles.radioOuter,
                             {
                               borderColor:
-                                selectedMode === 'everyday' ? '#5E81FF' : (theme.isDark ? '#3A3A3C' : '#D1D1D6'),
+                                selectedMode === 'everyday' ? '#5E81FF' : theme.isDark ? '#3A3A3C' : '#D1D1D6',
                             },
                           ]}
                         >
@@ -936,10 +914,14 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                           {
                             backgroundColor:
                               selectedMode === 'vault'
-                                ? (theme.isDark ? '#1C1C1E' : '#FFFFFF')
-                                : (theme.isDark ? '#141416' : '#F5F5F7'),
+                                ? theme.isDark
+                                  ? '#1C1C1E'
+                                  : '#FFFFFF'
+                                : theme.isDark
+                                  ? '#141416'
+                                  : '#F5F5F7',
                             borderColor:
-                              selectedMode === 'vault' ? '#5E81FF' : (theme.isDark ? '#26262A' : theme.borderSubtle),
+                              selectedMode === 'vault' ? '#5E81FF' : theme.isDark ? '#26262A' : theme.borderSubtle,
                             borderWidth: selectedMode === 'vault' ? 1.5 : 1,
                           },
                         ]}
@@ -952,8 +934,12 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                             {
                               backgroundColor:
                                 selectedMode === 'vault'
-                                  ? (theme.isDark ? 'rgba(94, 129, 255, 0.16)' : 'rgba(94, 129, 255, 0.10)')
-                                  : (theme.isDark ? '#222226' : '#E5E5EA'),
+                                  ? theme.isDark
+                                    ? 'rgba(94, 129, 255, 0.16)'
+                                    : 'rgba(94, 129, 255, 0.10)'
+                                  : theme.isDark
+                                    ? '#222226'
+                                    : '#E5E5EA',
                             },
                           ]}
                         >
@@ -964,9 +950,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                           />
                         </View>
                         <View style={styles.modeCardTextCol}>
-                          <Text style={[styles.modeCardTitle, { color: theme.textPrimary }]}>
-                            Vault mode
-                          </Text>
+                          <Text style={[styles.modeCardTitle, { color: theme.textPrimary }]}>Vault mode</Text>
                           <Text style={[styles.modeCardDesc, { color: theme.textSecondary }]}>
                             Key 2 on laptop or second device
                           </Text>
@@ -975,8 +959,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                           style={[
                             styles.radioOuter,
                             {
-                              borderColor:
-                                selectedMode === 'vault' ? '#5E81FF' : (theme.isDark ? '#3A3A3C' : '#D1D1D6'),
+                              borderColor: selectedMode === 'vault' ? '#5E81FF' : theme.isDark ? '#3A3A3C' : '#D1D1D6',
                             },
                           ]}
                         >
@@ -1000,7 +983,9 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                       >
                         <MaterialIcons name="info-outline" size={16} color="#6C8CFF" style={{ marginTop: 2 }} />
                         <Text style={[styles.vaultExplainerText, { color: theme.textSecondary }]}>
-                          <Text style={{ fontWeight: '700', color: theme.textPrimary }}>Vault mode</Text>: daily spends use fingerprint on this phone. Sends above your limit will require approval on your second device (laptop, 2nd phone, or tablet).
+                          <Text style={{ fontWeight: '700', color: theme.textPrimary }}>Vault mode</Text>: daily spends
+                          use fingerprint on this phone. Sends above your limit will require approval on your second
+                          device (laptop, 2nd phone, or tablet).
                         </Text>
                       </View>
 
@@ -1019,11 +1004,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                             },
                           ]}
                         >
-                          <MaterialIcons
-                            name="devices"
-                            size={19}
-                            color="#4F6BFF"
-                          />
+                          <MaterialIcons name="devices" size={19} color="#4F6BFF" />
                           <Text
                             style={[
                               styles.vaultDeviceText,
@@ -1053,7 +1034,11 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                             <View
                               style={[
                                 styles.macVaultStepBadge,
-                                { backgroundColor: theme.isDark ? 'rgba(79, 107, 255, 0.2)' : 'rgba(79, 107, 255, 0.12)' },
+                                {
+                                  backgroundColor: theme.isDark
+                                    ? 'rgba(79, 107, 255, 0.2)'
+                                    : 'rgba(79, 107, 255, 0.12)',
+                                },
                               ]}
                             >
                               <Text style={styles.macVaultStepBadgeText}>1</Text>
@@ -1089,8 +1074,12 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                                   styles.macVaultActionBtn,
                                   {
                                     backgroundColor: copiedVaultUrl
-                                      ? (theme.isDark ? 'rgba(16, 185, 129, 0.2)' : '#D1FAE5')
-                                      : (theme.isDark ? '#222228' : '#F1F5F9'),
+                                      ? theme.isDark
+                                        ? 'rgba(16, 185, 129, 0.2)'
+                                        : '#D1FAE5'
+                                      : theme.isDark
+                                        ? '#222228'
+                                        : '#F1F5F9',
                                   },
                                 ]}
                                 onPress={async () => {
@@ -1104,13 +1093,13 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                                 <MaterialIcons
                                   name={copiedVaultUrl ? 'check' : 'content-copy'}
                                   size={13}
-                                  color={copiedVaultUrl ? '#10B981' : (theme.isDark ? '#D4D4D8' : '#475569')}
+                                  color={copiedVaultUrl ? '#10B981' : theme.isDark ? '#D4D4D8' : '#475569'}
                                   style={{ marginRight: 3 }}
                                 />
                                 <Text
                                   style={[
                                     styles.macVaultActionBtnText,
-                                    { color: copiedVaultUrl ? '#10B981' : (theme.isDark ? '#D4D4D8' : '#475569') },
+                                    { color: copiedVaultUrl ? '#10B981' : theme.isDark ? '#D4D4D8' : '#475569' },
                                   ]}
                                 >
                                   {copiedVaultUrl ? 'Copied' : 'Copy'}
@@ -1134,7 +1123,11 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                             <View
                               style={[
                                 styles.macVaultStepBadge,
-                                { backgroundColor: theme.isDark ? 'rgba(79, 107, 255, 0.2)' : 'rgba(79, 107, 255, 0.12)' },
+                                {
+                                  backgroundColor: theme.isDark
+                                    ? 'rgba(79, 107, 255, 0.2)'
+                                    : 'rgba(79, 107, 255, 0.12)',
+                                },
                               ]}
                             >
                               <Text style={styles.macVaultStepBadgeText}>2</Text>
@@ -1154,8 +1147,10 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                                   ? '#10B981'
                                   : isVaultInputFocused
                                     ? '#4F6BFF'
-                                    : (theme.isDark ? '#33333E' : '#94A3B8'),
-                                borderWidth: (isVaultInputFocused || isValidVaultHex) ? 2 : 1.5,
+                                    : theme.isDark
+                                      ? '#33333E'
+                                      : '#94A3B8',
+                                borderWidth: isVaultInputFocused || isValidVaultHex ? 2 : 1.5,
                               },
                             ]}
                           >
@@ -1258,7 +1253,8 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                             <MaterialIcons name="usb" size={16} color="#6C8CFF" />
                           </View>
                           <Text style={[styles.vaultPolicyNoticeText, { color: theme.textSecondary }]}>
-                            During setup, your device will prompt you to insert or tap your FIDO2 / YubiKey hardware key over USB or NFC.
+                            During setup, your device will prompt you to insert or tap your FIDO2 / YubiKey hardware key
+                            over USB or NFC.
                           </Text>
                         </View>
                       )}
@@ -1267,9 +1263,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
 
                   {/* Wallet Name (Directly visible, matching onboarding) */}
                   <View style={styles.formGroup}>
-                    <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                      Wallet name
-                    </Text>
+                    <Text style={[styles.inputLabel, { color: theme.textMuted }]}>Wallet name</Text>
                     <TextInput
                       style={[
                         styles.inputField,
@@ -1291,10 +1285,15 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                   {/* Collapsible Advanced Settings (Key Names, Guardian) */}
                   {/* Recovery Guardian Address (Optional with Auto-Backup) */}
                   <View style={styles.formGroup}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                        Recovery guardian (Optional)
-                      </Text>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: 6,
+                      }}
+                    >
+                      <Text style={[styles.inputLabel, { color: theme.textMuted }]}>Recovery guardian (Optional)</Text>
                       <View
                         style={{
                           paddingHorizontal: 8,
@@ -1315,11 +1314,14 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                           backgroundColor: theme.isDark ? '#141416' : '#FFFFFF',
                           borderWidth: isGuardianInputFocused ? 1.5 : 1,
                           borderColor:
-                            guardianAddress.trim() && (!isSolanaAddress(guardianAddress.trim()) || isDevnetFunder(guardianAddress.trim()))
+                            guardianAddress.trim() &&
+                            (!isSolanaAddress(guardianAddress.trim()) || isDevnetFunder(guardianAddress.trim()))
                               ? theme.rose
                               : isGuardianInputFocused
                                 ? '#4F6BFF'
-                                : (theme.isDark ? '#2A2A2E' : '#D1D5DB'),
+                                : theme.isDark
+                                  ? '#2A2A2E'
+                                  : '#D1D5DB',
                           marginTop: 0,
                         },
                       ]}
@@ -1368,7 +1370,12 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                         </TouchableOpacity>
                       )}
                     </View>
-                    <Text style={[styles.fieldHint, { color: isDevnetFunder(guardianAddress.trim()) ? theme.rose : theme.textMuted, marginTop: 4 }]}>
+                    <Text
+                      style={[
+                        styles.fieldHint,
+                        { color: isDevnetFunder(guardianAddress.trim()) ? theme.rose : theme.textMuted, marginTop: 4 },
+                      ]}
+                    >
                       {isDevnetFunder(guardianAddress.trim())
                         ? 'Cannot use the devnet funder. Guardian must be an external key.'
                         : guardianAddress.trim()
@@ -1376,9 +1383,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                           : 'Leave blank to auto-generate a recovery key. You can link Phantom anytime in Settings.'}
                     </Text>
                     {guardianAddress.trim() && !isSolanaAddress(guardianAddress.trim()) && (
-                      <Text style={[styles.fieldError, { color: theme.roseText }]}>
-                        Invalid Solana address
-                      </Text>
+                      <Text style={[styles.fieldError, { color: theme.roseText }]}>Invalid Solana address</Text>
                     )}
                   </View>
 
@@ -1413,9 +1418,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                     <View style={styles.advancedGroup}>
                       {/* Primary Key Label */}
                       <View style={styles.formGroup}>
-                        <Text style={[styles.inputLabel, { color: theme.textMuted }]}>
-                          Passkey 1 name, primary
-                        </Text>
+                        <Text style={[styles.inputLabel, { color: theme.textMuted }]}>Passkey 1 name, primary</Text>
                         <TextInput
                           style={[
                             styles.inputField,
@@ -1451,7 +1454,9 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                           onChangeText={setSecondaryKeyLabel}
                           placeholder={
                             selectedMode === 'vault'
-                              ? (vaultKeySource === 'mac' ? 'Second Device (Vault Key)' : 'Vault Key (Security Key)')
+                              ? vaultKeySource === 'mac'
+                                ? 'Second Device (Vault Key)'
+                                : 'Vault Key (Security Key)'
                               : 'Device Biometrics (Backup)'
                           }
                           placeholderTextColor={theme.textMuted}
@@ -1478,13 +1483,12 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                     />
                     <Text style={[styles.biometricNoticeText, { color: theme.textSecondary }]}>
                       {selectedMode === 'vault'
-                        ? (vaultKeySource === 'mac'
+                        ? vaultKeySource === 'mac'
                           ? 'Key 1 is on this phone. Key 2 is on your second device (laptop or 2nd phone) and required for all sends (0 SOL limit). Survives a lost phone.'
-                          : 'Key 1 is on this phone. Key 2 is on your USB / NFC security key. Survives a lost phone.')
-                        : "Two keys held in this phone chip. Both are required above your 0.1 SOL limit. If this phone is lost, both keys are lost and your Recovery Guardian is the only way back."}
+                          : 'Key 1 is on this phone. Key 2 is on your USB / NFC security key. Survives a lost phone.'
+                        : 'Two keys held in this phone chip. Both are required above your 0.1 SOL limit. If this phone is lost, both keys are lost and your Recovery Guardian is the only way back.'}
                     </Text>
                   </View>
-
                 </ScrollView>
               )}
 
@@ -1512,9 +1516,7 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
                     disabled={isSubmittingCreate}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.cancelBtnText, { color: theme.textPrimary }]}>
-                      Cancel
-                    </Text>
+                    <Text style={[styles.cancelBtnText, { color: theme.textPrimary }]}>Cancel</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -1802,7 +1804,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#5E81FF',
   },
-
 
   /* Vault policy notice */
   vaultPolicyNotice: {

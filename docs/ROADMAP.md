@@ -39,26 +39,33 @@
 ## 🚀 Future Implementation Roadmap
 
 ### Phase 1: Physical Hardware Security Keys (USB-C / NFC FIDO2 & YubiKey / OneKey)
+
 **Problem**: Power users and institutional vaults often prefer dedicated offline hardware authenticators (YubiKey 5 NFC, OneKey, Feitian) over a second laptop/phone.
 **Solution**: Native FIDO2 / CTAP2 Cross-Platform Security Key Integration:
+
 - [ ] **NFC Tap & USB-OTG Pairing**: Direct hardware passkey enrollment using Android's native CTAP2 FIDO transport.
 - [ ] **Physical Touch Presence (UP)**: Requiring physical button contact on the USB/NFC key for high-value vault transaction approvals.
 - [ ] **Hardware Compatibility Matrix**: Verified testing across YubiKey 5 Series (NFC/Type-C), OneKey, and Google Titan Security Keys.
 
 ### Phase 2: Desktop Browser Extension Companion (Manifest V3)
+
 **Problem**: Users on desktop browsers still have to use seed-phrase wallets (Phantom/Solflare) when interacting with desktop dApps.
 **Solution**: Build a companion browser extension reusing the existing `haptix_program` Anchor smart contract:
+
 - [ ] **Injected Web3 Provider (`window.solana`)**: Standard wallet adapter compliance.
 - [ ] **Desktop Passkey Signing**: Mac Touch ID / Windows Hello / YubiKey WebAuthn native prompts.
 - [ ] **Paired Mobile Vault**: High-value transactions on desktop trigger a co-signing prompt on the Solana Seeker.
 
 ### Phase 3: Token Fee Sponsorship & Split Paymaster Pool
+
 **Problem**: Devnet testing uses a sponsored relay funder keypair to cover transaction fees and account rent.
 **Solution**: Enterprise-grade multi-token gas abstraction:
+
 - [ ] **SPL Token Gas Payment**: Allow users to pay transaction and rent fees directly in SPL tokens (USDC, SKR, BONK) via automatic DEX swap at relay execution.
 - [ ] **Distributed Paymaster Pool**: Support decentralized sponsorship nodes and rate-limiting per device.
 
 ### Phase 4: Security Audit & Mainnet Migration
+
 - [ ] **Independent Smart Contract Audit**: Formal verification of `haptix_program` secp256r1 precompile integration, instruction sysvar index checks, and arithmetic bounds.
 - [ ] **Mainnet Program Deployment**: Deploy with multi-sig program upgrade authority (Squads Protocol v4 timelocked multisig).
 - [ ] **Solana Mobile dApp Store Release**: Complete Android production build (`eas build --platform android --profile production`) and publish to the Solana Mobile dApp Store.

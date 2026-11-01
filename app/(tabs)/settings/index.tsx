@@ -356,11 +356,7 @@ export default function TabSettingsScreen() {
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
             {/* Wallet Address */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleCopyAddress}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.row} onPress={handleCopyAddress} activeOpacity={0.7}>
               <MaterialIcons name="content-copy" size={20} color={theme.accent} />
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Wallet Address</Text>
               <Text style={[styles.rowValue, { color: hasCopied ? theme.emeraldText : theme.textMuted }]}>
@@ -376,15 +372,13 @@ export default function TabSettingsScreen() {
           <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Security &amp; Quorum</Text>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* Platform passkey (primary) */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleShowPrimaryDetails}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.row} onPress={handleShowPrimaryDetails} activeOpacity={0.7}>
               <MaterialIcons name="fingerprint" size={20} color={theme.accent} />
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Platform passkey (primary)</Text>
               <Text style={[styles.rowValue, { color: theme.textMuted }]}>
-                {activeWallet?.primaryPasskeyHex ? `Active · ${ellipsify(activeWallet.primaryPasskeyHex, 4)}` : 'Active'}
+                {activeWallet?.primaryPasskeyHex
+                  ? `Active · ${ellipsify(activeWallet.primaryPasskeyHex, 4)}`
+                  : 'Active'}
               </Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
@@ -455,12 +449,7 @@ export default function TabSettingsScreen() {
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
             {/* Lock Wallet (Safe Lock) */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleLockWallet}
-              activeOpacity={0.7}
-              disabled={isLocked}
-            >
+            <TouchableOpacity style={styles.row} onPress={handleLockWallet} activeOpacity={0.7} disabled={isLocked}>
               <MaterialIcons name="lock-outline" size={20} color={theme.accent} />
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Lock wallet (Safe Lock)</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
@@ -473,27 +462,17 @@ export default function TabSettingsScreen() {
           <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Preferences</Text>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* Theme Mode */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleOpenThemeModal}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.row} onPress={handleOpenThemeModal} activeOpacity={0.7}>
               <MaterialIcons name="brightness-medium" size={20} color={theme.accent} />
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Color Theme</Text>
-              <Text style={[styles.rowValue, { color: theme.textMuted }]}>
-                {APPEARANCE_LABELS[themePreference]}
-              </Text>
+              <Text style={[styles.rowValue, { color: theme.textMuted }]}>{APPEARANCE_LABELS[themePreference]}</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
 
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
             {/* Design Language */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleToggleAppearanceStyle}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.row} onPress={handleToggleAppearanceStyle} activeOpacity={0.7}>
               <MaterialIcons name="auto-awesome" size={20} color={theme.accent} />
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Liquid Glass (Beta)</Text>
               <Text style={[styles.rowValue, { color: theme.textMuted }]}>
@@ -509,11 +488,7 @@ export default function TabSettingsScreen() {
           <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Network &amp; Developer</Text>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* Network Cluster */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleSelectCluster}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.row} onPress={handleSelectCluster} activeOpacity={0.7}>
               <MaterialIcons name="hub" size={20} color={theme.accent} />
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Network Cluster</Text>
               <Text style={[styles.rowValue, { color: theme.textMuted }]}>{selectedCluster.name}</Text>
@@ -523,11 +498,7 @@ export default function TabSettingsScreen() {
             <View style={[styles.divider, { backgroundColor: dividerColor }]} />
 
             {/* Devnet Paymaster */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleShowPaymasterDetails}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.row} onPress={handleShowPaymasterDetails} activeOpacity={0.7}>
               <MaterialIcons name="local-gas-station" size={20} color={theme.accent} />
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Gas Fee Sponsorship</Text>
               <Text style={[styles.rowValue, { color: '#10B981', fontWeight: '600' }]}>Sponsored</Text>
@@ -704,11 +675,7 @@ export default function TabSettingsScreen() {
         <View style={styles.sectionWrap}>
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* Remove Wallet from Device */}
-            <TouchableOpacity
-              style={styles.row}
-              onPress={handleRemoveWallet}
-              activeOpacity={0.7}
-            >
+            <TouchableOpacity style={styles.row} onPress={handleRemoveWallet} activeOpacity={0.7}>
               <MaterialIcons name="delete-outline" size={20} color={theme.rose} />
               <Text style={[styles.rowTitle, { color: theme.rose }]}>Remove Wallet from Device</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.rose} />
@@ -718,20 +685,15 @@ export default function TabSettingsScreen() {
 
         {/* Rabby-style Bottom Centered Watermark */}
         <View style={styles.watermarkWrap}>
-          <Image 
-            source={require('@/assets/images/haptix-new-logo.png')} 
+          <Image
+            source={require('@/assets/images/haptix-new-logo.png')}
             style={{ width: 18, height: 18, resizeMode: 'contain' }}
           />
-          <Text style={[styles.watermarkText, { color: theme.textSecondary }]}>
-            Haptix Smart Wallet
-          </Text>
+          <Text style={[styles.watermarkText, { color: theme.textSecondary }]}>Haptix Smart Wallet</Text>
         </View>
       </ScrollView>
 
-      <HaptixAccountSwitcherSheet
-        visible={isAccountSwitcherOpen}
-        onClose={() => setIsAccountSwitcherOpen(false)}
-      />
+      <HaptixAccountSwitcherSheet visible={isAccountSwitcherOpen} onClose={() => setIsAccountSwitcherOpen(false)} />
 
       <HaptixNetworkModal
         visible={isNetworkModalOpen}

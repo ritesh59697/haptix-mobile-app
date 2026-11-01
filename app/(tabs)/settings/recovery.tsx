@@ -181,11 +181,11 @@ export default function RecoverySettingsScreen() {
   const rawGuardianAddress = onChainWallet?.guardian.toBase58() ?? null
   const isGuardianConfigured = Boolean(
     rawGuardianAddress &&
-      !isDevnetFunder(rawGuardianAddress) &&
-      rawGuardianAddress !== walletAddress &&
-      rawGuardianAddress !== PublicKey.default.toBase58() &&
-      activeWallet?.guardianAddress &&
-      !isDevnetFunder(activeWallet.guardianAddress),
+    !isDevnetFunder(rawGuardianAddress) &&
+    rawGuardianAddress !== walletAddress &&
+    rawGuardianAddress !== PublicKey.default.toBase58() &&
+    activeWallet?.guardianAddress &&
+    !isDevnetFunder(activeWallet.guardianAddress),
   )
   const guardianAddress = isGuardianConfigured ? rawGuardianAddress : null
   const guardianSigner = useGuardianSigner(connection, isGuardianConfigured ? guardianAddress : null)
@@ -482,7 +482,10 @@ export default function RecoverySettingsScreen() {
     try {
       const walletPda = new PublicKey(activeWallet.address)
       if (newGuardian.equals(walletPda)) {
-        dialog.alert('Invalid Guardian', 'The wallet cannot be its own recovery guardian. Please enter a different address.')
+        dialog.alert(
+          'Invalid Guardian',
+          'The wallet cannot be its own recovery guardian. Please enter a different address.',
+        )
         return
       }
       const fresh = await fetchHaptixWallet(connection, walletPda)
@@ -616,7 +619,8 @@ export default function RecoverySettingsScreen() {
     >
       <MaterialIcons name="gpp-good" size={16} color={theme.textMuted} style={{ marginTop: 2, flexShrink: 0 }} />
       <Text style={[styles.reassuranceText, { color: theme.textSecondary }]}>
-        A recovery never moves the wallet. The address stays the same, so anything sent to it during the window is still yours afterward.
+        A recovery never moves the wallet. The address stays the same, so anything sent to it during the window is still
+        yours afterward.
       </Text>
     </View>
   )
@@ -631,12 +635,7 @@ export default function RecoverySettingsScreen() {
           <View style={styles.cardHeader}>
             <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Guardian</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <View
-                style={[
-                  styles.statusCircleDot,
-                  { borderColor: isGuardianConfigured ? '#5FBF7A' : '#8A8985' },
-                ]}
-              />
+              <View style={[styles.statusCircleDot, { borderColor: isGuardianConfigured ? '#5FBF7A' : '#8A8985' }]} />
               <Text
                 style={{
                   fontSize: 12,
@@ -645,8 +644,12 @@ export default function RecoverySettingsScreen() {
                 }}
               >
                 {autoGuardianKey
-                  ? (isGuardianConfigured ? 'Active' : 'Set on first use')
-                  : (isGuardianConfigured ? 'Active' : 'Not configured')}
+                  ? isGuardianConfigured
+                    ? 'Active'
+                    : 'Set on first use'
+                  : isGuardianConfigured
+                    ? 'Active'
+                    : 'Not configured'}
               </Text>
             </View>
           </View>
@@ -654,18 +657,14 @@ export default function RecoverySettingsScreen() {
           <View style={styles.detailRow}>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>
-                {autoGuardianKey
-                  ? '1 recovery key'
-                  : isGuardianConfigured
-                  ? '1 guardian'
-                  : '0 guardians'}
+                {autoGuardianKey ? '1 recovery key' : isGuardianConfigured ? '1 guardian' : '0 guardians'}
               </Text>
               <Text style={[styles.detailDesc, { color: theme.textMuted }]}>
                 {autoGuardianKey
                   ? 'Created on this phone'
                   : isGuardianConfigured
-                  ? 'Can only start a recovery, never move funds'
-                  : 'Add a trusted address to protect against device loss'}
+                    ? 'Can only start a recovery, never move funds'
+                    : 'Add a trusted address to protect against device loss'}
               </Text>
             </View>
             <View style={{ flex: 1, alignItems: 'flex-end', paddingLeft: 8 }}>
@@ -678,23 +677,23 @@ export default function RecoverySettingsScreen() {
             </View>
           </View>
 
-          <View style={[styles.guardianRow, { backgroundColor: isDark ? '#1A1A18' : theme.bgInput, borderColor: theme.borderDefault }]}>
+          <View
+            style={[
+              styles.guardianRow,
+              { backgroundColor: isDark ? '#1A1A18' : theme.bgInput, borderColor: theme.borderDefault },
+            ]}
+          >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.guardianLabel, { color: theme.textMuted }]}>
                   {autoGuardianKey ? 'Recovery key address' : 'Guardian address'}
                 </Text>
                 <Text
-                  style={[
-                    styles.guardianValue,
-                    { color: guardianPubkey ? theme.textPrimary : theme.textMuted },
-                  ]}
+                  style={[styles.guardianValue, { color: guardianPubkey ? theme.textPrimary : theme.textMuted }]}
                   numberOfLines={1}
                   ellipsizeMode="middle"
                 >
-                  {guardianPubkey
-                    ? ellipsify(guardianPubkey, 8)
-                    : 'None (tap below to configure)'}
+                  {guardianPubkey ? ellipsify(guardianPubkey, 8) : 'None (tap below to configure)'}
                 </Text>
               </View>
               {guardianPubkey ? (
@@ -740,10 +739,10 @@ export default function RecoverySettingsScreen() {
                   {showGuardianEditor
                     ? 'Cancel'
                     : autoGuardianKey
-                    ? 'Use a different guardian'
-                    : isGuardianConfigured
-                    ? 'Change guardian'
-                    : 'Set recovery guardian'}
+                      ? 'Use a different guardian'
+                      : isGuardianConfigured
+                        ? 'Change guardian'
+                        : 'Set recovery guardian'}
                 </Text>
                 <MaterialIcons
                   name={showGuardianEditor ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
@@ -806,13 +805,13 @@ export default function RecoverySettingsScreen() {
                     {guardianDraft.length > 0 && !guardianDraftParse.address
                       ? (guardianDraftParse.error ?? 'Enter a valid Solana address or domain.')
                       : !onChainWallet
-                      ? (guardianDraftParse.address
+                        ? guardianDraftParse.address
                           ? `Guardian will become ${ellipsify(guardianDraftParse.address, 6)}. It will be registered on-chain when initialized.`
-                          : 'The guardian will be officially registered on-chain when the account is deployed.')
-                      : guardianDraft.trim().length === 0
-                      ? 'Requires 2-of-2 passkeys. Guardian can only start recovery.'
-                      : (guardianDraftParse.error ??
-                        `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
+                          : 'The guardian will be officially registered on-chain when the account is deployed.'
+                        : guardianDraft.trim().length === 0
+                          ? 'Requires 2-of-2 passkeys. Guardian can only start recovery.'
+                          : (guardianDraftParse.error ??
+                            `Guardian will become ${ellipsify(guardianDraftParse.address ?? '', 6)}.`)}
                   </Text>
 
                   <TouchableOpacity
@@ -828,13 +827,16 @@ export default function RecoverySettingsScreen() {
                     activeOpacity={0.85}
                   >
                     {guardianBusy ? (
-                      <ActivityIndicator size="small" color={guardianDraftParse.address ? '#080C1E' : theme.textMuted} />
+                      <ActivityIndicator
+                        size="small"
+                        color={guardianDraftParse.address ? '#080C1E' : theme.textMuted}
+                      />
                     ) : (
                       <Text
                         style={[
                           styles.updateGuardianBtnText,
                           {
-                            color: guardianDraftParse.address ? '#080C1E' : (isDark ? '#71717A' : '#8E8E93'),
+                            color: guardianDraftParse.address ? '#080C1E' : isDark ? '#71717A' : '#8E8E93',
                           },
                         ]}
                       >
@@ -850,17 +852,22 @@ export default function RecoverySettingsScreen() {
 
         {/* Card 2: Back up your recovery key */}
         {autoGuardianKey && (
-          <View style={[styles.card, styles.backupCard, { backgroundColor: theme.bgCard, borderColor: theme.borderDefault }]}>
+          <View
+            style={[
+              styles.card,
+              styles.backupCard,
+              { backgroundColor: theme.bgCard, borderColor: theme.borderDefault },
+            ]}
+          >
             <View style={styles.backupCardHeader}>
               <View style={styles.backupIconRing}>
                 <MaterialIcons name="vpn-key" size={18} color={isDark ? '#D99A2B' : '#B45309'} />
               </View>
-              <Text style={[styles.backupCardTitle, { color: theme.textPrimary }]}>
-                Back up your recovery key
-              </Text>
+              <Text style={[styles.backupCardTitle, { color: theme.textPrimary }]}>Back up your recovery key</Text>
             </View>
             <Text style={[styles.backupCardDesc, { color: theme.textSecondary }]}>
-              This wallet's recovery key was created on this phone during setup. Save a copy in a password manager or on paper so you can rescue your funds if you lose this phone.
+              This wallet&apos;s recovery key was created on this phone during setup. Save a copy in a password manager
+              or on paper so you can rescue your funds if you lose this phone.
             </Text>
             <TouchableOpacity
               style={styles.backupActionBtn}
@@ -943,12 +950,7 @@ export default function RecoverySettingsScreen() {
                   Recovery in progress
                 </Text>
               </View>
-              <Text
-                style={[
-                  styles.heroCountdownText,
-                  { color: isDark ? '#FFFFFF' : '#111827' },
-                ]}
-              >
+              <Text style={[styles.heroCountdownText, { color: isDark ? '#FFFFFF' : '#111827' }]}>
                 {recoveryWindow.secondsLeft > 0 ? formatRemainingTime(recoveryWindow.secondsLeft) : 'Timelock elapsed'}
               </Text>
               <Text style={[styles.bannerSubtitle, { color: isDark ? '#A1A1AA' : '#6B7280' }]}>
@@ -960,38 +962,100 @@ export default function RecoverySettingsScreen() {
 
             {/* 2. Proposed Pending Replacement Keys Card */}
             {onChainWallet && (
-              <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: isDark ? 'rgba(217, 154, 43, 0.35)' : '#FDE68A', marginBottom: 16 }]}>
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: theme.bgCard,
+                    borderColor: isDark ? 'rgba(217, 154, 43, 0.35)' : '#FDE68A',
+                    marginBottom: 16,
+                  },
+                ]}
+              >
                 <View style={styles.cardHeader}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <MaterialIcons name="vpn-key" size={18} color={isDark ? '#D99A2B' : '#D97706'} />
                     <Text style={[styles.cardHeading, { color: theme.textPrimary }]}>Proposed replacement keys</Text>
                   </View>
-                  <View style={[styles.tag, { backgroundColor: isDark ? 'rgba(217, 154, 43, 0.15)' : '#FEF3C7', borderColor: isDark ? 'rgba(217, 154, 43, 0.4)' : '#FDE68A' }]}>
-                    <Text style={[styles.tagText, { color: isDark ? '#D99A2B' : '#D97706', fontWeight: '600' }]}>Pending</Text>
+                  <View
+                    style={[
+                      styles.tag,
+                      {
+                        backgroundColor: isDark ? 'rgba(217, 154, 43, 0.15)' : '#FEF3C7',
+                        borderColor: isDark ? 'rgba(217, 154, 43, 0.4)' : '#FDE68A',
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.tagText, { color: isDark ? '#D99A2B' : '#D97706', fontWeight: '600' }]}>
+                      Pending
+                    </Text>
                   </View>
                 </View>
 
                 <Text style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 12, lineHeight: 18 }}>
-                  The guardian proposed these new public keys to replace your current passkeys. If not vetoed before the timelock expires, these keys will gain full control of this wallet:
+                  The guardian proposed these new public keys to replace your current passkeys. If not vetoed before the
+                  timelock expires, these keys will gain full control of this wallet:
                 </Text>
 
-                <View style={{ backgroundColor: isDark ? '#161619' : '#F5F5F7', borderColor: isDark ? '#26262C' : theme.borderDefault, borderWidth: 1, borderRadius: 10, padding: 12, gap: 10 }}>
+                <View
+                  style={{
+                    backgroundColor: isDark ? '#161619' : '#F5F5F7',
+                    borderColor: isDark ? '#26262C' : theme.borderDefault,
+                    borderWidth: 1,
+                    borderRadius: 10,
+                    padding: 12,
+                    gap: 10,
+                  }}
+                >
                   <View>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textMuted, textTransform: 'uppercase', marginBottom: 2 }}>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: '600',
+                        color: theme.textMuted,
+                        textTransform: 'uppercase',
+                        marginBottom: 2,
+                      }}
+                    >
                       Candidate Primary Passkey
                     </Text>
-                    <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 12, color: theme.textPrimary }} numberOfLines={1} ellipsizeMode="middle">
+                    <Text
+                      style={{
+                        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+                        fontSize: 12,
+                        color: theme.textPrimary,
+                      }}
+                      numberOfLines={1}
+                      ellipsizeMode="middle"
+                    >
                       {onChainWallet.pendingPrimaryPasskey && onChainWallet.pendingPrimaryPasskey.some((b) => b !== 0)
                         ? Buffer.from(onChainWallet.pendingPrimaryPasskey).toString('hex')
                         : 'None set'}
                     </Text>
                   </View>
                   <View>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: theme.textMuted, textTransform: 'uppercase', marginBottom: 2 }}>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: '600',
+                        color: theme.textMuted,
+                        textTransform: 'uppercase',
+                        marginBottom: 2,
+                      }}
+                    >
                       Candidate Backup Passkey
                     </Text>
-                    <Text style={{ fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', fontSize: 12, color: theme.textPrimary }} numberOfLines={1} ellipsizeMode="middle">
-                      {onChainWallet.pendingSecondaryPasskey && onChainWallet.pendingSecondaryPasskey.some((b) => b !== 0)
+                    <Text
+                      style={{
+                        fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+                        fontSize: 12,
+                        color: theme.textPrimary,
+                      }}
+                      numberOfLines={1}
+                      ellipsizeMode="middle"
+                    >
+                      {onChainWallet.pendingSecondaryPasskey &&
+                      onChainWallet.pendingSecondaryPasskey.some((b) => b !== 0)
                         ? Buffer.from(onChainWallet.pendingSecondaryPasskey).toString('hex')
                         : 'None set'}
                     </Text>
@@ -999,7 +1063,9 @@ export default function RecoverySettingsScreen() {
                 </View>
 
                 <Text style={{ fontSize: 12, color: theme.textMuted, marginTop: 10, lineHeight: 17 }}>
-                  If you still control your passkeys, tap <Text style={{ fontWeight: '600', color: theme.textPrimary }}>Veto and keep my keys</Text> below to immediately cancel this rotation and unfreeze your wallet.
+                  If you still control your passkeys, tap{' '}
+                  <Text style={{ fontWeight: '600', color: theme.textPrimary }}>Veto and keep my keys</Text> below to
+                  immediately cancel this rotation and unfreeze your wallet.
                 </Text>
               </View>
             )}
@@ -1024,7 +1090,9 @@ export default function RecoverySettingsScreen() {
                     <MaterialIcons
                       name="gpp-good"
                       size={20}
-                      color={recoveryBusy !== null && recoveryBusy !== 'cancel' ? theme.textMuted : theme.accentForeground}
+                      color={
+                        recoveryBusy !== null && recoveryBusy !== 'cancel' ? theme.textMuted : theme.accentForeground
+                      }
                     />
                   }
                 />
@@ -1043,9 +1111,7 @@ export default function RecoverySettingsScreen() {
                         },
                       ]}
                     >
-                      <Text style={[styles.disabledFinalizeText, { color: theme.textMuted }]}>
-                        Finalize recovery
-                      </Text>
+                      <Text style={[styles.disabledFinalizeText, { color: theme.textMuted }]}>Finalize recovery</Text>
                     </View>
                     <Text style={[styles.actionCaption, { color: theme.textMuted }]}>
                       Unlocks when the dispute window ends
@@ -1089,8 +1155,8 @@ export default function RecoverySettingsScreen() {
                 {!onChainWallet
                   ? 'The guardian is recorded when the account is first created on-chain, so there is nothing to recover yet.'
                   : guardianSigner
-                  ? 'Your guardian can start a recovery from their own wallet or web portal if you lose this device. You can veto it here at any point during the dispute window.'
-                  : 'Recovery is started by the guardian from their own device. This build cannot sign as it.'}
+                    ? 'Your guardian can start a recovery from their own wallet or web portal if you lose this device. You can veto it here at any point during the dispute window.'
+                    : 'Recovery is started by the guardian from their own device. This build cannot sign as it.'}
               </Text>
 
               {renderReassuranceBox({ marginBottom: onChainWallet && guardianSigner ? 14 : 0 })}
@@ -1107,12 +1173,11 @@ export default function RecoverySettingsScreen() {
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                     <MaterialIcons name="science" size={16} color={theme.textSecondary} />
-                    <Text style={[styles.testSimulationTitle, { color: theme.textPrimary }]}>
-                      Devnet simulation
-                    </Text>
+                    <Text style={[styles.testSimulationTitle, { color: theme.textPrimary }]}>Devnet simulation</Text>
                   </View>
                   <Text style={[styles.testSimulationDesc, { color: theme.textSecondary }]}>
-                    Simulate losing this phone by broadcasting an on-chain freeze with your devnet guardian keypair. You can test the dispute window and veto it with your passkeys.
+                    Simulate losing this phone by broadcasting an on-chain freeze with your devnet guardian keypair. You
+                    can test the dispute window and veto it with your passkeys.
                   </Text>
                   <TouchableOpacity
                     style={[
@@ -1146,10 +1211,7 @@ export default function RecoverySettingsScreen() {
       </ScrollView>
 
       {/* Recovery Policy Sheet */}
-      <HaptixPolicySheet
-        topic={showPolicySheet ? 'recovery' : null}
-        onClose={() => setShowPolicySheet(false)}
-      />
+      <HaptixPolicySheet topic={showPolicySheet ? 'recovery' : null} onClose={() => setShowPolicySheet(false)} />
 
       {/* Change / Set Guardian Confirmation Modal */}
       <Modal
@@ -1158,10 +1220,7 @@ export default function RecoverySettingsScreen() {
         animationType="fade"
         onRequestClose={() => setShowConfirmModal(false)}
       >
-        <Pressable
-          style={styles.modalBackdrop}
-          onPress={() => setShowConfirmModal(false)}
-        >
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowConfirmModal(false)}>
           <Pressable style={styles.confirmDialogCard} onPress={(e) => e.stopPropagation()}>
             {/* Header Alert Circle Icon */}
             <View style={styles.confirmDialogIconCircle}>
@@ -1181,19 +1240,13 @@ export default function RecoverySettingsScreen() {
               {isGuardianConfigured && onChainWallet ? (
                 <View style={styles.confirmAddressRowBorder}>
                   <Text style={styles.confirmAddressLabel}>Current</Text>
-                  <Text style={styles.confirmAddressValueMono}>
-                    {ellipsify(onChainWallet.guardian.toBase58(), 6)}
-                  </Text>
+                  <Text style={styles.confirmAddressValueMono}>{ellipsify(onChainWallet.guardian.toBase58(), 6)}</Text>
                 </View>
               ) : null}
               <View style={styles.confirmAddressRow}>
-                <Text style={styles.confirmAddressLabel}>
-                  {isGuardianConfigured ? 'New' : 'Guardian'}
-                </Text>
+                <Text style={styles.confirmAddressLabel}>{isGuardianConfigured ? 'New' : 'Guardian'}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={styles.confirmAddressNewValue}>
-                    {ellipsify(guardianDraftParse.address ?? '', 6)}
-                  </Text>
+                  <Text style={styles.confirmAddressNewValue}>{ellipsify(guardianDraftParse.address ?? '', 6)}</Text>
                   <TouchableOpacity
                     onPress={() => {
                       if (guardianDraftParse.address) {
@@ -1214,20 +1267,16 @@ export default function RecoverySettingsScreen() {
               <View style={styles.confirmConsequenceRow}>
                 <MaterialIcons name="warning-amber" size={16} color="#8A8985" style={{ marginTop: 1, flexShrink: 0 }} />
                 <Text style={styles.confirmConsequenceText}>
-                  Handing recovery to an address you don't control is the same as giving your wallet away.
+                  Handing recovery to an address you don&apos;t control is the same as giving your wallet away.
                 </Text>
               </View>
               <View style={styles.confirmConsequenceRow}>
                 <MaterialIcons name="fingerprint" size={16} color="#8A8985" style={{ marginTop: 1, flexShrink: 0 }} />
-                <Text style={styles.confirmConsequenceText}>
-                  Needs both passkeys to confirm.
-                </Text>
+                <Text style={styles.confirmConsequenceText}>Needs both passkeys to confirm.</Text>
               </View>
               <View style={styles.confirmConsequenceRow}>
                 <MaterialIcons name="replay" size={16} color="#8A8985" style={{ marginTop: 1, flexShrink: 0 }} />
-                <Text style={styles.confirmConsequenceText}>
-                  You can undo this later, but only with both passkeys.
-                </Text>
+                <Text style={styles.confirmConsequenceText}>You can undo this later, but only with both passkeys.</Text>
               </View>
             </View>
 
@@ -1266,10 +1315,7 @@ export default function RecoverySettingsScreen() {
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setGuardianSuccess(null)}>
           {guardianSuccess && (
-            <Pressable
-              style={styles.successSheetCard}
-              onPress={(e) => e.stopPropagation()}
-            >
+            <Pressable style={styles.successSheetCard} onPress={(e) => e.stopPropagation()}>
               {/* Drag Handle */}
               <View style={styles.successHandle} />
 
@@ -1280,9 +1326,7 @@ export default function RecoverySettingsScreen() {
                 </View>
 
                 <Text style={styles.successLabel}>Guardian updated</Text>
-                <Text style={styles.successHeroAddress}>
-                  {ellipsify(guardianSuccess.newGuardian, 6)}
-                </Text>
+                <Text style={styles.successHeroAddress}>{ellipsify(guardianSuccess.newGuardian, 6)}</Text>
                 {guardianSuccess.previousGuardian ? (
                   <Text style={styles.successPrevious}>
                     Changed from {ellipsify(guardianSuccess.previousGuardian, 6)}
@@ -1316,9 +1360,7 @@ export default function RecoverySettingsScreen() {
                     style={styles.successSigWrap}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Text style={styles.successSigMono}>
-                      {ellipsify(guardianSuccess.signature, 8)}
-                    </Text>
+                    <Text style={styles.successSigMono}>{ellipsify(guardianSuccess.signature, 8)}</Text>
                     <MaterialIcons
                       name={copiedSig ? 'check' : 'content-copy'}
                       size={13}
@@ -1393,7 +1435,8 @@ export default function RecoverySettingsScreen() {
                 style={{ marginTop: 1, flexShrink: 0 }}
               />
               <Text style={styles.revealWarningText}>
-                Never share this key. Anyone who has it can start a recovery of your wallet. Store it in a password manager.
+                Never share this key. Anyone who has it can start a recovery of your wallet. Store it in a password
+                manager.
               </Text>
             </View>
 
@@ -1431,10 +1474,7 @@ export default function RecoverySettingsScreen() {
 
             {/* Reveal Box */}
             <TouchableOpacity
-              style={[
-                styles.revealSecretDashedBox,
-                hasRevealedSecret && styles.revealSecretDashedBoxRevealed,
-              ]}
+              style={[styles.revealSecretDashedBox, hasRevealedSecret && styles.revealSecretDashedBoxRevealed]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
                 if (hasRevealedSecret) {
@@ -1460,9 +1500,7 @@ export default function RecoverySettingsScreen() {
 
             {/* Auto-hide countdown */}
             {hasRevealedSecret ? (
-              <Text style={styles.revealCountdownText}>
-                Hides in {countdown}s
-              </Text>
+              <Text style={styles.revealCountdownText}>Hides in {countdown}s</Text>
             ) : (
               <View style={{ height: 10 }} />
             )}
@@ -1508,7 +1546,7 @@ export default function RecoverySettingsScreen() {
               <View style={[styles.customCheckbox, hasSavedKeyChecked && styles.customCheckboxChecked]}>
                 {hasSavedKeyChecked && <MaterialIcons name="check" size={13} color="#0C0C0D" />}
               </View>
-              <Text style={styles.revealCheckboxLabel}>I've saved it somewhere safe</Text>
+              <Text style={styles.revealCheckboxLabel}>I&apos;ve saved it somewhere safe</Text>
             </TouchableOpacity>
 
             {/* Done Action Button */}

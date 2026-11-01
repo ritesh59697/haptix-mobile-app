@@ -23,24 +23,10 @@ const SIZE_MAP: Record<SpinLoaderSize, number> = {
  * Lucide Loader SVG Paths (8 radial spokes with round caps)
  * Faithful port of https://opensourceui.in/components/spin-loader
  */
-function LucideLoaderSvg({
-  size,
-  color,
-  strokeWidth = 2,
-}: {
-  size: number
-  color: string
-  strokeWidth?: number
-}) {
+function LucideLoaderSvg({ size, color, strokeWidth = 2 }: { size: number; color: string; strokeWidth?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 2v4"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="M12 2v4" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
       <Path
         d="m16.2 7.8 2.9-2.9"
         stroke={color}
@@ -48,13 +34,7 @@ function LucideLoaderSvg({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <Path
-        d="M18 12h4"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="M18 12h4" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
       <Path
         d="m16.2 16.2 2.9 2.9"
         stroke={color}
@@ -62,13 +42,7 @@ function LucideLoaderSvg({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <Path
-        d="M12 18v4"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="M12 18v4" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
       <Path
         d="m4.9 19.1 2.9-2.9"
         stroke={color}
@@ -76,13 +50,7 @@ function LucideLoaderSvg({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <Path
-        d="M2 12h4"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <Path d="M2 12h4" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" />
       <Path
         d="m4.9 4.9 2.9 2.9"
         stroke={color}
@@ -110,7 +78,7 @@ export function SpinLoader({
 }: SpinLoaderProps) {
   const spinAnim = useRef(new Animated.Value(0)).current
 
-  const dimension = typeof size === 'number' ? size : SIZE_MAP[size] ?? 24
+  const dimension = typeof size === 'number' ? size : (SIZE_MAP[size] ?? 24)
 
   useEffect(() => {
     const loop = Animated.loop(

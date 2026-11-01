@@ -77,7 +77,10 @@ async function runTests() {
   const recipient = Keypair.generate().publicKey
   const amountLamports = 50_000_000n // 0.05 SOL
   const transferMsg = getTransferSignedMessage(walletPda, recipient, amountLamports, 0n)
-  assert(transferMsg.length === 97, 'Transfer payload is 9-byte tag + 32-byte wallet + 8-byte cluster + 8-byte nonce + 32-byte recipient + 8-byte amount')
+  assert(
+    transferMsg.length === 97,
+    'Transfer payload is 9-byte tag + 32-byte wallet + 8-byte cluster + 8-byte nonce + 32-byte recipient + 8-byte amount',
+  )
 
   // Sign with noble p256 low-S. noble's `prehash` defaults to false, so the input is
   // taken as the digest: the payload has to be hashed first to match what the

@@ -1,7 +1,7 @@
 import '../polyfill'
 import { PortalHost } from '@rn-primitives/portal'
 import { useFonts } from 'expo-font'
-import { Stack , useSegments, useRouter } from 'expo-router'
+import { Stack, useSegments, useRouter } from 'expo-router'
 import 'react-native-reanimated'
 import { AppErrorBoundary } from '@/components/app-error-boundary'
 import { AppProviders } from '@/components/app-providers'

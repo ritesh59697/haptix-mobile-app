@@ -79,11 +79,7 @@ export const ActivityRow = memo(function ActivityRow({ tx, variant, onSelect, is
     >
       <View style={styles.activityLeft}>
         <View style={[styles.activityIconCircle, { backgroundColor: tone.background, borderColor: tone.border }]}>
-          <MaterialIcons
-            name={iconName}
-            size={18}
-            color={tone.color}
-          />
+          <MaterialIcons name={iconName} size={18} color={tone.color} />
         </View>
         <View style={{ flex: 1, justifyContent: 'center' }}>
           <Text style={[styles.activityItemTitle, styles.textPrimary]} numberOfLines={1}>
@@ -164,18 +160,26 @@ export const AgentSessionRow = memo(function AgentSessionRow({
           styles.agentCompactIcon,
           {
             backgroundColor: isExpired
-              ? (isDark ? 'rgba(244, 63, 94, 0.12)' : 'rgba(225, 29, 72, 0.08)')
-              : (isDark ? '#1C1C1E' : '#EFEFF0'),
+              ? isDark
+                ? 'rgba(244, 63, 94, 0.12)'
+                : 'rgba(225, 29, 72, 0.08)'
+              : isDark
+                ? '#1C1C1E'
+                : '#EFEFF0',
             borderColor: isExpired
-              ? (isDark ? 'rgba(244, 63, 94, 0.3)' : 'rgba(225, 29, 72, 0.2)')
-              : (isDark ? '#28282B' : '#E5E5EA'),
+              ? isDark
+                ? 'rgba(244, 63, 94, 0.3)'
+                : 'rgba(225, 29, 72, 0.2)'
+              : isDark
+                ? '#28282B'
+                : '#E5E5EA',
           },
         ]}
       >
         <MaterialIcons
           name={isExpired ? 'timer-off' : 'vpn-key'}
           size={18}
-          color={isExpired ? theme.roseText : (isDark ? '#FFFFFF' : '#000000')}
+          color={isExpired ? theme.roseText : isDark ? '#FFFFFF' : '#000000'}
         />
       </View>
       <View style={{ flex: 1, paddingRight: 4 }}>
@@ -203,9 +207,7 @@ export const AgentSessionRow = memo(function AgentSessionRow({
           )}
         </View>
 
-        <Text style={[styles.agentCompactSub, styles.textMuted]}>
-          {remainingAllowance.toFixed(4)} SOL delegated
-        </Text>
+        <Text style={[styles.agentCompactSub, styles.textMuted]}>{remainingAllowance.toFixed(4)} SOL delegated</Text>
         <Text style={[styles.agentCompactSub, styles.textMuted]}>
           {session.allowedProgram.equals(SystemProgram.programId)
             ? 'SOL transfers'
