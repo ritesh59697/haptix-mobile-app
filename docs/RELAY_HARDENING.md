@@ -1,9 +1,14 @@
 # Relay Hardening Backlog
 
-Findings from an audit of `tools/haptix-relay.js` (the file Render runs, via
-`npm run start:relay`). **Nothing here is applied.** Deferred until after
-hackathon judging so a running production service is not changed under a
-deadline.
+Findings from an audit of `tools/haptix-relay.js`, which Render runs via
+`npm run start:relay`.
+
+**Status**: issue 1 is fixed and deployed. Issue 4 was withdrawn — it described
+behaviour the Web Vault depends on. Issues 2, 3 and 5 are still open.
+
+Deploy note: the Render service now tracks this repo with Auto-Deploy on, so a
+push to `main` restarts the relay. It previously deployed from a nested copy
+inside `ritesh59697/haptix`, which left production ~19 days behind this repo.
 
 ## Why none of this is urgent
 
@@ -19,7 +24,14 @@ cannot produce a transaction the program will accept.
 So the issues below are **availability and robustness**, not theft. The worst
 realistic outcome is a failed or confusing demo, not lost funds.
 
-## 1. Unbounded request body (highest priority)
+## 1. Unbounded request body — FIXED
+
+Fixed in `fix(relay): cap POST body size to prevent memory exhaustion`.
+`readLimitedBody()` caps every POST body at 10 KB, answers 413 past it and
+destroys the socket. Measured before the fix: a 5 MB POST to `/pending-tx`
+returned HTTP 200 and was buffered in full. After: 413, relay still serving.
+
+Original finding below.
 
 `POST /pending-tx` and `POST /submit-signature` accumulate the request body
 without a size limit:
@@ -54,16 +66,26 @@ started before the nap disappears before the vault can answer it.
 10-minute TTL. Related operational note: warm the relay immediately before any
 live demo, since a cold start already costs 30-50 seconds.
 
-## 4. `GET /pending-tx` falls back to the newest transfer from any wallet
+## 4. `GET /pending-tx` fallback — WITHDRAWN, do not "fix"
 
-With neither `id` nor `wallet` supplied, the handler scans for the most recent
-non-declined transfer across all users. With two people demoing at once, the
-vault can display someone else's transfer.
+With neither `id` nor `wallet` supplied, the handler returns the most recent
+non-declined transfer across all wallets. That reads like a bug, but
+`public/vault.html:2374` polls this endpoint with no parameters at all:
 
-It cannot be signed into anything valid, because the signed message commits to
-the recipient and amount, but it looks broken.
+```js
+var res = await fetch(relayOrigin + '/pending-tx')
+```
 
-**Fix**: require `id` or `wallet`; drop the fallback and return 400.
+So the fallback is the mechanism the Web Vault relies on to discover a pending
+transfer. Requiring `id` or `wallet` would silently break 2-of-2 signing.
+
+The real limitation is multi-tenancy: with two sessions live at once, a vault
+can display the other one's transfer. It cannot be signed into anything valid —
+the signed message commits to recipient and amount — but it looks wrong.
+
+**If this is ever addressed**, change `vault.html` to pass the wallet it is
+co-signing for _first_, and only then tighten the endpoint. Both sides have to
+move together.
 
 ## 5. Minor
 
