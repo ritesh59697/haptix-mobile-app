@@ -1002,11 +1002,19 @@
     padding: 24px;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s var(--ease);
+    /* visibility keeps the closed dialog out of the tab order and the
+       a11y tree; it transitions stepwise so the fade still plays. */
+    visibility: hidden;
+    transition: opacity 0.25s var(--ease), visibility 0s linear 0.25s;
     z-index: 100;
   }
 
-  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+    transition: opacity 0.25s var(--ease), visibility 0s;
+  }
 
   .modal {
     width: 100%;
@@ -1057,88 +1065,101 @@
 
   .modal-head-desc {
     font-size: 12.5px;
-    color: var(--text-3);
+    color: var(--text-2);
     margin: 0;
     line-height: 1.45;
   }
 
   .modal-steps {
+    list-style: none;
+    margin: 0 0 24px;
+    padding: 0;
+    counter-reset: modal-step;
+  }
+
+  .modal-step {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 14px;
+    counter-increment: modal-step;
+  }
+
+  /* The marker column draws the line that links one step to the next. */
+  .modal-step-marker {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 22px;
+    align-items: center;
   }
 
-  .modal-step-card {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
+  .modal-step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
     background: var(--card-inner);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 13px 15px;
-    transition: border-color 0.2s ease, background 0.2s ease;
-  }
-
-  .modal-step-card:hover {
-    border-color: var(--border-strong);
-  }
-
-  .modal-step-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: var(--bg);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     display: flex;
     align-items: center;
     justify-content: center;
+    color: var(--text-2);
     flex-shrink: 0;
-    color: var(--text-1);
-    margin-top: 1px;
   }
 
-  .modal-step-icon svg {
-    width: 17px;
-    height: 17px;
+  .modal-step-dot svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .modal-step:not(:last-child) .modal-step-marker::after {
+    content: '';
+    flex: 1;
+    width: 1px;
+    margin: 6px 0;
+    background: linear-gradient(
+      to bottom,
+      var(--border-strong),
+      var(--border)
+    );
   }
 
   .modal-step-content {
-    flex: 1;
     min-width: 0;
+    padding-bottom: 20px;
   }
 
-  .modal-step-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 3px;
-  }
-
-  .modal-step-num {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 1px 6px;
+  .modal-step:last-child .modal-step-content {
+    padding-bottom: 0;
   }
 
   .modal-step-title {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
     color: var(--text-1);
     letter-spacing: -0.01em;
+    margin: 5px 0 4px;
+    line-height: 1.3;
+  }
+
+  /* Numbered for sighted users; the <ol> already conveys order to AT. */
+  .modal-step-title::before {
+    content: counter(modal-step) '. ';
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
   }
 
   .modal-step-desc {
-    font-size: 12px;
+    font-size: 12.5px;
     color: var(--text-2);
-    line-height: 1.48;
+    line-height: 1.55;
     margin: 0;
+  }
+
+  .modal-step-desc code {
+    font-family: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    font-size: 11px;
+    color: var(--text-1);
+    background: var(--bg);
+    border-radius: 3px;
+    padding: 0 3px;
   }
 
   .modal-footer {
@@ -1748,56 +1769,53 @@
       </button>
     </div>
 
-    <div class="modal-steps">
-      <div class="modal-step-card">
-        <div class="modal-step-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
-            <line x1="12" y1="18" x2="12.01" y2="18"/>
-          </svg>
+    <ol class="modal-steps">
+      <li class="modal-step">
+        <div class="modal-step-marker">
+          <span class="modal-step-dot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+              <line x1="12" y1="18" x2="12.01" y2="18"/>
+            </svg>
+          </span>
         </div>
         <div class="modal-step-content">
-          <div class="modal-step-meta">
-            <span class="modal-step-num">Step 1</span>
-            <span class="modal-step-title">Mobile Phone Initiates Transfer</span>
-          </div>
-          <p class="modal-step-desc">Transfers above limit escalate to dual-device mode. Your phone signs first, but cannot broadcast without second device co-signature.</p>
+          <h3 class="modal-step-title">Your phone signs first</h3>
+          <p class="modal-step-desc">A transfer over your threshold can’t go out on one device. Your phone adds the first signature and then waits — on its own it can’t move the funds.</p>
         </div>
-      </div>
+      </li>
 
-      <div class="modal-step-card">
-        <div class="modal-step-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-            <line x1="8" y1="21" x2="16" y2="21"/>
-            <line x1="12" y1="17" x2="12" y2="21"/>
-          </svg>
+      <li class="modal-step">
+        <div class="modal-step-marker">
+          <span class="modal-step-dot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </span>
         </div>
         <div class="modal-step-content">
-          <div class="modal-step-meta">
-            <span class="modal-step-num">Step 2</span>
-            <span class="modal-step-title">Biometrics Unlock Hardware Key</span>
-          </div>
-          <p class="modal-step-desc">Your second device receives the out-of-band request. Biometric authentication authorizes an isolated P-256 private key that never leaves the hardware secure chip.</p>
+          <h3 class="modal-step-title">This device approves it</h3>
+          <p class="modal-step-desc">The request appears here, on separate hardware. Your fingerprint or face unlocks a second key that is sealed in this machine’s secure chip and never leaves it.</p>
         </div>
-      </div>
+      </li>
 
-      <div class="modal-step-card">
-        <div class="modal-step-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <polyline points="9 12 11 14 15 10"/>
-          </svg>
+      <li class="modal-step">
+        <div class="modal-step-marker">
+          <span class="modal-step-dot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <polyline points="9 12 11 14 15 10"/>
+            </svg>
+          </span>
         </div>
         <div class="modal-step-content">
-          <div class="modal-step-meta">
-            <span class="modal-step-num">Step 3</span>
-            <span class="modal-step-title">Native Solana Precompile Verification</span>
-          </div>
-          <p class="modal-step-desc">Both hardware signatures are verified atomically on-chain via Solana’s native Secp256r1 precompile without relying on centralized relays.</p>
+          <h3 class="modal-step-title">Solana checks both signatures</h3>
+          <p class="modal-step-desc">The chain itself verifies the pair in a single transaction, through Solana’s built-in <code>Secp256r1</code> precompile. No server of ours sits in the middle, and a thief with one device gets nowhere.</p>
         </div>
-      </div>
-    </div>
+      </li>
+    </ol>
 
     <div class="modal-footer">
       <button class="modal-got-it-btn" id="modalGotItBtn" type="button">
@@ -1973,16 +1991,62 @@
 
   // --- Modal Events ---
   var modalGotItBtn = document.getElementById('modalGotItBtn');
-  howItWorksBtn.addEventListener('click', function () {
+  var lastFocusedBeforeModal = null;
+
+  function modalIsOpen() { return overlay.classList.contains('open'); }
+
+  function modalFocusables() {
+    return Array.prototype.filter.call(
+      overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
+      function (el) { return el.offsetParent !== null || el === document.activeElement; }
+    );
+  }
+
+  function openModal() {
+    lastFocusedBeforeModal = document.activeElement;
     overlay.classList.add('open');
-  });
+    // Move focus into the dialog so keyboard and screen-reader users
+    // land inside it rather than behind it.
+    if (modalGotItBtn) modalGotItBtn.focus();
+  }
+
+  function closeModal() {
+    if (!modalIsOpen()) return;
+    overlay.classList.remove('open');
+    if (lastFocusedBeforeModal && typeof lastFocusedBeforeModal.focus === 'function') {
+      lastFocusedBeforeModal.focus();
+    }
+    lastFocusedBeforeModal = null;
+  }
+
+  howItWorksBtn.addEventListener('click', openModal);
   modalClose.addEventListener('click', closeModal);
   if (modalGotItBtn) modalGotItBtn.addEventListener('click', closeModal);
   overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeModal();
+    if (!modalIsOpen()) return;
+
+    if (e.key === 'Escape') {
+      closeModal();
+      return;
+    }
+
+    // Keep Tab inside the dialog while it is open.
+    if (e.key === 'Tab') {
+      var items = modalFocusables();
+      if (!items.length) return;
+      var first = items[0];
+      var last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
   });
-  function closeModal() { overlay.classList.remove('open'); }
 
   // --- Copy Button ---
   copyBtn.addEventListener('click', function () {
