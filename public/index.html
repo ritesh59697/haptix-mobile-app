@@ -507,23 +507,33 @@
       text-decoration: underline;
     }
 
-    .hero-3d-asset {
+    .hero-demo {
       position: relative;
       width: 100%;
       max-width: 880px;
       margin: 0 auto;
       display: flex;
       justify-content: center;
-      align-items: center;
-      animation: heroFloat 6s ease-in-out infinite;
     }
-    .hero-3d-asset img {
+    /* The demo carries its own shadow and ground: no float, no filter here. */
+    .hero-demo-video {
       width: 100%;
-      max-width: 840px;
       height: auto;
-      max-height: 520px;
-      object-fit: contain;
-      filter: drop-shadow(0 25px 45px rgba(0, 0, 0, 0.12));
+      display: block;
+    }
+    .hero-demo-wide { max-width: 860px; }
+    .hero-demo-narrow { display: none; max-width: 358px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-demo-video { display: none; }
+      .hero-demo::after {
+        content: '';
+        display: block;
+        width: 100%;
+        max-width: 860px;
+        aspect-ratio: 860 / 420;
+        background: url('assets/quorum-demo-poster.webp') center / contain no-repeat;
+      }
     }
 
     @keyframes heroFloat {
@@ -1166,12 +1176,13 @@
       .hero-title {
         font-size: 54px;
       }
-      .hero-3d-asset {
-        height: 380px;
-      }
+
     }
 
     @media (max-width: 768px) {
+      .hero-demo-wide { display: none; }
+      .hero-demo-narrow { display: block; }
+
       .hero-network-note {
         font-size: 11.5px;
         margin: -18px auto 26px;
@@ -1339,12 +1350,47 @@
 
         <p class="hero-network-note">Running on Solana Devnet &middot; <code>Secp256r1SigVerify</code>, no custom forks</p>
 
-        <div class="hero-3d-asset">
-          <img src="assets/chatgpt-hero-nobg.webp" alt="Haptix Mobile Vault running on Solana Mobile" width="1680" height="1120" fetchpriority="high" decoding="async">
+        <div class="hero-demo">
+          <video
+            class="hero-demo-video hero-demo-wide"
+            width="1720" height="840"
+            poster="assets/quorum-demo-poster.webp"
+            loop muted playsinline preload="none"
+            aria-label="A 2.4 SOL transfer above the spend limit: the phone signs first, the Web Vault adds the second signature, and Solana verifies both through the Secp256r1 precompile.">
+            <source src="assets/quorum-demo.webm" type="video/webm">
+            <source src="assets/quorum-demo.mp4" type="video/mp4">
+          </video>
+          <video
+            class="hero-demo-video hero-demo-narrow"
+            width="716" height="680"
+            poster="assets/quorum-demo-poster.webp"
+            loop muted playsinline preload="none"
+            aria-hidden="true">
+            <source src="assets/quorum-demo-mobile.webm" type="video/webm">
+            <source src="assets/quorum-demo-mobile.mp4" type="video/mp4">
+          </video>
         </div>
       </section>
     </div>
   </div>
+
+  <script>
+    // Only the visible cut should decode: a display:none video still plays.
+    (function () {
+      var cuts = document.querySelectorAll('.hero-demo-video');
+      if (!cuts.length || !window.matchMedia) return;
+      function sync() {
+        // No autoplay attribute: this is the only thing that starts a cut.
+        Array.prototype.forEach.call(cuts, function (v) {
+          var shown = getComputedStyle(v).display !== 'none';
+          if (shown && v.paused) v.play().catch(function () {});
+          if (!shown && !v.paused) v.pause();
+        });
+      }
+      sync();
+      window.addEventListener('resize', sync, { passive: true });
+    })();
+  </script>
 
   <!-- SECTION 2: STATS BANNER (DARK) -->
   <div class="section-dark stats-banner">
