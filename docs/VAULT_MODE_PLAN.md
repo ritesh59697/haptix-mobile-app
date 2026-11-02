@@ -124,7 +124,7 @@ If the secondary Vault device is lost, stolen, or damaged:
 
 ## 7. Verification & Automated Tests
 
-All core primitives are verified by 290 automated tests in the test suite:
+All core primitives are verified by 324 automated tests in the test suite:
 
 - `tests/set-spend-threshold.test.ts` — 9/9 unit and live Devnet verification tests for threshold governance.
 - `tests/seeker-skr.test.ts` — 18/18 tests verifying Seeker SKR 50-token threshold quorum escalation.

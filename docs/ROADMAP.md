@@ -19,7 +19,7 @@
   - [x] Dynamic Send Sheet escalation: 1-tap passkey for low-risk sends $\le$ limit; mandatory dual-key quorum for high-risk sends.
   - [x] Multi-asset Seeker (SKR) risk-adaptive engine ($\le 50$ SKR 1-tap, $> 50$ SKR 2-of-2 quorum).
   - [x] In-app recovery status tracking with "Keep My Keys" fast-path veto.
-  - [x] **290/290 unit & Devnet integration tests passing** across 14 test suites.
+  - [x] **324/324 unit & Devnet integration tests passing** across 14 test suites.
 - **Web Vault & Co-Signer (`public/vault.html`)**:
   - [x] Deployed to Vercel (`https://haptix-passkeys.vercel.app/vault.html`).
   - [x] Browser-based Mac Touch ID / Windows Hello co-signing for high-value vault quorum.

@@ -24,7 +24,7 @@ A Manifest V3 browser extension (Chrome, Brave, Edge, Arc) that acts as a full-f
 
 | Component                        | Source in Repo               | Status                                                                                             |
 | :------------------------------- | :--------------------------- | :------------------------------------------------------------------------------------------------- |
-| **On-Chain Anchor Program**      | `haptix_program/`            | Program `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke` on Devnet. 290/290 automated tests passing. |
+| **On-Chain Anchor Program**      | `haptix_program/`            | Program `9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke` on Devnet. 324/324 automated tests passing. |
 | **Secp256r1 Precompile Encoder** | `utils/haptix-wysiwys.ts`    | Complete: 210-byte instruction layout, canonical low-S normalization, Anchor discriminators.       |
 | **WebAuthn Browser Enrollment**  | `public/vault.html`          | Working: Touch ID P-256 enrollment and raw signature extraction.                                   |
 | **Transaction History & Cache**  | `utils/haptix-tx-history.ts` | Network-scoped Devnet/Mainnet transaction parser and balance caching.                              |
