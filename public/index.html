@@ -507,6 +507,26 @@
       text-decoration: underline;
     }
 
+    .spotlight-demo {
+      position: relative;
+      width: 100%;
+      min-width: 0;
+      display: flex;
+      justify-content: center;
+    }
+    .spotlight-demo .hero-demo-video { max-width: 470px; }
+
+    /* The quorum section lost its render: one centred column, not a half-grid */
+    .spotlight-grid.single {
+      grid-template-columns: 1fr;
+      max-width: 680px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .spotlight-grid.single .spotlight-text > a {
+      margin: 0 auto;
+    }
+
     .hero-demo {
       position: relative;
       width: 100%;
@@ -526,6 +546,13 @@
 
     @media (prefers-reduced-motion: reduce) {
       .hero-demo-video { display: none; }
+      .spotlight-demo::after {
+        content: '';
+        display: block;
+        width: 100%;
+        aspect-ratio: 470 / 400;
+        background: url('assets/agent-demo-poster.webp') center / contain no-repeat;
+      }
       .hero-demo::after {
         content: '';
         display: block;
@@ -1374,23 +1401,6 @@
     </div>
   </div>
 
-  <script>
-    // Only the visible cut should decode: a display:none video still plays.
-    (function () {
-      var cuts = document.querySelectorAll('.hero-demo-video');
-      if (!cuts.length || !window.matchMedia) return;
-      function sync() {
-        // No autoplay attribute: this is the only thing that starts a cut.
-        Array.prototype.forEach.call(cuts, function (v) {
-          var shown = getComputedStyle(v).display !== 'none';
-          if (shown && v.paused) v.play().catch(function () {});
-          if (!shown && !v.paused) v.pause();
-        });
-      }
-      sync();
-      window.addEventListener('resize', sync, { passive: true });
-    })();
-  </script>
 
   <!-- SECTION 2: STATS BANNER (DARK) -->
   <div class="section-dark stats-banner">
@@ -1496,17 +1506,24 @@
             </a>
           </div>
         </div>
-        <div class="spotlight-image">
-          <img src="assets/ai-firewall-module.webp" alt="Haptix AI Spending Firewall Hardware Module" width="902" height="678" loading="lazy" decoding="async" style="max-width: 100%; max-height: 480px; object-fit: contain; filter: drop-shadow(0 24px 60px rgba(0, 0, 0, 0.7));">
+        <div class="spotlight-demo">
+          <video
+            class="hero-demo-video"
+            width="940" height="800"
+            poster="assets/agent-demo-poster.webp"
+            loop muted playsinline preload="none"
+            aria-label="An authorized agent session spends twice inside its allowance, then a third transfer over the remaining allowance is refused on-chain with AgentAllowanceExceeded.">
+            <source src="assets/agent-demo.webm" type="video/webm">
+            <source src="assets/agent-demo.mp4" type="video/mp4">
+          </video>
         </div>
-      </div>
     </div>
   </div>
 
   <!-- SECTION 5: DUAL DEVICE QUORUM (LIGHT) -->
   <div class="section-light spotlight-section" id="quorum">
     <div class="container">
-      <div class="spotlight-grid reverse">
+      <div class="spotlight-grid single">
         <div class="spotlight-text">
           <h2>Dual-Device Quorum.<br>When amounts get serious.</h2>
           <p>Under your spend threshold (e.g. ≤ 0.10 SOL), transfers sign with a single biometric tap. Over your threshold, Haptix mathematically mandates a 2-of-2 hardware quorum—requiring a secondary signature from your Mac or PC Web Vault before any funds move on Solana.</p>
@@ -1520,9 +1537,7 @@
             Open Co-Signer Web Vault
           </a>
         </div>
-        <div class="spotlight-image">
-          <img src="assets/quorum-dual-device.webp" alt="Dual Device 2-of-2 Hardware Quorum Approval" width="902" height="676" loading="lazy" decoding="async">
-        </div>
+        
       </div>
     </div>
   </div>
@@ -1876,6 +1891,38 @@
       </div>
     </footer>
   </div>
+
+  <script>
+    // Only a cut that is visible AND on screen decodes: a display:none video
+    // still plays, and so does one scrolled far out of view.
+    (function () {
+      var cuts = document.querySelectorAll('.hero-demo-video');
+      if (!cuts.length) return;
+
+      function shown(v) { return getComputedStyle(v).display !== 'none'; }
+
+      function sync() {
+        Array.prototype.forEach.call(cuts, function (v) {
+          if (!shown(v)) { if (!v.paused) v.pause(); return; }
+          if (v.dataset.onscreen === 'false') { if (!v.paused) v.pause(); return; }
+          if (v.paused) v.play().catch(function () {});
+        });
+      }
+
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) {
+            e.target.dataset.onscreen = e.isIntersecting ? 'true' : 'false';
+          });
+          sync();
+        }, { rootMargin: '200px' });
+        Array.prototype.forEach.call(cuts, function (v) { io.observe(v); });
+      }
+
+      sync();
+      window.addEventListener('resize', sync, { passive: true });
+    })();
+  </script>
 
 </body>
 </html>
