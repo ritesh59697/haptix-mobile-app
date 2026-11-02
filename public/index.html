@@ -5,9 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Haptix — The Biometric Hardware Enclave Layer for Solana Mobile</title>
   <meta name="description" content="Haptix provides seedless WebAuthn biometric smart accounts on Solana Mobile (Seeker & Saga) with 2-of-2 dual-device hardware quorum, autonomous agent session keys, and native Secp256r1 precompiles.">
-  <link rel="icon" type="image/png" href="assets/haptix-new-logo.png">
-  <link rel="shortcut icon" type="image/png" href="assets/haptix-new-logo.png">
-  <link rel="apple-touch-icon" href="assets/haptix-new-logo.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="256x256" href="assets/favicon-256.png">
+  <link rel="shortcut icon" type="image/png" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="canonical" href="https://www.haptixwallet.xyz/">
+
+  <!-- Open Graph / Facebook / LinkedIn -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.haptixwallet.xyz/">
+  <meta property="og:site_name" content="Haptix">
+  <meta property="og:title" content="Haptix — Hardware security. Zero seed phrases.">
+  <meta property="og:description" content="Your fingerprint is your private key. Seedless WebAuthn biometric smart accounts on Solana Mobile, with 2-of-2 dual-device hardware quorum and autonomous AI agent sessions.">
+  <meta property="og:image" content="https://www.haptixwallet.xyz/assets/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="600">
+  <meta property="og:image:alt" content="Haptix biometric hardware wallet running on Solana Mobile">
+
+  <!-- X (Twitter) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@HaptixWalllet">
+  <meta name="twitter:title" content="Haptix — Hardware security. Zero seed phrases.">
+  <meta name="twitter:description" content="Your fingerprint is your private key. Seedless biometric smart accounts on Solana Mobile with 2-of-2 hardware quorum.">
+  <meta name="twitter:image" content="https://www.haptixwallet.xyz/assets/og-image.jpg">
+  <link rel="preload" as="image" href="assets/chatgpt-hero-nobg.webp" fetchpriority="high">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -427,6 +448,29 @@
       line-height: 1.42;
     }
 
+    .hero-network-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #0f766e;
+      background: rgba(20, 241, 149, 0.10);
+      border: 1px solid rgba(20, 241, 149, 0.35);
+      padding: 5px 13px 5px 10px;
+      border-radius: 999px;
+      letter-spacing: 0.005em;
+      margin-bottom: 22px;
+    }
+    .hero-network-badge .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
+      flex-shrink: 0;
+    }
+
     .hero-action-row {
       display: flex;
       align-items: center;
@@ -572,7 +616,7 @@
       flex-direction: row;
       align-items: center;
     }
-    .bento-card h4 { 
+    .bento-card h3 { 
       font-size: 28px; 
       font-weight: 700; 
       letter-spacing: -0.02em;
@@ -752,7 +796,7 @@
       background: var(--bg-surface);
       border-top: 1px solid rgba(0, 0, 0, 0.05);
     }
-    .devices-section h3 {
+    .devices-section h2 {
       font-size: 32px;
       font-weight: 800;
       letter-spacing: -0.025em;
@@ -805,7 +849,7 @@
       background: rgba(0, 0, 0, 0.06);
       transform: scale(1.06);
     }
-    .device-card h4 {
+    .device-card h3 {
       font-size: 17px;
       font-weight: 700;
       color: var(--text-main);
@@ -981,7 +1025,7 @@
       gap: 20px;
       flex-wrap: wrap;
     }
-    .faq-help-text h4 {
+    .faq-help-text h3 {
       font-size: 16px;
       font-weight: 700;
       color: var(--text-main);
@@ -1137,6 +1181,18 @@
     }
 
     @media (max-width: 768px) {
+      .hero-network-badge {
+        font-size: 11.5px;
+        padding: 6px 14px;
+        margin-bottom: 18px;
+        max-width: 300px;
+        text-align: left;
+        align-items: flex-start;
+      }
+      .hero-network-badge .live-dot {
+        margin-top: 5px;
+      }
+
       .navbar { height: 56px; }
       .nav-links { display: none; }
       .btn-hamburger { display: flex; }
@@ -1167,7 +1223,7 @@
   <div class="navbar-wrapper">
     <nav class="navbar">
       <a href="#" class="logo-container">
-        <img src="assets/logotext-light.png" alt="Haptix" class="brand-text-img">
+        <img src="assets/logotext-light.webp" alt="Haptix" class="brand-text-img" width="232" height="52" decoding="async">
         <span class="logo-badge">
           <svg width="10" height="8" viewBox="0 0 397 311" fill="currentColor"><path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h313.7c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7zM64.6 3.8C67 1.4 70.3 0 73.8 0h313.7c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8zm267.8 115.1c-2.4-2.4-5.7-3.8-9.2-3.8H9.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h313.7c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/></svg>
           Solana
@@ -1251,7 +1307,7 @@
         <div class="mobile-menu-actions">
           <a href="https://github.com/ritesh59697/haptix-mobile-app/releases/latest/download/haptix-wallet.apk" class="mobile-btn-apk">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download Release APK (v1.0.2)
+            Download Release APK (v1.0.2 &middot; 96 MB)
           </a>
           <a href="vault.html" class="mobile-btn-vault">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
@@ -1285,15 +1341,20 @@
         <div class="hero-action-row">
           <a href="https://github.com/ritesh59697/haptix-mobile-app/releases/latest/download/haptix-wallet.apk" class="btn-hero-apk">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download Release APK (v1.0.2)
+            Download Release APK (v1.0.2 &middot; 96 MB)
           </a>
           <a href="https://youtu.be/kNsqykt4rfg" target="_blank" rel="noopener noreferrer" class="link-walkthrough">
             Watch 3-minute walkthrough &rarr;
           </a>
         </div>
 
+        <div class="hero-network-badge">
+          <span class="live-dot"></span>
+          Live on Solana Devnet &mdash; Mainnet-ready architecture
+        </div>
+
         <div class="hero-3d-asset">
-          <img src="assets/chatgpt-hero-nobg.png" alt="Haptix Mobile Vault running on Solana Mobile">
+          <img src="assets/chatgpt-hero-nobg.webp" alt="Haptix Mobile Vault running on Solana Mobile" width="1680" height="1120" fetchpriority="high" decoding="async">
         </div>
       </section>
     </div>
@@ -1329,7 +1390,7 @@
         
         <div class="bento-card large">
           <div class="bento-content">
-            <h4>Biometrics & Keystore StrongBox</h4>
+            <h3>Biometrics & Keystore StrongBox</h3>
             <p>No seed phrases. No 24-word paper backups. Android Keystore StrongBox and Solana Seeker hardware sign Solana transactions natively via P-256 (Secp256r1) passkeys.</p>
             <a href="https://github.com/ritesh59697/haptix-mobile-app" target="_blank" rel="noopener noreferrer" class="bento-action">Explore on GitHub</a>
           </div>
@@ -1360,7 +1421,7 @@
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
               </svg>
             </div>
-            <h4>Zero-SOL Gasless Onboarding</h4>
+            <h3>Zero-SOL Gasless Onboarding</h3>
             <p>New to Solana? The embedded paymaster sponsors your smart account derivation on-chain and drips starter test SOL—zero pre-funding required.</p>
             <a href="https://github.com/ritesh59697/haptix-mobile-app/releases/tag/v1.0.1" target="_blank" rel="noopener noreferrer" class="bento-action">View Release v1.0.1</a>
           </div>
@@ -1375,7 +1436,7 @@
                 <path d="M22 5h-4"></path>
               </svg>
             </div>
-            <h4>Autonomous AI Agent Sessions</h4>
+            <h3>Autonomous AI Agent Sessions</h3>
             <p>Delegate constrained session keys with strict on-chain spending firewalls, time expiries, and 2-of-2 hardware escalation for high-value operations.</p>
             <a href="#agents" class="bento-action">Explore Agent Policies</a>
           </div>
@@ -1404,7 +1465,7 @@
           </div>
         </div>
         <div class="spotlight-image">
-          <img src="assets/ai-firewall-module.png" alt="Haptix AI Spending Firewall Hardware Module" style="max-width: 100%; max-height: 480px; object-fit: contain; filter: drop-shadow(0 24px 60px rgba(0, 0, 0, 0.7));">
+          <img src="assets/ai-firewall-module.webp" alt="Haptix AI Spending Firewall Hardware Module" width="902" height="678" loading="lazy" decoding="async" style="max-width: 100%; max-height: 480px; object-fit: contain; filter: drop-shadow(0 24px 60px rgba(0, 0, 0, 0.7));">
         </div>
       </div>
     </div>
@@ -1428,7 +1489,7 @@
           </a>
         </div>
         <div class="spotlight-image">
-          <img src="assets/quorum-dual-device.png" alt="Dual Device 2-of-2 Hardware Quorum Approval">
+          <img src="assets/quorum-dual-device.webp" alt="Dual Device 2-of-2 Hardware Quorum Approval" width="902" height="676" loading="lazy" decoding="async">
         </div>
       </div>
     </div>
@@ -1437,7 +1498,7 @@
   <!-- SECTION 7: SUPPORTED DEVICES (LIGHT) -->
   <div class="section-light devices-section">
     <div class="container">
-      <h3>Native to the hardware you already own.</h3>
+      <h2>Native to the hardware you already own.</h2>
       <p class="devices-sub">Direct passkey biometrics on Solana Mobile &bull; Zero-install hardware co-signing on Desktop</p>
       
       <div class="devices-grid">
@@ -1454,7 +1515,7 @@
               <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h313.7c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7zM64.6 3.8C67 1.4 70.3 0 73.8 0h313.7c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8zm267.8 115.1c-2.4-2.4-5.7-3.8-9.2-3.8H9.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h313.7c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z" fill="url(#solGradSection)"/>
             </svg>
           </div>
-          <h4>Solana Seeker</h4>
+          <h3>Solana Seeker</h3>
           <span class="device-role">Solana Mobile Stack</span>
           <span class="device-chip-badge">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1469,7 +1530,7 @@
               <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-1.0003s.4482-1.0003.9993-1.0003c.552 0 .9993.4486.9993 1.0003s-.4473 1.0003-.9993 1.0003m-11.046 0c-.5511 0-.9993-.4486-.9993-1.0003s.4482-1.0003.9993-1.0003c.5511 0 .9993.4486.9993 1.0003s-.4482 1.0003-.9993 1.0003m11.4045-6.02l1.996-3.4572c.1064-.1844.043-.421-.1413-.5275-.1843-.1064-.421-.043-.5274.1413l-2.0239 3.506C15.5902 8.358 13.8566 8 12 8s-3.5902.358-5.1849.984L4.7912 5.478c-.1064-.1843-.3431-.2477-.5274-.1413-.1844.1065-.2477.3431-.1414.5275l1.996 3.4572C2.6883 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6883-7.5743-6.1185-9.4396"/>
             </svg>
           </div>
-          <h4>Android</h4>
+          <h3>Android</h3>
           <span class="device-role">Standalone APK</span>
           <span class="device-chip-badge">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1484,7 +1545,7 @@
               <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.04-7.6-7.7-11.72-13.98-5.43-8.37-9.88-18.06-13.33-29.08-3.46-11.02-5.19-21.79-5.19-32.32 0-14.24 3.73-25.96 11.18-35.16 7.46-9.2 16.73-13.88 27.83-14.04 4.8 0 10.07 1.25 15.82 3.76 5.75 2.51 9.53 3.82 11.34 3.93 1.81-.11 5.86-1.46 12.16-4.04 6.3-2.58 11.7-3.74 16.21-3.48 12.16.85 21.84 5.37 29.03 13.56-10.45 6.31-15.57 15.15-15.36 26.52.21 8.82 3.57 16.21 10.08 22.18 6.51 5.96 14.18 9.38 23.01 10.26-2.02 6.09-4.44 12.28-7.25 18.57zm-30.82-120.31c0 6.64-2.4 12.98-7.2 18.02-4.8 5.04-10.87 8.35-18.21 9.93-.85-2.77-1.28-5.49-1.28-8.16 0-6.42 2.61-12.87 7.83-17.92 5.22-5.05 11.51-8.22 18.86-9.52v7.65z"/>
             </svg>
           </div>
-          <h4>MacBook</h4>
+          <h3>MacBook</h3>
           <span class="device-role">Web Vault Co-Signer</span>
           <span class="device-chip-badge">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1502,7 +1563,7 @@
               <rect x="13" y="13" width="9.5" height="9.5" rx="0.5"/>
             </svg>
           </div>
-          <h4>Windows PC</h4>
+          <h3>Windows PC</h3>
           <span class="device-role">Web Vault Co-Signer</span>
           <span class="device-chip-badge">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1665,7 +1726,7 @@
       <!-- FAQ Help Box -->
       <div class="faq-help-box">
         <div class="faq-help-text">
-          <h4>Have more questions?</h4>
+          <h3>Have more questions?</h3>
           <p>Read our full architectural breakdown, threat models, and IDL specifications on Mintlify.</p>
         </div>
         <div class="faq-help-actions">
@@ -1752,7 +1813,7 @@
       <div class="cta-buttons">
         <a href="https://github.com/ritesh59697/haptix-mobile-app/releases/latest/download/haptix-wallet.apk" class="btn-large-white">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download APK (v1.0.2)
+          Download APK (v1.0.2 &middot; 96 MB)
         </a>
         <a href="vault.html" class="btn-large-outline">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1772,7 +1833,7 @@
 
     <footer class="footer">
       <div class="footer-brand">
-        <img src="assets/logotext-dark.png" alt="Haptix" style="height: 22px; width: auto; object-fit: contain;">
+        <img src="assets/logotext-dark.webp" alt="Haptix" width="196" height="44" loading="lazy" decoding="async" style="height: 22px; width: auto; object-fit: contain;">
       </div>
       <div class="footer-links">
         <a href="https://github.com/ritesh59697/haptix-mobile-app" target="_blank" rel="noopener noreferrer">GitHub</a>
