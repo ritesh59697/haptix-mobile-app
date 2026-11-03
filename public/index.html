@@ -831,6 +831,93 @@
 
 
     /* Section 7: Supported Devices */
+    /* Devnet proof strip: real captures, shown as evidence rather than explanation. */
+    .proof-section {
+      padding: 92px 0 104px;
+      background: var(--bg-surface);
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
+    .proof-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #0071e3;
+      background: rgba(0, 113, 227, 0.09);
+      border-radius: 999px;
+      padding: 7px 14px;
+      margin-bottom: 18px;
+    }
+    .proof-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #14F195;
+      box-shadow: 0 0 0 3px rgba(20, 241, 149, 0.22);
+    }
+    .proof-section h2 {
+      font-size: clamp(28px, 3.2vw, 36px);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 12px;
+      color: var(--accent-black);
+    }
+    .proof-sub {
+      font-size: 17px;
+      line-height: 1.5;
+      color: var(--text-muted, #6e6e73);
+      max-width: 620px;
+      margin: 0 auto 54px;
+    }
+    .proof-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 40px;
+      align-items: start;
+    }
+    .proof-item { margin: 0; }
+    /* One height for all three so the captions sit on a line; the taller
+       quorum capture is cropped at the foot rather than setting the row. */
+    .proof-shot {
+      width: 100%;
+      max-width: 340px;
+      aspect-ratio: 680 / 1288;
+      height: auto;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+      margin: 0 auto 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.09);
+      background: #fff;
+    }
+    @media (max-width: 980px) {
+      .proof-shot { aspect-ratio: auto; height: auto; max-width: 320px; }
+    }
+    .proof-cap {
+      font-size: 14.5px;
+      line-height: 1.5;
+      color: var(--text-muted, #6e6e73);
+      max-width: 340px;
+      margin: 0 auto;
+    }
+    .proof-cap b {
+      display: block;
+      font-size: 15px;
+      font-weight: 650;
+      color: var(--accent-black);
+      margin-bottom: 4px;
+    }
+    @media (max-width: 980px) {
+      .proof-grid { grid-template-columns: 1fr; gap: 48px; }
+      .proof-section { padding: 72px 0 80px; }
+      .proof-sub { margin-bottom: 42px; }
+    }
+
     .devices-section {
       padding: 90px 0 110px;
       text-align: center;
@@ -1530,6 +1617,33 @@
             <source src="assets/agent-demo.mp4" type="video/mp4">
           </video>
         </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4b: DEVNET PROOF (LIGHT) - real captures, not illustrations -->
+  <div class="section-light proof-section" id="proof">
+    <div class="container">
+      <span class="proof-eyebrow"><span class="proof-dot"></span>Running on Solana devnet</span>
+      <h2>Not a mockup. The build, as it ships.</h2>
+      <p class="proof-sub">The animations above explain how Haptix works. These are unretouched captures from the Android build signing against Solana devnet.</p>
+
+      <div class="proof-grid">
+        <figure class="proof-item">
+          <img class="proof-shot" src="assets/proof-agents-session.webp" width="680" height="1288" loading="lazy" decoding="async"
+            alt="The Haptix agent screen on devnet: spending limits of 0.1 SOL for one key, one active agent session with 0.2500 SOL delegated and 23h 59m left, and a grant form set to a 0.25 SOL cap for 24 hours.">
+          <figcaption class="proof-cap"><b>A live agent session</b>0.2500 SOL delegated, 24-hour expiry, revocable at any time.</figcaption>
+        </figure>
+        <figure class="proof-item">
+          <img class="proof-shot" src="assets/proof-agents-granted.webp" width="680" height="1288" loading="lazy" decoding="async"
+            alt="A confirmation sheet reading Agent session granted, 0.25 SOL, approved with both passkeys, showing the on-chain signature 524vWUEX..Y8ckDMRW.">
+          <figcaption class="proof-cap"><b>Granted with both passkeys</b>A real devnet signature, viewable on Solscan.</figcaption>
+        </figure>
+        <figure class="proof-item">
+          <img class="proof-shot" src="assets/proof-quorum-waiting.webp" width="680" height="1330" loading="lazy" decoding="async"
+            alt="A 0.1500 SOL transfer on devnet held mid-quorum: this phone shows Approved, while the second device is still pending with Waiting for second device.">
+          <figcaption class="proof-cap"><b>Quorum, mid-flight</b>0.15 SOL is over the limit, so the phone waits on the Web Vault.</figcaption>
+        </figure>
+      </div>
     </div>
   </div>
 
