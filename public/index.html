@@ -119,16 +119,19 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 16px;
       height: 64px;
       max-width: 1080px;
       margin: 0 auto;
       padding: 0 24px;
+      container: navbar / inline-size;
     }
-    
+
     .logo-container {
-      display: flex; 
-      align-items: center; 
-      gap: 9px; 
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-shrink: 0;
       text-decoration: none;
     }
 
@@ -184,13 +187,15 @@
     
     .nav-links {
       display: flex; gap: 28px; align-items: center;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .nav-links a {
       color: var(--text-main); text-decoration: none; font-size: 13px; font-weight: 500; opacity: 0.75; transition: opacity 0.2s;
     }
     .nav-links a:hover { opacity: 1; }
     
-    .nav-actions { display: flex; align-items: center; gap: 12px; }
+    .nav-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
     .btn-vault {
       background: transparent;
@@ -295,6 +300,14 @@
       overflow-y: auto;
       opacity: 1;
       visibility: visible;
+    }
+
+    /* The nav responds to its own width, not the viewport's, so it holds up
+       wherever the page is rendered narrower than the window. */
+    @container navbar (max-width: 910px) {
+      .nav-links { display: none; }
+      .btn-hamburger { display: flex; }
+      .mobile-menu { display: block; }
     }
     .mobile-menu-inner {
       padding: 14px 18px 22px;
