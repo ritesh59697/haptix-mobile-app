@@ -56,8 +56,8 @@ Haptix is a risk-adaptive passkey smart wallet built natively for the Solana Mob
 <br />
 
 <div align="center">
-  <img src="public/assets/quorum-dual-device.png" alt="Haptix Dual-Device Hardware Quorum" width="760" style="max-width: 100%; border-radius: 8px;" />
-  <p><em>Risk-Adaptive Spend Escalation: 1-Tap Biometrics under 0.10 SOL, escalating to a 2-of-2 Hardware Quorum (Mobile + Web Vault) above threshold.</em></p>
+  <img src="public/assets/quorum-dual-device-real.webp" alt="A 0.1500 SOL devnet transfer mid-quorum: the Android app shows This phone Approved and Second device Waiting, while the Web Vault co-signer shows the same transfer awaiting Authorize with Biometrics." width="760" style="max-width: 100%; border-radius: 8px;" />
+  <p><em>Risk-Adaptive Spend Escalation, captured on devnet: 0.1500 SOL is over the 0.10 SOL threshold, so the phone signs first and holds while the Web Vault co-signer approves the same transfer with a second passkey.</em></p>
 </div>
 
 ---
