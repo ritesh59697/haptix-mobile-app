@@ -823,9 +823,44 @@
       gap: 8px;
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    .btn-spotlight:hover { 
+    .btn-spotlight:hover {
       transform: scale(1.02);
       box-shadow: 0 10px 30px rgba(255,255,255,0.2);
+    }
+    .btn-spotlight.btn-secondary {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Two spotlight buttons share a narrow grid column, so they must stay on one
+       row and shrink together rather than wrapping the second one onto its own line. */
+    .spotlight-actions {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: stretch;
+      gap: 12px;
+    }
+    .spotlight-actions .btn-spotlight {
+      flex: 0 1 auto;
+      min-width: 0;
+      justify-content: center;
+      padding-left: 20px;
+      padding-right: 20px;
+      white-space: nowrap;
+    }
+    .spotlight-actions .btn-spotlight svg {
+      flex: none;
+    }
+    /* Below the two-column breakpoint there is a full-width column again, so the
+       buttons may wrap; keep them left-aligned and equal width when they do. */
+    @media (max-width: 768px) {
+      .spotlight-actions {
+        flex-wrap: wrap;
+      }
+      .spotlight-actions .btn-spotlight {
+        flex: 1 1 auto;
+      }
     }
 
 
@@ -1595,12 +1630,12 @@
         <div class="spotlight-text">
           <h2>Autonomous firewalls. Complete control.</h2>
           <p>Authorize AI agents to execute trades, portfolio rebalancing, and micro-swaps while you sleep. The on-chain spending firewall enforces strict rate limits and expiration timestamps directly in our Anchor smart program—ensuring agents can never exceed their allowed spending ceiling or drain your treasury.</p>
-          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <div class="spotlight-actions">
             <a href="https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet" target="_blank" rel="noopener noreferrer" class="btn-spotlight">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               View Program on Solana Explorer
             </a>
-            <a href="https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf" target="_blank" rel="noopener noreferrer" class="btn-spotlight" style="background: rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.2);">
+            <a href="https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.1/Haptix_Pitch_Deck.pdf" target="_blank" rel="noopener noreferrer" class="btn-spotlight btn-secondary">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
               Download Pitch Deck (PDF)
             </a>
