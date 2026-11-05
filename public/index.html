@@ -524,8 +524,10 @@
       position: relative;
       width: 100%;
       min-width: 0;
+      height: 100%;
       display: flex;
       justify-content: center;
+      align-items: center;
     }
     .spotlight-demo .hero-demo-video { max-width: 470px; }
 
@@ -766,8 +768,16 @@
     .spotlight-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      align-items: center;
+      align-items: stretch;
       gap: 60px;
+    }
+    /* Centre the copy against the demo rather than letting a short media column
+       float while the text column sets the row height. */
+    .spotlight-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
     }
     .spotlight-text h2 {
       font-size: clamp(38px, 4.5vw, 56px);
@@ -840,6 +850,7 @@
       flex-wrap: nowrap;
       align-items: stretch;
       gap: 12px;
+      margin-top: 4px;
     }
     .spotlight-actions .btn-spotlight {
       flex: 0 1 auto;
@@ -852,12 +863,18 @@
     .spotlight-actions .btn-spotlight svg {
       flex: none;
     }
-    /* Below the two-column breakpoint there is a full-width column again, so the
-       buttons may wrap; keep them left-aligned and equal width when they do. */
-    @media (max-width: 768px) {
+    /* Narrower than this the grid column can no longer hold both labels on one
+       row without truncating them, so let the buttons stack at full width. */
+    @media (max-width: 1100px) {
       .spotlight-actions {
         flex-wrap: wrap;
       }
+      .spotlight-actions .btn-spotlight {
+        flex: 1 1 100%;
+      }
+    }
+    /* Back to a single full-width column, where the pair fits side by side again. */
+    @media (max-width: 768px) {
       .spotlight-actions .btn-spotlight {
         flex: 1 1 auto;
       }
