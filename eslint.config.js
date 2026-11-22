@@ -5,6 +5,7 @@ const expoConfig = require('eslint-config-expo/flat')
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    // The Privacy Rings spike has its own package.json and node_modules, which CI does not install.
+    ignores: ['dist/*', 'tools/privacy-rings-spike/**'],
   },
 ])

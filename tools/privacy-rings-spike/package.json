@@ -1,0 +1,16 @@
+{
+  "name": "haptix-privacy-rings-spike",
+  "private": true,
+  "type": "module",
+  "description": "Phase 0 spike: Helius Solana Privacy Rings on devnet with plain ed25519 keys. Kept apart from the app so the alpha SDK never enters the app bundle before the Hermes go/no-go. See docs/PRIVATE_SEND_PLAN.md.",
+  "scripts": {
+    "spike": "npx -y tsx spike.ts"
+  },
+  "engines": {
+    "node": "^22.12.0 || >=24"
+  },
+  "dependencies": {
+    "@heliuslabs/spr": "0.9.0-alpha",
+    "@solana/kit": "^8.3.0"
+  }
+}
