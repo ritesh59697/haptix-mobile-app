@@ -22,6 +22,10 @@ _Built specifically for the **Solana Mobile CLOCK IN Hackathon** &bull; Dedicate
 
 [Website](https://haptixwallet.xyz) &middot; [Download APK (v1.0.2)](https://github.com/ritesh59697/haptix-mobile-app/releases/download/v1.0.2/haptix-wallet.apk) &middot; [Web Vault (Co-Signer)](https://haptixwallet.xyz/vault.html) &middot; [Recovery Portal](https://haptixwallet.xyz/recover.html) &middot; [Pitch Video (70s)](https://youtu.be/9OnEFuHqNDY) &middot; [Devnet Program](https://explorer.solana.com/address/9wC1ok8d4PrBDG3TS7iyEu9QxMCYv6BKrdLb3q4yZbke?cluster=devnet)
 
+<br />
+
+_This is the Solana mobile wallet. The EVM passkey wallet for Robinhood Chain and Arbitrum is [haptix-evm](https://github.com/ritesh59697/haptix-evm)._
+
 </div>
 
 ---
