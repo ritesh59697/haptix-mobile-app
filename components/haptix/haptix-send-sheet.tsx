@@ -68,10 +68,26 @@ import {
   WALLET_ACCOUNT_SPACE,
 } from '@/utils/haptix-client'
 import { getHaptixAddressLookupTable, buildOptimalTransaction } from '@/utils/haptix-lookup-table'
+import { SpendWindowState, isTransferQuorumRequired } from '@/utils/haptix-spend-window'
 import { useHaptixDialog } from './haptix-dialog'
 import { radius, space, typeScale, ThemeTokens } from '@/theme/tokens'
 import { SKR_TOKEN_METADATA, USDC_TOKEN_METADATA } from '@/utils/haptix-tokens'
 import { SeekerTokenLogo, SolanaTokenLogo, UsdcTokenLogo } from './haptix-icons'
+
+/**
+ * The cluster's clock in unix seconds, which is what `execute_transfer` reads. Falls back to
+ * the phone's clock if the RPC cannot say, since a wrong guess only means one extra prompt
+ * or a clear `QuorumRequired` error, never a wrong transfer.
+ */
+async function fetchChainUnixSeconds(connection: Connection): Promise<bigint> {
+  try {
+    const blockTime = await connection.getBlockTime(await connection.getSlot())
+    if (blockTime !== null) return BigInt(blockTime)
+  } catch {
+    // fall through to the device clock
+  }
+  return BigInt(Math.floor(Date.now() / 1000))
+}
 
 // The fee quoted before the cluster has answered. `estimateTransferFee` prices the real
 // message and falls back to this same base fee when the RPC cannot be reached, so the
@@ -383,6 +399,24 @@ export function HaptixSendSheet({
     }
   }, [sendRecipient, visible, connection])
 
+  // The wallet's on-chain threshold and 24-hour window, so the "1 passkey / 2 passkeys"
+  // label matches what `execute_transfer` will demand. Refreshed each time the sheet opens.
+  const [spendWindow, setSpendWindow] = useState<SpendWindowState | null>(null)
+  useEffect(() => {
+    if (!visible || !wallet?.address) return
+    let cancelled = false
+    void fetchHaptixWallet(connection, new PublicKey(wallet.address))
+      .then((onChain) => {
+        if (!cancelled) setSpendWindow(onChain)
+      })
+      .catch(() => {
+        if (!cancelled) setSpendWindow(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [visible, wallet?.address, connection])
+
   // Load the address book once. Failures resolve to an empty book, never to an error
   // the send sheet would have to render.
   useEffect(() => {
@@ -532,9 +566,10 @@ export function HaptixSendSheet({
     if (selectedToken !== 'SOL') {
       throw new Error('Only SOL can be sent. SKR and USDC figures in this app were stored on the phone, not on Solana.')
     }
-    const isHighRiskQuorum = amt > spendThreshold
-
     const amountLamports = BigInt(Math.round(amt * LAMPORTS_PER_SOL))
+    // A first guess for the haptic only. The real decision is made below from the wallet's
+    // on-chain threshold and 24-hour window, the same inputs `execute_transfer` uses.
+    let isHighRiskQuorum = isSendQuorumRequired
 
     try {
       setIsSending(true)
@@ -557,6 +592,10 @@ export function HaptixSendSheet({
             `Leave about ${keepSol.toFixed(4)} SOL in the account. Sending ${amt} SOL would spend the rent reserve, and the network can delete the wallet if it drops below that.`,
           )
         }
+        // Decide quorum exactly as the program will: single amount OR the rolling 24h
+        // one-passkey total over the on-chain threshold, judged at the chain's clock.
+        const chainNow = await fetchChainUnixSeconds(connection)
+        isHighRiskQuorum = isTransferQuorumRequired(onChain, amountLamports, chainNow)
       }
 
       const message = getTransferSignedMessage(
@@ -851,7 +890,18 @@ export function HaptixSendSheet({
       : selectedToken === 'USDC'
         ? USDC_TOKEN_METADATA.quorumThreshold
         : spendThreshold
-  const isSendQuorumRequired = sendAmountNum > activeSpendThreshold
+  // SOL sends follow the on-chain rule, including what was already sent with one passkey
+  // in the last 24 hours. Until the wallet's window has loaded, fall back to the amount.
+  // `BigInt` throws on a non-finite number (a pasted "1e400" parses to Infinity), and this
+  // runs during render, so only a finite amount takes the on-chain path.
+  const isSendQuorumRequired =
+    selectedToken === 'SOL' && spendWindow && Number.isFinite(sendAmountNum)
+      ? isTransferQuorumRequired(
+          spendWindow,
+          BigInt(Math.round(sendAmountNum * LAMPORTS_PER_SOL)),
+          BigInt(Math.floor(Date.now() / 1000)),
+        )
+      : sendAmountNum > activeSpendThreshold
 
   // Not blocked: moving your own SOL back to yourself is a legitimate devnet test. It is
   // only worth saying out loud so it does not happen by accident.
