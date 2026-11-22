@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Haptix for agents: budgets your contract enforces</title>
+  <meta name="description" content="Haptix is a passkey ERC-4337 smart account for Robinhood Chain and Arbitrum. Your AI agent gets its own key and a budget the account contract enforces. Anything bigger waits for both of your passkeys.">
+  <link rel="canonical" href="https://www.haptixwallet.xyz/evm.html">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="256x256" href="assets/favicon-256.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.haptixwallet.xyz/evm.html">
+  <meta property="og:site_name" content="Haptix">
+  <meta property="og:title" content="Give your AI agent a budget, not your wallet">
+  <meta property="og:description" content="A passkey smart account where the contract enforces your agent's budget. On Robinhood Chain and Arbitrum testnets, open source.">
+  <meta property="og:image" content="https://www.haptixwallet.xyz/assets/evm/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Haptix: give your AI agent a budget, not your wallet">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Give your AI agent a budget, not your wallet">
+  <meta name="twitter:description" content="A passkey smart account where the contract enforces your agent's budget. On Robinhood Chain and Arbitrum testnets, open source.">
+  <meta name="twitter:image" content="https://www.haptixwallet.xyz/assets/evm/og.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {"@type": "Question", "name": "Can my agent drain my account?", "acceptedAnswer": {"@type": "Answer", "text": "Not past its grant. The contract checks every operation the agent signs: the addresses, contracts, functions and tokens it may use, a limit per payment, and a rolling 24 hour budget. If the agent's key leaks, the most it can spend is what is left of that budget, and one key freezes every agent at once."}},
+      {"@type": "Question", "name": "How do you know my two passkeys are on different devices?", "acceptedAnswer": {"@type": "Answer", "text": "The contract cannot check that, because passkey providers do not prove where a key lives. Haptix detects keys that sync through the same password manager when you set them up, warns you, and steers you to a second key that cannot sync, such as a security key."}},
+      {"@type": "Question", "name": "Is it audited?", "acceptedAnswer": {"@type": "Answer", "text": "No. It runs on testnets only and has not had an external audit. An audit comes before mainnet and before real funds."}}
+    ]
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #181818;
+      --surface: #1F1F1F;
+      --raised: #272727;
+      --line: #313131;
+      --text: #EDEDEA;
+      --muted: #A0A2A8;
+      --faint: #6E7076;
+      --accent: #FF6A33;
+      --on-accent: #17181A;
+      --agent: #7AA2FF;
+      --both: #F06292;
+      --font: 'Geist', ui-sans-serif, system-ui, sans-serif;
+      --mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --ease: cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --bg: #F4F4F1;
+        --surface: #FFFFFF;
+        --raised: #ECECE8;
+        --line: #DCDCD6;
+        --text: #17181A;
+        --muted: #5F6168;
+        --faint: #9A9CA2;
+        --accent: #FF5A1F;
+        --agent: #2F6BFF;
+        --both: #C2185B;
+      }
+    }
+    :root[data-theme="light"] {
+      --bg: #F4F4F1; --surface: #FFFFFF; --raised: #ECECE8; --line: #DCDCD6;
+      --text: #17181A; --muted: #5F6168; --faint: #9A9CA2;
+      --accent: #FF5A1F; --agent: #2F6BFF; --both: #C2185B;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 24px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    h1, h2, h3 { margin: 0; font-weight: 600; text-wrap: balance; letter-spacing: -0.02em; }
+    p { margin: 0; text-wrap: pretty; }
+    a { color: inherit; }
+    code, .mono { font-family: var(--mono); }
+    img { display: block; max-width: 100%; }
+
+    .skip {
+      position: absolute; left: 16px; top: -64px; z-index: 100;
+      background: var(--accent); color: var(--on-accent);
+      padding: 8px 12px; border-radius: 8px; font-weight: 600; text-decoration: none;
+    }
+    .skip:focus { top: 16px; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+    .wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    @media (max-width: 640px) { .wrap { padding: 0 16px; } }
+
+    /* Floating nav */
+    .nav {
+      position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 50;
+      display: flex; align-items: center; gap: 24px;
+      padding: 8px 8px 8px 16px;
+      background: color-mix(in srgb, var(--surface) 80%, transparent);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--line); border-radius: 9999px;
+      width: max-content; max-width: calc(100% - 32px);
+    }
+    .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 600; font-size: 16px; }
+    .mark {
+      width: 24px; height: 24px; background: var(--text);
+      -webkit-mask: url(assets/haptix_mark_clean.svg) center / contain no-repeat;
+      mask: url(assets/haptix_mark_clean.svg) center / contain no-repeat;
+    }
+    .nav-links { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
+    .nav-links a {
+      display: block; padding: 4px 12px; border-radius: 9999px;
+      font-size: 14px; line-height: 20px; color: var(--muted); text-decoration: none;
+      transition: color 300ms var(--ease), background-color 300ms var(--ease);
+    }
+    .nav-links a:hover { color: var(--text); background: var(--raised); }
+    .nav-links a[aria-current="true"] { color: var(--text); }
+    @media (max-width: 720px) { .nav-links { display: none; } .nav { gap: 16px; } }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-radius: 12px; border: 1px solid transparent;
+      font: 600 16px/24px var(--font); text-decoration: none; cursor: pointer;
+      transition: transform 500ms var(--ease), background-color 300ms var(--ease), border-color 300ms var(--ease);
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--accent); color: var(--on-accent); }
+    .btn-primary:hover { background: color-mix(in srgb, var(--accent) 88%, #fff); }
+    .btn-sm { font-size: 14px; line-height: 20px; border-radius: 9999px; padding: 8px 12px; }
+    .btn i { font-size: 18px; }
+    .link { color: var(--muted); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); transition: color 300ms var(--ease); }
+    .link:hover { color: var(--text); text-decoration-color: currentColor; }
+
+    /* Hero */
+    .hero { padding: 160px 0 96px; }
+    .hero-grid { display: grid; grid-template-columns: 1fr 360px; gap: 64px; align-items: center; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px;
+      padding: 4px 12px; border: 1px solid var(--line); border-radius: 9999px;
+      font-size: 14px; line-height: 20px; color: var(--muted);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 9999px; background: var(--accent); flex: none; }
+    .hero h1 {
+      max-width: 680px; font-size: 48px; line-height: 1; letter-spacing: -0.035em;
+      background: linear-gradient(90deg, #FFFFFF, #9B9B9B);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) .hero h1 { background-image: linear-gradient(90deg, #000000, #666666); }
+    }
+    :root[data-theme="light"] .hero h1 { background-image: linear-gradient(90deg, #000000, #666666); }
+    .lead { max-width: 680px; margin-top: 24px; font-size: 18px; line-height: 28px; color: var(--muted); }
+    .hero-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 32px; }
+    .proof { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 32px; padding: 0; list-style: none; font-size: 14px; line-height: 20px; color: var(--muted); }
+    .proof li { display: flex; align-items: center; gap: 8px; }
+    .proof i { color: var(--faint); font-size: 16px; }
+
+    .shot {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 8px;
+    }
+    .shot img { border-radius: 16px; width: 100%; height: auto; }
+    .shot figcaption { padding: 12px 8px 4px; font-size: 12px; line-height: 16px; color: var(--muted); }
+
+    @media (max-width: 960px) {
+      .hero { padding: 128px 0 64px; }
+      .hero-grid { grid-template-columns: 1fr; gap: 48px; }
+      .hero .shot { max-width: 360px; }
+    }
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 36px; line-height: 40px; }
+      .lead { font-size: 16px; line-height: 24px; }
+    }
+
+    /* Sections */
+    section { padding: 96px 0; }
+    @media (max-width: 640px) { section { padding: 64px 0; } }
+    .kicker { font-size: 14px; line-height: 20px; color: var(--accent); font-weight: 500; margin-bottom: 12px; }
+    h2 { font-size: 36px; line-height: 40px; max-width: 680px; }
+    @media (max-width: 640px) { h2 { font-size: 30px; line-height: 36px; } }
+    .sub { margin-top: 16px; max-width: 680px; color: var(--muted); font-size: 18px; line-height: 28px; }
+    @media (max-width: 640px) { .sub { font-size: 16px; line-height: 24px; } }
+
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+
+    /* Problem */
+    .compare { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 48px; }
+    .compare h3 { font-size: 18px; line-height: 28px; display: flex; align-items: center; gap: 8px; }
+    .compare p { margin-top: 8px; font-size: 14px; line-height: 20px; color: var(--muted); }
+    .compare .ours { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+    .verdict { margin-top: 16px; font-size: 14px; line-height: 20px; font-weight: 500; }
+    .bad { color: var(--both); } .good { color: var(--accent); }
+    @media (max-width: 860px) { .compare { grid-template-columns: 1fr; } }
+
+    /* Tagline reveal */
+    .tagline { padding: 96px 0; }
+    .tagline p {
+      max-width: 880px; font-size: 48px; line-height: 1.1; font-weight: 600; letter-spacing: -0.03em; text-wrap: balance;
+    }
+    @media (max-width: 860px) { .tagline p { font-size: 36px; line-height: 40px; } }
+    @media (max-width: 640px) { .tagline p { font-size: 30px; line-height: 36px; } }
+    .tagline .w { transition: color 700ms var(--ease); }
+    .js-motion .tagline .w { color: color-mix(in srgb, var(--text) 30%, var(--bg)); }
+    .js-motion .tagline .w.on { color: var(--text); }
+    .tagline .hl.on { color: var(--accent) !important; }
+
+    /* Benefits */
+    .benefits { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 48px; }
+    .benefit i { font-size: 24px; color: var(--accent); }
+    .benefit h3 { margin-top: 16px; font-size: 18px; line-height: 28px; }
+    .benefit p { margin-top: 8px; font-size: 14px; line-height: 20px; color: var(--muted); }
+    @media (max-width: 760px) { .benefits { grid-template-columns: 1fr; } }
+
+    /* Steps */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 48px; counter-reset: step; }
+    .step-n {
+      display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+      border-radius: 9999px; border: 1px solid var(--line); font-family: var(--mono); font-size: 14px; color: var(--muted);
+    }
+    .step h3 { margin-top: 16px; font-size: 18px; line-height: 28px; }
+    .step > p { margin-top: 8px; font-size: 14px; line-height: 20px; color: var(--muted); min-height: 80px; }
+    .step .shot { margin-top: 24px; }
+    .tag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 16px; font-weight: 500; padding: 2px 8px; border-radius: 9999px; margin-top: 12px; }
+    .tag-agent { color: var(--agent); background: color-mix(in srgb, var(--agent) 14%, transparent); }
+    .tag-both { color: var(--both); background: color-mix(in srgb, var(--both) 14%, transparent); }
+    .tag-one { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+    @media (max-width: 960px) { .steps { grid-template-columns: 1fr; max-width: 420px; } .step > p { min-height: 0; } }
+
+    /* SDK */
+    .sdk { display: grid; grid-template-columns: 1fr 1.2fr; gap: 48px; align-items: start; }
+    .sdk > *, .hero-grid > * { min-width: 0; } /* let the code block scroll instead of widening the page */
+    .sdk ul { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+    .sdk li { display: flex; gap: 12px; font-size: 14px; line-height: 20px; color: var(--muted); }
+    .sdk li i { color: var(--accent); font-size: 18px; flex: none; }
+    .sdk li strong { color: var(--text); font-weight: 600; }
+    pre {
+      margin: 0; overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+      padding: 24px; font-family: var(--mono); font-size: 14px; line-height: 20px; color: var(--text);
+    }
+    pre .c { color: var(--faint); } pre .k { color: var(--agent); } pre .s { color: var(--accent); }
+    .note { margin-top: 12px; font-size: 12px; line-height: 16px; color: var(--muted); }
+    @media (max-width: 960px) { .sdk { grid-template-columns: 1fr; } pre { font-size: 12px; line-height: 16px; padding: 16px; } }
+
+    /* Proof */
+    .receipts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 48px; }
+    .receipt {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+      text-decoration: none; transition: background-color 300ms var(--ease), transform 500ms var(--ease);
+    }
+    .receipt:hover { background: var(--raised); transform: translateY(-2px); }
+    .receipt:active { transform: scale(0.98); }
+    .receipt span { font-size: 14px; line-height: 20px; }
+    .receipt small { display: block; margin-top: 4px; font-family: var(--mono); font-size: 12px; line-height: 16px; color: var(--muted); }
+    .receipt i { color: var(--muted); font-size: 16px; flex: none; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; }
+    .stat b { display: block; font-family: var(--mono); font-size: 30px; line-height: 36px; font-weight: 500; }
+    .stat span { display: block; margin-top: 4px; font-size: 14px; line-height: 20px; color: var(--muted); }
+    .proof-links { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 24px; font-size: 14px; line-height: 20px; }
+    @media (max-width: 860px) { .receipts { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2, 1fr); } }
+
+    /* FAQ */
+    .faq { margin-top: 48px; display: grid; gap: 8px; max-width: 800px; }
+    details { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    summary {
+      list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      padding: 16px; font-weight: 500; border-radius: 12px; transition: background-color 300ms var(--ease);
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary:hover { background: var(--raised); }
+    summary i { color: var(--muted); transition: transform 500ms var(--ease); flex: none; }
+    details[open] summary i { transform: rotate(45deg); }
+    details > div { padding: 0 16px 16px; color: var(--muted); font-size: 14px; line-height: 20px; display: grid; gap: 8px; }
+
+    /* Final CTA */
+    .final { text-align: center; }
+    .final h2 { margin: 0 auto; }
+    .final .sub { margin-left: auto; margin-right: auto; }
+    .final .hero-cta { justify-content: center; }
+    .risk { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 24px; margin-top: 24px; padding: 0; list-style: none; font-size: 14px; line-height: 20px; color: var(--muted); }
+    .risk li { display: flex; align-items: center; gap: 8px; }
+    .risk i { color: var(--accent); }
+
+    footer { border-top: 1px solid var(--line); padding: 32px 0 48px; font-size: 14px; line-height: 20px; color: var(--muted); }
+    .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
+    .foot nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+    .foot a { text-decoration: none; transition: color 300ms var(--ease); }
+    .foot a:hover { color: var(--text); }
+
+    /* Scroll reveal: hidden only once JS confirms motion is allowed, so nothing is ever blank without it. */
+    .js-motion .reveal { opacity: 0; transform: translateY(64px); filter: blur(12px); transition: opacity 900ms var(--ease), transform 900ms var(--ease), filter 900ms var(--ease); }
+    .js-motion .reveal.in { opacity: 1; transform: none; filter: none; }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" aria-label="Site">
+    <a class="brand" href="#top" aria-label="Haptix, back to top"><span class="mark" aria-hidden="true"></span>Haptix</a>
+    <nav aria-label="Sections">
+      <ul class="nav-links">
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#sdk">SDK</a></li>
+        <li><a href="#proof">Proof</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="https://github.com/ritesh59697/haptix-evm"><i class="ph ph-github-logo" aria-hidden="true"></i>GitHub</a>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="eyebrow"><span class="dot" aria-hidden="true"></span>Testnet on Robinhood Chain and Arbitrum</span>
+          <h1 id="hero-title">Give your AI agent a budget,<br>not your wallet.</h1>
+          <p class="lead">Haptix is a smart account secured by two passkeys. Your agent gets its own key and a daily budget that the account contract checks on every operation. Anything bigger waits for both of your keys.</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="https://github.com/ritesh59697/haptix-evm/tree/main/agent-sdk"><i class="ph ph-code" aria-hidden="true"></i>Build with the agent SDK</a>
+            <a class="link" href="#how">See how it works</a>
+          </div>
+          <ul class="proof" aria-label="Status">
+            <li><i class="ph ph-check-circle" aria-hidden="true"></i>256 contract tests</li>
+            <li><i class="ph ph-receipt" aria-hidden="true"></i>Every rule checked on chain</li>
+            <li><i class="ph ph-scales" aria-hidden="true"></i>Open source, MIT</li>
+          </ul>
+        </div>
+        <figure class="shot" style="margin:0">
+          <img src="assets/evm/agent-request.webp" width="400" height="780" alt="The Haptix extension showing an agent request: Rebalancer wants to swap 100.00 dUSD, which is over its 200.00 budget, with a button to approve with both keys." fetchpriority="high">
+          <figcaption>A real request from the agent SDK, on Robinhood Chain testnet. Demo tokens.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section aria-labelledby="problem-title">
+      <div class="wrap">
+        <p class="kicker reveal">The problem</p>
+        <h2 id="problem-title" class="reveal">Today an agent either holds your keys or asks you about everything.</h2>
+        <div class="compare">
+          <article class="card reveal">
+            <h3><i class="ph ph-key" aria-hidden="true"></i>Hand it your key</h3>
+            <p>The agent can do anything you can. One bad prompt or leaked key, and it can move every token in the wallet.</p>
+            <p class="verdict bad">No limit at all</p>
+          </article>
+          <article class="card reveal">
+            <h3><i class="ph ph-hand-pointing" aria-hidden="true"></i>Approve every action</h3>
+            <p>Safe, but the agent stops being an agent. You end up signing each payment and each trade yourself.</p>
+            <p class="verdict bad">No autonomy</p>
+          </article>
+          <article class="card ours reveal">
+            <h3><i class="ph ph-shield-check" aria-hidden="true"></i>Give it a budget</h3>
+            <p>The agent spends on its own within limits your account enforces. When it wants more, you approve that one operation.</p>
+            <p class="verdict good">Haptix</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="tagline" aria-label="In one line">
+      <div class="wrap">
+        <p data-words>Your agent spends inside its budget on its own. <span class="hl">Anything more needs your fingerprint and your second key.</span></p>
+      </div>
+    </section>
+
+    <section aria-labelledby="benefits-title">
+      <div class="wrap">
+        <p class="kicker reveal">Why builders use it</p>
+        <h2 id="benefits-title" class="reveal">Limits that live in the account, not in your agent's code.</h2>
+        <div class="benefits">
+          <article class="card benefit reveal">
+            <i class="ph ph-list-checks" aria-hidden="true"></i>
+            <h3>The contract checks what a call does</h3>
+            <p>Not just the amount. Each grant lists the addresses the agent may pay, the router and tokens it may trade, a limit per payment and a rolling 24 hour budget. What it buys always comes back to the account.</p>
+          </article>
+          <article class="card benefit reveal">
+            <i class="ph ph-arrow-bend-up-right" aria-hidden="true"></i>
+            <h3>Over budget becomes a request, not a failure</h3>
+            <p>The SDK sends nothing and returns a request with the exact operation and the agent's signature. You paste it into the wallet and approve it with both passkeys.</p>
+          </article>
+          <article class="card benefit reveal">
+            <i class="ph ph-fingerprint" aria-hidden="true"></i>
+            <h3>No seed phrase and no server key</h3>
+            <p>Two passkeys control the account: one for small sends, both for anything bigger. The chain verifies them natively through the P256 precompile, with no signing service in between.</p>
+          </article>
+          <article class="card benefit reveal">
+            <i class="ph ph-snowflake" aria-hidden="true"></i>
+            <h3>One key stops every agent</h3>
+            <p>Freeze the account with one passkey and no agent can spend until you unfreeze it with both. Revoking a single agent takes one action.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <p class="kicker reveal">How it works</p>
+        <h2 id="how-title" class="reveal">Three steps, all in the extension.</h2>
+        <div class="steps">
+          <article class="step reveal">
+            <span class="step-n">1</span>
+            <h3>Grant a budget</h3>
+            <p>Name the agent, choose what it may spend or trade, its limit per trade and its 24 hour budget. The agent's key is made on your device and shown once.</p>
+            <span class="tag tag-both"><i class="ph ph-key" aria-hidden="true"></i>Both keys</span>
+            <figure class="shot" style="margin:24px 0 0"><img src="assets/evm/new-budget.webp" width="400" height="780" loading="lazy" alt="The New budget form: agent name Rebalancer, trades dUSD for dSTK, 200 per 24 hours, at most 100 per trade, ends after 7 days."></figure>
+          </article>
+          <article class="step reveal">
+            <span class="step-n">2</span>
+            <h3>The agent spends on its own</h3>
+            <p>Within the budget, the agent signs with its own key and the operation goes through. No prompt for you, and the contract still checks every call.</p>
+            <span class="tag tag-agent"><i class="ph ph-cpu" aria-hidden="true"></i>Agent key only</span>
+            <figure class="shot" style="margin:24px 0 0"><img src="assets/evm/agents.webp" width="400" height="780" loading="lazy" alt="The Agents screen: Rebalancer has used 200.00 of its 200.00 dUSD budget for the last 24 hours, with a Revoke button."></figure>
+          </article>
+          <article class="step reveal">
+            <span class="step-n">3</span>
+            <h3>Bigger trades wait for you</h3>
+            <p>Past its limits the contract refuses the agent alone. The request shows exactly what it wants, decoded from the bytes you sign.</p>
+            <span class="tag tag-both"><i class="ph ph-key" aria-hidden="true"></i>Agent plus both keys</span>
+            <figure class="shot" style="margin:24px 0 0"><img src="assets/evm/agent-request.webp" width="400" height="780" loading="lazy" alt="The agent request screen asking to approve a 100.00 dUSD swap with both keys."></figure>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="sdk" aria-labelledby="sdk-title">
+      <div class="wrap sdk">
+        <div>
+          <p class="kicker reveal">For agent builders</p>
+          <h2 id="sdk-title" class="reveal">A few lines give your agent its budget.</h2>
+          <p class="sub reveal">The TypeScript SDK reads what is left, pays, swaps, and hands you an approval request for anything bigger.</p>
+          <ul class="reveal">
+            <li><i class="ph ph-check" aria-hidden="true"></i><span><strong>Any ERC-4337 v0.7 bundler.</strong> It estimates gas with a placeholder of the approved shape, so one estimate fits both outcomes.</span></li>
+            <li><i class="ph ph-check" aria-hidden="true"></i><span><strong>Typed refusals.</strong> Revoked, expired, frozen and not allowed each throw their own error code.</span></li>
+            <li><i class="ph ph-check" aria-hidden="true"></i><span><strong>Knows when you approved.</strong> It watches the EntryPoint for the operation, whichever bundler the wallet used.</span></li>
+          </ul>
+        </div>
+        <div class="reveal">
+<pre><code><span class="k">const</span> agent = createHaptixAgent({ rpcUrl, bundlerUrl,
+  entryPoint, account, agentKey });
+
+<span class="c">// What's left in the last 24 hours</span>
+<span class="k">const</span> b = <span class="k">await</span> agent.budget();
+
+<span class="k">const</span> out = <span class="k">await</span> agent.pay(to, parseEther(<span class="s">'0.0001'</span>));
+
+<span class="k">if</span> (out.status === <span class="s">'needs-approval'</span>) {
+  <span class="c">// Nothing was sent. Show the owner this request.</span>
+  console.log(out.message, out.request);
+  <span class="k">await</span> agent.waitForOperation(out.userOpHash, {
+    fromBlock: out.fromBlock, nonce: out.nonce });
+}</code></pre>
+          <p class="note">Not on npm yet; use it from the repository. Tested live on Robinhood Chain testnet with a local bundler.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="proof" aria-labelledby="proof-title">
+      <div class="wrap">
+        <p class="kicker reveal">Proof</p>
+        <h2 id="proof-title" class="reveal">Every rule has a receipt on chain.</h2>
+        <p class="sub reveal">These ran on public testnets. Open any of them in the explorer.</p>
+        <div class="receipts">
+          <a class="receipt reveal" href="https://explorer.testnet.chain.robinhood.com/tx/0x5092be81c0faa8e7e22c99f299d31cd9bebfbdb62233190209095e0abac5d6b0"><span>Agent pays within budget, its own key only<small>Robinhood Chain testnet · 0x5092…d6b0</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          <a class="receipt reveal" href="https://explorer.testnet.chain.robinhood.com/tx/0x2ade34e78f399adbe469ca20a5e80a8fae9c21be650b8f9a8a3aee04e980cc48"><span>Over limit request approved with both passkeys<small>Robinhood Chain testnet · 0x2ade…cc48</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          <a class="receipt reveal" href="https://explorer.testnet.chain.robinhood.com/tx/0xeab041edb37d1e0ea988eb1f870b3696f519e01d824f499420e9edafc2bc770e"><span>Agent swaps within budget, through a demo router<small>Robinhood Chain testnet · 0xeab0…770e</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+          <a class="receipt reveal" href="https://sepolia.arbiscan.io/tx/0x0b8e818a7bfec163aeccf8fa95cd28bbffe03c41fd4dba164fcdfcd855265754"><span>Over the spend limit with two keys<small>Arbitrum Sepolia · 0x0b8e…5754</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i></a>
+        </div>
+        <div class="stats">
+          <div class="card stat reveal"><b>256</b><span>Foundry tests on the contracts</span></div>
+          <div class="card stat reveal"><b>33</b><span>checks through the real extension screens</span></div>
+          <div class="card stat reveal"><b>15</b><span>live steps for the agent SDK</span></div>
+          <div class="card stat reveal"><b>2</b><span>testnets: Robinhood Chain, Arbitrum Sepolia</span></div>
+        </div>
+        <div class="proof-links reveal">
+          <a class="link" href="https://github.com/ritesh59697/haptix-evm#receipts">All receipts</a>
+          <a class="link" href="https://github.com/ritesh59697/haptix-evm#deployments">Contract addresses</a>
+          <a class="link" href="https://github.com/ritesh59697/haptix-evm/actions">CI runs</a>
+          <a class="link" href="https://github.com/ritesh59697/haptix-evm#limits">Known limits</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq" aria-labelledby="faq-title">
+      <div class="wrap">
+        <p class="kicker reveal">Questions</p>
+        <h2 id="faq-title" class="reveal">The hard ones, answered plainly.</h2>
+        <div class="faq">
+          <details class="reveal"><summary>Can my agent drain my account?<i class="ph ph-plus" aria-hidden="true"></i></summary><div><p>Not past its grant. The contract checks every operation the agent signs: the addresses, contracts, functions and tokens it may use, a limit per payment, and a rolling 24 hour budget. If the agent's key leaks, the most it can spend is what is left of that budget, and one passkey freezes every agent at once.</p></div></details>
+          <details class="reveal"><summary>How do you know my two passkeys are on different devices?<i class="ph ph-plus" aria-hidden="true"></i></summary><div><p>The contract can't check that, because passkey providers don't prove where a key lives. Two keys that sync through one password manager end up on every device it syncs to. Haptix detects synced keys when you set them up, warns you, and steers you to a second key that can't sync, such as a security key.</p></div></details>
+          <details class="reveal"><summary>MetaMask and Base already offer spending allowances. What's different?<i class="ph ph-plus" aria-hidden="true"></i></summary><div><p>They do, and they came first. The allowances they document are token amounts per period. Haptix limits what a call does too: which contracts, functions, tokens and recipients, and that trade proceeds return to your account. Over budget, the agent's exact operation goes to your two passkeys instead of failing.</p></div></details>
+          <details class="reveal"><summary>Robinhood already lets agents trade. Why this?<i class="ph ph-plus" aria-hidden="true"></i></summary><div><p>Robinhood's agent trading lives inside its brokerage, where Robinhood holds the money and your limit is what you deposit into a separate account. Haptix is for people who hold assets themselves on chain. The budget is enforced by your own account, with no second account to fund.</p></div></details>
+          <details class="reveal"><summary>Is it audited? Can I use it with real money?<i class="ph ph-plus" aria-hidden="true"></i></summary><div><p>No to both, for now. It runs on testnets only and has not had an external audit. The audit comes before mainnet and before real funds.</p></div></details>
+          <details class="reveal"><summary>Do the trades use real liquidity?<i class="ph ph-plus" aria-hidden="true"></i></summary><div><p>Not yet. Robinhood Chain testnet documents no Uniswap deployment, so the trades run through a demo router with worthless demo tokens. The contract accepts any router with the SwapRouter02 interface that you allow.</p></div></details>
+          <details class="reveal"><summary>Can accounts be upgraded?<i class="ph ph-plus" aria-hidden="true"></i></summary><div><p>No. Each account is a minimal clone with no admin key, so nobody can change your rules but you. The cost is that a fix ships as a new factory, and users move to a new account.</p></div></details>
+          <details class="reveal"><summary>Who pays gas?<i class="ph ph-plus" aria-hidden="true"></i></summary><div><p>The account pays for its own operations today. Gas sponsorship through a paymaster is planned before mainnet.</p></div></details>
+          <details class="reveal"><summary>Is this the same Haptix as the Solana mobile wallet?<i class="ph ph-plus" aria-hidden="true"></i></summary><div><p>Same builder, separate product. The <a class="link" href="index.html">Solana mobile wallet</a> runs on Solana Seeker. This is the EVM version: a browser extension and smart account contracts for Robinhood Chain and Arbitrum.</p></div></details>
+        </div>
+      </div>
+    </section>
+
+    <section class="final" aria-labelledby="final-title">
+      <div class="wrap">
+        <h2 id="final-title" class="reveal">Give your agent a budget it can't talk its way past.</h2>
+        <p class="sub reveal">Read the contracts, run the tests, and wire the SDK into your agent today.</p>
+        <div class="hero-cta reveal">
+          <a class="btn btn-primary" href="https://github.com/ritesh59697/haptix-evm/tree/main/agent-sdk"><i class="ph ph-code" aria-hidden="true"></i>Build with the agent SDK</a>
+        </div>
+        <ul class="risk reveal">
+          <li><i class="ph ph-check" aria-hidden="true"></i>Open source under MIT</li>
+          <li><i class="ph ph-check" aria-hidden="true"></i>No sign up</li>
+          <li><i class="ph ph-check" aria-hidden="true"></i>Testnet and unaudited, stated plainly</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <span>Haptix · testnet, unaudited</span>
+      <nav aria-label="Footer">
+        <a href="https://github.com/ritesh59697/haptix-evm">GitHub</a>
+        <a href="index.html">Solana wallet</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var motionOk = window.matchMedia && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ioOk = 'IntersectionObserver' in window;
+
+      // Split the tagline into words for the word by word reveal.
+      var tag = document.querySelector('[data-words]');
+      if (tag) {
+        var wrapWords = function (node) {
+          Array.prototype.slice.call(node.childNodes).forEach(function (child) {
+            if (child.nodeType === 3) {
+              var frag = document.createDocumentFragment();
+              child.textContent.split(/(\s+)/).forEach(function (part) {
+                if (!part) return;
+                if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+                var s = document.createElement('span'); s.className = 'w'; s.textContent = part; frag.appendChild(s);
+              });
+              node.replaceChild(frag, child);
+            } else if (child.nodeType === 1) {
+              wrapWords(child);
+            }
+          });
+        };
+        wrapWords(tag);
+        tag.querySelectorAll('.hl .w').forEach(function (w) { w.classList.add('hl'); });
+      }
+
+      if (!motionOk || !ioOk) {
+        document.querySelectorAll('.tagline .w.hl').forEach(function (w) { w.classList.add('on'); });
+        return;
+      }
+      document.documentElement.classList.add('js-motion');
+
+      var reveal = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('in'); reveal.unobserve(e.target); }
+        });
+      }, { rootMargin: '0px 0px -10% 0px', threshold: 0.1 });
+      document.querySelectorAll('.reveal').forEach(function (el) { reveal.observe(el); });
+
+      // Words light up one at a time as they cross a line just below the middle of the screen.
+      var queue = [], ticking = false;
+      var flush = function () {
+        var w = queue.shift();
+        if (w) w.classList.add('on');
+        if (queue.length) setTimeout(flush, 60); else ticking = false;
+      };
+      var words = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting || e.boundingClientRect.top < 0) { queue.push(e.target); words.unobserve(e.target); }
+        });
+        queue.sort(function (a, b) { return a.compareDocumentPosition(b) & 2 ? 1 : -1; });
+        if (!ticking && queue.length) { ticking = true; flush(); }
+      }, { rootMargin: '0px 0px -40% 0px' });
+      document.querySelectorAll('.tagline .w').forEach(function (w) { words.observe(w); });
+
+      // Mark the section in view in the nav.
+      var links = {};
+      document.querySelectorAll('.nav-links a').forEach(function (a) { links[a.getAttribute('href').slice(1)] = a; });
+      var spy = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          var a = links[e.target.id];
+          if (!a) return;
+          if (e.isIntersecting) {
+            Object.keys(links).forEach(function (k) { links[k].removeAttribute('aria-current'); });
+            a.setAttribute('aria-current', 'true');
+          }
+        });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      Object.keys(links).forEach(function (id) { var s = document.getElementById(id); if (s) spy.observe(s); });
+    })();
+  </script>
+</body>
+</html>
