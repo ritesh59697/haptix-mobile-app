@@ -19,8 +19,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import * as Haptics from 'expo-haptics'
 import { PublicKey, Transaction, sendAndConfirmTransaction } from '@solana/web3.js'
 import { Buffer } from 'buffer'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import Clipboard from '@/utils/clipboard'
+import { hasAutoGuardianSecret, revealAutoGuardianSecret } from '@/utils/haptix-auto-guardian'
 const bs58: any = require('bs58')
 
 import { useAuth } from '@/components/auth/auth-provider'
@@ -97,7 +97,10 @@ export default function RecoverySettingsScreen() {
   const [guardianBusy, setGuardianBusy] = useState(false)
   const [showPolicySheet, setShowPolicySheet] = useState(false)
   const [nowSeconds, setNowSeconds] = useState(() => Math.floor(Date.now() / 1000))
-  const [autoGuardianKey, setAutoGuardianKey] = useState<string | null>(null)
+  // The address of a guardian whose secret this device holds. The secret itself is only
+  // read from secure storage after biometrics, and dropped again when it is hidden.
+  const [autoGuardianAddress, setAutoGuardianAddress] = useState<string | null>(null)
+  const [revealedGuardianKey, setRevealedGuardianKey] = useState<string | null>(null)
   const [showRevealModal, setShowRevealModal] = useState(false)
   const [hasRevealedSecret, setHasRevealedSecret] = useState(false)
   const [copiedPrivateKey, setCopiedPrivateKey] = useState(false)
@@ -125,24 +128,23 @@ export default function RecoverySettingsScreen() {
   }, [showRevealModal, hasRevealedSecret])
 
   useEffect(() => {
+    if (!showRevealModal || !hasRevealedSecret) setRevealedGuardianKey(null)
+  }, [showRevealModal, hasRevealedSecret])
+
+  useEffect(() => {
     let cancelled = false
     const checkAutoGuardian = async () => {
       const guardianPubkey = onChainWallet?.guardian?.toBase58() || activeWallet?.guardianAddress
       if (!guardianPubkey) {
-        if (!cancelled) setAutoGuardianKey(null)
+        if (!cancelled) setAutoGuardianAddress(null)
         return
       }
       try {
-        const storedHex = await AsyncStorage.getItem(`@haptix_auto_guardian_${guardianPubkey}`)
-        if (storedHex && !cancelled) {
-          const secretBytes = Buffer.from(storedHex, 'hex')
-          const base58Secret = bs58.encode(secretBytes)
-          setAutoGuardianKey(base58Secret)
-        } else if (!cancelled) {
-          setAutoGuardianKey(null)
-        }
+        // Also moves a plaintext copy left by older builds into secure storage.
+        const held = await hasAutoGuardianSecret(guardianPubkey)
+        if (!cancelled) setAutoGuardianAddress(held ? guardianPubkey : null)
       } catch {
-        if (!cancelled) setAutoGuardianKey(null)
+        if (!cancelled) setAutoGuardianAddress(null)
       }
     }
     void checkAutoGuardian()
@@ -150,6 +152,20 @@ export default function RecoverySettingsScreen() {
       cancelled = true
     }
   }, [onChainWallet?.guardian, activeWallet?.guardianAddress])
+
+  /** Reads the recovery key after biometrics, as the base58 string wallets import. */
+  const unlockGuardianKey = useCallback(
+    async (reason: string): Promise<string | null> => {
+      if (!autoGuardianAddress) return null
+      const result = await revealAutoGuardianSecret(autoGuardianAddress, reason)
+      if (!result.ok) {
+        dialog.alert('Recovery Key Locked', result.error)
+        return null
+      }
+      return bs58.encode(result.secretKey)
+    },
+    [autoGuardianAddress, dialog],
+  )
 
   const walletAddress = activeWallet?.address ?? null
 
@@ -643,7 +659,7 @@ export default function RecoverySettingsScreen() {
                   fontWeight: '400',
                 }}
               >
-                {autoGuardianKey
+                {autoGuardianAddress
                   ? isGuardianConfigured
                     ? 'Active'
                     : 'Set on first use'
@@ -657,10 +673,10 @@ export default function RecoverySettingsScreen() {
           <View style={styles.detailRow}>
             <View style={{ flex: 1, paddingRight: 8 }}>
               <Text style={[styles.detailTitle, { color: theme.textPrimary }]}>
-                {autoGuardianKey ? '1 recovery key' : isGuardianConfigured ? '1 guardian' : '0 guardians'}
+                {autoGuardianAddress ? '1 recovery key' : isGuardianConfigured ? '1 guardian' : '0 guardians'}
               </Text>
               <Text style={[styles.detailDesc, { color: theme.textMuted }]}>
-                {autoGuardianKey
+                {autoGuardianAddress
                   ? 'Created on this phone'
                   : isGuardianConfigured
                     ? 'Can only start a recovery, never move funds'
@@ -686,7 +702,7 @@ export default function RecoverySettingsScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.guardianLabel, { color: theme.textMuted }]}>
-                  {autoGuardianKey ? 'Recovery key address' : 'Guardian address'}
+                  {autoGuardianAddress ? 'Recovery key address' : 'Guardian address'}
                 </Text>
                 <Text
                   style={[styles.guardianValue, { color: guardianPubkey ? theme.textPrimary : theme.textMuted }]}
@@ -738,7 +754,7 @@ export default function RecoverySettingsScreen() {
                 <Text style={[styles.guardianToggleText, { color: theme.textSecondary }]}>
                   {showGuardianEditor
                     ? 'Cancel'
-                    : autoGuardianKey
+                    : autoGuardianAddress
                       ? 'Use a different guardian'
                       : isGuardianConfigured
                         ? 'Change guardian'
@@ -851,7 +867,7 @@ export default function RecoverySettingsScreen() {
         </View>
 
         {/* Card 2: Back up your recovery key */}
-        {autoGuardianKey && (
+        {autoGuardianAddress && (
           <View
             style={[
               styles.card,
@@ -1475,11 +1491,15 @@ export default function RecoverySettingsScreen() {
             {/* Reveal Box */}
             <TouchableOpacity
               style={[styles.revealSecretDashedBox, hasRevealedSecret && styles.revealSecretDashedBoxRevealed]}
-              onPress={() => {
+              onPress={async () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
                 if (hasRevealedSecret) {
                   setHasRevealedSecret(false)
-                } else {
+                  return
+                }
+                const key = await unlockGuardianKey('Authenticate to view your recovery key')
+                if (key) {
+                  setRevealedGuardianKey(key)
                   setHasRevealedSecret(true)
                   setCountdown(30)
                 }
@@ -1488,7 +1508,7 @@ export default function RecoverySettingsScreen() {
             >
               {hasRevealedSecret ? (
                 <Text style={styles.revealSecretMonoText} selectable>
-                  {autoGuardianKey}
+                  {revealedGuardianKey}
                 </Text>
               ) : (
                 <View style={styles.revealTapRow}>
@@ -1508,9 +1528,10 @@ export default function RecoverySettingsScreen() {
             {/* Secondary Copy Button */}
             <TouchableOpacity
               style={styles.revealSecondaryCopyBtn}
-              onPress={() => {
-                if (autoGuardianKey) {
-                  Clipboard.setString(autoGuardianKey)
+              onPress={async () => {
+                const key = revealedGuardianKey ?? (await unlockGuardianKey('Authenticate to copy your recovery key'))
+                if (key) {
+                  Clipboard.setString(key)
                   setCopiedPrivateKey(true)
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
                   setTimeout(() => setCopiedPrivateKey(false), 2500)

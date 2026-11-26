@@ -21,13 +21,12 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import * as Haptics from 'expo-haptics'
 import { Keypair } from '@solana/web3.js'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Buffer } from 'buffer'
 import { useAuth } from '@/components/auth/auth-provider'
 import { useAppTheme } from '@/components/theme/theme-context'
 import { useHaptixDialog } from '@/components/haptix/haptix-dialog'
 import { ellipsify } from '@/utils/ellipsify'
 import { parseGuardianAddress } from '@/utils/haptix-client'
+import { SECURE_STORE_UNAVAILABLE_MESSAGE, saveAutoGuardianSecret } from '@/utils/haptix-auto-guardian'
 import { isSolanaAddress } from '@/utils/solana-address'
 import { loadCachedBalance } from '@/utils/haptix-tx-history'
 import Clipboard from '@/utils/clipboard'
@@ -385,12 +384,14 @@ export function HaptixAccountSwitcherSheet({ visible, onClose, isBalanceHidden }
       const autoKeypair = Keypair.generate()
       parsedGuardian = autoKeypair.publicKey
       try {
-        await AsyncStorage.setItem(
-          `@haptix_auto_guardian_${autoKeypair.publicKey.toBase58()}`,
-          Buffer.from(autoKeypair.secretKey).toString('hex'),
-        )
-      } catch (e) {
-        console.warn('[Haptix] Failed to store auto guardian:', e)
+        await saveAutoGuardianSecret(autoKeypair)
+      } catch (e: any) {
+        // A wallet whose guardian nobody holds has no recovery path, so don't create it.
+        setShowAdvanced(true)
+        dialog.alert('Could Not Save Recovery Key', e?.message || SECURE_STORE_UNAVAILABLE_MESSAGE, undefined, {
+          status: 'error',
+        })
+        return
       }
     } else if (isDevnetFunder(parsedGuardian)) {
       setShowAdvanced(true)

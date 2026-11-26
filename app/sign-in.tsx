@@ -25,6 +25,7 @@ import * as Haptics from 'expo-haptics'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import Clipboard from '@/utils/clipboard'
+import { saveAutoGuardianSecret } from '@/utils/haptix-auto-guardian'
 import {
   Connection,
   Keypair,
@@ -663,14 +664,9 @@ export default function SignIn() {
         // Auto-generate a secure backup recovery keypair
         const autoGuardian = Keypair.generate()
         guardian = autoGuardian.publicKey
-        try {
-          await AsyncStorage.setItem(
-            `@haptix_auto_guardian_${autoGuardian.publicKey.toBase58()}`,
-            Buffer.from(autoGuardian.secretKey).toString('hex'),
-          )
-        } catch (e) {
-          console.warn('[Haptix] Failed to store auto guardian:', e)
-        }
+        // Abort before any key or on-chain step if it can't be kept: a wallet whose
+        // guardian nobody holds has no recovery path.
+        await saveAutoGuardianSecret(autoGuardian)
       } else if (isDevnetFunder(guardian)) {
         dialog.alert(
           'Independent Guardian Required',
