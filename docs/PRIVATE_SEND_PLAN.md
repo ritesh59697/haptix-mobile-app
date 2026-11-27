@@ -1,7 +1,7 @@
 # Private Send with Helius Privacy Rings: Plan
 
-Status: draft plan, nothing built yet. Target: a devnet demo of Haptix sending SOL with the amount hidden.
-Written 2026-11-22 against `@heliuslabs/spr@0.9.0-alpha` and the Haptix `main` branch at `7726528`.
+Status: Phase 0 in progress. The quorum fix and the Node devnet spike are merged; the Hermes import test (section 3.2) is next. Target: a devnet demo of Haptix sending SOL with the amount hidden.
+Written 2026-11-22 against `@heliuslabs/spr@0.9.0-alpha` and the Haptix `main` branch at `7726528`. Updated 2026-11-26 at `144adc6`.
 
 ---
 
@@ -131,7 +131,7 @@ To reproduce: put `HAPTIX_SPR_DEVNET_INDEXER_URL` and `HAPTIX_SPR_DEVNET_PROVER_
 
 - New file `utils/haptix-private-key.ts`: generate an ed25519 keypair on first use and store the secret in **SecureStore with biometric-gated access** (`requireAuthentication`).
 - Derive the shielded keypair with `ShieldedKeypair.fromKeypair`. Keep the derivation signature only in memory and never log it.
-- **Don't reuse the guardian-key pattern.** The guardian secret is currently saved as plaintext hex in AsyncStorage (`app/sign-in.tsx:664-670`). That's a separate bug worth fixing (section 8).
+- **Follow the guardian-key pattern in `utils/haptix-auto-guardian.ts`** (fixed in `144adc6`, section 8): SecureStore only, no AsyncStorage fallback, saving throws instead of degrading, and revealing the secret is gated by biometrics. The store is built with injectable backends, so the same shape can be tested without a device.
 - Backup and recovery: the guardian flow can't recover this key. Phase 1 needs at least an explicit "export private key" screen and a warning. Proper recovery is part of Phase 2.
 
 ### 4.2 Flows
@@ -172,7 +172,7 @@ Ring transactions skip `utils/haptix-wysiwys.ts`, because they aren't passkey pa
 
 ## 5. Prerequisite fix
 
-**Done 2026-11-22 (uncommitted).** The send sheet used to ignore the rolling 24h window (`windowStart`/`windowSpent`) and only compare the single amount with the threshold, so the chain could reject a one-passkey send with `QuorumRequired`.
+**Done 2026-11-22, merged in `2d22ae9`.** The send sheet used to ignore the rolling 24h window (`windowStart`/`windowSpent`) and only compare the single amount with the threshold, so the chain could reject a one-passkey send with `QuorumRequired`.
 
 - `utils/haptix-spend-window.ts` now copies the program's rule (single amount **or** rolling 24h total over the on-chain threshold).
 - The send sheet uses it with the wallet's on-chain state, judged at the chain's clock, for both the "1 passkey / 2 passkeys" label and the actual signing.
@@ -202,7 +202,7 @@ This is a much stronger message to Mert or @HeliusPrivacy than a general request
 
 ## 8. Out of scope here, but found while planning
 
-- **Guardian secret in plaintext AsyncStorage** (`app/sign-in.tsx:664-670`, `haptix-account-switcher-sheet.tsx:385-390`). It should move to SecureStore. This is a real security issue and is independent of this feature. A fix is ready on its own branch (`claude/reverent-shannon-1f2e67`), not yet committed or merged.
+- ~~**Guardian secret in plaintext AsyncStorage**~~ (`app/sign-in.tsx`, `haptix-account-switcher-sheet.tsx`). **Fixed 2026-11-26, merged in `144adc6`.** The secret now lives in SecureStore (`utils/haptix-auto-guardian.ts`); existing wallets migrate on first read, and the AsyncStorage copy is deleted only after the secure copy reads back identical. Showing or copying it in Settings → Recovery needs biometrics. `tests/auto-guardian-storage.test.ts` has 28 checks.
 - **The MWA module is not wired into the app.** `modules/haptix-mwa` exists, but no app code calls it, and it is devnet-only and sign-messages-only. Don't claim "ships MWA" in grant applications until it's connected.
 - **Mainnet:** needs a production fee payer (the funder is dev-only), the program deployed to mainnet, and an audit. These aren't part of this plan.
 
