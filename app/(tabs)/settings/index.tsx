@@ -34,6 +34,7 @@ import { bindHardwarePasskey, deletePasskeys, getDiscoverablePlatformAssertion }
 import { matchWebAuthnAssertion } from '@/utils/secp256r1-instruction'
 import { saveWallet } from '@/utils/haptix-wallet-storage'
 import { fundDevnetWallet } from '@/utils/haptix-funder'
+import { AppConfig } from '@/constants/app-config'
 import { ellipsify } from '@/utils/ellipsify'
 import { setString as copyToClipboard } from '@/utils/clipboard'
 
@@ -454,6 +455,25 @@ export default function TabSettingsScreen() {
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Lock wallet (Safe Lock)</Text>
               <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
             </TouchableOpacity>
+
+            {AppConfig.devMode && (
+              <>
+                <View style={[styles.divider, { backgroundColor: dividerColor }]} />
+                {/* Dev only: Privacy Rings runtime probe (docs/PRIVATE_SEND_PLAN.md, section 3.2) */}
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={() => {
+                    Haptics.selectionAsync()
+                    router.push('/(tabs)/settings/privacy-probe')
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <MaterialIcons name="science" size={20} color={theme.accent} />
+                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Privacy Rings probe (dev)</Text>
+                  <MaterialIcons name="chevron-right" size={18} color={theme.textMuted} />
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
 

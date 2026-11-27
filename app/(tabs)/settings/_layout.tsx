@@ -8,6 +8,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="recovery" />
       <Stack.Screen name="limits" />
+      <Stack.Screen name="privacy-probe" />
     </Stack>
   )
 }

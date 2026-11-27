@@ -123,6 +123,15 @@ To reproduce: put `HAPTIX_SPR_DEVNET_INDEXER_URL` and `HAPTIX_SPR_DEVNET_PROVER_
 
 **Next:** step 3.2, the Hermes import test. That's the real go/no-go, and it needs a dev build on a phone.
 
+### 3.2 Hermes probe: ready, not yet run on a phone (2026-11-27)
+
+- **Where:** Settings → "Privacy Rings probe (dev)", visible only with `EXPO_PUBLIC_HAPTIX_DEV_MODE=true`. The screen runs `utils/spr-probe.ts`: a capability report, then import, `initializePoseidon()`, kit's WebCrypto signer (info only), key derivation, client + `attestProver()`, and the funded register → deposit → private transfer → return loop. Each step records pass/fail, time and the redacted error chain. "Copy report" puts the result on the clipboard.
+- **Independent of kit's WebCrypto:** the probe signs SDK transactions with noble ed25519, and attestation still runs if WASM fails, so one run on the phone gives a verdict on each piece separately.
+- **The probe itself is checked:** `npx -y tsx tools/spr-probe-node.ts` runs the same code under Node and passes 19/19 on devnet (about 0.005 SOL). A failure on the phone therefore comes from Hermes, not from the probe.
+- **Found while bundling:** `@lightprotocol/hasher.rs` uses `import.meta`, which Hermes can't parse, so the whole Android bundle failed to build. `babel.config.js` now turns on babel-preset-expo's `unstable_transformImportMeta`, and the bundle builds (16 MB Hermes bytecode).
+- **Expected result:** Hermes has no `WebAssembly` and no `crypto.subtle`, so `initializePoseidon()` and probably `attestProver()` will fail. The run is still needed to confirm this and to see exactly what fails, before choosing a fallback from section 3.3.
+- **Keep this branch off `main` until the go/no-go**, so the alpha SDK stays out of shipped builds.
+
 ---
 
 ## 4. Phase 1: private balance (no program change)
