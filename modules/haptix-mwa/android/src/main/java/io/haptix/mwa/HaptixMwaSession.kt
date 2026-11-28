@@ -63,7 +63,8 @@ internal class HaptixMwaSession(
     // server, or a reflector for remote) and reads the port itself.
     val created = associationUri.createScenario(context, adapterConfig(), AuthIssuerConfig(ISSUER_NAME), Callbacks())
     scenario = created
-    created.startAsync()
+    // walletlib 2.0.8: start() launches the transport on the scenario's own thread.
+    created.start()
     return true
   }
 
@@ -85,6 +86,7 @@ internal class HaptixMwaSession(
     val account = AuthorizedAccount(
       publicKey,
       accountLabel,
+      null, // account icon: none advertised
       arrayOf(ProtocolContract.CHAIN_SOLANA_DEVNET),
       arrayOf(ProtocolContract.FEATURE_ID_SIGN_MESSAGES),
     )
