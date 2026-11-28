@@ -47,6 +47,35 @@ _This is the Solana mobile wallet. The EVM passkey wallet for Robinhood Chain an
 
 ---
 
+## Dev3pack Global Hackathon (Nov 27–29, 2026): What Was Built Before vs During
+
+Haptix is a pre-existing Solana project. Dev3pack allows pre-existing code from your own Solana projects, as long as the README says what was built before vs during the hackathon. Commit hashes link each item to the history.
+
+**Before the hackathon (Sep 20 – Nov 26, 2026)**
+
+- **The wallet itself**, first built for the Solana Mobile CLOCK IN hackathon (table above):
+  - the Anchor program on devnet;
+  - the passkey (P-256) vault, the 2-of-2 quorum and the on-chain spend limit;
+  - guardian recovery with a timelock and owner veto, and agent session keys;
+  - the Android app, the web co-signer vault and the recovery portal.
+- **Nov 22:**
+  - The send sheet now counts the rolling 24-hour spend when deciding whether a transfer needs one passkey or two. Before, it only compared the single amount with the limit, so the chain could reject a send the app had approved (`2d22ae9`).
+  - A Helius Privacy Rings devnet spike and a private-send plan (`3085a3a`, [plan](docs/PRIVATE_SEND_PLAN.md)).
+- **Nov 26:** the auto-generated guardian key moved from plaintext AsyncStorage to SecureStore, and revealing it now needs biometrics (`144adc6`).
+
+**During the hackathon (Nov 27–29)**
+
+Private send with [Helius Privacy Rings](https://www.helius.dev/docs/privacy), step 1: proving the SDK can run inside the app. This work is on the branch [`feat/spr-hermes-probe`](https://github.com/ritesh59697/haptix-mobile-app/tree/feat/spr-hermes-probe). It stays off `main` until the on-device go/no-go, so the alpha SDK never ships in a release build.
+
+- **In-app runtime probe:** a dev-only Settings screen ([`utils/spr-probe.ts`](https://github.com/ritesh59697/haptix-mobile-app/blob/feat/spr-hermes-probe/utils/spr-probe.ts)) that runs the SDK under the app's Hermes engine. It checks each piece separately:
+  - which runtime features the SDK needs are present, and whether the WASM Poseidon hasher loads;
+  - shielded key derivation and the prover's enclave attestation;
+  - a funded devnet loop (register, deposit, private transfer with a remote proof), with the funds returned at the end.
+- **Same code, verified under Node:** it passes 19/19 on devnet, so a failure on the phone points at the runtime, not the probe.
+- **Android bundle fix:** the SDK's hasher uses `import.meta`, which Hermes can't parse, so it broke the whole Android build. `babel.config.js` turns on Expo's `import.meta` transform.
+
+---
+
 ## Overview
 
 Haptix is a risk-adaptive passkey smart wallet built natively for the Solana Mobile Stack (SMS) and the Solana Seeker (Chapter 2):
